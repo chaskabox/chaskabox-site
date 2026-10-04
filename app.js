@@ -61,6 +61,7 @@ const CAT_STYLE={
 const BAND_COLORS={
   'Biscuits & Wafers':'#5f8f5b',
   'Bunties & Cakes':'#8a6d4a',
+  'Bundles':'#d9a03a',
   'Chews & Gums':'#2a9d8f',
   'Chocolates & Candies':'#93342e',
   'Imli & Ice Lollies':'#d97b2f',
@@ -68,22 +69,26 @@ const BAND_COLORS={
   'Snacks & Nimco':'#c9932b',
   'Betel Nuts & Pan Masala':'#4e7d4e'
 };
-const CAT_ORDER=['Snacks & Nimco','Chocolates & Candies','Biscuits & Wafers','Bunties & Cakes','Chews & Gums','Jellies & Marshmallow','Imli & Ice Lollies','Betel Nuts & Pan Masala'];
+const CAT_ORDER=['Bundles','Snacks & Nimco','Chocolates & Candies','Biscuits & Wafers','Bunties & Cakes','Chews & Gums','Jellies & Marshmallow','Imli & Ice Lollies','Betel Nuts & Pan Masala'];
 function renderHome(){
   const act=activeProducts();
   // categories
   const cats={};
   act.forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
-  // category tiles: simple colored circles (match original illustrations)
+  // category tiles: product photo circles (real images, colored fallback)
   const allCount=act.length;
   const tileOrder=['All',...Object.keys(cats).sort().filter(c=>c!=='All')];
+  const firstImg=list=>{const f=list.find(p=>p.img);return f?f.img:null;};
   // ensure 'All' pseudo-category first
   $('#catTiles').innerHTML=tileOrder.map(c=>{
     const st=CAT_STYLE[c]||{icon:'🛍️',bg:'#8a94a6'};
-    const n=c==='All'?allCount:(cats[c]||[]).length;
+    const list=c==='All'?act:(cats[c]||[]);
+    const n=c==='All'?allCount:list.length;
     if(c!=='All'&&!n) return '';
+    const src=firstImg(list);
+    const inner=src?`<img src="${src}" alt="${esc(c)}" loading="lazy">`:`<span class="ci-emoji">${st.icon}</span>`;
     return `<div class="cat reveal" onclick="goShop('${c==='All'?'':esc(c)}')">
-      <div class="ci" style="background:${st.bg}"><span class="ci-emoji">${st.icon}</span></div>
+      <div class="ci" style="background:${st.bg}">${inner}</div>
       <b>${esc(c)}</b><small>${n} items</small></div>`;
   }).join('');
   // hero collage: 3 product images
@@ -260,13 +265,31 @@ function chQty(id,d){CART[id]=(CART[id]||0)+d;if(CART[id]<=0)delete CART[id];sav
 
 /* ---------- Ask ChaskaBox AI (FAQ assistant) ---------- */
 const AI_QA=[
-  {q:'Delivery kitne din mein hogi?',a:'All over Pakistan 4–7 din mein delivery hoti hai. 🚚'},
-  {q:'Delivery charges kya hain?',a:'COD par Rs. 300 delivery fee hai. JazzCash advance Rs. 5,000 ya zyada par delivery FREE hai, is se kam par Rs. 300.'},
-  {q:'Payment kaise karun?',a:'Do tareeqe: 1) Cash on Delivery — saman milne par payment, 2) JazzCash advance — Till ID 981716438 par bhejein.'},
-  {q:'Order kaise track karun?',a:'Order ke baad aapko order number milega (jaise CB-041026-00001). WhatsApp 0332-0005381 par order number bhej kar status pooch sakte hain.'},
-  {q:'Kya products original hain?',a:'Ji haan! 100% original market brands — Hilal, Kolson, Mayfair waghera. ✅'},
-  {q:'Return/exchange policy?',a:'Ghalat ya damage item mile to 48 ghante ke andar WhatsApp 0332-0005381 par rabta karein, hum hal nikalenge.'}
+ {q:'Delivery kitne din mein hogi?',k:['deliver','din','kitne','time','pohnch','kab'],a:'All over Pakistan 4–7 din mein delivery hoti hai. 🚚 Order ke waqt aapko estimated dates bhi dikhai deti hain.'},
+ {q:'Delivery charges kya hain?',k:['charge','fee','delivery charges','kitna'],a:'COD par Rs. 300 delivery fee hai. JazzCash advance par Rs. 5,000 ya zyada ke order par delivery BILKUL FREE hai — is se kam par Rs. 300.'},
+ {q:'Payment kaise karun?',k:['payment','pay','pese','paise','jazzcash','easypaisa','cod'],a:'Do tareeqe hain: 1) Cash on Delivery — saman milne par cash dein, 2) JazzCash advance — checkout par QR scan karein ya Till ID 981716438 par bhejein.'},
+ {q:'JazzCash par paise kaise bhejun?',k:['jazzcash','till','qr','advance','bhejun','send'],a:'Checkout par JazzCash select karein — QR code scan karein ya Till ID 981716438 par amount bhejein, phir order place karein. Rs. 5,000+ par delivery FREE! ✅'},
+ {q:'Order kaise track karun?',k:['track','status','order number','kahan'],a:'Order ke baad aapko order number milta hai (jaise CB-041026-00001). WhatsApp 0332-0005381 par order number bhej kar status pooch sakte hain.'},
+ {q:'Order number kya hai?',k:['order number','number'],a:'Har order par ek unique number milta hai, jaise CB-041026-00001. Ye confirmation screen par aur email mein hota hai — isi se aapka order track hota hai.'},
+ {q:'Kya products original hain?',k:['original','asli','fake','naqli','brand'],a:'Ji haan! 100% original market brands — Hilal, Kolson, Mayfair, Candyland waghera. Koi copy nahi. ✅'},
+ {q:'Return ya exchange policy?',k:['return','exchange','wapsi','damage','kharab','ghalat'],a:'Ghalat ya damage item mile to 48 ghante ke andar WhatsApp 0332-0005381 par rabta karein — tasveer bhej dein, hum foran hal nikalenge.'},
+ {q:'Bulk ya bara order kar sakta hun?',k:['bulk','bara','wholesale','zyada','dokan','shop'],a:'Ji bilkul! Bara order ya dokan ke liye WhatsApp 0332-0005381 par rabta karein — hum khaas rate laga denge. 📦'},
+ {q:'Best seller kaun se hain?',k:['best','seller','mashhoor','popular','famous'],a:'Chocolates & Candies aur Snacks & Nimco hamari sab se popular categories hain! Shop page par "SALE" badge wali deals bhi zaroor dekhein. 🔥'},
+ {q:'Naye products kab aate hain?',k:['naye','new','arrival','kab'],a:'Naye snacks waqtan-fa-waqtan add hote rehte hain. Page refresh kar ke "All Snacks" dekhein — ya WhatsApp par poochein! 🆕'},
+ {q:'Address ghalat likh diya, kya karun?',k:['address','ghalat','pata','change','tabdeel'],a:'Fikar na karein! Foran WhatsApp 0332-0005381 par apna order number aur sahi address bhej dein — dispatch se pehle hum update kar denge.'},
+ {q:'Gift wrap ya tohfa ke liye?',k:['gift','tohfa','wrap','present'],a:'Kisi ko tohfa bhejna hai? Order notes mein likh dein ya WhatsApp par bata dein — hum khubsurat packing kar denge! 🎁'},
+ {q:'Payment mein masla ho gaya?',k:['masla','problem','fail','error','payment mein'],a:'Payment fail ho jaye to pareshan na hon — dobara try karein ya COD select kar lein. Phir bhi masla ho to WhatsApp 0332-0005381 par rabta karein.'}
 ];
+function aiReply(text){
+  const t=text.toLowerCase();
+  let best=null,bestScore=0;
+  AI_QA.forEach(x=>{
+    let s=0;
+    x.k.forEach(k=>{ if(t.includes(k)) s+=k.length; });
+    if(s>bestScore){bestScore=s;best=x;}
+  });
+  return best?best.a:'Hmm, ye sawal samajh nahi aaya. 🤔 Aap WhatsApp 0332-0005381 par pooch sakte hain — ya neeche diye gaye sawalon mein se chunein!';
+}
 function toggleAI(open){
   const m=$('#aimodal');
   if(open===undefined) m.classList.toggle('open');
@@ -274,13 +297,22 @@ function toggleAI(open){
   if(m.classList.contains('open')&&!$('#aibody').children.length) renderAIQA();
 }
 function renderAIQA(){
-  $('#aibody').innerHTML='<div class="amsg bot">Salam! 👋 Main ChaskaBox AI hun. Kya poochna chahenge?</div>'+
+  $('#aibody').innerHTML='<div class="amsg bot">Salam! 👋 Main ChaskaBox AI hun. Neeche sawal chunein ya apna sawal likhein:</div>'+
     AI_QA.map((x,i)=>`<button class="aq" onclick="askAI(${i})">${esc(x.q)}</button>`).join('');
+}
+function aiSay(user,bot){
+  $('#aibody').innerHTML+=`<div class="amsg user">${esc(user)}</div><div class="amsg bot">${bot}</div>`;
+  $('#aibody').scrollTop=$('#aibody').scrollHeight;
 }
 function askAI(i){
   const x=AI_QA[i];
-  $('#aibody').innerHTML+=`<div class="amsg user">${esc(x.q)}</div><div class="amsg bot">${esc(x.a)}</div>`;
-  $('#aibody').scrollTop=$('#aibody').scrollHeight;
+  aiSay(x.q,esc(x.a));
+}
+function askAIFree(){
+  const inp=$('#aiq'),v=(inp.value||'').trim();
+  if(!v) return;
+  inp.value='';
+  aiSay(v,esc(aiReply(v)));
 }
 
 /* ---------- animations: scroll reveals, hero tilt ---------- */
