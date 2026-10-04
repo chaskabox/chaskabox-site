@@ -3,6 +3,30 @@
 User instruction (2026-10-04): Fix everything EXCEPT #5 (hero collage stays for now).
 Wait for user's "go" before starting. Bundle ALL fixes into ONE deploy.
 
+## Pending Deploy Batch (ready, NOT deployed yet)
+The following are done locally, waiting for user's "deploy karo":
+
+A. **Netlify badge hide** (strong CSS):
+   - `div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="netlify" i]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}`
+
+B. **Mobile header layout:**
+   - `.hwrap{justify-content:space-between}` + `.logo{margin-right:auto}` on mobile
+   - Logo left, buttons right
+
+C. **Category tiles horizontal scroll (desktop):**
+   - `.cats` changed from 5-col grid to flex horizontal scroll with snap
+   - Mobile stays 3-col grid
+
+D. **Logo size:**
+   - Desktop: 68px, header padding 1px
+   - Mobile: 48px (unchanged)
+
+E. **Product cards bigger (desktop only):**
+   - Desktop shelf cards: 170px → 210px
+   - Mobile: 150px (unchanged per user)
+
+---
+
 ## P0 — Critical (updated 2026-10-04 after careful video comparison)
 1. **Band colors fix:**
    - Biscuits & Wafers: `#5f8f5b` (green) → BROWN (original)
