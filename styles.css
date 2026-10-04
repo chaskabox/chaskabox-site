@@ -297,7 +297,7 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 }
 
 /* Theme-aware logo */
-.logo-img{height:48px;width:auto}
+.logo-img{height:72px;width:auto}
 .logo-dark{display:none}
 [data-theme="dark"] .logo-light{display:none}
 [data-theme="dark"] .logo-dark{display:inline-block}
