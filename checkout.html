@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — ChaskaBox</title>
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+</head>
+<body>
+<div class="promo">🔒 Secure checkout · Cash on Delivery &amp; JazzCash accepted</div>
+<header><div class="hwrap">
+  <a class="logo" href="index.html"><span class="box">📦</span><span>CHASKABOX<small>PAKISTANI SNACKS</small></span></a>
+  <span style="margin-left:auto;font-size:13px;color:var(--muted)">Step 2 of 2 — Checkout</span>
+</div></header>
+
+<div class="co-wrap" id="coMain">
+  <h2 style="color:var(--navy)">Checkout 🧾</h2>
+  <div class="co-grid">
+    <div>
+      <div class="co-card">
+        <h3>1 · Your Details</h3>
+        <div class="field"><label>Full Name *</label><input id="f_name" placeholder="e.g. Ahmed Khan"><div class="err" id="e_name">Please enter your name</div></div>
+        <div class="field"><label>Phone Number *</label><input id="f_phone" inputmode="numeric" placeholder="03XX-XXXXXXX"><div class="err" id="e_phone">Enter a valid 11-digit mobile (03...)</div></div>
+        <div class="field"><label>Complete Address *</label><textarea id="f_addr" rows="2" placeholder="House, street, area..."></textarea><div class="err" id="e_addr">Please enter your address</div></div>
+        <div class="field"><label>City *</label><input id="f_city" placeholder="e.g. Muzaffargarh"><div class="err" id="e_city">Please enter your city</div></div>
+      </div>
+      <div class="co-card" style="margin-top:16px">
+        <h3>2 · Payment Method</h3>
+        <div class="payopt sel" id="pay_cod" onclick="setPay('cod')">
+          <input type="radio" name="pay" checked><div><b>💵 Cash on Delivery</b><small>Pay Rs. 300 delivery · cash when your order arrives</small></div>
+        </div>
+        <div class="payopt" id="pay_jazz" onclick="setPay('jazzcash')">
+          <input type="radio" name="pay"><div><b>⚡ JazzCash (Advance)</b><small>Pay now via QR / Till ID · <b style="display:inline">FREE delivery</b> on Rs. 5,000+</small></div>
+        </div>
+        <div id="jazzBox" style="display:none">
+          <div class="qrbox">
+            <img src="images/jazzcash-qr.webp" alt="JazzCash QR">
+            <div class="tillid">Till ID: 981716438</div>
+            <div style="font-size:12px;color:var(--muted)">Scan QR or dial *786*10# and enter Till ID to pay</div>
+          </div>
+          <div class="hint">📸 After paying, take a screenshot of the payment receipt — we'll confirm on WhatsApp if needed.</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="co-card">
+        <h3>Order Summary</h3>
+        <div id="coItems"></div>
+        <div style="margin-top:10px">
+          <div class="sumrow"><span>Subtotal</span><span id="s_sub">Rs. 0</span></div>
+          <div class="sumrow"><span>Delivery</span><span id="s_del">Rs. 0</span></div>
+          <div class="sumrow total"><span>Total</span><span id="s_tot">Rs. 0</span></div>
+        </div>
+        <div class="hint" id="freeHint" style="display:none"></div>
+        <button class="placebtn" id="placeBtn" onclick="placeOrder()">Place Order →</button>
+        <div style="font-size:12px;color:var(--muted);text-align:center;margin-top:8px">By ordering you agree to 4–7 day nationwide delivery.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="co-wrap" id="coDone" style="display:none">
+  <div class="co-card confirm">
+    <div class="ok">✅</div>
+    <h2>Shukriya! Order received.</h2>
+    <p>Your order number:</p>
+    <div class="orderno" id="doneNo"></div>
+    <p id="doneMsg" style="font-size:14px;color:var(--muted);max-width:480px;margin:0 auto"></p>
+    <br><a class="cta" href="index.html">Continue Shopping →</a>
+  </div>
+</div>
+
+<footer><div class="fbottom">© 2026 ChaskaBox · 📞 0332-0005381 · Chaskabox.mzg@gmail.com</div></footer>
+<script src="checkout.js"></script>
+</body>
+</html>

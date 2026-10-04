@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — ChaskaBox</title>
+<link rel="stylesheet" href="styles.css">
+<meta name="robots" content="noindex,nofollow">
+</head>
+<body>
+<div id="login">
+  <div class="loginbox">
+    <h2 style="color:var(--navy);margin-bottom:6px">🔐 ChaskaBox Admin</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Owner access only.</p>
+    <div class="field"><label>Username</label><input type="text" id="auser" placeholder="Username" autocomplete="username"></div>
+    <div class="field"><label>Password</label><input type="password" id="apw" placeholder="Password" autocomplete="current-password"></div>
+    <div class="err" id="apwerr" style="display:none;color:var(--red);font-size:13px;margin-bottom:8px">Wrong username or password</div>
+    <button class="placebtn" onclick="doLogin()">Login</button>
+  </div>
+</div>
+
+<div id="panel" style="display:none">
+  <header><div class="hwrap">
+    <a class="logo" href="index.html"><span class="box">📦</span><span>CHASKABOX<small>ADMIN</small></span></a>
+    <span id="whoami" style="margin-left:auto;font-size:13px;font-weight:700;color:var(--navy);background:#eef2ff;border:1px solid #dbe3ff;border-radius:999px;padding:6px 12px"></span>
+    <button class="hbtn" onclick="downloadJSON()">⬇ Download products.json</button>
+    <button class="hbtn" onclick="viewOrders()">📋 Orders</button>
+    <button class="hbtn" onclick="location.reload()">Logout</button>
+  </div></header>
+  <div class="admin-wrap">
+    <div class="hint" style="margin-bottom:14px">ℹ️ <b>How saving works:</b> edits are kept in this browser. Click <b>Download products.json</b>, then send the file to your developer (or replace it in the site repo) and redeploy — the live site updates.</div>
+    <div class="toolbar">
+      <input type="text" id="aq" placeholder="Search products..." oninput="renderTable()">
+      <select id="acat" onchange="renderTable()"><option value="">All categories</option></select>
+      <label style="font-size:13px"><input type="checkbox" id="aactive" checked onchange="renderTable()"> Active only</label>
+      <span class="cnt" id="acnt"></span>
+    </div>
+    <div style="overflow-x:auto"><table class="atable"><thead><tr>
+      <th></th><th>ID</th><th>Name</th><th>Price</th><th>Old</th><th>Pack</th><th>Active</th>
+    </tr></thead><tbody id="arows"></tbody></table></div>
+  </div>
+</div>
+
+<div id="ordersView" style="display:none">
+  <header><div class="hwrap">
+    <a class="logo" href="index.html"><span class="box">📦</span><span>CHASKABOX<small>ORDERS</small></span></a>
+    <span style="margin-left:auto"></span>
+    <button class="hbtn" onclick="backToProducts()">← Products</button>
+  </div></header>
+  <div class="admin-wrap">
+    <div class="hint" style="margin-bottom:14px">ℹ️ Orders placed <b>on this device/browser</b> are listed here. All orders are also emailed to Chaskabox.mzg@gmail.com.</div>
+    <div id="ordersList"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   ADMIN ACCOUNTS — Rameez, change these passwords!
+   username: password
+   ============================================================ */
+const ADMIN_USERS = {
+  'owner':  'chaska123',   // <-- change this password
+  'Rameez': 'chaska123'    // <-- change this password
+};
+let LOGGED_IN_USER = null;
+let PRODUCTS = [];
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => 'Rs. ' + Number(n).toLocaleString('en-PK');
+
+function doLogin(){
+  const u = $('#auser').value.trim(), p = $('#apw').value;
+  if (u && ADMIN_USERS[u] && ADMIN_USERS[u] === p) {
+    LOGGED_IN_USER = u;
+    $('#whoami').textContent = '👤 ' + u;
+    $('#login').style.display='none'; $('#panel').style.display=''; init();
+  }
+  else $('#apwerr').style.display = '';
+}
+$('#apw')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+$('#auser')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function init(){
+  const r = await fetch('products.json'); PRODUCTS = await r.json();
+  try { const ov = JSON.parse(localStorage.getItem('cb_overrides')||'{}'); PRODUCTS.forEach(p=>{ if(ov[p.id]) Object.assign(p, ov[p.id]); }); } catch(e){}
+  const cats = [...new Set(PRODUCTS.map(p=>p.category))].sort();
+  $('#acat').innerHTML = '<option value="">All categories</option>' + cats.map(c=>`<option>${esc(c)}</option>`).join('');
+  renderTable();
+}
+function renderTable(){
+  const q = $('#aq').value.toLowerCase(), cat = $('#acat').value, actOnly = $('#aactive').checked;
+  const list = PRODUCTS.filter(p =>
+    (!actOnly || p.active !== false) &&
+    (!cat || p.category === cat) &&
+    (!q || (p.name+' '+(p.pack||'')).toLowerCase().includes(q)));
+  $('#acnt').textContent = list.length + ' products';
+  $('#arows').innerHTML = list.map(p => `<tr>
+    <td>${p.img?`<img src="${p.img}">`:'—'}</td><td>${p.id}</td>
+    <td><input type="text" id="n_${p.id}" value="${esc(p.name)}" style="width:180px"></td>
+    <td><input type="number" id="p_${p.id}" value="${p.price}"></td>
+    <td><input type="number" id="o_${p.id}" value="${p.oldPrice||''}" placeholder="—"></td>
+    <td><input type="text" id="k_${p.id}" value="${esc(p.pack||'')}"></td>
+    <td><input type="checkbox" class="toggle" id="a_${p.id}" ${p.active!==false?'checked':''} onchange="toggleActive(${p.id},this.checked)"></td>
+  </tr>`).join('');
+}
+function toggleActive(id, on){
+  const ov = getOv(); ov[id] = ov[id]||{}; ov[id].active = on; saveOv(ov);
+  const p = PRODUCTS.find(x=>x.id===id); p.active = on;
+}
+function getOv(){ try { return JSON.parse(localStorage.getItem('cb_overrides')||'{}'); } catch(e){ return {}; } }
+function saveOv(o){ localStorage.setItem('cb_overrides', JSON.stringify(o)); }
+function collectEdits(){
+  const ov = getOv();
+  PRODUCTS.forEach(p => {
+    const n=$('#n_'+p.id), pr=$('#p_'+p.id), o=$('#o_'+p.id), k=$('#k_'+p.id);
+    if(!n) return;
+    const ch = {};
+    if (n.value !== p.name) ch.name = n.value;
+    if (+pr.value !== p.price) ch.price = +pr.value;
+    const ovv = o.value === '' ? null : +o.value;
+    if (ovv !== (p.oldPrice||null)) ch.oldPrice = ovv;
+    if (k.value !== (p.pack||'')) ch.pack = k.value;
+    if (Object.keys(ch).length) { ov[p.id] = Object.assign(ov[p.id]||{}, ch); Object.assign(p, ch); }
+  });
+  saveOv(ov);
+  return ov;
+}
+function downloadJSON(){
+  collectEdits();
+  // merge overrides into a clean products.json
+  const clean = PRODUCTS.map(p => ({id:p.id,name:p.name,price:p.price,oldPrice:p.oldPrice||null,category:p.category,pack:p.pack||'',desc:p.desc||'',badge:p.badge||'',img:p.img||null,bundle:!!p.bundle,active:p.active!==false}));
+  const blob = new Blob([JSON.stringify(clean, null, 1)], {type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'products.json'; a.click();
+  alert('products.json downloaded! Send it to your developer (or replace it in the site files) and redeploy.');
+}
+function viewOrders(){
+  $('#panel').style.display='none'; $('#ordersView').style.display='';
+  let orders = []; try { orders = JSON.parse(localStorage.getItem('cb_orders')||'[]'); } catch(e){}
+  $('#ordersList').innerHTML = orders.length ? orders.reverse().map(o=>`
+    <div class="co-card" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <b style="color:var(--navy)">${esc(o.no)}</b><span style="font-size:12px;color:var(--muted)">${esc(o.date)}</span>
+        <span class="badge" style="position:static">${esc(o.pay)}</span>
+      </div>
+      <div style="font-size:13px;margin-top:8px"><b>${esc(o.name)}</b> · ${esc(o.phone)}<br>${esc(o.addr)}, ${esc(o.city)}</div>
+      <div style="font-size:13px;margin-top:6px">${o.items.map(esc).join('<br>')}</div>
+      <div style="margin-top:8px;font-weight:800;color:var(--navy)">Total: ${fmt(o.total)} ${o.emailed?'· ✉ emailed':'· ⚠ email pending'}</div>
+    </div>`).join('')
+    : '<div class="empty">No orders on this device yet.</div>';
+}
+function backToProducts(){ $('#ordersView').style.display='none'; $('#panel').style.display=''; }
+</script>
+</body>
+</html>
