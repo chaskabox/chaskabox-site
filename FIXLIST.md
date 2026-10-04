@@ -6,6 +6,13 @@ Wait for user's "go" before starting. Bundle ALL fixes into ONE deploy.
 ## Pending Deploy Batch (ready, NOT deployed yet)
 The following are done locally, waiting for user's "deploy karo":
 
+16. **AI shopping assistant upgrade:**
+   - Current: simple FAQ (delivery/payment questions only)
+   - Original: conversational shopping assistant with product search + product cards in chat
+   - Target: Add product search to static AI (e.g. "chocolate dikhao" → matching products with cards + Add buttons)
+   - Keep FAQ for delivery/payment questions
+   - Cannot do full LLM conversation (static site limitation)
+
 A. **Netlify badge hide** (strong CSS):
    - `div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="netlify" i]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}`
 
@@ -20,6 +27,10 @@ C. **Category tiles horizontal scroll (desktop):**
 D. **Logo size:**
    - Desktop: 68px, header padding 1px
    - Mobile: 48px (unchanged)
+
+F. **AI button location (left side):**
+   - Moved from bottom-right to bottom-left (Netlify badge overlap issue)
+   - `.aifab` and `.aimodal`: `right` → `left`
 
 E. **Product cards bigger (desktop only):**
    - Desktop shelf cards: 170px → 210px
