@@ -303,13 +303,38 @@ const AI_QA=[
 ];
 function aiReply(text){
   const t=text.toLowerCase();
+  // Product search: if query looks like a product search, show matching products
+  const prod=searchProductsAI(t);
+  if(prod.length) return {products:prod};
   let best=null,bestScore=0;
   AI_QA.forEach(x=>{
     let s=0;
     x.k.forEach(k=>{ if(t.includes(k)) s+=k.length; });
     if(s>bestScore){bestScore=s;best=x;}
   });
-  return best?best.a:'Hmm, ye sawal samajh nahi aaya. 🤔 Aap WhatsApp 0332-0005381 par pooch sakte hain — ya neeche diye gaye sawalon mein se chunein!';
+  return best?{text:best.a}:{text:'Hmm, ye sawal samajh nahi aaya. 🤔 Aap WhatsApp 0332-0005381 par pooch sakte hain — ya neeche diye gaye sawalon mein se chunein!'};
+}
+function searchProductsAI(q){
+  // Skip if it's clearly a FAQ question
+  const faqWords=['delivery','payment','return','refund','address','order','track','cash','jazzcash','cod','whatsapp','gift','discount','offer','sale'];
+  if(faqWords.some(w=>q.includes(w))) return [];
+  // Search products by name/category
+  const words=q.split(/\s+/).filter(w=>w.length>2);
+  if(!words.length) return [];
+  const res=PRODUCTS.filter(p=>{
+    const hay=(p.name+' '+(p.category||'')+' '+(p.brand||'')).toLowerCase();
+    return words.some(w=>hay.includes(w));
+  }).slice(0,5);
+  return res;
+}
+function aiProductCards(prods){
+  return '<div class="aiprods">'+prods.map(p=>`
+    <div class="aiprod">
+      <img src="${p.img||'images/placeholder.png'}" alt="${esc(p.name)}" loading="lazy">
+      <div class="aipname">${esc(p.name)}</div>
+      <div class="aipprice">Rs. ${p.price}</div>
+      <button class="aipadd" onclick="addToCart(${p.id})">Add +</button>
+    </div>`).join('')+'</div>';
 }
 function toggleAI(open){
   const m=$('#aimodal');
@@ -333,7 +358,12 @@ function askAIFree(){
   const inp=$('#aiq'),v=(inp.value||'').trim();
   if(!v) return;
   inp.value='';
-  aiSay(v,esc(aiReply(v)));
+  const r=aiReply(v);
+  if(r.products&&r.products.length){
+    aiSay(v,'Ye rahe matching products! 👇<br>'+aiProductCards(r.products));
+  }else{
+    aiSay(v,esc(r.text||r));
+  }
 }
 
 /* ---------- animations: scroll reveals, hero tilt ---------- */

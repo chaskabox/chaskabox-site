@@ -6,12 +6,11 @@ Wait for user's "go" before starting. Bundle ALL fixes into ONE deploy.
 ## Pending Deploy Batch (ready, NOT deployed yet)
 The following are done locally, waiting for user's "deploy karo":
 
-16. **AI shopping assistant upgrade:**
-   - Current: simple FAQ (delivery/payment questions only)
-   - Original: conversational shopping assistant with product search + product cards in chat
-   - Target: Add product search to static AI (e.g. "chocolate dikhao" → matching products with cards + Add buttons)
-   - Keep FAQ for delivery/payment questions
-   - Cannot do full LLM conversation (static site limitation)
+16. **AI shopping assistant upgrade:** ✅ DONE (offline, not deployed)
+   - Added product search: user types product name → AI shows matching products with cards + Add buttons
+   - FAQ still works for delivery/payment questions
+   - Files: app.js (searchProductsAI, aiProductCards), styles.css (.aiprods styles)
+   - Verified: node --check passed
 
 A. **Netlify badge hide** (strong CSS):
    - `div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="netlify" i]{display:none!important;visibility:hidden!important;opacity:0!important;pointer-events:none!important}`

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Test</title>
+<style>
+body{font-family:system-ui;background:#f5f5f5;padding:20px;max-width:500px;margin:0 auto}
+.amsg{padding:10px 14px;border-radius:12px;margin:8px 0;max-width:85%}
+.bot{background:#fff;border:1px solid #ddd}
+.user{background:#1a2b5c;color:#fff;margin-left:auto;text-align:right}
+.aiprods{display:flex;gap:8px;overflow-x:auto;padding:8px 0}
+.aiprod{flex:0 0 120px;background:#fff;border:1px solid #ddd;border-radius:10px;padding:8px;text-align:center}
+.aiprod img{width:100%;height:80px;object-fit:contain}
+.aipname{font-size:11px;font-weight:600;margin:6px 0 4px;height:28px;overflow:hidden}
+.aipprice{font-size:12px;font-weight:800;color:#c62828;margin-bottom:6px}
+.aipadd{background:#c62828;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;width:100%}
+#aiq{width:70%;padding:10px;border:1px solid #ddd;border-radius:8px}
+button.send{padding:10px 16px;background:#1a2b5c;color:#fff;border:none;border-radius:8px}
+.testbtn{margin:4px;padding:8px 12px;background:#e0e0e0;border:none;border-radius:6px;cursor:pointer}
+</style></head><body>
+<h3>🤖 AI Test Page</h3>
+<div id="aibody"></div>
+<div style="margin-top:12px">
+<input id="aiq" placeholder="Type: chocolate, nimco, delivery...">
+<button class="send" onclick="askAIFree()">Send</button>
+</div>
+<div style="margin-top:12px">
+<button class="testbtn" onclick="test('chocolate')">chocolate</button>
+<button class="testbtn" onclick="test('nimco')">nimco</button>
+<button class="testbtn" onclick="test('delivery charges')">delivery</button>
+<button class="testbtn" onclick="test('cupcake')">cupcake</button>
+</div>
+<script>
+const PRODUCTS=[
+{id:1,name:'Mayfair Delight Chocolate Croissant Pack of 6',category:'Biscuits & Wafers',brand:'Mayfair',price:120,img:'https://via.placeholder.com/100?text=Choco'},
+{id:2,name:'Hilal CupKake Chocolate Pack of 12',category:'Bunties & Cakes',brand:'Hilal',price:655,img:'https://via.placeholder.com/100?text=CupKake'},
+{id:3,name:'Super Crisp Nimco Masala',category:'Snacks & Nimco',brand:'Super',price:50,img:'https://via.placeholder.com/100?text=Nimco'},
+{id:4,name:'CandyLand Jelly Bears',category:'Jellies & Marshmallow',brand:'CandyLand',price:80,img:'https://via.placeholder.com/100?text=Jelly'}
+];
+const AI_QA=[
+{q:'Delivery charges?',k:['delivery','charges'],a:'COD: Rs.300. JazzCash Rs.5000+: FREE!'},
+{q:'Payment methods?',k:['payment','cod','jazzcash'],a:'COD aur JazzCash available hain.'}
+];
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')}
+function searchProductsAI(q){
+const faqWords=['delivery','payment','return','refund','address','order','track','cash','jazzcash','cod','whatsapp','gift','discount','offer','sale'];
+if(faqWords.some(w=>q.includes(w)))return[];
+const words=q.split(/\s+/).filter(w=>w.length>2);
+if(!words.length)return[];
+return PRODUCTS.filter(p=>{const h=(p.name+' '+(p.category||'')+' '+(p.brand||'')).toLowerCase();return words.some(w=>h.includes(w))}).slice(0,5);
+}
+function aiReply(t){t=t.toLowerCase();const pr=searchProductsAI(t);if(pr.length)return{products:pr};let b=null,s=0;AI_QA.forEach(x=>{let c=0;x.k.forEach(k=>{if(t.includes(k))c+=k.length});if(c>s){s=c;b=x}});return b?{text:b.a}:{text:'Samajh nahi aaya!'}}
+function aiProductCards(ps){return '<div class="aiprods">'+ps.map(p=>`<div class="aiprod"><img src="${p.img}"><div class="aipname">${esc(p.name)}</div><div class="aipprice">Rs. ${p.price}</div><button class="aipadd">Add +</button></div>`).join('')+'</div>'}
+function aiSay(u,b){document.getElementById('aibody').innerHTML+=`<div class="amsg user">${esc(u)}</div><div class="amsg bot">${b}</div>`}
+function askAIFree(){const i=document.getElementById('aiq'),v=i.value.trim();if(!v)return;i.value='';const r=aiReply(v);if(r.products&&r.products.length){aiSay(v,'Ye rahe! 👇<br>'+aiProductCards(r.products))}else{aiSay(v,esc(r.text))}}
+function test(q){document.getElementById('aiq').value=q;askAIFree()}
+aiSay('','Salam! 👋 Test karo: neeche buttons dabao ya khud likho!');
+</script></body></html>
