@@ -141,12 +141,55 @@ function shelfScroll(id,dir){
 }
 
 /* ---------- shop ---------- */
-let shopState={q:'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:''};
+let shopState={q:'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''};
 function goShop(cat){
   closeMnav();
-  shopState={q:'',cat:cat||'',sort:'feat',brands:[],maxPrice:0,pack:''};
+  shopState={q:'',cat:cat||'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''};
   showView('shop'); renderShop();
   window.scrollTo(0,0);
+}
+/* header dropdown shortcuts */
+function goBadge(badge){
+  closeMnav();
+  shopState={q:'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:badge||''};
+  showView('shop'); renderShop();
+  window.scrollTo(0,0);
+}
+function goShopBadge(cat,badge){
+  closeMnav();
+  shopState={q:'',cat:cat||'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:badge||''};
+  showView('shop'); renderShop();
+  window.scrollTo(0,0);
+}
+function goFlavor(q){
+  closeMnav();
+  shopState={q:q||'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''};
+  showView('shop'); renderShop();
+  window.scrollTo(0,0);
+}
+function goBrand(b){
+  closeMnav();
+  shopState={q:'',cat:'',sort:'feat',brands:b?[b]:[],maxPrice:0,pack:'',badge:''};
+  showView('shop'); renderShop();
+  window.scrollTo(0,0);
+}
+/* populate desktop header dropdowns (categories + top brands) */
+function renderHeaderDropdowns(){
+  try{
+    const dc=$('#ddCats');
+    if(dc){
+      const cats={}; activeProducts().forEach(p=>{cats[p.category]=(cats[p.category]||0)+1;});
+      const order=CAT_ORDER.filter(c=>cats[c]);
+      dc.innerHTML=order.map(c=>'<a href="#" onclick="goShop(\''+esc(c)+'\');return false">'+esc(c)+'<span class="cnt">'+cats[c]+'</span></a>').join('');
+    }
+    const db=$('#ddBrands');
+    if(db){
+      const bc={}; activeProducts().forEach(p=>{const b=getBrand(p.name);bc[b]=(bc[b]||0)+1;});
+      const top=Object.entries(bc).sort((a,b)=>b[1]-a[1]).slice(0,9);
+      db.innerHTML='<a href="#" onclick="goShop(\'\');return false">🏷️ All Brands</a>'
+        +top.map(([b,n])=>'<a href="#" onclick="goBrand(&quot;'+esc(b)+'&quot;);return false">'+esc(b)+'<span class="cnt">'+n+'</span></a>').join('');
+    }
+  }catch(e){ console.warn('header dropdowns', e); }
 }
 function getBrand(name){
   const m=String(name||'').split('|')[0].trim();
@@ -163,8 +206,9 @@ function filterPanelHTML(){
     +'<button class="fclear" onclick="clearAllFilters()">Clear filters</button>';
 }
 function renderShop(){
-  const {cat}=shopState;
-  const title=cat||'All Snacks';
+  const {cat,badge}=shopState;
+  let title=cat||'All Snacks';
+  if(badge) title=(badge==='Sale'?'🔥 ':'⭐ ')+title;
   $('#crumbCat').textContent=title;
   $('#catTitle').textContent=title;
   const html=filterPanelHTML();
@@ -186,11 +230,11 @@ function closeFilters(){
   document.body.style.overflow='';
 }
 function clearAllFilters(){
-  shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';
+  shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';shopState.badge='';
   renderShop();
 }
 function activeFilterCount(){
-  return shopState.brands.length+(shopState.maxPrice?1:0)+(shopState.pack?1:0);
+  return shopState.brands.length+(shopState.maxPrice?1:0)+(shopState.pack?1:0)+(shopState.badge?1:0);
 }
 function updateApplyBtn(){
   const n=filteredShop().length;
@@ -209,6 +253,7 @@ function renderFilterChips(){
   shopState.brands.forEach(b=>{h+='<button class="fchip" data-v="'+esc(b)+'" onclick="removeBrandChip(this)">'+esc(b)+' <span>\u2715</span></button>';});
   if(shopState.maxPrice)h+='<button class="fchip" onclick="shopState.maxPrice=0;renderShop()">Under '+fmt(shopState.maxPrice)+' <span>\u2715</span></button>';
   if(shopState.pack)h+='<button class="fchip" onclick="shopState.pack=\'\';renderShop()">'+esc(shopState.pack)+' <span>\u2715</span></button>';
+  if(shopState.badge)h+='<button class="fchip" onclick="shopState.badge=\'\';renderShop()">'+(shopState.badge==='Sale'?'🔥 On Sale':'⭐ Bestsellers')+' <span>\u2715</span></button>';
   el.innerHTML=h;
 }
 function toggleBrand(el){
@@ -217,8 +262,9 @@ function toggleBrand(el){
   renderShopList();
 }
 function filteredShop(){
-  let list=activeProducts();const{q,cat,sort,brands,maxPrice,pack}=shopState;
+  let list=activeProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
   if(cat)list=list.filter(p=>p.category===cat);
+  if(badge)list=list.filter(p=>p.badge===badge);
   if(q){const n=q.toLowerCase();list=list.filter(p=>(p.name+' '+(p.pack||'')).toLowerCase().includes(n));}
   if(brands.length)list=list.filter(p=>brands.includes(getBrand(p.name)));
   if(maxPrice)list=list.filter(p=>p.price<=maxPrice);
@@ -614,6 +660,11 @@ function initTilt(){
 document.addEventListener('DOMContentLoaded',async()=>{
   loadCart(); await loadProducts(); updateBadge();
   initReveals(); initTilt(); initPromo(); renderPackingVideo();
+  renderHeaderDropdowns();
+  /* premium header: deeper shadow once scrolled */
+  (function(){const h=document.querySelector('header');if(!h)return;
+    const onS=()=>h.classList.toggle('scrolled',window.scrollY>8);
+    window.addEventListener('scroll',onS,{passive:true});onS();})();
   if(typeof initAccount==='function') try{ await initAccount(); }catch(e){ console.warn('account init', e); }
   showView('home');
   observeReveals();

@@ -32,14 +32,35 @@ button{cursor:pointer;font-family:inherit}
 .promo b{color:var(--gold)}
 
 /* header */
-header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1px solid var(--border-soft);box-shadow:0 2px 10px rgba(26,43,92,.06)}
-.hwrap{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:1px 10px}
+header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1px solid var(--border-soft);box-shadow:0 2px 10px rgba(26,43,92,.06);transition:box-shadow .25s ease}
+header.scrolled{box-shadow:0 8px 28px rgba(26,43,92,.16)}
+.hwrap{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:5px 14px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;color:var(--navy);letter-spacing:.5px}
 .logo .box{width:38px;height:38px;border-radius:10px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px}
 .logo small{display:block;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:2px}
-.hnav{margin-left:auto;display:flex;gap:22px;align-items:center}
+.hnav{margin-left:auto;display:flex;gap:26px;align-items:center}
 .hnav a{font-weight:700;font-size:14.5px;color:var(--ink)}
 .hnav a:hover{color:var(--navy)}
+/* premium dropdown nav */
+.hdrop{position:relative}
+.hdrop-btn{background:none;border:none;font:inherit;font-weight:700;font-size:14.5px;color:var(--ink);cursor:pointer;padding:12px 2px;display:inline-flex;align-items:center;gap:5px;position:relative;transition:color .2s}
+.hdrop-btn .caret{font-size:10px;transition:transform .25s ease;color:var(--muted)}
+.hdrop:hover .hdrop-btn,.hdrop:focus-within .hdrop-btn{color:var(--navy)}
+.hdrop:hover .caret{transform:rotate(180deg)}
+.hdrop-btn::after{content:'';position:absolute;left:0;bottom:6px;height:2.5px;width:0;background:var(--gold);border-radius:2px;transition:width .25s ease}
+.hdrop:hover .hdrop-btn::after,.hdrop:focus-within .hdrop-btn::after{width:100%}
+.hdrop-menu{position:absolute;top:calc(100% + 2px);left:50%;transform:translate(-50%,10px);min-width:220px;max-height:70vh;overflow-y:auto;background:var(--card);border:1px solid var(--border-soft);border-radius:14px;box-shadow:0 20px 48px rgba(26,43,92,.2);padding:8px;opacity:0;visibility:hidden;transition:opacity .22s ease,transform .22s ease,visibility .22s;z-index:70}
+.hdrop-menu::before{content:'';position:absolute;top:-10px;left:0;right:0;height:10px}
+.hdrop:hover .hdrop-menu,.hdrop:focus-within .hdrop-menu{opacity:1;visibility:visible;transform:translate(-50%,0)}
+.hdrop-menu a{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none;white-space:nowrap;transition:background .15s,color .15s}
+.hdrop-menu a:hover{background:var(--sel-bg);color:var(--navy)}
+.hdrop-menu a .cnt{margin-left:auto;font-size:11px;color:var(--muted);font-weight:700;background:var(--sel-bg);border-radius:999px;padding:2px 8px}
+.hdrop-menu a:hover .cnt{background:var(--gold);color:#1a2b5c}
+/* header button polish */
+.tbtn{transition:transform .15s,border-color .15s,box-shadow .15s}
+.tbtn:hover{border-color:var(--navy);transform:translateY(-1px);box-shadow:0 4px 12px rgba(26,43,92,.15)}
+.hbtn{transition:transform .15s,box-shadow .15s}
+.hbtn:hover{transform:translateY(-1px);box-shadow:0 6px 16px rgba(26,43,92,.28)}
 .hsearch{flex:1;display:flex}
 .hsearch input{flex:1;border:2px solid var(--border);border-radius:999px 0 0 999px;padding:10px 16px;font-size:14px;outline:none;background:var(--input-bg);color:var(--ink)}
 .hsearch input:focus{border-color:var(--navy)}
@@ -253,7 +274,7 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 
 /* responsive */
 @media(max-width:760px){
-  .hwrap{justify-content:space-between;padding:1px 8px}
+  .hwrap{justify-content:space-between;padding:1px 8px;gap:8px}
   .herowrap,.htrustwrap,.section,.shelfw,.shelfbody,.fwrap{padding-left:8px!important;padding-right:8px!important}
   .hwrap .logo{margin-right:auto}
   .cats{display:flex;gap:12px;overflow-x:auto;padding:10px 4px;scroll-snap-align:start}

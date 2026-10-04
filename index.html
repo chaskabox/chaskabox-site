@@ -34,12 +34,40 @@
 <header>
   <div class="hwrap">
     <a class="logo" href="index.html"><img src="images/logo-navy.png" alt="ChaskaBox" class="logo-img logo-light"><img src="images/logo-white.png" alt="ChaskaBox" class="logo-img logo-dark"></a>
-    <nav class="hnav">
-      <a href="#" onclick="goShop('');return false">Snack Type ▾</a>
-      <a href="#" onclick="goShop('');return false">All Products ▾</a>
-      <a href="#" onclick="goShop('Bundles');return false">Bundle Deals ▾</a>
-      <a href="#" onclick="goShop('');return false">Flavor ▾</a>
-      <a href="#" onclick="goShop('');return false">Brands</a>
+    <nav class="hnav" aria-label="Main navigation">
+      <div class="hdrop">
+        <button class="hdrop-btn" onclick="goShop('')">Snack Type <span class="caret">▾</span></button>
+        <div class="hdrop-menu" id="ddCats" role="menu"></div>
+      </div>
+      <div class="hdrop">
+        <button class="hdrop-btn" onclick="goShop('')">All Products <span class="caret">▾</span></button>
+        <div class="hdrop-menu" role="menu">
+          <a href="#" onclick="goShop('');return false">🛍️ All Products</a>
+          <a href="#" onclick="goBadge('Sale');return false">🔥 On Sale</a>
+          <a href="#" onclick="goBadge('Bestseller');return false">⭐ Bestsellers</a>
+        </div>
+      </div>
+      <div class="hdrop">
+        <button class="hdrop-btn" onclick="goShop('Bundles')">Bundle Deals <span class="caret">▾</span></button>
+        <div class="hdrop-menu" role="menu">
+          <a href="#" onclick="goShop('Bundles');return false">🎁 All Bundles</a>
+          <a href="#" onclick="goShopBadge('Bundles','Sale');return false">💰 Bundles on Sale</a>
+        </div>
+      </div>
+      <div class="hdrop">
+        <button class="hdrop-btn" onclick="goShop('')">Flavor <span class="caret">▾</span></button>
+        <div class="hdrop-menu" role="menu">
+          <a href="#" onclick="goFlavor('chocolate');return false">🍫 Chocolate</a>
+          <a href="#" onclick="goFlavor('spicy');return false">🌶️ Spicy</a>
+          <a href="#" onclick="goFlavor('mango');return false">🥭 Mango</a>
+          <a href="#" onclick="goFlavor('strawberry');return false">🍓 Strawberry</a>
+          <a href="#" onclick="goFlavor('cola');return false">🥤 Cola</a>
+        </div>
+      </div>
+      <div class="hdrop">
+        <button class="hdrop-btn" onclick="goShop('')">Brands <span class="caret">▾</span></button>
+        <div class="hdrop-menu" id="ddBrands" role="menu"></div>
+      </div>
     </nav>
     <button class="tbtn mnav-btn" onclick="toggleMnav()" title="Menu" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
     <button class="tbtn" onclick="toggleTheme()" title="Dark mode"><span class="ticon">🌙</span></button>
