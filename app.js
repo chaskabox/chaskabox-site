@@ -25,11 +25,11 @@ function deliveryRange(){
 
 /* ---------- cards ---------- */
 function cardHTML(p){
-  const img=p.img?`<img src="${p.img}" alt="${esc(p.name)}" loading="lazy">`:`<div class="noimg">🍪</div>`;
+  const img=p.img?`<img src="${p.img}" alt="${esc(p.name)}" loading="lazy">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'Sale':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const stars=p.rating?`<div class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))}<span>(${p.reviews||0})</span></div>`:'';
-  const catlabel=p.category?`<div class="pcat">${esc(p.category)}</div>`:'';
+  const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BUNDLE':''}</div>`:'';
   const packhead=p.pack?`<div class="pimgpack">${esc(p.pack.toUpperCase())}</div>`:'';
   return `<div class="card">${badge}
     <div class="pimg" onclick="openProduct(${p.id})">${packhead}${img}</div>
@@ -46,47 +46,58 @@ function cardHTML(p){
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 /* ---------- home ---------- */
+/* Clean SVG illustrations for category tiles (match original custom art) */
+const TILE_SVG={
+'All':`<svg viewBox="0 0 64 64"><ellipse cx="32" cy="46" rx="20" ry="8" fill="#3b6fd4"/><ellipse cx="32" cy="42" rx="20" ry="8" fill="#5a8de0"/><circle cx="22" cy="34" r="6" fill="#e5484d"/><circle cx="32" cy="30" r="6" fill="#f2b705"/><circle cx="42" cy="34" r="6" fill="#2a9d8f"/><circle cx="27" cy="26" r="5" fill="#9b7ed9"/><circle cx="37" cy="26" r="5" fill="#e8722a"/><rect x="18" y="36" width="28" height="4" rx="2" fill="#d4a017"/></svg>`,
+'Biscuits & Wafers':`<svg viewBox="0 0 64 64"><ellipse cx="32" cy="50" rx="18" ry="5" fill="#4a3020"/><ellipse cx="32" cy="44" rx="16" ry="7" fill="#c8956c"/><ellipse cx="32" cy="42" rx="16" ry="7" fill="#d4a97c"/><ellipse cx="32" cy="36" rx="16" ry="7" fill="#c8956c"/><ellipse cx="32" cy="34" rx="16" ry="7" fill="#d4a97c"/><ellipse cx="32" cy="28" rx="16" ry="7" fill="#c8956c"/><ellipse cx="32" cy="26" rx="16" ry="7" fill="#e0b988"/><circle cx="26" cy="25" r="1.5" fill="#8a5a2b"/><circle cx="32" cy="27" r="1.5" fill="#8a5a2b"/><circle cx="38" cy="25" r="1.5" fill="#8a5a2b"/></svg>`,
+'Bunties & Cakes':`<svg viewBox="0 0 64 64"><path d="M22 30h20l-3 22H25z" fill="#e5484d"/><path d="M22 30c0-8 4-14 10-14s10 6 10 14z" fill="#f4a4c0"/><circle cx="26" cy="22" r="2" fill="#fff"/><circle cx="32" cy="18" r="2" fill="#f2b705"/><circle cx="38" cy="22" r="2" fill="#2a9d8f"/><circle cx="29" cy="25" r="1.5" fill="#e8722a"/><circle cx="35" cy="25" r="1.5" fill="#3b6fd4"/><rect x="20" y="28" width="24" height="4" rx="2" fill="#c9303e"/></svg>`,
+'Chews & Gums':`<svg viewBox="0 0 64 64"><ellipse cx="32" cy="34" rx="14" ry="18" fill="#3daa7a" transform="rotate(-15 32 34)"/><ellipse cx="32" cy="34" rx="14" ry="18" fill="#4cbb8a" transform="rotate(15 32 34)"/><path d="M32 16v36" stroke="#2a7a5a" stroke-width="2"/><path d="M32 28l-8-6M32 28l8-6M32 38l-8-6M32 38l8-6" stroke="#2a7a5a" stroke-width="1.5"/></svg>`,
+'Chocolates & Candies':`<svg viewBox="0 0 64 64"><rect x="14" y="20" width="36" height="26" rx="4" fill="#6b2d1a"/><rect x="18" y="24" width="10" height="8" rx="2" fill="#8a4028"/><rect x="30" y="24" width="10" height="8" rx="2" fill="#8a4028"/><rect x="18" y="34" width="10" height="8" rx="2" fill="#8a4028"/><rect x="30" y="34" width="10" height="8" rx="2" fill="#8a4028"/><rect x="42" y="24" width="6" height="18" rx="2" fill="#d4a017"/></svg>`,
+'Imli & Ice Lollies':`<svg viewBox="0 0 64 64"><circle cx="24" cy="24" r="10" fill="#e5484d"/><circle cx="24" cy="24" r="6" fill="#f4707a"/><rect x="22.5" y="32" width="3" height="20" rx="1.5" fill="#fff"/><circle cx="42" cy="28" r="9" fill="#e8722a"/><circle cx="42" cy="28" r="5" fill="#f49a5a"/><rect x="40.5" y="35" width="3" height="17" rx="1.5" fill="#fff"/></svg>`,
+'Jellies & Marshmallow':`<svg viewBox="0 0 64 64"><ellipse cx="32" cy="44" rx="18" ry="10" fill="#fff" opacity=".9"/><ellipse cx="32" cy="42" rx="18" ry="10" fill="#f0d0e0"/><rect x="20" y="28" width="10" height="10" rx="3" fill="#fff"/><rect x="32" y="26" width="10" height="10" rx="3" fill="#f4a4c0"/><rect x="26" y="34" width="10" height="10" rx="3" fill="#d46a8a"/><rect x="38" y="34" width="8" height="8" rx="2" fill="#fff"/></svg>`,
+'Snacks & Nimco':`<svg viewBox="0 0 64 64"><ellipse cx="32" cy="46" rx="20" ry="8" fill="#c47a1a"/><ellipse cx="32" cy="42" rx="20" ry="8" fill="#e0952f"/><path d="M20 38l4-8 4 6 4-10 4 8 4-6 4 8" stroke="#f2b705" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="26" cy="32" r="3" fill="#d4a017"/><circle cx="38" cy="30" r="3" fill="#d4a017"/></svg>`,
+'Betel Nuts & Pan Masala':`<svg viewBox="0 0 64 64"><path d="M32 8C20 20 16 34 32 52 48 34 44 20 32 8z" fill="#2d6a4f"/><path d="M32 14v32" stroke="#1a4a35" stroke-width="2"/><path d="M32 24l-10-4M32 24l10-4M32 34l-10-4M32 34l10-4" stroke="#1a4a35" stroke-width="1.5"/><ellipse cx="32" cy="52" rx="12" ry="4" fill="#c8956c"/><circle cx="28" cy="50" r="3" fill="#8a5a2b"/><circle cx="36" cy="50" r="3" fill="#8a5a2b"/></svg>`,
+'Bundles':`<svg viewBox="0 0 64 64"><rect x="16" y="26" width="32" height="24" rx="3" fill="#d4a017"/><rect x="29" y="26" width="6" height="24" fill="#b8860b"/><rect x="16" y="20" width="32" height="8" rx="2" fill="#e8b82a"/><path d="M32 20c-4-8-12-8-12-2 0 4 6 4 12 2zm0 0c4-8 12-8 12-2 0 4-6 4-12 2z" fill="#b8860b"/></svg>`
+};
 const CAT_STYLE={
-  'All':{icon:'🍬',bg:'#f2b705'},
-  'Biscuits & Wafers':{icon:'🍪',bg:'#8a5a2b'},
-  'Bunties & Cakes':{icon:'🧁',bg:'#9b7ed9'},
-  'Chews & Gums':{icon:'🍬',bg:'#2a9d8f'},
-  'Chocolates & Candies':{icon:'🍫',bg:'#a83232'},
-  'Imli & Ice Lollies':{icon:'🍭',bg:'#e8722a'},
-  'Jellies & Marshmallow':{icon:'🍮',bg:'#d46a8a'},
-  'Snacks & Nimco':{icon:'🍿',bg:'#d9a441'},
-  'Betel Nuts & Pan Masala':{icon:'🌿',bg:'#3d8b5f'},
-  'Bundles':{icon:'🎁',bg:'#3b6fd4'}
+  'All':{bg:'#f2b705'},
+  'Biscuits & Wafers':{bg:'#6b4a35'},
+  'Bunties & Cakes':{bg:'#9b8ac4'},
+  'Chews & Gums':{bg:'#2a9d8f'},
+  'Chocolates & Candies':{bg:'#a83232'},
+  'Imli & Ice Lollies':{bg:'#e8722a'},
+  'Jellies & Marshmallow':{bg:'#d46a8a'},
+  'Snacks & Nimco':{bg:'#e0952f'},
+  'Betel Nuts & Pan Masala':{bg:'#2d6a4f'},
+  'Bundles':{bg:'#3b6fd4'}
 };
 const BAND_COLORS={
-  'Biscuits & Wafers':'#5f8f5b',
-  'Bunties & Cakes':'#8a6d4a',
+  'Biscuits & Wafers':'#6b4a35',
+  'Bunties & Cakes':'#7b6b9e',
   'Bundles':'#d9a03a',
-  'Chews & Gums':'#2a9d8f',
+  'Chews & Gums':'#2a8a6a',
   'Chocolates & Candies':'#93342e',
-  'Imli & Ice Lollies':'#d97b2f',
-  'Jellies & Marshmallow':'#c65d7b',
+  'Imli & Ice Lollies':'#a5522e',
+  'Jellies & Marshmallow':'#6a5a8e',
   'Snacks & Nimco':'#c9932b',
   'Betel Nuts & Pan Masala':'#4e7d4e'
 };
-const CAT_ORDER=['Bundles','Snacks & Nimco','Chocolates & Candies','Biscuits & Wafers','Bunties & Cakes','Chews & Gums','Jellies & Marshmallow','Imli & Ice Lollies','Betel Nuts & Pan Masala'];
+const CAT_ORDER=['Biscuits & Wafers','Bunties & Cakes','Chews & Gums','Chocolates & Candies','Imli & Ice Lollies','Jellies & Marshmallow','Snacks & Nimco','Betel Nuts & Pan Masala','Bundles'];
 function renderHome(){
   const act=activeProducts();
   // categories
   const cats={};
   act.forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
-  // category tiles: product photo circles (real images, colored fallback)
+  // category tiles: clean SVG illustrations (match original custom art)
   const allCount=act.length;
-  const tileOrder=['All',...Object.keys(cats).sort().filter(c=>c!=='All')];
-  const firstImg=list=>{const f=list.find(p=>p.img);return f?f.img:null;};
-  // ensure 'All' pseudo-category first
+  const tileOrder=['All',...CAT_ORDER.filter(c=>cats[c]&&cats[c].length)];
+  // ensure 'All' pseudo-category first, then fixed original order
   $('#catTiles').innerHTML=tileOrder.map(c=>{
-    const st=CAT_STYLE[c]||{icon:'🛍️',bg:'#8a94a6'};
+    const st=CAT_STYLE[c]||{bg:'#8a94a6'};
     const list=c==='All'?act:(cats[c]||[]);
     const n=c==='All'?allCount:list.length;
     if(c!=='All'&&!n) return '';
-    const src=firstImg(list);
-    const inner=src?`<img src="${src}" alt="${esc(c)}" loading="lazy">`:`<span class="ci-emoji">${st.icon}</span>`;
+    const inner=TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
     return `<div class="cat reveal" onclick="goShop('${c==='All'?'':esc(c)}')">
       <div class="ci" style="background:${st.bg}">${inner}</div>
       <b>${esc(c)}</b><small>${n} items</small></div>`;
@@ -130,64 +141,76 @@ function shelfScroll(id,dir){
 }
 
 /* ---------- shop ---------- */
-let shopState={q:'',cat:'',sort:'pop'};
+let shopState={q:'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:''};
 function goShop(cat){
-  shopState.cat=cat||''; shopState.q='';
+  closeMnav();
+  shopState={q:'',cat:cat||'',sort:'feat',brands:[],maxPrice:0,pack:''};
   showView('shop'); renderShop();
   window.scrollTo(0,0);
 }
+function getBrand(name){
+  const m=String(name||'').split('|')[0].trim();
+  return m||'ChaskaBox';
+}
 function renderShop(){
-  let list=activeProducts();
-  const {q,cat,sort}=shopState;
-  if(cat) list=list.filter(p=>p.category===cat);
+  const all=activeProducts();
+  const {cat}=shopState;
+  const title=cat||'All Snacks';
+  $('#crumbCat').textContent=title;
+  $('#catTitle').textContent=title;
+  const brands=[...new Set(all.map(p=>getBrand(p.name)))].sort();
+  const packs=[...new Set(all.map(p=>p.pack).filter(Boolean))].sort();
+  const maxP=Math.max(...all.map(p=>p.price),1000);
+  $('#shopSidebar').innerHTML=
+    '<div class="fgroup"><h4>Brand</h4>'+brands.map(b=>'<label><input type="checkbox" value="'+esc(b)+'" '+(shopState.brands.includes(b)?'checked':'')+' onchange="toggleBrand(this)"> '+esc(b)+'</label>').join('')+'</div>'
+    +'<div class="fgroup"><h4>Max Price</h4><input type="range" min="100" max="'+maxP+'" step="50" value="'+(shopState.maxPrice||maxP)+'" oninput="shopState.maxPrice=+this.value;document.getElementById(\'pval\').textContent=fmt(+this.value);renderShopList()"><div id="pval">'+fmt(shopState.maxPrice||maxP)+'</div></div>'
+    +'<div class="fgroup"><h4>Pack Size</h4><select onchange="shopState.pack=this.value;renderShopList()"><option value="">All packs</option>'+packs.map(p=>'<option '+(shopState.pack===p?'selected':'')+' value="'+esc(p)+'">'+esc(p)+'</option>').join('')+'</select></div>'
+    +'<button class="fclear" onclick="shopState.brands=[];shopState.maxPrice=0;shopState.pack=\'\';shopState.q=\'\';renderShop()">Clear filters</button>';
+  renderShopList();
+}
+function toggleBrand(el){
+  const b=el.value;
+  shopState.brands=el.checked?[...shopState.brands,b]:shopState.brands.filter(x=>x!==b);
+  renderShopList();
+}
+function filteredShop(){
+  let list=activeProducts();const{q,cat,sort,brands,maxPrice,pack}=shopState;
+  if(cat)list=list.filter(p=>p.category===cat);
   if(q){const n=q.toLowerCase();list=list.filter(p=>(p.name+' '+(p.pack||'')).toLowerCase().includes(n));}
+  if(brands.length)list=list.filter(p=>brands.includes(getBrand(p.name)));
+  if(maxPrice)list=list.filter(p=>p.price<=maxPrice);
+  if(pack)list=list.filter(p=>p.pack===pack);
   if(sort==='lo')list=[...list].sort((a,b)=>a.price-b.price);
   else if(sort==='hi')list=[...list].sort((a,b)=>b.price-a.price);
   else if(sort==='az')list=[...list].sort((a,b)=>a.name.localeCompare(b.name));
-  const cats=[...new Set(activeProducts().map(p=>p.category))].sort();
-  $('#shopFilters').innerHTML=`
-    <input type="text" id="fq" placeholder="Search snacks..." value="${esc(q)}" oninput="shopState.q=this.value;renderShopList()">
-    <select onchange="shopState.cat=this.value;renderShopList()">
-      <option value="">All categories</option>
-      ${cats.map(c=>`<option ${c===cat?'selected':''} value="${esc(c)}">${esc(c)}</option>`).join('')}
-    </select>
-    <select onchange="shopState.sort=this.value;renderShopList()">
-      <option value="pop" ${sort==='pop'?'selected':''}>Sort: Popular</option>
-      <option value="lo" ${sort==='lo'?'selected':''}>Price: Low → High</option>
-      <option value="hi" ${sort==='hi'?'selected':''}>Price: High → Low</option>
-      <option value="az" ${sort==='az'?'selected':''}>Name A–Z</option>
-    </select>
-    <span class="cnt">${list.length} products</span>`;
-  renderShopList(list);
-  const fq=$('#fq'); if(fq){fq.focus();fq.setSelectionRange(fq.value.length,fq.value.length);}
+  return list;
 }
-function renderShopList(list){
-  list=list||filteredShop();
-  $('#shopGrid').innerHTML=list.length?list.map(cardHTML).join(''):`<div class="empty">No products found. Try another search.</div>`;
-  const cnt=$('#shopFilters .cnt'); if(cnt)cnt.textContent=list.length+' products';
-  // stagger reveals for grid cards
-  if(revealObs){
-    $$('#shopGrid .card').forEach((c,i)=>{
+function renderShopList(){
+  const list=filteredShop();
+  const{q,cat,sort}=shopState;
+  $('#catCount').textContent=list.length+' products';
+  $('#shopFilters').innerHTML=
+    '<input type="text" id="fq" placeholder="Search in '+esc(cat||'all snacks')+'..." value="'+esc(q)+'" oninput="shopState.q=this.value;renderShopList()">'
+    +'<select onchange="shopState.sort=this.value;renderShopList()">'
+    +'<option value="feat" '+(sort==='feat'?'selected':'')+'>Sort: Featured</option>'
+    +'<option value="lo" '+(sort==='lo'?'selected':'')+'>Price: Low \u2192 High</option>'
+    +'<option value="hi" '+(sort==='hi'?'selected':'')+'>Price: High \u2192 Low</option>'
+    +'<option value="az" '+(sort==='az'?'selected':'')+'>Name A\u2013Z</option>'
+    +'</select><span class="cnt">'+list.length+' products</span>';
+  $('#shopGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<div class="empty">No products found. Try another search.</div>';
+  if(typeof revealObs!=='undefined'&&revealObs){
+    [...document.querySelectorAll('#shopGrid .card')].forEach((c,i)=>{
       c.classList.add('reveal');
       c.style.transitionDelay=((i%8)*45)+'ms';
     });
   }
   observeReveals();
 }
-function filteredShop(){
-  let list=activeProducts();const{q,cat,sort}=shopState;
-  if(cat)list=list.filter(p=>p.category===cat);
-  if(q){const n=q.toLowerCase();list=list.filter(p=>(p.name+' '+(p.pack||'')).toLowerCase().includes(n));}
-  if(sort==='lo')list=[...list].sort((a,b)=>a.price-b.price);
-  else if(sort==='hi')list=[...list].sort((a,b)=>b.price-a.price);
-  else if(sort==='az')list=[...list].sort((a,b)=>a.name.localeCompare(b.name));
-  return list;
-}
 
 /* ---------- product modal ---------- */
 function openProduct(id){
   const p=PRODUCTS.find(x=>x.id===id); if(!p)return;
-  const img=p.img?`<img src="${p.img}" alt="">`:`<div class="noimg" style="font-size:80px">🍪</div>`;
+  const img=p.img?`<img src="${p.img}" alt="">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
   const old=p.oldPrice?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   $('#mbody').innerHTML=`<div class="mgrid">
     <div class="pimg">${img}</div>
@@ -252,14 +275,12 @@ function renderDrawer(){
     const p=PRODUCTS.find(x=>x.id==id); if(!p)return '';
     const img=p.img?`<img src="${p.img}">`:'<div style="font-size:36px">🍪</div>';
     return `<div class="ditem">${img}<div class="di"><div class="din">${esc(p.name)}</div>
-    <div class="dip">${fmt(p.price)} × ${CART[id]} = <b>${fmt(p.price*CART[id])}</b></div></div>
+    <div class="dip">${fmt(p.price)} each</div></div>
     <div class="qty"><button onclick="chQty(${id},-1)">−</button><b>${CART[id]}</b><button onclick="chQty(${id},1)">+</button></div></div>`;
   }).join('');
   const sub=cartSubtotal();
-  $('#dfoot').innerHTML=`<div class="drow"><span>Subtotal</span><span>${fmt(sub)}</span></div>
-  <div class="drow"><span>Delivery</span><span style="font-size:12px;color:var(--muted)">at checkout</span></div>
-  <div class="drow total"><span>Total</span><span>${fmt(sub)}</span></div>
-  <button class="checkoutbtn" ${ids.length?'':'disabled'} onclick="location.href='checkout.html'">Checkout →</button>`;
+  $('#dfoot').innerHTML=`<div class="drow total"><span>Total</span><span>${fmt(sub)}</span></div>
+  <button class="checkoutbtn" ${ids.length?'':'disabled'} onclick="location.href='checkout.html'">Continue to checkout</button>`;
 }
 function chQty(id,d){CART[id]=(CART[id]||0)+d;if(CART[id]<=0)delete CART[id];saveCart();}
 
@@ -354,3 +375,18 @@ document.addEventListener('DOMContentLoaded',async()=>{
   observeReveals();
   if(window.syncThemeIcons) window.syncThemeIcons();
 });
+
+/* ---------- mobile nav drawer ---------- */
+function toggleMnav(force){
+  const m=$('#mnav'); if(!m) return;
+  const open=force!==undefined?force:!m.classList.contains('open');
+  m.classList.toggle('open',open);
+  $('#overlay').classList.toggle('open',open&&!$('#drawer').classList.contains('open'));
+  if(open) renderMnav();
+}
+function closeMnav(){const m=$('#mnav');if(m)m.classList.remove('open');if(!$('#drawer').classList.contains('open'))$('#overlay').classList.remove('open');}
+function renderMnav(){
+  const cats={}; activeProducts().forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
+  const order=['',...CAT_ORDER.filter(c=>cats[c]&&cats[c].length)];
+  $('#mnavList').innerHTML=order.map(c=>`<a href="#" onclick="goShop('${esc(c)}');return false">${c===''?'🏠 All Products':esc(c)}</a>`).join('');
+}

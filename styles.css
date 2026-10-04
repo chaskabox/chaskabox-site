@@ -88,6 +88,8 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 .cat .ci{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden;position:relative;box-shadow:0 4px 14px rgba(0,0,0,.12)}
 .cat .ci::after{content:'';position:absolute;left:-10%;right:-10%;bottom:-14px;height:34px;background:rgba(255,255,255,.92);border-radius:50% 50% 0 0}
 .cat .ci .ci-emoji{position:relative;z-index:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2))}
+.cat .ci .ci-svg{position:relative;z-index:1;width:72%;height:72%;display:flex;align-items:center;justify-content:center}
+.cat .ci .ci-svg svg{width:100%;height:100%;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
 .cat .ci img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;transform:scale(1.25);transform-origin:center 65%}
 .cat b{font-size:13px;color:var(--navy);display:block;line-height:1.3;font-weight:800}
 .cat small{color:var(--muted);font-size:11.5px}
@@ -306,3 +308,54 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 .logo-dark{display:none}
 [data-theme="dark"] .logo-light{display:none}
 [data-theme="dark"] .logo-dark{display:inline-block}
+
+/* Hide Netlify branding badge */
+div[class*="netlify"], a[href*="netlify.com"] img, iframe[src*="netlify"]{display:none!important}
+
+/* ---------- mobile nav drawer ---------- */
+.mnav-btn{display:none}
+.mnav{position:fixed;top:0;left:-300px;width:280px;max-width:85vw;height:100dvh;background:var(--card);z-index:200;transition:left .25s ease;box-shadow:4px 0 24px rgba(0,0,0,.2);display:flex;flex-direction:column}
+.mnav.open{left:0}
+.mnav-head{display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid var(--border)}
+.mnav-head b{font-size:16px;color:var(--navy)}
+.mnav-list{overflow-y:auto;padding:8px}
+.mnav-list a{display:block;padding:12px 14px;border-radius:10px;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none}
+.mnav-list a:hover{background:var(--sel-bg)}
+@media(max-width:760px){
+  .mnav-btn{display:inline-flex}
+  .logo-img{height:48px!important}
+  .herocollage{width:160px;height:130px}
+  .herocollage img{width:80px;height:80px}
+}
+
+/* ---------- shop: breadcrumb, banner, sidebar ---------- */
+.crumbs{max-width:1200px;margin:14px auto 0;padding:0 16px;font-size:13px;color:var(--muted)}
+.crumbs a{color:var(--navy);text-decoration:none;font-weight:600}
+.crumbs span{margin:0 6px}
+.catbanner{max-width:1200px;margin:10px auto 0;padding:26px 28px;border-radius:18px;background:linear-gradient(135deg,#1a2b5c,#0e1836);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.catbanner h1{font-size:26px;font-weight:800;letter-spacing:.5px;margin:0}
+.catcount{background:#f2b705;color:#1a2b5c;font-weight:800;font-size:13px;padding:8px 16px;border-radius:999px;white-space:nowrap}
+.shopl{max-width:1200px;margin:18px auto 0;padding:0 16px;display:grid;grid-template-columns:230px 1fr;gap:20px;align-items:start}
+.filters{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;position:sticky;top:80px}
+.fgroup{margin-bottom:18px}
+.fgroup h4{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);margin:0 0 10px}
+.fgroup label{display:flex;align-items:center;gap:8px;font-size:13px;padding:5px 0;cursor:pointer;color:var(--ink)}
+.fgroup input[type=range]{width:100%}
+.fgroup select{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--ink)}
+.fgroup #pval{font-size:13px;font-weight:700;color:var(--navy);margin-top:6px}
+.fclear{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;color:var(--muted);font-weight:600;cursor:pointer;font-size:13px}
+.fclear:hover{border-color:var(--navy);color:var(--navy)}
+.shopmain{min-width:0}
+@media(max-width:860px){
+  .shopl{grid-template-columns:1fr}
+  .filters{position:static;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .fgroup{margin-bottom:0}
+  .fclear{grid-column:1/-1}
+  .catbanner h1{font-size:20px}
+}
+
+/* ---------- photo coming soon placeholder ---------- */
+.noimg{background:linear-gradient(135deg,#f5e6c8,#e8d5b0);border-radius:12px;min-height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;text-align:center}
+.noimg b{font-size:11px;letter-spacing:2px;color:#8a6d4a}
+.noimg span{font-size:20px;font-weight:800;color:#5a4a35;line-height:1.25}
+.noimg small{font-size:11px;color:#8a6d4a}

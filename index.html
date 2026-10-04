@@ -29,11 +29,15 @@
       <a href="#" onclick="goShop('');return false">Categories</a>
       <a href="#" onclick="goShop('');return false">Brands</a>
     </nav>
+    <button class="tbtn mnav-btn" onclick="toggleMnav()" title="Menu" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
     <button class="tbtn" onclick="toggleTheme()" title="Dark mode"><span class="ticon">🌙</span></button>
     <button class="tbtn" onclick="goShop('');setTimeout(()=>{const s=$('#q');if(s){s.focus();s.scrollIntoView({behavior:'smooth',block:'center'})}},100)" title="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
     <button class="hbtn solid" onclick="openDrawer()">🛒 Bag<span class="cartcount" style="display:none">0</span></button>
   </div>
 </header>
+
+<!-- mobile nav drawer -->
+<div id="mnav" class="mnav"><div class="mnav-head"><b>Categories</b><button class="mclose" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
 
 <div id="view-home">
   <section class="hero">
@@ -64,10 +68,14 @@
 </div>
 
 <div id="view-shop" style="display:none">
-  <div class="section">
-    <div class="stitle"><h2>All Snacks</h2><a href="#" onclick="showView('home');return false">← Back home</a></div>
-    <div class="toolbar" id="shopFilters"></div>
-    <div class="grid" id="shopGrid"></div>
+  <div class="crumbs"><a href="#" onclick="showView('home');return false">Home</a> <span>›</span> <b id="crumbCat">All Snacks</b></div>
+  <div class="catbanner"><h1 id="catTitle">All Snacks</h1><span class="catcount" id="catCount">249 products</span></div>
+  <div class="shopl">
+    <aside class="filters" id="shopSidebar"></aside>
+    <div class="shopmain">
+      <div class="toolbar" id="shopFilters"></div>
+      <div class="grid" id="shopGrid"></div>
+    </div>
   </div>
 </div>
 
@@ -83,7 +91,7 @@
 
 <div class="overlay" id="overlay" onclick="closeDrawer()"></div>
 <aside class="drawer" id="drawer">
-  <div class="dhead"><h3>Your Snack Bag 🛒</h3><button class="mclose" style="position:static" onclick="closeDrawer()">✕</button></div>
+  <div class="dhead"><h3>Your snack bag</h3><button class="mclose" style="position:static" onclick="closeDrawer()">✕</button></div>
   <div class="ditems" id="ditems"></div>
   <div class="dfoot" id="dfoot"></div>
 </aside>
