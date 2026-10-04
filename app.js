@@ -302,7 +302,19 @@ const AI_QA=[
  {q:'Payment mein masla ho gaya?',k:['masla','problem','fail','error','payment mein'],a:'Payment fail ho jaye to pareshan na hon — dobara try karein ya COD select kar lein. Phir bhi masla ho to WhatsApp 0332-0005381 par rabta karein.'}
 ];
 function aiReply(text){
-  const t=text.toLowerCase();
+  const t=text.toLowerCase().trim();
+  // Greetings & small talk
+  const greetings=[
+    {k:['salam','assalam','hello','hi ','hey','aoa'],a:'Walaikum Assalam! 😊 Main ChaskaBox AI hun. Kya dhoond rahe hain? Product ka naam likhein ya category batayein!'},
+    {k:['kia hal','kya hal','hal hai','how are you','kesay ho','kese ho'],a:'Main bilkul theek hun, shukriya poochne ka! 😊 Aap sunayein? Koi snack chahiye to naam likhein — main dhoond dunga!'},
+    {k:['shukriya','thanks','thank you','meherbani'],a:'Khush amdeed! 😊 Aur kuch chahiye to batayein!'},
+    {k:['allah hafiz','bye','khuda hafiz','alvida'],a:'Allah Hafiz! 👋 Phir zaroor aayiyega!'},
+    {k:['tum kaun','who are you','ap kaun','your name'],a:'Main ChaskaBox ka AI shopping assistant hun! 🤖 Products dhoondne mein madad karta hun. Kya chahiye?'},
+    {k:['mazak','joke','funny'],a:'Ek snack ne dusre se kaha: "Tum to bohat namkeen ho!" 😄'},
+  ];
+  for(const g of greetings){
+    if(g.k.some(k=>t.includes(k))) return {text:g.a};
+  }
   // Product search: if query looks like a product search, show matching products
   const prod=searchProductsAI(t);
   if(prod.length) return {products:prod};
@@ -312,7 +324,7 @@ function aiReply(text){
     x.k.forEach(k=>{ if(t.includes(k)) s+=k.length; });
     if(s>bestScore){bestScore=s;best=x;}
   });
-  return best?{text:best.a}:{text:'Hmm, ye sawal samajh nahi aaya. 🤔 Aap WhatsApp 0332-0005381 par pooch sakte hain — ya neeche diye gaye sawalon mein se chunein!'};
+  return best?{text:best.a}:{text:'Hmm, ye sawal samajh nahi aaya. 🤔 Product ka naam likhein (jaise "chocolate") ya WhatsApp 0332-0005381 par poochein!'};
 }
 function searchProductsAI(q){
   // Skip if it's clearly a FAQ question
