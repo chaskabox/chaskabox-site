@@ -142,10 +142,12 @@ function viewOrders(){
   let orders = []; try { orders = JSON.parse(localStorage.getItem('cb_orders')||'[]'); } catch(e){}
   $('#ordersList').innerHTML = orders.length ? orders.reverse().map(o=>`
     <div class="co-card" style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px">
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center">
         <b style="color:var(--navy)">${esc(o.no)}</b><span style="font-size:12px;color:var(--muted)">${esc(o.date)}</span>
         <span class="badge" style="position:static">${esc(o.pay)}</span>
+        ${o.video ? '<span class="vchip" style="margin-left:0">🎬 VIDEO MANGI HAI!</span>' : ''}
       </div>
+      ${o.video ? '<div style="margin-top:8px;padding:8px 12px;background:#fff7ed;border:1px solid #fdba74;border-radius:10px;font-size:13px;font-weight:700;color:#9a3412">🎬 Pack karte waqt 30-sec video banao aur customer ke WhatsApp ('+esc(o.phone)+') par bhejo! Guide: PACKING-VIDEO-GUIDE.md</div>' : ''}
       <div style="font-size:13px;margin-top:8px"><b>${esc(o.name)}</b> · ${esc(o.phone)}<br>${esc(o.addr)}, ${esc(o.city)}</div>
       <div style="font-size:13px;margin-top:6px">${o.items.map(esc).join('<br>')}</div>
       <div style="margin-top:8px;font-weight:800;color:var(--navy)">Total: ${fmt(o.total)} ${o.emailed?'· ✉ emailed':'· ⚠ email pending'}</div>

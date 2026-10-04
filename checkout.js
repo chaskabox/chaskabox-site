@@ -15,6 +15,33 @@ async function init() {
   } catch (e) {}
   if (!Object.keys(CART).length) { $('#coMain').innerHTML = '<div class="co-card"><div class="empty">Your bag is empty.<br><br><a class="cta" href="index.html">← Back to shop</a></div></div>'; return; }
   renderSummary();
+  prefillFromAccount();
+  // highlight the packing-video option when checked
+  const fv = $('#f_video');
+  if (fv) fv.addEventListener('change', () => $('#videoOpt').classList.toggle('sel', fv.checked));
+}
+/* Prefill name/phone/address from saved account data when logged in */
+async function prefillFromAccount() {
+  try {
+    if (typeof initSupabase !== 'function' || !initSupabase() || !SB) return;
+    const { data: sess } = await SB.auth.getSession();
+    if (!sess || !sess.session || !sess.session.user) return;
+    const uid = sess.session.user.id;
+    const { data: addrs } = await SB.from('addresses').select('*').eq('user_id', uid).order('is_default', { ascending: false }).limit(1);
+    if (addrs && addrs.length) {
+      const a = addrs[0];
+      if (a.full_name && !$('#f_name').value) $('#f_name').value = a.full_name;
+      if (a.phone && !$('#f_phone').value) $('#f_phone').value = a.phone;
+      if (a.address && !$('#f_addr').value) $('#f_addr').value = a.address;
+      if (a.city && !$('#f_city').value) $('#f_city').value = a.city;
+    } else {
+      const { data: prof } = await SB.from('profiles').select('name,phone').eq('id', uid).single();
+      if (prof) {
+        if (prof.name && !$('#f_name').value) $('#f_name').value = prof.name;
+        if (prof.phone && !$('#f_phone').value) $('#f_phone').value = prof.phone;
+      }
+    }
+  } catch(e) { console.warn('prefill failed', e); }
 }
 function cartSubtotal() {
   return Object.entries(CART).reduce((s, [id, q]) => { const p = PRODUCTS.find(x => x.id == id); return s + (p ? p.price * q : 0); }, 0);
@@ -71,15 +98,21 @@ async function placeOrder() {
     return `${p.name} (${p.pack||''}) × ${q} = Rs. ${p.price*q}`;
   });
   const payLabel = PAY === 'cod' ? 'Cash on Delivery' : 'JazzCash (Advance)';
+  const wantVideo = $('#f_video') && $('#f_video').checked;
+  const videoNote = wantVideo
+    ? `\n\n🎬🎬🎬 PACKING VIDEO REQUESTED! 🎬🎬🎬\nCustomer ne packing video MANGI HAI!\n→ Pack karte waqt 30-second video banao\n→ Customer ke WhatsApp (${$('#f_phone').value.trim()}) par bhejo\n→ Guide: PACKING-VIDEO-GUIDE.md`
+    : '';
   const msg =
 `NEW ORDER — ${ono}
 Date: ${new Date().toLocaleString('en-PK',{timeZone:'Asia/Karachi'})}
+${videoNote}
 
 CUSTOMER
 Name: ${$('#f_name').value.trim()}
 Phone: ${$('#f_phone').value.trim()}
 Address: ${$('#f_addr').value.trim()}
 City: ${$('#f_city').value.trim()}
+Packing video: ${wantVideo ? 'YES 🎬' : 'No'}
 
 ITEMS
 ${items.join('\n')}
@@ -104,9 +137,36 @@ Payment: ${payLabel}`;
   // Keep a local copy of the order for the owner's records.
   try {
     const orders = JSON.parse(localStorage.getItem('cb_orders')||'[]');
-    orders.push({no:ono, date:new Date().toISOString(), name:$('#f_name').value.trim(), phone:$('#f_phone').value.trim(), addr:$('#f_addr').value.trim(), city:$('#f_city').value.trim(), items, sub, del, total, pay:payLabel, emailed:sent});
+    orders.push({no:ono, date:new Date().toISOString(), name:$('#f_name').value.trim(), phone:$('#f_phone').value.trim(), addr:$('#f_addr').value.trim(), city:$('#f_city').value.trim(), items, sub, del, total, pay:payLabel, emailed:sent, video:wantVideo});
     localStorage.setItem('cb_orders', JSON.stringify(orders));
   } catch(e){}
+
+  // Save to Supabase order history when the customer is logged in
+  try {
+    if (typeof initSupabase === 'function' && initSupabase() && SB) {
+      const { data: sess } = await SB.auth.getSession();
+      if (sess && sess.session && sess.session.user) {
+        const itemRows = Object.entries(CART).map(([id, q]) => {
+          const p = PRODUCTS.find(x => x.id == id) || {};
+          return { id: Number(id), name: p.name || '', price: p.price || 0, qty: q, img: p.img || '' };
+        });
+        await SB.from('orders').insert({
+          user_id: sess.session.user.id,
+          items: itemRows,
+          subtotal: sub,
+          delivery_fee: del,
+          total: total,
+          pay_method: PAY === 'cod' ? 'COD' : 'JazzCash',
+          name: $('#f_name').value.trim(),
+          phone: $('#f_phone').value.trim(),
+          address: $('#f_addr').value.trim(),
+          city: $('#f_city').value.trim(),
+          video_requested: wantVideo,
+          status: 'pending'
+        });
+      }
+    }
+  } catch(e) { console.warn('supabase order save failed', e); }
 
   CART = {}; localStorage.removeItem('chaskabox-cart');
   $('#coMain').style.display = 'none'; $('#coDone').style.display = '';
@@ -117,6 +177,7 @@ Payment: ${payLabel}`;
       ? `Please pay <b>${fmt(total)}</b> via the JazzCash QR / Till ID <b>981716438</b>. We'll confirm and ship in <b>4–7 days</b>. Order email sent to store.`
       : `Please pay <b>${fmt(total)}</b> via the JazzCash QR / Till ID <b>981716438</b> (includes Rs. 300 delivery). We'll confirm and ship in <b>4–7 days</b>.`);
   if (!sent) $('#doneMsg').innerHTML += '<br><br><small style="color:#b45309">Note: email notification is being set up — please also WhatsApp your order number to 0332-0005381 to confirm.</small>';
+  if (wantVideo) $('#doneMsg').innerHTML += '<br><br>🎬 <b>Packing video:</b> Rameez aapke order ki packing video banakar <b>WhatsApp</b> par bhejega! 📦';
   window.scrollTo(0,0);
 }
 document.addEventListener('DOMContentLoaded', init);

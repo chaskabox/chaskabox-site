@@ -31,7 +31,7 @@ function cardHTML(p){
   const stars=p.rating?`<div class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))}<span>(${p.reviews||0})</span></div>`:'';
   const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BUNDLE':''}</div>`:'';
   const packhead=p.pack?`<div class="pimgpack">${esc(p.pack.toUpperCase())}</div>`:'';
-  return `<div class="card">${badge}
+  return `<div class="card">${badge}${typeof wishBtnHTML==='function'?wishBtnHTML(p):''}
     <div class="pimg" onclick="showProductDetail(${p.id})">${packhead}${img}</div>
     <div class="pbody">
       ${catlabel}
@@ -254,6 +254,7 @@ function showProductDetail(id){
         <div class="pd-buyrow">
           <div class="qty"><button onclick="pdQty(-1)" aria-label="Decrease">−</button><b id="pdqty">1</b><button onclick="pdQty(1)" aria-label="Increase">+</button></div>
           <button class="pdbtn" onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">Add to Bag</button>
+          <button class="pdwish${typeof isWished==='function'&&isWished(p.id)?' on':''}" aria-label="Wishlist" onclick="toggleWishlist(${p.id},this)">♥</button>
         </div>
         <div class="dbox"><b>Delivery Details</b><small>Estimated Delivery Dates<br><span class="ddates">${deliveryRange()}</span></small></div>
         <div class="pd-meta"><span>🚚 COD available (Rs. 300 delivery)</span><span>⚡ JazzCash Rs. 5,000+: FREE delivery</span><span>✅ 100% original packs</span></div>
@@ -332,7 +333,9 @@ function showView(v){
   $('#view-home').style.display=v==='home'?'':'none';
   $('#view-shop').style.display=v==='shop'?'':'none';
   $('#view-product').style.display=v==='product'?'':'none';
+  const va=$('#view-account'); if(va) va.style.display=v==='account'?'':'none';
   if(v==='home')renderHome(); if(v==='shop')renderShop();
+  if(v==='account'&&typeof renderAccountView==='function')renderAccountView();
 }
 
 /* ---------- cart ---------- */
@@ -451,10 +454,6 @@ function aiProductCards(prods){
     </div>`).join('')+'</div>';
 }
 function toggleAI(open){
-/* ---------- customer account (placeholder) ---------- */
-function toggleAccount(){
-  alert('Customer accounts jald aa rahe hain! 🚧\n\nAbhi ke liye checkout par apna naam/number dein.');
-}
   const m=$('#aimodal');
   if(open===undefined) m.classList.toggle('open');
   else m.classList.toggle('open',!!open);
@@ -500,6 +499,40 @@ function initPromo(){
   },4000);
 }
 
+/* ---------- packing video (Market Fresh section) ----------
+   Rameez: apni packing video ka path/link yahan dalo.
+   - MP4 file:   'videos/packing.mp4'            (file repo ke "videos" folder mein rakho)
+   - YouTube:    'https://www.youtube.com/embed/VIDEO_ID'
+   - Khaali '':  "Video jald aa raha hai!" placeholder dikhega. */
+const PACKING_VIDEO = '';
+function renderPackingVideo(){
+  const box=document.getElementById('packingVideoBox');
+  if(!box) return;
+  const v=(PACKING_VIDEO||'').trim();
+  if(!v){
+    // attractive placeholder until Rameez adds his video
+    box.innerHTML='<div class="fv-placeholder">'
+      +'<div class="fv-play">▶</div>'
+      +'<div class="fv-soon">🎬 Video jald aa raha hai!</div>'
+      +'<div class="fv-soon-sub">Rameez ki packing video — jald dekhna kaise pack hota hai aapka dabba! 📦</div>'
+      +'</div>';
+    return;
+  }
+  if(/\.mp4(\?|$)/i.test(v)){
+    box.innerHTML='<video class="fv-frame" controls preload="metadata" playsinline src="'+esc(v)+'">'
+      +'Aapka browser video support nahi karta.</video>';
+  }else if(/youtu(\.be|be\.com)/i.test(v)){
+    let src=v;
+    if(/watch\?v=/.test(v)) src=v.replace('watch?v=','embed/');
+    if(/youtu\.be\//.test(v)) src=v.replace('youtu.be/','www.youtube.com/embed/');
+    box.innerHTML='<iframe class="fv-frame" src="'+esc(src)+'" title="Packing video" frameborder="0" '
+      +'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+  }else{
+    // unknown format — treat as direct video file
+    box.innerHTML='<video class="fv-frame" controls preload="metadata" playsinline src="'+esc(v)+'"></video>';
+  }
+}
+
 /* ---------- animations: scroll reveals, hero tilt ---------- */
 let revealObs=null;
 function initReveals(){
@@ -534,7 +567,8 @@ function initTilt(){
 /* ---------- init ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
   loadCart(); await loadProducts(); updateBadge();
-  initReveals(); initTilt(); initPromo();
+  initReveals(); initTilt(); initPromo(); renderPackingVideo();
+  if(typeof initAccount==='function') try{ await initAccount(); }catch(e){ console.warn('account init', e); }
   showView('home');
   observeReveals();
   if(window.syncThemeIcons) window.syncThemeIcons();

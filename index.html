@@ -17,6 +17,15 @@
 {"@context":"https://schema.org","@type":"Store","name":"ChaskaBox","description":"Pakistani snacks online store","url":"https://chaskabox.online/","telephone":"+92-332-0005381","address":{"@type":"PostalAddress","addressLocality":"Muzaffargarh","addressCountry":"PK"},"paymentAccepted":"Cash on Delivery, JazzCash"}
 </script>
 <script src="theme.js"></script>
+<!-- OneSignal Web Push (setup: PUSH-SETUP.md — uncomment + add App ID when ready)
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({ appId: "YOUR-ONESIGNAL-APP-ID" });
+  });
+</script>
+-->
 <link rel="stylesheet" href="styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 </head>
@@ -35,7 +44,7 @@
     <button class="tbtn mnav-btn" onclick="toggleMnav()" title="Menu" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
     <button class="tbtn" onclick="toggleTheme()" title="Dark mode"><span class="ticon">🌙</span></button>
     <button class="tbtn" onclick="goShop('');setTimeout(()=>{const s=$('#q');if(s){s.focus();s.scrollIntoView({behavior:'smooth',block:'center'})}},100)" title="Search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
-    <button class="tbtn" onclick="toggleAccount()" title="Account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg></button>
+    <button class="tbtn" id="acctBtn" onclick="toggleAccount()" title="Account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg></button>
     <button class="hbtn solid" onclick="openDrawer()">🛒 Bag<span class="cartcount" style="display:none">0</span></button>
   </div>
 </header>
@@ -69,6 +78,42 @@
     <div class="cats" id="catTiles"></div>
   </div>
   <div id="shelves"></div>
+
+  <!-- 🌾 Market Fresh Promise -->
+  <section class="fresh reveal">
+    <div class="freshwrap">
+      <div class="freshtxt">
+        <div class="fresh-eyebrow">🌾 MARKET FRESH PROMISE</div>
+        <h2>Hum stock nahi rakhte!</h2>
+        <p>Har order par <b>Rameez khud market jata hai</b> aur fresh snacks pick karta hai. Isi liye har dabba <b>fresh, original</b> aur pyaar se pack hota hai. 💛</p>
+        <ul class="freshlist">
+          <li>🛍️ <b>Market-day fresh</b> — order ke baad hi khareedari</li>
+          <li>📝 <b>Hand-written note</b> — har box mein Rameez ka personal note</li>
+          <li>🛡️ <b>100% original</b> — sirf trusted market brands</li>
+        </ul>
+      </div>
+      <div class="freshpick">
+        <div class="pickhead">⭐ Rameez's Pick of the Week</div>
+        <div id="weeklyPick"><div class="empty sm">Loading...</div></div>
+      </div>
+    </div>
+    <!-- 🎬 PACKING VIDEO — Rameez, apni video yahan lagao!
+         ═══════════════════════════════════════════════════
+         OPTION A — video file (sab se asaan):
+           1. Apni packing video (mp4) ko "videos/packing.mp4" naam do
+           2. "videos" folder banao (agar nahi hai) aur file wahan rakho
+           3. app.js mein PACKING_VIDEO = 'videos/packing.mp4' likho
+         OPTION B — YouTube:
+           1. Video YouTube par upload karo (Unlisted)
+           2. Share → Embed ka link copy karo, e.g. https://www.youtube.com/embed/AbC123xYz
+           3. app.js mein PACKING_VIDEO = 'https://www.youtube.com/embed/AbC123xYz' likho
+         Agar PACKING_VIDEO khaali '' hai to neeche "coming soon" placeholder dikhega. -->
+    <div class="freshvideo">
+      <div class="fv-head">🎬 Dekho Kaise Pack Karte Hain!</div>
+      <p class="fv-sub">Rameez khud har dabba pyaar se pack karta hai — dekho andar kya hota hai! 💛</p>
+      <div id="packingVideoBox"><div class="empty sm">Loading video...</div></div>
+    </div>
+  </section>
 </div>
 
 <div id="view-shop" style="display:none">
@@ -86,6 +131,14 @@
 <div id="view-product" style="display:none">
   <div class="crumbs"><a href="#" onclick="pdBack();return false">← Back</a> <span>›</span> <a href="#" id="pdCrumbCat" onclick="return false">Category</a> <span>›</span> <b id="pdCrumbName">Product</b></div>
   <div id="pdetail"></div>
+</div>
+
+<div id="view-account" style="display:none">
+  <div class="crumbs"><a href="#" onclick="showView('home');return false">Home</a> <span>›</span> <b>My Account</b></div>
+  <div class="acctwrap">
+    <div class="accthead"><div class="acct-av" id="acctAv">👤</div><div><h2 style="margin:0">My Account</h2><div class="amut sm" id="acctName">—</div></div></div>
+    <div id="acctbody"></div>
+  </div>
 </div>
 
 <footer>
@@ -109,6 +162,10 @@
   <div class="mbox"><button class="mclose" onclick="closeModal()">✕</button><div id="mbody"></div></div>
 </div>
 
+<div class="modal" id="acctmodal" onclick="if(event.target===this)closeAuthModal()">
+  <div class="mbox acctbox"><button class="mclose" onclick="closeAuthModal()">✕</button><div id="abody"></div></div>
+</div>
+
 <button class="aifab" onclick="toggleAI()">💬 Ask ChaskaBox AI</button>
 <div class="aimodal" id="aimodal">
   <div class="aihead"><b>🤖 Ask ChaskaBox AI</b><button class="mclose" style="position:static" onclick="toggleAI(false)">✕</button></div>
@@ -116,7 +173,11 @@
   <div class="aifoot"><input id="aiq" placeholder="Apna sawal likhein..." onkeydown="if(event.key==='Enter')askAIFree()"><button onclick="askAIFree()">➤</button></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase-config.js"></script>
 <script src="app.js"></script>
+<script src="account.js"></script>
+<script src="retention.js"></script>
 <script>
 /* Remove Netlify badge */
 (function(){function rm(){document.querySelectorAll('div[class*="netlify" i],a[href*="netlify.com"],iframe[src*="netlify"],[id*="netlify" i]').forEach(e=>e.remove());}rm();new MutationObserver(rm).observe(document.body,{childList:true,subtree:true});setInterval(rm,2000);})();
