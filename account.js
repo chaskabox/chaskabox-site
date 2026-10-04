@@ -60,15 +60,10 @@ function closeAuthModal(){ $('#acctmodal').classList.remove('open'); }
 function renderEmailStep(msg){
   $('#abody').innerHTML =
     '<h3 style="margin:0 0 4px">👋 Welcome to ChaskaBox</h3>'
-    + '<p class="amut">Apna email likhein — hum aapko <b>6-digit code</b> bhejenge. Koi password yaad rakhne ki zaroorat nahi!</p>'
+    + '<p class="amut">Google se login karein — fast aur secure! 🔒</p>'
     + (msg ? '<div class="aerr">'+esc(msg)+'</div>' : '')
-    + '<label class="alab">Email address</label>'
-    + '<input id="aemail" class="ainp" type="email" inputmode="email" placeholder="you@example.com" autocomplete="email">'
-    + '<button class="abtn" onclick="sendOTP()">📧 Send Code</button>'
-    + '<div class="adiv"><span>or</span></div>'
     + '<button class="abtn gbtn" onclick="googleLogin()"><span class="gg">G</span> Continue with Google</button>'
     + '<p class="amut sm">Login karke aapke orders, addresses aur wishlist save rahenge. 🔒</p>';
-  setTimeout(()=>{ const e=$('#aemail'); if(e) e.focus(); }, 50);
 }
 async function sendOTP(){
   const email = ($('#aemail').value||'').trim().toLowerCase();
