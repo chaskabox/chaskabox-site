@@ -15,26 +15,49 @@ async function loadProducts(){
 }
 function activeProducts(){ return PRODUCTS.filter(p=>p.active!==false); }
 
+/* ---------- delivery date estimate (4-7 days) ---------- */
+function deliveryRange(){
+  const f=d=>d.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const a=new Date(); a.setDate(a.getDate()+4);
+  const b=new Date(); b.setDate(b.getDate()+7);
+  return `From ${f(a)} to ${f(b)}`;
+}
+
 /* ---------- cards ---------- */
 function cardHTML(p){
   const img=p.img?`<img src="${p.img}" alt="${esc(p.name)}" loading="lazy">`:`<div class="noimg">🍪</div>`;
-  const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge.toUpperCase())}</span>`:'';
+  const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'Sale':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const stars=p.rating?`<div class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))}<span>(${p.reviews||0})</span></div>`:'';
+  const catlabel=p.category?`<div class="pcat">${esc(p.category)}</div>`:'';
+  const packhead=p.pack?`<div class="pimgpack">${esc(p.pack.toUpperCase())}</div>`:'';
   return `<div class="card">${badge}
-    <div class="pimg" onclick="openProduct(${p.id})">${img}</div>
+    <div class="pimg" onclick="openProduct(${p.id})">${packhead}${img}</div>
     <div class="pbody">
-      <div class="ppack">${esc((p.pack||'').toUpperCase())}</div>
+      ${catlabel}
       <div class="pname" onclick="openProduct(${p.id})">${esc(p.name)}</div>
+      <div class="ppack">${esc(p.pack||'')}</div>
       ${stars}
+      <div class="dbox"><b>Delivery Details</b><small>Estimated Delivery Dates<br><span class="ddates">${deliveryRange()}</span></small></div>
       <div class="prow"><div><span class="price">${fmt(p.price)}</span>${old}</div>
-      <button class="add" onclick="addToCart(${p.id},1,this)">Add</button></div>
+      <button class="addbtn" aria-label="Add to bag" onclick="addToCart(${p.id},1,this)">+</button></div>
     </div></div>`;
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
 /* ---------- home ---------- */
-const CAT_ICONS={'Biscuits & Wafers':'🍪','Bunties & Cakes':'🧁','Chews & Gums':'🍬','Chocolates & Candies':'🍫','Imli & Ice Lollies':'🍭','Jellies & Marshmallow':'🫧','Snacks & Nimco':'🍿','Betel Nuts & Pan Masala':'🌿','Bundles':'🎁'};
+const CAT_STYLE={
+  'All':{icon:'🍬',bg:'#f2b705'},
+  'Biscuits & Wafers':{icon:'🍪',bg:'#8a5a2b'},
+  'Bunties & Cakes':{icon:'🧁',bg:'#9b7ed9'},
+  'Chews & Gums':{icon:'🍬',bg:'#2a9d8f'},
+  'Chocolates & Candies':{icon:'🍫',bg:'#a83232'},
+  'Imli & Ice Lollies':{icon:'🍭',bg:'#e8722a'},
+  'Jellies & Marshmallow':{icon:'🍮',bg:'#d46a8a'},
+  'Snacks & Nimco':{icon:'🍿',bg:'#d9a441'},
+  'Betel Nuts & Pan Masala':{icon:'🌿',bg:'#3d8b5f'},
+  'Bundles':{icon:'🎁',bg:'#3b6fd4'}
+};
 const BAND_COLORS={
   'Biscuits & Wafers':'#5f8f5b',
   'Bunties & Cakes':'#8a6d4a',
@@ -51,10 +74,17 @@ function renderHome(){
   // categories
   const cats={};
   act.forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
-  $('#catTiles').innerHTML=Object.keys(cats).sort().map(c=>{
-    const rep=(cats[c].find(p=>p.img)||{});
-    const visual=rep.img?`<img src="${rep.img}" alt="${esc(c)}" loading="lazy">`:`<span class="ci-emoji">${CAT_ICONS[c]||'🛍️'}</span>`;
-    return `<div class="cat reveal" onclick="goShop('${esc(c)}')"><div class="ci">${visual}</div><b>${esc(c)}</b><small>${cats[c].length} items</small></div>`;
+  // category tiles: simple colored circles (match original illustrations)
+  const allCount=act.length;
+  const tileOrder=['All',...Object.keys(cats).sort().filter(c=>c!=='All')];
+  // ensure 'All' pseudo-category first
+  $('#catTiles').innerHTML=tileOrder.map(c=>{
+    const st=CAT_STYLE[c]||{icon:'🛍️',bg:'#8a94a6'};
+    const n=c==='All'?allCount:(cats[c]||[]).length;
+    if(c!=='All'&&!n) return '';
+    return `<div class="cat reveal" onclick="goShop('${c==='All'?'':esc(c)}')">
+      <div class="ci" style="background:${st.bg}"><span class="ci-emoji">${st.icon}</span></div>
+      <b>${esc(c)}</b><small>${n} items</small></div>`;
   }).join('');
   // hero collage: 3 product images
   const heroPicks=act.filter(p=>p.img).slice(0,3);
@@ -75,14 +105,23 @@ function renderHome(){
   $('#shelves').innerHTML=html;
   observeReveals();
 }
+let shelfSeq=0;
 function shelf(title,items,color,cat){
   const go=cat?`goShop('${esc(cat)}')`:`goShop('')`;
+  const sid='hs'+(++shelfSeq);
   return `<div class="shelf reveal">
     <div class="shelfband" style="background:${color}">
-      <div class="shelfw"><h2>${esc(title.toUpperCase())}</h2><a href="#" onclick="${go};return false">View all →</a></div>
+      <div class="shelfw"><h2>${esc(title.toUpperCase())}</h2>
+      <div class="shelfnav"><a class="viewall" href="#" onclick="${go};return false">View all →</a>
+      <button class="sarrow" aria-label="Scroll left" onclick="shelfScroll('${sid}',-1)">←</button>
+      <button class="sarrow" aria-label="Scroll right" onclick="shelfScroll('${sid}',1)">→</button></div></div>
     </div>
-    <div class="shelfbody"><div class="hscroll">${items.map(cardHTML).join('')}</div></div>
+    <div class="shelfbody"><div class="hscroll" id="${sid}">${items.map(cardHTML).join('')}</div></div>
   </div>`;
+}
+function shelfScroll(id,dir){
+  const el=document.getElementById(id); if(!el) return;
+  el.scrollBy({left:dir*el.clientWidth*.85,behavior:'smooth'});
 }
 
 /* ---------- shop ---------- */
@@ -244,25 +283,7 @@ function askAI(i){
   $('#aibody').scrollTop=$('#aibody').scrollHeight;
 }
 
-/* ---------- animations: promo rotation, scroll reveals, hero tilt ---------- */
-const PROMOS=[
-  '🚚 <b>FREE delivery</b> on JazzCash orders Rs. 5,000+ &nbsp;·&nbsp; COD available nationwide',
-  '💵 Cash on Delivery available &nbsp;·&nbsp; 4–7 day nationwide delivery',
-  '⚡ JazzCash Till ID <b>981716438</b> &nbsp;·&nbsp; advance Rs. 5,000+ = <b>FREE delivery</b>'
-];
-let promoIdx=0;
-function rotatePromo(){
-  const el=$('#promoMsg'); if(!el) return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  setInterval(()=>{
-    el.classList.add('fading');
-    setTimeout(()=>{
-      promoIdx=(promoIdx+1)%PROMOS.length;
-      el.innerHTML=PROMOS[promoIdx];
-      el.classList.remove('fading');
-    },350);
-  },4000);
-}
+/* ---------- animations: scroll reveals, hero tilt ---------- */
 let revealObs=null;
 function initReveals(){
   if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -296,8 +317,7 @@ function initTilt(){
 /* ---------- init ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
   loadCart(); await loadProducts(); updateBadge();
-  const hs=$('#hsearch'); if(hs)hs.addEventListener('input',e=>{shopState.q=e.target.value;shopState.cat='';showView('shop');renderShop();});
-  initReveals(); rotatePromo(); initTilt();
+  initReveals(); initTilt();
   showView('home');
   observeReveals();
   if(window.syncThemeIcons) window.syncThemeIcons();
