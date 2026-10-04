@@ -270,3 +270,9 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
   .fly-ghost{transition-duration:.01ms}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* Theme-aware logo */
+.logo-img{height:48px;width:auto}
+.logo-dark{display:none}
+[data-theme="dark"] .logo-light{display:none}
+[data-theme="dark"] .logo-dark{display:inline-block}
