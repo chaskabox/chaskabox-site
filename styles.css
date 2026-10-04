@@ -33,7 +33,7 @@ button{cursor:pointer;font-family:inherit}
 
 /* header */
 header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1px solid var(--border-soft);box-shadow:0 2px 10px rgba(26,43,92,.06)}
-.hwrap{max-width:1200px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:1px 16px}
+.hwrap{max-width:1400px;margin:0 auto;display:flex;align-items:center;gap:14px;padding:1px 10px}
 .logo{display:flex;align-items:center;gap:10px;font-weight:800;font-size:22px;color:var(--navy);letter-spacing:.5px}
 .logo .box{width:38px;height:38px;border-radius:10px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-size:20px}
 .logo small{display:block;font-size:10px;font-weight:600;color:var(--muted);letter-spacing:2px}
@@ -50,7 +50,7 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 
 /* hero */
 .hero{background:linear-gradient(120deg,#101a3a 0%,#1a2b5c 55%,#24366e 100%);color:#fff;overflow:hidden;border-radius:22px;margin:14px 14px 0}
-.herowrap{max-width:1200px;margin:0 auto;padding:40px 16px 30px;display:flex;align-items:center;gap:24px}
+.herowrap{max-width:1400px;margin:0 auto;padding:40px 10px 30px;display:flex;align-items:center;gap:24px}
 .herotxt{flex:1}
 .herotxt .kick{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);padding:6px 15px;border-radius:999px;font-size:12.5px;font-weight:600;margin-bottom:14px;color:#e8ecf7}
 .herotxt .kick .dot{width:8px;height:8px;border-radius:50%;background:var(--gold);display:inline-block}
@@ -63,7 +63,7 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 .cta.ghost{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.5);margin-left:10px}
 /* trust badges inside hero */
 .herotrust{border-top:1px solid rgba(255,255,255,.14);background:rgba(0,0,0,.18)}
-.htrustwrap{max-width:1200px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);padding:14px 16px;gap:10px}
+.htrustwrap{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr);padding:14px 10px;gap:10px}
 .htrustwrap>div{display:flex;align-items:center;gap:11px}
 .htrustwrap .hic{font-size:24px;color:var(--gold)}
 .htrustwrap b{display:block;font-size:13.5px;color:#fff}
@@ -82,7 +82,7 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 .cats-section{padding-top:22px}
 
 /* category tiles — simple circles with illustrated icons + white wave */
-.cats{display:flex;gap:20px;overflow-x:auto;padding:10px 4px;scroll-snap-type:x mandatory;justify-content:flex-start}
+.cats{display:flex;gap:16px;padding:10px 4px;justify-content:space-between;flex-wrap:nowrap}
 .cats::-webkit-scrollbar{height:6px}
 .cats::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .cat{flex:0 0 auto;scroll-snap-align:start}
@@ -98,7 +98,7 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 .cat small{color:var(--muted);font-size:11.5px}
 
 /* sections */
-.section{max-width:1200px;margin:0 auto;padding:26px 16px}
+.section{max-width:1400px;margin:0 auto;padding:26px 10px}
 .stitle{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px}
 .stitle h2{font-size:22px;color:var(--navy);font-weight:800}
 .stitle a{font-size:13px;color:var(--navy);font-weight:700}
@@ -108,14 +108,14 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 /* category shelves — full-width colored bands */
 .shelf{margin:6px 0 10px}
 .shelfband{width:100%;padding:14px 0;box-shadow:0 2px 8px rgba(0,0,0,.12)}
-.shelfw{max-width:1200px;margin:0 auto;padding:0 16px;display:flex;align-items:center;justify-content:space-between}
+.shelfw{max-width:1400px;margin:0 auto;padding:0 10px;display:flex;align-items:center;justify-content:space-between}
 .shelfband h2{color:#fff;font-size:21px;font-weight:800;letter-spacing:1px}
 .shelfnav{display:flex;align-items:center;gap:10px}
 .shelfband .viewall{color:#fff;font-weight:700;font-size:14px;opacity:.95}
 .shelfband .viewall:hover{opacity:1;text-decoration:underline}
 .sarrow{width:38px;height:38px;border-radius:50%;border:1.5px solid rgba(255,255,255,.55);background:transparent;color:#fff;font-size:17px;display:inline-flex;align-items:center;justify-content:center;transition:background .15s}
 .sarrow:hover{background:rgba(255,255,255,.18)}
-.shelfbody{max-width:1200px;margin:0 auto;padding:16px 16px 8px}
+.shelfbody{max-width:1400px;margin:0 auto;padding:16px 10px 8px}
 .hscroll{display:flex;gap:14px;overflow-x:auto;padding-bottom:12px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
 .hscroll .card{flex:0 0 210px;scroll-snap-align:start}
 .hscroll::-webkit-scrollbar{height:8px}
@@ -156,7 +156,7 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 
 /* footer */
 footer{background:var(--brand);color:#fff;margin-top:40px}
-.fwrap{max-width:1200px;margin:0 auto;padding:34px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
+.fwrap{max-width:1400px;margin:0 auto;padding:34px 10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
 .fwrap h3{font-size:16px;margin-bottom:10px;color:var(--gold)}
 .fwrap p,.fwrap li{font-size:13px;opacity:.85;list-style:none;margin-bottom:6px}
 .fbottom{text-align:center;padding:14px;font-size:12px;opacity:.7;border-top:1px solid rgba(255,255,255,.15)}
@@ -251,12 +251,13 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 
 /* responsive */
 @media(max-width:760px){
-  .hwrap{justify-content:space-between}
+  .hwrap{justify-content:space-between;padding:1px 8px}
+  .herowrap,.htrustwrap,.section,.shelfw,.shelfbody,.fwrap{padding-left:8px!important;padding-right:8px!important}
   .hwrap .logo{margin-right:auto}
   .cats{display:flex;gap:12px;overflow-x:auto;padding:10px 4px;scroll-snap-align:start}
   .cat{flex:0 0 100px}
   .hnav{display:none}
-  .herowrap{flex-direction:column;text-align:center;padding:26px 16px}
+  .herowrap{flex-direction:column;text-align:center;padding:26px 10px}
   .hero{margin:10px 10px 0}
   .heroimg{flex:none}
   .herocollage{width:220px;height:170px}
@@ -336,13 +337,13 @@ div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="n
 }
 
 /* ---------- shop: breadcrumb, banner, sidebar ---------- */
-.crumbs{max-width:1200px;margin:14px auto 0;padding:0 16px;font-size:13px;color:var(--muted)}
+.crumbs{max-width:1400px;margin:14px auto 0;padding:0 10px;font-size:13px;color:var(--muted)}
 .crumbs a{color:var(--navy);text-decoration:none;font-weight:600}
 .crumbs span{margin:0 6px}
-.catbanner{max-width:1200px;margin:10px auto 0;padding:26px 28px;border-radius:18px;background:linear-gradient(135deg,#1a2b5c,#0e1836);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.catbanner{max-width:1400px;margin:10px auto 0;padding:26px 28px;border-radius:18px;background:linear-gradient(135deg,#1a2b5c,#0e1836);color:#fff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .catbanner h1{font-size:26px;font-weight:800;letter-spacing:.5px;margin:0}
 .catcount{background:#f2b705;color:#1a2b5c;font-weight:800;font-size:13px;padding:8px 16px;border-radius:999px;white-space:nowrap}
-.shopl{max-width:1200px;margin:18px auto 0;padding:0 16px;display:grid;grid-template-columns:230px 1fr;gap:20px;align-items:start}
+.shopl{max-width:1400px;margin:18px auto 0;padding:0 10px;display:grid;grid-template-columns:230px 1fr;gap:20px;align-items:start}
 .filters{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;position:sticky;top:80px}
 .fgroup{margin-bottom:18px}
 .fgroup h4{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--navy);margin:0 0 10px}
