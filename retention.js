@@ -94,7 +94,7 @@ function renderWeeklyPick(){
   if(!pick) pick = prods[0];
   box.innerHTML = '<div class="pickcard" onclick="showProductDetail('+pick.id+')">'
     + '<div class="pickimg"><img src="'+esc(pick.img||'')+'" alt="'+esc(pick.name||'')+'" loading="lazy" onerror="this.style.display=\'none\'"></div>'
-    + '<div class="pickinfo"><div class="picktag">⭐ Rameez\'s Pick</div>'
+    + '<div class="pickinfo"><div class="picktag">'+esc((pick.category||'ChaskaBox').toUpperCase())+'</div>'
     + '<b>'+esc(pick.name||'')+'</b>'
     + '<div class="pickprice">'+fmt(pick.price||0)+'</div>'
     + '<span class="alink">Dekhein ›</span></div></div>';
