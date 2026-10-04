@@ -1,0 +1,4 @@
+/products.json
+  Cache-Control: public, max-age=300
+/images/*
+  Cache-Control: public, max-age=86400
