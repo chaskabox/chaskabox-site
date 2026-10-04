@@ -152,21 +152,64 @@ function getBrand(name){
   const m=String(name||'').split('|')[0].trim();
   return m||'ChaskaBox';
 }
-function renderShop(){
+function filterPanelHTML(){
   const all=activeProducts();
+  const brands=[...new Set(all.map(p=>getBrand(p.name)))].sort();
+  const packs=[...new Set(all.map(p=>p.pack).filter(Boolean))].sort();
+  const maxP=Math.max(...all.map(p=>p.price),1000);
+  return '<div class="fgroup"><h4>Brand</h4>'+brands.map(b=>'<label><input type="checkbox" value="'+esc(b)+'" '+(shopState.brands.includes(b)?'checked':'')+' onchange="toggleBrand(this)"> '+esc(b)+'</label>').join('')+'</div>'
+    +'<div class="fgroup"><h4>Max Price</h4><input type="range" min="100" max="'+maxP+'" step="50" value="'+(shopState.maxPrice||maxP)+'" oninput="shopState.maxPrice=+this.value;this.closest(\'.fgroup\').querySelector(\'.pval\').textContent=fmt(+this.value);renderShopList()"><div class="pval">'+fmt(shopState.maxPrice||maxP)+'</div></div>'
+    +'<div class="fgroup"><h4>Pack Size</h4><select onchange="shopState.pack=this.value;renderShopList()"><option value="">All packs</option>'+packs.map(p=>'<option '+(shopState.pack===p?'selected':'')+' value="'+esc(p)+'">'+esc(p)+'</option>').join('')+'</select></div>'
+    +'<button class="fclear" onclick="clearAllFilters()">Clear filters</button>';
+}
+function renderShop(){
   const {cat}=shopState;
   const title=cat||'All Snacks';
   $('#crumbCat').textContent=title;
   $('#catTitle').textContent=title;
-  const brands=[...new Set(all.map(p=>getBrand(p.name)))].sort();
-  const packs=[...new Set(all.map(p=>p.pack).filter(Boolean))].sort();
-  const maxP=Math.max(...all.map(p=>p.price),1000);
-  $('#shopSidebar').innerHTML=
-    '<div class="fgroup"><h4>Brand</h4>'+brands.map(b=>'<label><input type="checkbox" value="'+esc(b)+'" '+(shopState.brands.includes(b)?'checked':'')+' onchange="toggleBrand(this)"> '+esc(b)+'</label>').join('')+'</div>'
-    +'<div class="fgroup"><h4>Max Price</h4><input type="range" min="100" max="'+maxP+'" step="50" value="'+(shopState.maxPrice||maxP)+'" oninput="shopState.maxPrice=+this.value;document.getElementById(\'pval\').textContent=fmt(+this.value);renderShopList()"><div id="pval">'+fmt(shopState.maxPrice||maxP)+'</div></div>'
-    +'<div class="fgroup"><h4>Pack Size</h4><select onchange="shopState.pack=this.value;renderShopList()"><option value="">All packs</option>'+packs.map(p=>'<option '+(shopState.pack===p?'selected':'')+' value="'+esc(p)+'">'+esc(p)+'</option>').join('')+'</select></div>'
-    +'<button class="fclear" onclick="shopState.brands=[];shopState.maxPrice=0;shopState.pack=\'\';shopState.q=\'\';renderShop()">Clear filters</button>';
+  const html=filterPanelHTML();
+  $('#shopSidebar').innerHTML=html;
+  const sb=$('#filterSheetBody'); if(sb)sb.innerHTML=html;
   renderShopList();
+}
+/* ---------- mobile filter bottom sheet ---------- */
+function openFilters(){
+  const sb=$('#filterSheetBody'); if(sb)sb.innerHTML=filterPanelHTML();
+  $('#filterSheet').classList.add('open');
+  $('#filterBackdrop').classList.add('open');
+  document.body.style.overflow='hidden';
+  updateApplyBtn();
+}
+function closeFilters(){
+  const s=$('#filterSheet'); if(s)s.classList.remove('open');
+  const b=$('#filterBackdrop'); if(b)b.classList.remove('open');
+  document.body.style.overflow='';
+}
+function clearAllFilters(){
+  shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';
+  renderShop();
+}
+function activeFilterCount(){
+  return shopState.brands.length+(shopState.maxPrice?1:0)+(shopState.pack?1:0);
+}
+function updateApplyBtn(){
+  const n=filteredShop().length;
+  const ab=$('#applyFiltersBtn'); if(ab)ab.textContent='Show '+n+' Result'+(n===1?'':'s');
+  const badge=$('#filterCount'),c=activeFilterCount();
+  if(badge){ if(c>0){badge.style.display='';badge.textContent=c;} else badge.style.display='none'; }
+}
+function removeBrandChip(el){
+  const b=el.getAttribute('data-v');
+  shopState.brands=shopState.brands.filter(x=>x!==b);
+  renderShop();
+}
+function renderFilterChips(){
+  const el=$('#filterChips'); if(!el)return;
+  let h='';
+  shopState.brands.forEach(b=>{h+='<button class="fchip" data-v="'+esc(b)+'" onclick="removeBrandChip(this)">'+esc(b)+' <span>\u2715</span></button>';});
+  if(shopState.maxPrice)h+='<button class="fchip" onclick="shopState.maxPrice=0;renderShop()">Under '+fmt(shopState.maxPrice)+' <span>\u2715</span></button>';
+  if(shopState.pack)h+='<button class="fchip" onclick="shopState.pack=\'\';renderShop()">'+esc(shopState.pack)+' <span>\u2715</span></button>';
+  el.innerHTML=h;
 }
 function toggleBrand(el){
   const b=el.value;
@@ -198,6 +241,8 @@ function renderShopList(){
     +'<option value="az" '+(sort==='az'?'selected':'')+'>Name A\u2013Z</option>'
     +'</select><span class="cnt">'+list.length+' products</span>';
   $('#shopGrid').innerHTML=list.length?list.map(cardHTML).join(''):'<div class="empty">No products found. Try another search.</div>';
+  renderFilterChips();updateApplyBtn();
+  const ms=$('#mSort'); if(ms)ms.value=shopState.sort;
   if(typeof revealObs!=='undefined'&&revealObs){
     [...document.querySelectorAll('#shopGrid .card')].forEach((c,i)=>{
       c.classList.add('reveal');
@@ -334,6 +379,7 @@ function showView(v){
   $('#view-shop').style.display=v==='shop'?'':'none';
   $('#view-product').style.display=v==='product'?'':'none';
   const va=$('#view-account'); if(va) va.style.display=v==='account'?'':'none';
+  if(typeof closeFilters==='function')closeFilters();
   if(v==='home')renderHome(); if(v==='shop')renderShop();
   if(v==='account'&&typeof renderAccountView==='function')renderAccountView();
 }

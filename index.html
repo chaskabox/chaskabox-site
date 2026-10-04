@@ -119,6 +119,16 @@
 <div id="view-shop" style="display:none">
   <div class="crumbs"><a href="#" onclick="showView('home');return false">Home</a> <span>›</span> <b id="crumbCat">All Snacks</b></div>
   <div class="catbanner"><h1 id="catTitle">All Snacks</h1><span class="catcount" id="catCount">249 products</span></div>
+  <div class="mfilterbar" id="mFilterBar">
+    <button class="mfbtn" onclick="openFilters()">🔍 Filters <span class="mfbadge" id="filterCount" style="display:none">0</span></button>
+    <select class="mfsort" id="mSort" onchange="shopState.sort=this.value;renderShopList()" aria-label="Sort products">
+      <option value="feat">Sort: Featured</option>
+      <option value="lo">Price: Low → High</option>
+      <option value="hi">Price: High → Low</option>
+      <option value="az">Name A–Z</option>
+    </select>
+  </div>
+  <div class="fchips" id="filterChips"></div>
   <div class="shopl">
     <aside class="filters" id="shopSidebar"></aside>
     <div class="shopmain">
@@ -157,6 +167,18 @@
   <div class="ditems" id="ditems"></div>
   <div class="dfoot" id="dfoot"></div>
 </aside>
+
+<!-- mobile filter bottom sheet -->
+<div class="sheetbackdrop" id="filterBackdrop" onclick="closeFilters()"></div>
+<div class="filtersheet" id="filterSheet" role="dialog" aria-label="Filters">
+  <div class="fsgrab"></div>
+  <div class="fshead"><b>🔍 Filters</b><button class="fsclose" onclick="closeFilters()" aria-label="Close filters">✕</button></div>
+  <div class="fsbody" id="filterSheetBody"></div>
+  <div class="fsfoot">
+    <button class="fsclear" onclick="clearAllFilters()">Clear All</button>
+    <button class="fsapply" id="applyFiltersBtn" onclick="closeFilters()">Show Results</button>
+  </div>
+</div>
 
 <div class="modal" id="pmodal" onclick="if(event.target===this)closeModal()">
   <div class="mbox"><button class="mclose" onclick="closeModal()">✕</button><div id="mbody"></div></div>
