@@ -82,13 +82,13 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 .cats-section{padding-top:22px}
 
 /* category tiles — simple circles with illustrated icons + white wave */
-.cats{display:flex;flex-wrap:wrap;justify-content:center;gap:18px 14px}
+.cats{display:grid;grid-template-columns:repeat(5,1fr);gap:20px 14px;justify-items:center;max-width:900px;margin:0 auto}
 .cat{background:transparent;border:none;box-shadow:none;padding:0;text-align:center;cursor:pointer;width:112px;transition:transform .15s}
 .cat:hover{transform:translateY(-4px)}
 .cat .ci{width:96px;height:96px;margin:0 auto 10px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:40px;overflow:hidden;position:relative;box-shadow:0 4px 14px rgba(0,0,0,.12)}
 .cat .ci::after{content:'';position:absolute;left:-10%;right:-10%;bottom:-14px;height:34px;background:rgba(255,255,255,.92);border-radius:50% 50% 0 0}
 .cat .ci .ci-emoji{position:relative;z-index:1;filter:drop-shadow(0 2px 3px rgba(0,0,0,.2))}
-.cat .ci img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover}
+.cat .ci img{position:relative;z-index:1;width:100%;height:100%;object-fit:cover;transform:scale(1.25);transform-origin:center 65%}
 .cat b{font-size:13px;color:var(--navy);display:block;line-height:1.3;font-weight:800}
 .cat small{color:var(--muted);font-size:11.5px}
 
@@ -246,6 +246,7 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 
 /* responsive */
 @media(max-width:760px){
+  .cats{grid-template-columns:repeat(3,1fr);gap:16px 8px}
   .hnav{display:none}
   .herowrap{flex-direction:column;text-align:center;padding:26px 16px}
   .hero{margin:10px 10px 0}
