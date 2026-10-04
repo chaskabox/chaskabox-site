@@ -586,5 +586,9 @@ function closeMnav(){const m=$('#mnav');if(m)m.classList.remove('open');if(!$('#
 function renderMnav(){
   const cats={}; activeProducts().forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
   const order=['',...CAT_ORDER.filter(c=>cats[c]&&cats[c].length)];
-  $('#mnavList').innerHTML=order.map(c=>`<a href="#" onclick="goShop('${esc(c)}');return false">${c===''?'🏠 All Products':esc(c)}</a>`).join('');
+  const catsHtml=order.map(c=>`<a href="#" onclick="goShop('${esc(c)}');return false">${c===''?'🏠 All Products':esc(c)}</a>`).join('');
+  $('#mnavList').innerHTML=catsHtml+`
+    <div style="border-top:1px solid var(--border);margin:8px 0"></div>
+    <a href="#" onclick="toggleTheme();return false">🌙 Dark Mode</a>
+    <a href="#" onclick="closeMnav();toggleAccount();return false">👤 My Account</a>`;
 }
