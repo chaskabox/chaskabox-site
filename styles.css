@@ -257,7 +257,14 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
   .cats{display:flex;gap:12px;overflow-x:auto;padding:10px 4px;scroll-snap-align:start}
   .cat{flex:0 0 100px}
   .hnav{display:none}
-  .herowrap{flex-direction:column;text-align:center;padding:26px 10px}
+  .herowrap{flex-direction:column;text-align:center;padding:16px 8px}
+  .herotxt h1{font-size:24px!important;line-height:1.2;margin:8px 0}
+  .herotxt p{font-size:13px;margin:8px 0}
+  .herotxt .cta{padding:10px 20px;font-size:14px}
+  .herocollage{width:180px;height:140px;margin:10px auto}
+  .herocollage img{width:90px;height:90px}
+  .htrustwrap{grid-template-columns:repeat(2,1fr);gap:8px;padding:10px 8px}
+  .htrust{padding:8px;font-size:12px}
   .hero{margin:10px 10px 0}
   .heroimg{flex:none}
   .herocollage{width:260px;height:200px}
@@ -375,3 +382,47 @@ div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="n
 .aipname{font-size:11px;font-weight:600;margin:6px 0 4px;height:28px;overflow:hidden}
 .aipprice{font-size:12px;font-weight:800;color:#c62828;margin-bottom:6px}
 .aipadd{background:#c62828;color:#fff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;width:100%}
+
+/* ---------- product detail page ---------- */
+.pdetail{max-width:1400px;margin:0 auto;padding:22px 10px 40px}
+.pd-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:36px;margin-bottom:36px}
+.pd-imgwrap{position:relative}
+.pd-imgwrap .badge{position:absolute;top:14px;left:14px;z-index:2}
+.pd-img{border:1px solid var(--border-soft);border-radius:18px;background:var(--card);aspect-ratio:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:24px}
+.pd-img img{max-width:100%;max-height:100%;object-fit:contain}
+.pd-img .noimg{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:var(--muted)}
+.pd-info h1{color:var(--navy);font-size:28px;margin:6px 0 4px;line-height:1.25}
+.pd-brand{font-size:13px;font-weight:700;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.pd-stars{margin-bottom:12px}
+.pd-stars .stars{font-size:16px}
+.pd-price{display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.pdsave{background:#2e7d32;color:#fff;font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px}
+.pd-desc{font-size:14px;color:var(--muted);line-height:1.7;margin:0 0 18px}
+.pd-buyrow{display:flex;align-items:center;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+.pdbtn{background:#c62828;color:#fff;border:none;border-radius:12px;padding:13px 30px;font-size:15px;font-weight:800;cursor:pointer;transition:transform .15s,box-shadow .15s,background .15s}
+.pdbtn:hover{background:#a51f1f;transform:translateY(-2px);box-shadow:0 8px 20px rgba(198,40,40,.4)}
+.pd-info .dbox{margin:0 0 14px;max-width:420px}
+.pd-meta{display:flex;flex-direction:column;gap:6px;font-size:13px;color:var(--muted);font-weight:600}
+/* reviews */
+.reviews{max-width:800px}
+.reviews h2{color:var(--navy);font-size:22px;margin-bottom:16px}
+.rev{border:1px solid var(--border-soft);border-radius:12px;padding:14px 16px;margin-bottom:12px;background:var(--card)}
+.rev-head{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}
+.rev-head b{color:var(--navy);font-size:14px}
+.rev-head .stars{font-size:13px}
+.rev-head small{margin-left:auto;color:var(--muted);font-size:11px}
+.rev p{margin:0;font-size:13.5px;line-height:1.6;color:var(--ink)}
+.rev-empty{border:1px dashed var(--border);border-radius:12px;padding:20px;text-align:center;color:var(--muted);font-size:14px;margin-bottom:16px}
+.rev-form{border:1px solid var(--border-soft);border-radius:14px;padding:20px;background:var(--card);margin-top:8px}
+.rev-form h3{color:var(--navy);font-size:17px;margin:0 0 12px}
+.rev-form input,.rev-form textarea{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;font-size:14px;margin-bottom:10px;background:var(--input-bg);color:var(--ink);font-family:inherit;box-sizing:border-box}
+.rev-form textarea{resize:vertical}
+.stars-input{display:flex;gap:4px;margin-bottom:12px}
+.stars-input button{background:none;border:none;font-size:28px;cursor:pointer;color:#ccc;padding:0;line-height:1;transition:transform .1s}
+.stars-input button.on{color:#f5a301}
+.stars-input button:hover{transform:scale(1.2)}
+@media(max-width:760px){
+  .pd-grid{grid-template-columns:1fr;gap:20px}
+  .pd-info h1{font-size:22px}
+  .pd-buyrow .pdbtn{flex:1}
+}

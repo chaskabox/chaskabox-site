@@ -32,10 +32,10 @@ function cardHTML(p){
   const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BUNDLE':''}</div>`:'';
   const packhead=p.pack?`<div class="pimgpack">${esc(p.pack.toUpperCase())}</div>`:'';
   return `<div class="card">${badge}
-    <div class="pimg" onclick="openProduct(${p.id})">${packhead}${img}</div>
+    <div class="pimg" onclick="showProductDetail(${p.id})">${packhead}${img}</div>
     <div class="pbody">
       ${catlabel}
-      <div class="pname" onclick="openProduct(${p.id})">${esc(p.name)}</div>
+      <div class="pname" onclick="showProductDetail(${p.id})">${esc(p.name)}</div>
       <div class="ppack">${esc(p.pack||'')}</div>
       ${stars}
       <div class="dbox"><b>Delivery Details</b><small>Estimated Delivery Dates<br><span class="ddates">${deliveryRange()}</span></small></div>
@@ -226,10 +226,112 @@ function openProduct(id){
 function mQty(d){const e=$('#mqty');e.textContent=Math.max(1,+e.textContent+d);}
 function closeModal(){$('#pmodal').classList.remove('open');}
 
+/* ---------- product detail page ---------- */
+let pdPrev='home', pdRating=5;
+function showProductDetail(id){
+  const p=PRODUCTS.find(x=>x.id===id); if(!p)return;
+  pdPrev=$('#view-shop').style.display!=='none'?'shop':'home';
+  pdRating=5;
+  const img=p.img?`<img src="${p.img}" alt="${esc(p.name)}">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
+  const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'Sale':p.badge.toUpperCase())}</span>`:'';
+  const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
+  const save=p.oldPrice&&p.oldPrice>p.price?`<span class="pdsave">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
+  const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BUNDLE':''}</div>`:'';
+  $('#pdCrumbCat').textContent=p.category||'All Snacks';
+  $('#pdCrumbCat').setAttribute('onclick',`goShop('${esc(p.category||'')}');return false`);
+  $('#pdCrumbName').textContent=p.name;
+  $('#pdetail').innerHTML=`<div class="pdetail">
+    <div class="pd-grid">
+      <div class="pd-imgwrap">${badge}<div class="pd-img">${img}</div></div>
+      <div class="pd-info">
+        ${catlabel}
+        <h1>${esc(p.name)}</h1>
+        <div class="pd-brand">${esc(getBrand(p.name))}</div>
+        <div class="pd-stars" id="pdAvg"></div>
+        <div class="pd-price"><span class="price" style="font-size:26px">${fmt(p.price)}</span>${old}${save}</div>
+        <div class="ppack" style="margin-bottom:10px">${esc(p.pack||'')}</div>
+        <p class="pd-desc">${esc(p.desc||'No description available yet.')}</p>
+        <div class="pd-buyrow">
+          <div class="qty"><button onclick="pdQty(-1)" aria-label="Decrease">−</button><b id="pdqty">1</b><button onclick="pdQty(1)" aria-label="Increase">+</button></div>
+          <button class="pdbtn" onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">Add to Bag</button>
+        </div>
+        <div class="dbox"><b>Delivery Details</b><small>Estimated Delivery Dates<br><span class="ddates">${deliveryRange()}</span></small></div>
+        <div class="pd-meta"><span>🚚 COD available (Rs. 300 delivery)</span><span>⚡ JazzCash Rs. 5,000+: FREE delivery</span><span>✅ 100% original packs</span></div>
+      </div>
+    </div>
+    <div class="reviews">
+      <h2>Customer Reviews</h2>
+      <div id="revList"></div>
+      <div class="rev-form">
+        <h3>Write a review</h3>
+        <input id="revName" maxlength="40" placeholder="Your name">
+        <div class="stars-input" id="revStars"></div>
+        <textarea id="revComment" maxlength="500" rows="3" placeholder="Share your experience with this snack..."></textarea>
+        <button class="pdbtn" onclick="submitReview(${p.id})">Submit Review</button>
+      </div>
+    </div>
+  </div>`;
+  renderPdStars(p.id);
+  renderRevStars();
+  refreshReviews(p.id);
+  showView('product');
+  window.scrollTo(0,0);
+}
+function pdBack(){ showView(pdPrev); window.scrollTo(0,0); }
+function pdQty(d){const e=$('#pdqty');e.textContent=Math.max(1,+e.textContent+d);}
+
+/* ---------- reviews (localStorage) ---------- */
+function getReviews(pid){
+  try{ return (JSON.parse(localStorage.getItem('chaskabox-reviews')||'{}'))[pid]||[]; }
+  catch(e){ return []; }
+}
+function avgRating(pid){
+  const r=getReviews(pid); if(!r.length) return 0;
+  return r.reduce((s,x)=>s+(+x.rating||0),0)/r.length;
+}
+function starsHTML(avg,n){
+  const full=Math.round(avg);
+  return `<span class="stars">${'★'.repeat(full)}${'☆'.repeat(5-full)}<span>(${n} review${n===1?'':'s'})</span></span>`;
+}
+function renderPdStars(pid){
+  const el=$('#pdAvg'); if(!el) return;
+  const r=getReviews(pid);
+  el.innerHTML=r.length?starsHTML(avgRating(pid),r.length):'<span class="stars" style="color:var(--muted)">☆☆☆☆☆<span>(No reviews yet)</span></span>';
+}
+function renderRevStars(){
+  const el=$('#revStars'); if(!el) return;
+  el.innerHTML=[1,2,3,4,5].map(n=>`<button type="button" class="${n<=pdRating?'on':''}" onclick="setPRating(${n})" aria-label="${n} star${n>1?'s':''}">★</button>`).join('');
+}
+function setPRating(n){ pdRating=n; renderRevStars(); }
+function refreshReviews(pid){
+  const el=$('#revList'); if(!el) return;
+  const r=getReviews(pid);
+  el.innerHTML=r.length?r.slice().reverse().map(x=>`
+    <div class="rev">
+      <div class="rev-head"><b>${esc(x.name)}</b><span class="stars">${'★'.repeat(+x.rating||0)}${'☆'.repeat(5-(+x.rating||0))}</span><small>${esc(x.date)}</small></div>
+      <p>${esc(x.comment)}</p>
+    </div>`).join(''):'<div class="rev-empty">No reviews yet — be the first to review this snack! 👇</div>';
+  renderPdStars(pid);
+}
+function submitReview(pid){
+  const name=($('#revName').value||'').trim();
+  const comment=($('#revComment').value||'').trim();
+  if(!name){ alert('Please enter your name.'); $('#revName').focus(); return; }
+  if(!comment){ alert('Please write your review.'); $('#revComment').focus(); return; }
+  let all={};
+  try{ all=JSON.parse(localStorage.getItem('chaskabox-reviews')||'{}'); }catch(e){ all={}; }
+  (all[pid]=all[pid]||[]).push({name, rating:pdRating, comment, date:new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})});
+  try{ localStorage.setItem('chaskabox-reviews',JSON.stringify(all)); }catch(e){ alert('Could not save review (storage full).'); return; }
+  $('#revName').value=''; $('#revComment').value=''; pdRating=5;
+  refreshReviews(pid);
+  alert('Thank you! Your review has been posted. 🙏');
+}
+
 /* ---------- views ---------- */
 function showView(v){
   $('#view-home').style.display=v==='home'?'':'none';
   $('#view-shop').style.display=v==='shop'?'':'none';
+  $('#view-product').style.display=v==='product'?'':'none';
   if(v==='home')renderHome(); if(v==='shop')renderShop();
 }
 
@@ -244,7 +346,7 @@ function flyToCart(el,id){
     if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const p=PRODUCTS.find(x=>x.id===id);
     const target=document.querySelector('.hbtn.solid');
-    const imgEl=el.closest('.card')?.querySelector('.pimg img')||el.closest('.mbox')?.querySelector('.pimg img');
+    const imgEl=el.closest('.card')?.querySelector('.pimg img')||el.closest('.mbox')?.querySelector('.pimg img')||el.closest('.pdetail')?.querySelector('.pd-img img');
     if(!p||!p.img||!target||!imgEl) return;
     const r1=imgEl.getBoundingClientRect(), r2=target.getBoundingClientRect();
     if(!r1.width||!r2.width) return;
@@ -349,6 +451,10 @@ function aiProductCards(prods){
     </div>`).join('')+'</div>';
 }
 function toggleAI(open){
+/* ---------- customer account (placeholder) ---------- */
+function toggleAccount(){
+  alert('Customer accounts jald aa rahe hain! 🚧\n\nAbhi ke liye checkout par apna naam/number dein.');
+}
   const m=$('#aimodal');
   if(open===undefined) m.classList.toggle('open');
   else m.classList.toggle('open',!!open);
@@ -376,6 +482,22 @@ function askAIFree(){
   }else{
     aiSay(v,esc(r.text||r));
   }
+}
+
+/* ---------- promo rotation ---------- */
+const PROMOS=['100% original packs','🚚 4-7 din mein delivery','💰 COD available','🎁 Bundle boxes par discount'];
+let promoIdx=0;
+function initPromo(){
+  const el=document.getElementById('promoMsg');
+  if(!el) return;
+  setInterval(()=>{
+    el.classList.add('fading');
+    setTimeout(()=>{
+      promoIdx=(promoIdx+1)%PROMOS.length;
+      el.textContent=PROMOS[promoIdx];
+      el.classList.remove('fading');
+    },350);
+  },4000);
 }
 
 /* ---------- animations: scroll reveals, hero tilt ---------- */
@@ -412,7 +534,7 @@ function initTilt(){
 /* ---------- init ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
   loadCart(); await loadProducts(); updateBadge();
-  initReveals(); initTilt();
+  initReveals(); initTilt(); initPromo();
   showView('home');
   observeReveals();
   if(window.syncThemeIcons) window.syncThemeIcons();
