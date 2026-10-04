@@ -4,12 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Admin — ChaskaBox</title>
+<script src="theme.js"></script>
 <link rel="stylesheet" href="styles.css">
 <meta name="robots" content="noindex,nofollow">
 </head>
 <body>
 <div id="login">
   <div class="loginbox">
+    <button class="tbtn" onclick="toggleTheme()" title="Dark mode" style="position:absolute;top:14px;right:14px"><span class="ticon">🌙</span></button>
     <h2 style="color:var(--navy);margin-bottom:6px">🔐 ChaskaBox Admin</h2>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Owner access only.</p>
     <div class="field"><label>Username</label><input type="text" id="auser" placeholder="Username" autocomplete="username"></div>
@@ -22,7 +24,8 @@
 <div id="panel" style="display:none">
   <header><div class="hwrap">
     <a class="logo" href="index.html"><span class="box">📦</span><span>CHASKABOX<small>ADMIN</small></span></a>
-    <span id="whoami" style="margin-left:auto;font-size:13px;font-weight:700;color:var(--navy);background:#eef2ff;border:1px solid #dbe3ff;border-radius:999px;padding:6px 12px"></span>
+    <span id="whoami" class="whoami"></span>
+    <button class="tbtn" onclick="toggleTheme()" title="Dark mode"><span class="ticon">🌙</span></button>
     <button class="hbtn" onclick="downloadJSON()">⬇ Download products.json</button>
     <button class="hbtn" onclick="viewOrders()">📋 Orders</button>
     <button class="hbtn" onclick="location.reload()">Logout</button>
@@ -45,6 +48,7 @@
   <header><div class="hwrap">
     <a class="logo" href="index.html"><span class="box">📦</span><span>CHASKABOX<small>ORDERS</small></span></a>
     <span style="margin-left:auto"></span>
+    <button class="tbtn" onclick="toggleTheme()" title="Dark mode"><span class="ticon">🌙</span></button>
     <button class="hbtn" onclick="backToProducts()">← Products</button>
   </div></header>
   <div class="admin-wrap">
