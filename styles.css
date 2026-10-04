@@ -253,8 +253,8 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 @media(max-width:760px){
   .hwrap{justify-content:space-between}
   .hwrap .logo{margin-right:auto}
-  .cats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px 8px;overflow:visible}
-  .cat{flex:none}
+  .cats{display:flex;gap:12px;overflow-x:auto;padding:10px 4px;scroll-snap-align:start}
+  .cat{flex:0 0 100px}
   .hnav{display:none}
   .herowrap{flex-direction:column;text-align:center;padding:26px 16px}
   .hero{margin:10px 10px 0}

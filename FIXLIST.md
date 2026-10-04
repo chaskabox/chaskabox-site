@@ -27,6 +27,10 @@ D. **Logo size:**
    - Desktop: 68px, header padding 1px
    - Mobile: 48px (unchanged)
 
+G. **Mobile category tiles horizontal scroll:**
+   - Changed from 3-col grid to horizontal scroll (like original)
+   - `.cats{display:flex;overflow-x:auto}` on mobile
+
 F. **AI button location (left side):**
    - Moved from bottom-right to bottom-left (Netlify badge overlap issue)
    - `.aifab` and `.aimodal`: `right` → `left`
