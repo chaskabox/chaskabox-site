@@ -69,7 +69,7 @@ header{position:sticky;top:0;z-index:50;background:var(--header);border-bottom:1
 .htrustwrap b{display:block;font-size:13.5px;color:#fff}
 .htrustwrap small{display:block;font-size:11.5px;color:rgba(255,255,255,.65);font-weight:400}
 .heroimg{flex:0 0 320px;display:flex;align-items:center;justify-content:center}
-.herocollage{position:relative;width:280px;height:220px}
+.herocollage{position:relative;width:340px;height:270px}
 .herocollage img{position:absolute;width:150px;height:150px;object-fit:contain;background:rgba(255,255,255,.95);border-radius:18px;padding:10px;box-shadow:0 12px 30px rgba(0,0,0,.35);animation:float 5s ease-in-out infinite}
 .herocollage .hc1{top:0;left:0;transform:rotate(-8deg)}
 .herocollage .hc2{top:30px;right:0;transform:rotate(7deg);animation-delay:1.6s}
@@ -260,7 +260,7 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
   .herowrap{flex-direction:column;text-align:center;padding:26px 10px}
   .hero{margin:10px 10px 0}
   .heroimg{flex:none}
-  .herocollage{width:220px;height:170px}
+  .herocollage{width:260px;height:200px}
   .herocollage img{width:110px;height:110px}
   .htrustwrap{grid-template-columns:repeat(2,1fr)}
   .co-grid{grid-template-columns:1fr}

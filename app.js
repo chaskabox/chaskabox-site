@@ -126,7 +126,7 @@ function shelf(title,items,color,cat){
   const go=cat?`goShop('${esc(cat)}')`:`goShop('')`;
   const sid='hs'+(++shelfSeq);
   return `<div class="shelf reveal">
-    <div class="shelfband" style="background:${color}">
+    <div class="shelfband reveal" style="background:${color}">
       <div class="shelfw"><h2>${esc(title.toUpperCase())}</h2>
       <div class="shelfnav"><a class="viewall" href="#" onclick="${go};return false">View all →</a>
       <button class="sarrow" aria-label="Scroll left" onclick="shelfScroll('${sid}',-1)">←</button>
