@@ -36,10 +36,10 @@
       <div class="herotxt">
         <span class="kick">🍬 FRESH PICKS FOR EVERY CRAVING</span>
         <h1>Crunch. Munch. <span class="hl">Chaska on.</span></h1>
-        <p>Shop Pakistani snacks online — sweet, salty and spicy favourites picked for maximum joy and boxed for sharing (or not).</p>
+        <p>Sweet, salty &amp; spicy Pakistani favourites, picked for maximum joy and boxed for sharing (or not).</p>
         <a class="cta" href="#" onclick="showView('shop');window.scrollTo(0,0);return false">Shop Snacks →</a>
       </div>
-      <div class="heroimg">🍫🍬🍪</div>
+      <div class="heroimg"><div class="herocollage" id="heroCollage"></div></div>
     </div>
   </section>
   <section class="trust">
@@ -84,6 +84,12 @@
 
 <div class="modal" id="pmodal" onclick="if(event.target===this)closeModal()">
   <div class="mbox"><button class="mclose" onclick="closeModal()">✕</button><div id="mbody"></div></div>
+</div>
+
+<button class="aifab" onclick="toggleAI()">💬 Ask ChaskaBox AI</button>
+<div class="aimodal" id="aimodal">
+  <div class="aihead"><b>🤖 Ask ChaskaBox AI</b><button class="mclose" style="position:static" onclick="toggleAI(false)">✕</button></div>
+  <div class="aibody" id="aibody"></div>
 </div>
 
 <script src="app.js"></script>

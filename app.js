@@ -18,13 +18,15 @@ function activeProducts(){ return PRODUCTS.filter(p=>p.active!==false); }
 /* ---------- cards ---------- */
 function cardHTML(p){
   const img=p.img?`<img src="${p.img}" alt="${esc(p.name)}" loading="lazy">`:`<div class="noimg">🍪</div>`;
-  const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge)}</span>`:'';
-  const old=p.oldPrice?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
+  const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge.toUpperCase())}</span>`:'';
+  const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
+  const stars=p.rating?`<div class="stars">${'★'.repeat(Math.round(p.rating))}${'☆'.repeat(5-Math.round(p.rating))}<span>(${p.reviews||0})</span></div>`:'';
   return `<div class="card">${badge}
     <div class="pimg" onclick="openProduct(${p.id})">${img}</div>
     <div class="pbody">
+      <div class="ppack">${esc((p.pack||'').toUpperCase())}</div>
       <div class="pname" onclick="openProduct(${p.id})">${esc(p.name)}</div>
-      <div class="ppack">${esc(p.pack||'')}</div>
+      ${stars}
       <div class="prow"><div><span class="price">${fmt(p.price)}</span>${old}</div>
       <button class="add" onclick="addToCart(${p.id},1)">Add</button></div>
     </div></div>`;
@@ -33,26 +35,53 @@ function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&l
 
 /* ---------- home ---------- */
 const CAT_ICONS={'Biscuits & Wafers':'🍪','Bunties & Cakes':'🧁','Chews & Gums':'🍬','Chocolates & Candies':'🍫','Imli & Ice Lollies':'🍭','Jellies & Marshmallow':'🫧','Snacks & Nimco':'🍿','Betel Nuts & Pan Masala':'🌿','Bundles':'🎁'};
+const BAND_COLORS={
+  'Biscuits & Wafers':'#5f8f5b',
+  'Bunties & Cakes':'#8a6d4a',
+  'Chews & Gums':'#2a9d8f',
+  'Chocolates & Candies':'#93342e',
+  'Imli & Ice Lollies':'#d97b2f',
+  'Jellies & Marshmallow':'#c65d7b',
+  'Snacks & Nimco':'#c9932b',
+  'Betel Nuts & Pan Masala':'#4e7d4e'
+};
+const CAT_ORDER=['Snacks & Nimco','Chocolates & Candies','Biscuits & Wafers','Bunties & Cakes','Chews & Gums','Jellies & Marshmallow','Imli & Ice Lollies','Betel Nuts & Pan Masala'];
 function renderHome(){
   const act=activeProducts();
   // categories
   const cats={};
   act.forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
-  $('#catTiles').innerHTML=Object.keys(cats).sort().map(c=>
-    `<div class="cat" onclick="goShop('${esc(c)}')"><div class="ci">${CAT_ICONS[c]||'🛍️'}</div><b>${esc(c)}</b><small>${cats[c].length} items</small></div>`).join('');
-  // shelves: sale + a few categories
+  $('#catTiles').innerHTML=Object.keys(cats).sort().map(c=>{
+    const rep=(cats[c].find(p=>p.img)||{});
+    const visual=rep.img?`<img src="${rep.img}" alt="${esc(c)}" loading="lazy">`:`<span class="ci-emoji">${CAT_ICONS[c]||'🛍️'}</span>`;
+    return `<div class="cat" onclick="goShop('${esc(c)}')"><div class="ci">${visual}</div><b>${esc(c)}</b><small>${cats[c].length} items</small></div>`;
+  }).join('');
+  // hero collage: 3 product images
+  const heroPicks=act.filter(p=>p.img).slice(0,3);
+  const hi=$('#heroCollage');
+  if(hi&&heroPicks.length) hi.innerHTML=heroPicks.map((p,i)=>`<img src="${p.img}" alt="" loading="lazy" class="hc${i+1}">`).join('');
+  // shelves: sale + every category with colored band
   let html='';
   const sale=act.filter(p=>p.oldPrice&&p.oldPrice>p.price).slice(0,10);
-  if(sale.length) html+=shelf('🔥 Sale Picks',sale);
-  ['Snacks & Nimco','Chocolates & Candies','Biscuits & Wafers'].forEach(c=>{
+  if(sale.length) html+=shelf('🔥 Sale Picks',sale,'#1a2b5c','');
+  CAT_ORDER.forEach(c=>{
     const list=(cats[c]||[]).slice(0,10);
-    if(list.length) html+=shelf(c,list);
+    if(list.length) html+=shelf(c,list,BAND_COLORS[c]||'#1a2b5c',c);
+  });
+  // any leftover categories not in order
+  Object.keys(cats).sort().forEach(c=>{
+    if(!CAT_ORDER.includes(c)&&cats[c].length) html+=shelf(c,cats[c].slice(0,10),BAND_COLORS[c]||'#1a2b5c',c);
   });
   $('#shelves').innerHTML=html;
 }
-function shelf(title,items){
-  return `<div class="section"><div class="stitle"><h2>${esc(title)}</h2><a href="#" onclick="goShop('');return false">View all →</a></div>
-  <div class="grid">${items.map(cardHTML).join('')}</div></div>`;
+function shelf(title,items,color,cat){
+  const go=cat?`goShop('${esc(cat)}')`:`goShop('')`;
+  return `<div class="shelf">
+    <div class="shelfband" style="background:${color}">
+      <div class="shelfw"><h2>${esc(title.toUpperCase())}</h2><a href="#" onclick="${go};return false">View all →</a></div>
+    </div>
+    <div class="shelfbody"><div class="hscroll">${items.map(cardHTML).join('')}</div></div>
+  </div>`;
 }
 
 /* ---------- shop ---------- */
@@ -155,6 +184,31 @@ function renderDrawer(){
   <button class="checkoutbtn" ${ids.length?'':'disabled'} onclick="location.href='checkout.html'">Checkout →</button>`;
 }
 function chQty(id,d){CART[id]=(CART[id]||0)+d;if(CART[id]<=0)delete CART[id];saveCart();}
+
+/* ---------- Ask ChaskaBox AI (FAQ assistant) ---------- */
+const AI_QA=[
+  {q:'Delivery kitne din mein hogi?',a:'All over Pakistan 4–7 din mein delivery hoti hai. 🚚'},
+  {q:'Delivery charges kya hain?',a:'COD par Rs. 300 delivery fee hai. JazzCash advance Rs. 5,000 ya zyada par delivery FREE hai, is se kam par Rs. 300.'},
+  {q:'Payment kaise karun?',a:'Do tareeqe: 1) Cash on Delivery — saman milne par payment, 2) JazzCash advance — Till ID 981716438 par bhejein.'},
+  {q:'Order kaise track karun?',a:'Order ke baad aapko order number milega (jaise CB-041026-00001). WhatsApp 0332-0005381 par order number bhej kar status pooch sakte hain.'},
+  {q:'Kya products original hain?',a:'Ji haan! 100% original market brands — Hilal, Kolson, Mayfair waghera. ✅'},
+  {q:'Return/exchange policy?',a:'Ghalat ya damage item mile to 48 ghante ke andar WhatsApp 0332-0005381 par rabta karein, hum hal nikalenge.'}
+];
+function toggleAI(open){
+  const m=$('#aimodal');
+  if(open===undefined) m.classList.toggle('open');
+  else m.classList.toggle('open',!!open);
+  if(m.classList.contains('open')&&!$('#aibody').children.length) renderAIQA();
+}
+function renderAIQA(){
+  $('#aibody').innerHTML='<div class="amsg bot">Salam! 👋 Main ChaskaBox AI hun. Kya poochna chahenge?</div>'+
+    AI_QA.map((x,i)=>`<button class="aq" onclick="askAI(${i})">${esc(x.q)}</button>`).join('');
+}
+function askAI(i){
+  const x=AI_QA[i];
+  $('#aibody').innerHTML+=`<div class="amsg user">${esc(x.q)}</div><div class="amsg bot">${esc(x.a)}</div>`;
+  $('#aibody').scrollTop=$('#aibody').scrollHeight;
+}
 
 /* ---------- init ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
