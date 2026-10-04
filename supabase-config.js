@@ -2,8 +2,8 @@
  * Rameez: apni Supabase Project URL aur anon key yahan paste karein.
  * (SUPABASE-SETUP.md mein step-by-step guide hai)
  */
-const SUPABASE_URL = 'PASTE_YOUR_SUPABASE_URL_HERE';   // e.g. https://xyzcompany.supabase.co
-const SUPABASE_ANON_KEY = 'PASTE_YOUR_SUPABASE_ANON_KEY_HERE';
+const SUPABASE_URL = 'https://jtvswuvnasqqzrjysgfd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_wOAqZSbVYRrJdNHVostPzg_BWvovIgU';
 
 /* Do not edit below unless you know what you are doing */
 let SB = null;
