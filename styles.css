@@ -360,12 +360,15 @@ div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="n
 .mnav-list a{display:block;padding:12px 14px;border-radius:10px;color:var(--ink);font-weight:600;font-size:14px;text-decoration:none}
 .mnav-list a:hover{background:var(--sel-bg)}
 @media(max-width:760px){
-  .mnav-btn{display:inline-flex}
+  .mnav-btn{display:inline-flex!important}
   .logo-img{height:48px!important}
   .herocollage{width:160px;height:130px}
   .herocollage img{width:80px;height:80px}
   /* Mobile: only hamburger, search, bag in header */
-  header .tbtn[title="Dark mode"],header .tbtn[title="Account"]{display:none!important}
+  header .tbtn[title="Dark mode"]{display:none!important}
+  header .tbtn[title="Account"]{display:none!important}
+  header .tbtn[title="Menu"]{display:inline-flex!important}
+  header .tbtn[title="Search"]{display:inline-flex!important}
 }
 
 /* ---------- shop: breadcrumb, banner, sidebar ---------- */
