@@ -656,8 +656,31 @@ function initTilt(){
   hero.addEventListener('mouseleave',()=>{col.style.transform='';});
 }
 
+/* ---------- mobile header fix ---------- */
+function fixMobileHeader(){
+  if(window.innerWidth > 760) return;
+  // Force show hamburger + search, hide theme + account on mobile
+  document.querySelectorAll('header .tbtn').forEach(btn=>{
+    const t = btn.getAttribute('title');
+    if(t === 'Menu' || t === 'Search'){
+      btn.style.display = 'inline-flex';
+      btn.style.visibility = 'visible';
+    } else if(t === 'Dark mode' || t === 'Account'){
+      btn.style.display = 'none';
+    }
+  });
+  // Also ensure mnav-btn is visible
+  const mnavBtn = document.querySelector('.mnav-btn');
+  if(mnavBtn){
+    mnavBtn.style.display = 'inline-flex';
+    mnavBtn.style.visibility = 'visible';
+  }
+}
+
 /* ---------- init ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
+  fixMobileHeader();
+  window.addEventListener('resize', fixMobileHeader);
   loadCart(); await loadProducts(); updateBadge();
   initReveals(); initTilt(); initPromo(); renderPackingVideo();
   renderHeaderDropdowns();
