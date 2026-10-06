@@ -13,7 +13,7 @@ async function loadProducts(){
     PRODUCTS.forEach(p=>{ if(ov[p.id]) Object.assign(p,ov[p.id]); });
   }catch(e){}
 }
-function activeProducts(){ return PRODUCTS.filter(p=>p.active!==false); }
+function activeProducts(){ return PRODUCTS.filter(p=>p.active!==false && p.img); }
 
 /* ---------- delivery date estimate (4-7 days) ---------- */
 function deliveryRange(){
