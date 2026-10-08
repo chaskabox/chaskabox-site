@@ -93,7 +93,7 @@ function renderWeeklyPick(){
   if(!pick) pick = prods.find(p=>p.badge==='Bestseller');
   if(!pick) pick = prods[0];
   box.innerHTML = '<div class="pickcard" onclick="showProductDetail('+pick.id+')">'
-    + '<div class="pickimg"><img src="'+esc(pick.img||'')+'" alt="'+esc(pick.name||'')+'" loading="lazy" onerror="this.style.display=\'none\'"></div>'
+    + '<div class="pickimg"><img src="'+esc(typeof assetUrl==='function'?assetUrl(pick.img||''):(pick.img||''))+'" alt="'+esc(pick.name||'')+'" loading="lazy" onerror="this.style.display=\'none\'"></div>'
     + '<div class="pickinfo"><div class="picktag">'+esc((pick.category||'ChaskaBox').toUpperCase())+'</div>'
     + '<b>'+esc(pick.name||'')+'</b>'
     + '<div class="pickprice">'+fmt(pick.price||0)+'</div>'
@@ -151,7 +151,7 @@ function checkBirthday(){
   const d = daysUntilBirthday();
   if(d === null) return;
   if(d === 0){
-    showSlimBanner('🎂 <b>Happy Birthday!</b> Aapke liye special gift: <b class="bcode">HBD20</b> — 20% OFF! <small>(Checkout par code lagayein)</small>', 'bday0', {cls:'bday'});
+    showSlimBanner('🎂 <b>Happy Birthday!</b> ChaskaBox ki taraf se bohat saari duaein — apna favourite snack box zaroor choose karein! 🎁', 'bday0', {cls:'bday'});
   }else if(d <= 7){
     showSlimBanner('🎂 <b>Birthday coming in '+d+' day'+(d>1?'s':'')+'!</b> Special gift tayyar hai — birthday par zaroor aayiyega! 🎁', 'bday7', {cls:'bday'});
   }
@@ -223,6 +223,7 @@ function checkReorderReminder(){
   if(!orders.length) return;
   const last = orders[orders.length-1];
   if(!last || !last.date) return;
+  if(!Array.isArray(last.items) || !last.items.some(i=>i && typeof i==='object' && i.id)) return;
   const days = Math.floor((Date.now() - new Date(last.date).getTime()) / 86400000);
   if(days < 7) return;
   const key = 'cb_reorder_shown_' + (last.no || last.date);

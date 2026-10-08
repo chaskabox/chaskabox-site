@@ -3,158 +3,298 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin — ChaskaBox</title>
-<script src="theme.js"></script>
-<link rel="stylesheet" href="styles.css?v=3">
 <meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<title>ChaskaBox Admin Console</title>
+<link rel="stylesheet" href="/admin.css?v=2">
 </head>
 <body>
-<div id="login">
-  <div class="loginbox">
-    <button class="tbtn" onclick="toggleTheme()" title="Dark mode" style="position:absolute;top:14px;right:14px"><span class="ticon">🌙</span></button>
-    <h2 style="color:var(--navy);margin-bottom:6px">🔐 ChaskaBox Admin</h2>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Owner access only.</p>
-    <div class="field"><label>Username</label><input type="text" id="auser" placeholder="Username" autocomplete="username"></div>
-    <div class="field"><label>Password</label><input type="password" id="apw" placeholder="Password" autocomplete="current-password"></div>
-    <div class="err" id="apwerr" style="display:none;color:var(--red);font-size:13px;margin-bottom:8px">Wrong username or password</div>
-    <button class="placebtn" onclick="doLogin()">Login</button>
-  </div>
-</div>
-
-<div id="panel" style="display:none">
-  <header><div class="hwrap">
-    <a class="logo" href="index.html"><span class="box">📦</span><span>CHASKABOX<small>ADMIN</small></span></a>
-    <span id="whoami" class="whoami"></span>
-    <button class="tbtn" onclick="toggleTheme()" title="Dark mode"><span class="ticon">🌙</span></button>
-    <button class="hbtn" onclick="downloadJSON()">⬇ Download products.json</button>
-    <button class="hbtn" onclick="viewOrders()">📋 Orders</button>
-    <button class="hbtn" onclick="location.reload()">Logout</button>
-  </div></header>
-  <div class="admin-wrap">
-    <div class="hint" style="margin-bottom:14px">ℹ️ <b>How saving works:</b> edits are kept in this browser. Click <b>Download products.json</b>, then send the file to your developer (or replace it in the site repo) and redeploy — the live site updates.</div>
-    <div class="toolbar">
-      <input type="text" id="aq" placeholder="Search products..." oninput="renderTable()">
-      <select id="acat" onchange="renderTable()"><option value="">All categories</option></select>
-      <label style="font-size:13px"><input type="checkbox" id="aactive" checked onchange="renderTable()"> Active only</label>
-      <span class="cnt" id="acnt"></span>
+<div class="admin-shell">
+  <aside class="admin-sidebar" id="adminSidebar">
+    <a class="admin-brand" href="/" target="_blank" rel="noopener">
+      <img src="/images/logo-navy.png" alt="ChaskaBox">
+      <span>Admin Console</span>
+    </a>
+    <nav class="admin-nav" aria-label="Admin sections">
+      <button class="admin-nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button>
+      <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
+      <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
+      <button class="admin-nav-btn" data-view="boxes"><span>📦</span> Chaska Box Builder</button>
+      <button class="admin-nav-btn" data-view="homepage"><span>⌂</span> Homepage</button>
+      <button class="admin-nav-btn" data-view="customers"><span>♙</span> Customers</button>
+      <button class="admin-nav-btn" data-view="reviews"><span>★</span> Reviews</button>
+      <button class="admin-nav-btn" data-view="media"><span>▣</span> Media</button>
+      <button class="admin-nav-btn" data-view="preview"><span>◉</span> Site Preview</button>
+      <button class="admin-nav-btn" data-view="assistant"><span>✦</span> Admin Copilot</button>
+      <button class="admin-nav-btn" data-view="settings"><span>⚙</span> Settings</button>
+      <button class="admin-nav-btn" data-view="security"><span>🔐</span> Security & Audit</button>
+    </nav>
+    <div class="admin-sidebar-foot">
+      <div class="backend-state warning" id="backendState"><span></span><b>Authentication required</b><small>Sign in with an approved staff account</small></div>
+      <a href="/" target="_blank" rel="noopener">↗ Open live storefront</a>
     </div>
-    <div style="overflow-x:auto"><table class="atable"><thead><tr>
-      <th></th><th>ID</th><th>Name</th><th>Price</th><th>Old</th><th>Pack</th><th>Active</th>
-    </tr></thead><tbody id="arows"></tbody></table></div>
-  </div>
-</div>
+  </aside>
 
-<div id="ordersView" style="display:none">
-  <header><div class="hwrap">
-    <a class="logo" href="index.html"><span class="box">📦</span><span>CHASKABOX<small>ORDERS</small></span></a>
-    <span style="margin-left:auto"></span>
-    <button class="tbtn" onclick="toggleTheme()" title="Dark mode"><span class="ticon">🌙</span></button>
-    <button class="hbtn" onclick="backToProducts()">← Products</button>
-  </div></header>
-  <div class="admin-wrap">
-    <div class="hint" style="margin-bottom:14px">ℹ️ Orders placed <b>on this device/browser</b> are listed here. All orders are also emailed to Chaskabox.mzg@gmail.com.</div>
-    <div id="ordersList"></div>
-  </div>
-</div>
-
-<script>
-/* ============================================================
-   ADMIN ACCOUNTS — Rameez, change these passwords!
-   username: password
-   ============================================================ */
-const ADMIN_USERS = {
-  'owner':  'chaska123',   // <-- change this password
-  'Rameez': 'chaska123'    // <-- change this password
-};
-let LOGGED_IN_USER = null;
-let PRODUCTS = [];
-const $ = s => document.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt = n => 'Rs. ' + Number(n).toLocaleString('en-PK');
-
-function doLogin(){
-  const u = $('#auser').value.trim(), p = $('#apw').value;
-  if (u && ADMIN_USERS[u] && ADMIN_USERS[u] === p) {
-    LOGGED_IN_USER = u;
-    $('#whoami').textContent = '👤 ' + u;
-    $('#login').style.display='none'; $('#panel').style.display=''; init();
-  }
-  else $('#apwerr').style.display = '';
-}
-$('#apw')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-$('#auser')?.addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
-
-async function init(){
-  const r = await fetch('products.json'); PRODUCTS = await r.json();
-  try { const ov = JSON.parse(localStorage.getItem('cb_overrides')||'{}'); PRODUCTS.forEach(p=>{ if(ov[p.id]) Object.assign(p, ov[p.id]); }); } catch(e){}
-  const cats = [...new Set(PRODUCTS.map(p=>p.category))].sort();
-  $('#acat').innerHTML = '<option value="">All categories</option>' + cats.map(c=>`<option>${esc(c)}</option>`).join('');
-  renderTable();
-}
-function renderTable(){
-  const q = $('#aq').value.toLowerCase(), cat = $('#acat').value, actOnly = $('#aactive').checked;
-  const list = PRODUCTS.filter(p =>
-    (!actOnly || p.active !== false) &&
-    (!cat || p.category === cat) &&
-    (!q || (p.name+' '+(p.pack||'')).toLowerCase().includes(q)));
-  $('#acnt').textContent = list.length + ' products';
-  $('#arows').innerHTML = list.map(p => `<tr>
-    <td>${p.img?`<img src="${p.img}">`:'—'}</td><td>${p.id}</td>
-    <td><input type="text" id="n_${p.id}" value="${esc(p.name)}" style="width:180px"></td>
-    <td><input type="number" id="p_${p.id}" value="${p.price}"></td>
-    <td><input type="number" id="o_${p.id}" value="${p.oldPrice||''}" placeholder="—"></td>
-    <td><input type="text" id="k_${p.id}" value="${esc(p.pack||'')}"></td>
-    <td><input type="checkbox" class="toggle" id="a_${p.id}" ${p.active!==false?'checked':''} onchange="toggleActive(${p.id},this.checked)"></td>
-  </tr>`).join('');
-}
-function toggleActive(id, on){
-  const ov = getOv(); ov[id] = ov[id]||{}; ov[id].active = on; saveOv(ov);
-  const p = PRODUCTS.find(x=>x.id===id); p.active = on;
-}
-function getOv(){ try { return JSON.parse(localStorage.getItem('cb_overrides')||'{}'); } catch(e){ return {}; } }
-function saveOv(o){ localStorage.setItem('cb_overrides', JSON.stringify(o)); }
-function collectEdits(){
-  const ov = getOv();
-  PRODUCTS.forEach(p => {
-    const n=$('#n_'+p.id), pr=$('#p_'+p.id), o=$('#o_'+p.id), k=$('#k_'+p.id);
-    if(!n) return;
-    const ch = {};
-    if (n.value !== p.name) ch.name = n.value;
-    if (+pr.value !== p.price) ch.price = +pr.value;
-    const ovv = o.value === '' ? null : +o.value;
-    if (ovv !== (p.oldPrice||null)) ch.oldPrice = ovv;
-    if (k.value !== (p.pack||'')) ch.pack = k.value;
-    if (Object.keys(ch).length) { ov[p.id] = Object.assign(ov[p.id]||{}, ch); Object.assign(p, ch); }
-  });
-  saveOv(ov);
-  return ov;
-}
-function downloadJSON(){
-  collectEdits();
-  // merge overrides into a clean products.json
-  const clean = PRODUCTS.map(p => ({id:p.id,name:p.name,price:p.price,oldPrice:p.oldPrice||null,category:p.category,pack:p.pack||'',desc:p.desc||'',badge:p.badge||'',img:p.img||null,bundle:!!p.bundle,active:p.active!==false}));
-  const blob = new Blob([JSON.stringify(clean, null, 1)], {type:'application/json'});
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'products.json'; a.click();
-  alert('products.json downloaded! Send it to your developer (or replace it in the site files) and redeploy.');
-}
-function viewOrders(){
-  $('#panel').style.display='none'; $('#ordersView').style.display='';
-  let orders = []; try { orders = JSON.parse(localStorage.getItem('cb_orders')||'[]'); } catch(e){}
-  $('#ordersList').innerHTML = orders.length ? orders.reverse().map(o=>`
-    <div class="co-card" style="margin-bottom:12px">
-      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center">
-        <b style="color:var(--navy)">${esc(o.no)}</b><span style="font-size:12px;color:var(--muted)">${esc(o.date)}</span>
-        <span class="badge" style="position:static">${esc(o.pay)}</span>
-        ${o.video ? '<span class="vchip" style="margin-left:0">🎬 VIDEO MANGI HAI!</span>' : ''}
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open admin navigation">☰</button>
+      <div>
+        <h1 id="viewTitle">Dashboard</h1>
+        <p id="viewSubtitle">Store health, catalogue and order overview.</p>
       </div>
-      ${o.video ? '<div style="margin-top:8px;padding:8px 12px;background:#fff7ed;border:1px solid #fdba74;border-radius:10px;font-size:13px;font-weight:700;color:#9a3412">🎬 Pack karte waqt 30-sec video banao aur customer ke WhatsApp ('+esc(o.phone)+') par bhejo! Guide: PACKING-VIDEO-GUIDE.md</div>' : ''}
-      <div style="font-size:13px;margin-top:8px"><b>${esc(o.name)}</b> · ${esc(o.phone)}<br>${esc(o.addr)}, ${esc(o.city)}</div>
-      <div style="font-size:13px;margin-top:6px">${o.items.map(esc).join('<br>')}</div>
-      <div style="margin-top:8px;font-weight:800;color:var(--navy)">Total: ${fmt(o.total)} ${o.emailed?'· ✉ emailed':'· ⚠ email pending'}</div>
-    </div>`).join('')
-    : '<div class="empty">No orders on this device yet.</div>';
-}
-function backToProducts(){ $('#ordersView').style.display='none'; $('#panel').style.display=''; }
-</script>
+      <div class="admin-top-actions">
+        <button class="btn secondary" id="globalPreviewBtn">Preview site</button>
+        <button class="btn primary" id="quickAddProductBtn">+ Add product</button>
+      </div>
+    </header>
+
+    <main class="admin-content">
+      <div class="security-notice" id="securityNotice">
+        <strong>Secure admin:</strong> sign in with an approved staff account. All writes are authorized server-side and recorded where audit logging applies.
+      </div>
+
+      <!-- DASHBOARD -->
+      <section class="admin-view active" id="view-dashboard" data-title="Dashboard" data-subtitle="Store health, catalogue and order overview.">
+        <div class="metric-grid">
+          <article class="metric-card"><span class="metric-icon">◫</span><div><small>Products</small><strong id="metricProducts">—</strong><em id="metricProductsNote">catalogue items</em></div></article>
+          <article class="metric-card"><span class="metric-icon">📦</span><div><small>Chaska Boxes</small><strong id="metricBundles">—</strong><em>bundle products</em></div></article>
+          <article class="metric-card"><span class="metric-icon">▤</span><div><small>Open Orders</small><strong id="metricOrders">—</strong><em>live after sign-in</em></div></article>
+          <article class="metric-card"><span class="metric-icon">₹</span><div><small>Recognized sales</small><strong id="metricRevenue">—</strong><em>verified prepaid + delivered COD</em></div></article>
+        </div>
+
+        <div class="admin-grid two">
+          <section class="panel">
+            <div class="panel-head"><div><h2>Quick actions</h2><p>Common store tasks.</p></div></div>
+            <div class="quick-actions">
+              <button data-jump="products" data-action="add-product">＋ Add new product</button>
+              <button data-jump="boxes">📦 Build a Chaska Box</button>
+              <button data-jump="orders">▤ Review orders</button>
+              <button data-jump="homepage">⌂ Curate homepage</button>
+              <button data-jump="preview">◉ Preview storefront</button>
+              <button data-jump="assistant">✦ Ask Admin Copilot</button>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><h2>Store readiness</h2><p>Items required before scaling paid traffic.</p></div></div>
+            <ul class="readiness-list">
+              <li class="done"><span>✓</span><div><b>Frontend UX refresh</b><small>V3 polish implemented</small></div></li>
+              <li class="done"><span>✓</span><div><b>Bank Transfer</b><small>Checkout UI integrated</small></div></li>
+              <li class="done"><span>✓</span><div><b>Central order database</b><small>Supabase-backed order operations implemented</small></div></li>
+              <li class="done"><span>✓</span><div><b>Secure admin authorization</b><small>Supabase staff roles + server authorization implemented</small></div></li>
+              <li class="done"><span>✓</span><div><b>Server-authoritative pricing</b><small>Atomic order RPC validates catalogue totals</small></div></li>
+            </ul>
+          </section>
+        </div>
+
+        <section class="panel">
+          <div class="panel-head"><div><h2>Catalogue snapshot</h2><p>Live public catalogue with static fallback if the API is unavailable.</p></div><button class="text-btn" data-jump="products">Manage products →</button></div>
+          <div class="category-bars" id="categoryBars"></div>
+        </section>
+      </section>
+
+      <!-- ORDERS -->
+      <section class="admin-view" id="view-orders" data-title="Orders" data-subtitle="Manage fulfilment, payment verification and customer communication.">
+        <div class="toolbar">
+          <div class="searchbox"><span>⌕</span><input id="orderSearch" placeholder="Search order, customer, phone…" disabled></div>
+          <select id="orderStatusFilter" disabled><option>All statuses</option><option>New</option><option>Awaiting payment</option><option>Payment submitted</option><option>Payment verified</option><option>Sourcing</option><option>Packed</option><option>Dispatched</option><option>Delivered</option><option>Cancelled</option></select>
+          <button class="btn secondary" disabled>Export CSV</button>
+        </div>
+        <div class="panel empty-backend">
+          <div class="empty-icon">▤</div>
+          <h2>Sign in to load live orders</h2>
+          <p>Approved staff can manage guest and account orders, payment verification, fulfilment, notification retries and audit history from this screen.</p>
+          <div class="feature-chip-row"><span>Payment verification</span><span>Status timeline</span><span>Customer WhatsApp</span><span>Invoice/packing slip</span><span>Refund/cancel</span><span>CSV export</span></div>
+        </div>
+        <section class="panel">
+          <div class="panel-head"><div><h2>Required order workflow</h2><p>The final backend should use these explicit states.</p></div></div>
+          <div class="status-flow"><span>New</span><i>→</i><span>Payment / COD confirmed</span><i>→</i><span>Sourcing</span><i>→</i><span>Packed</span><i>→</i><span>Dispatched</span><i>→</i><span>Delivered</span></div>
+        </section>
+      </section>
+
+      <!-- PRODUCTS -->
+      <section class="admin-view" id="view-products" data-title="Products" data-subtitle="Search, preview, edit, hide, archive and create catalogue items.">
+        <div class="toolbar product-toolbar">
+          <div class="searchbox"><span>⌕</span><input id="productSearch" placeholder="Search name, category, pack…"></div>
+          <select id="productCategory"><option value="">All categories</option></select>
+          <select id="productVisibility"><option value="">All products</option><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="bundle">Chaska Boxes</option><option value="archived">Archived</option></select>
+          <button class="btn primary" id="addProductBtn">+ Add product</button>
+        </div>
+        <div class="bulkbar hidden" id="bulkBar"><b id="bulkCount">0 selected</b><button class="btn secondary" data-bulk="show">Show</button><button class="btn secondary" data-bulk="hide">Hide</button><button class="btn danger" data-bulk="archive">Archive</button><button class="text-btn" data-bulk="clear">Clear</button></div>
+        <div class="product-admin-grid" id="productAdminGrid"></div>
+        <div class="pagination-row"><span id="productResultCount"></span><button class="btn secondary" id="loadMoreProducts">Load more</button></div>
+      </section>
+
+      <!-- BOX BUILDER -->
+      <section class="admin-view" id="view-boxes" data-title="Chaska Box Builder" data-subtitle="Combine existing products into curated boxes and preview them before publishing.">
+        <div class="builder-layout">
+          <section class="panel builder-products">
+            <div class="panel-head"><div><h2>1. Choose products</h2><p>Select snacks and quantities for the box.</p></div></div>
+            <div class="searchbox"><span>⌕</span><input id="boxProductSearch" placeholder="Search products to add…"></div>
+            <div id="boxProductList" class="box-product-list"></div>
+          </section>
+          <section class="panel builder-summary">
+            <div class="panel-head"><div><h2>2. Build your box</h2><p>Set the customer-facing name and price.</p></div></div>
+            <label>Box name<input id="boxName" placeholder="e.g. Bachpan Chaska Box"></label>
+            <label>Short description<textarea id="boxDescription" rows="3" placeholder="What's special about this box?"></textarea></label>
+            <div class="form-two"><label>Selling price (Rs.)<input id="boxPrice" type="number" min="0" placeholder="0"></label><label>Badge<select id="boxBadge"><option value="">None</option><option>New</option><option>Sale</option><option>Chaska Pick</option><option>Limited</option></select></label></div>
+            <div class="builder-items" id="boxSelectedItems"><p class="muted">No products selected yet.</p></div>
+            <div class="builder-totals"><span>Items retail value</span><b id="boxRetailValue">Rs. 0</b><span>Customer price</span><b id="boxCustomerPrice">Rs. 0</b><span>Saving</span><b id="boxSaving">Rs. 0</b></div>
+            <div class="action-row"><button class="btn secondary" id="previewBoxBtn">Preview box</button><button class="btn primary" id="saveBoxDraftBtn">Save Chaska Box</button></div>
+            <p class="safe-note">Drafts remain in this review browser only. Publishing must go through the secure admin API.</p>
+          </section>
+        </div>
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head"><div><h2>3. Existing boxes</h2><p>Boxes you've already created. Click Edit to modify.</p></div><button class="btn secondary" id="refreshBoxList">↻ Refresh</button></div>
+          <div id="existingBoxList" class="existing-box-grid"><p class="muted">Loading…</p></div>
+        </section>
+      </section>
+
+      <!-- HOMEPAGE -->
+      <section class="admin-view" id="view-homepage" data-title="Homepage" data-subtitle="Control what customers see first without editing source code.">
+        <div class="admin-grid two">
+          <section class="panel">
+            <div class="panel-head"><div><h2>Homepage sections</h2><p>Final backend should allow ordering and visibility controls.</p></div></div>
+            <div class="section-manager" id="sectionManager">
+              <div><span class="drag">⋮⋮</span><b>Hero</b><em>Always visible</em><button disabled>On</button></div>
+              <div><span class="drag">⋮⋮</span><b>Shop by Category</b><em>Automatic categories</em><button disabled>On</button></div>
+              <div><span class="drag">⋮⋮</span><b>Chaska Picks</b><em>Curated products</em><button disabled>On</button></div>
+              <div><span class="drag">⋮⋮</span><b>Chaska Boxes</b><em>Bundle products</em><button disabled>On</button></div>
+              <div><span class="drag">⋮⋮</span><b>Chatpata Picks</b><em>Curated products</em><button disabled>On</button></div>
+              <div><span class="drag">⋮⋮</span><b>How ChaskaBox Works</b><em>Brand story</em><button disabled>On</button></div>
+              <div><span class="drag">⋮⋮</span><b>FAQ</b><em>Customer reassurance</em><button disabled>On</button></div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><h2>Hero controls</h2><p>Backend-managed content fields planned for Muse.</p></div></div>
+            <label>Eyebrow<input value="PAKISTAN'S NOSTALGIA SNACK STORE" disabled></label>
+            <label>Headline<input value="Bachpan Ka Zaiqa, Ab Ghar Baithe." disabled></label>
+            <label>Supporting text<textarea rows="3" disabled>Pakistan ke favourite snacks, sourced after your order and delivered to your doorstep.</textarea></label>
+            <div class="action-row"><button class="btn secondary" data-jump="preview">Preview homepage</button><button class="btn primary" disabled>Save homepage</button></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- CUSTOMERS -->
+      <section class="admin-view" id="view-customers" data-title="Customers" data-subtitle="Customer history, order value and support context for authorized staff.">
+        <div class="panel empty-backend"><div class="empty-icon">♙</div><h2>Sign in to load customers</h2><p>Authorized staff can review customer order context without exposing customer data to unauthorized roles.</p></div>
+      </section>
+
+      <!-- REVIEWS -->
+      <section class="admin-view" id="view-reviews" data-title="Reviews" data-subtitle="Moderate genuine customer reviews from the shared database.">
+        <div class="panel empty-backend"><div class="empty-icon">★</div><h2>Sign in to moderate reviews</h2><p>Only genuine shared reviews are shown. Authorized staff can approve or reject submissions; the storefront never fabricates ratings.</p></div>
+      </section>
+
+      <!-- MEDIA -->
+      <section class="admin-view" id="view-media" data-title="Media Library" data-subtitle="Manage product images and promotional assets safely.">
+        <div class="panel empty-backend"><div class="empty-icon">▣</div><h2>Sign in to load the media library</h2><p>Authorized content staff can upload validated image types to controlled storage and copy their public URLs into product records.</p></div>
+      </section>
+
+      <!-- PREVIEW -->
+      <section class="admin-view" id="view-preview" data-title="Site Preview" data-subtitle="Inspect storefront routes at desktop, tablet and mobile widths.">
+        <div class="preview-toolbar">
+          <select id="previewRoute"><option value="/">Homepage</option><option value="/shop/">Shop</option><option value="/bundles/">Chaska Boxes</option><option value="/cart/">Cart</option><option value="/checkout.html">Checkout</option></select>
+          <div class="viewport-switch"><button data-width="100%" class="active">Desktop</button><button data-width="768px">Tablet</button><button data-width="390px">Mobile</button></div>
+          <button class="btn secondary" id="refreshPreview">↻ Refresh</button>
+          <a class="btn secondary" id="openPreviewNew" href="/" target="_blank" rel="noopener">↗ New tab</a>
+        </div>
+        <div class="preview-stage"><div class="preview-frame-wrap" id="previewFrameWrap"><iframe id="sitePreview" title="ChaskaBox storefront preview" src="/"></iframe></div></div>
+      </section>
+
+      <!-- AI -->
+      <section class="admin-view" id="view-assistant" data-title="Admin Copilot" data-subtitle="AI-assisted catalogue and merchandising work — always reviewed by you before saving.">
+        <div class="admin-grid two copilot-grid">
+          <section class="panel">
+            <div class="panel-head"><div><h2>What should Copilot help with?</h2><p>Runs through the protected free Cloudflare Workers AI binding. AI output is always a draft/insight and never auto-published.</p></div></div>
+            <div class="ai-shortcuts">
+              <button data-ai="description">Write a better product description</button>
+              <button data-ai="seo">Create SEO title + meta description</button>
+              <button data-ai="bundle">Suggest a Chaska Box from selected products</button>
+              <button data-ai="category">Suggest category / badge / flavour tags</button>
+              <button data-ai="homepage">Suggest homepage merchandising</button>
+              <button data-ai="support">Draft a customer support reply</button>
+              <button data-ai="sales">Summarize last 7 days sales</button>
+              <button data-ai="attention">Summarize Needs Attention</button>
+              <button data-ai="catalogue">Summarize catalogue health</button>
+            </div>
+            <label>Instructions<textarea id="aiPrompt" rows="6" placeholder="Example: Write a concise nostalgic product description for Cocomo, mentioning pack size but no claims we cannot verify."></textarea></label>
+            <div class="action-row"><button class="btn primary" id="runAiBtn">✦ Generate draft / insight</button><button class="btn secondary" id="reindexAiSearch" type="button">Refresh AI product search</button></div>
+          </section>
+          <section class="panel ai-output-panel">
+            <div class="panel-head"><div><h2>Draft output</h2><p>AI output is never auto-published.</p></div><button class="text-btn" id="copyAiOutput">Copy</button></div>
+            <div class="ai-output" id="aiOutput"><p class="muted">Choose a shortcut or write an instruction. Free AI is optional; store operations never depend on it.</p></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="admin-view" id="view-settings" data-title="Settings" data-subtitle="Payments, shipping and public store configuration.">
+        <div class="admin-grid two">
+          <section class="panel">
+            <div class="panel-head"><div><h2>Payments</h2><p>Public receiving details may be shown; secrets must never be placed here.</p></div></div>
+            <div class="setting-row"><div><b>Cash on Delivery</b><small>Delivery Rs. 300</small></div><span class="pill on">Enabled</span></div>
+            <div class="setting-row"><div><b>JazzCash</b><small>Prepaid · free delivery Rs. 5,000+</small></div><span class="pill on">Enabled</span></div>
+            <div class="setting-row"><div><b>Bank Transfer</b><small>Punjab Bank · prepaid verification</small></div><span class="pill on">Enabled</span></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><h2>Shipping</h2><p>Current customer-facing rules.</p></div></div>
+            <div class="setting-row"><div><b>Standard delivery</b><small>Rs. 300</small></div></div>
+            <div class="setting-row"><div><b>Free prepaid threshold</b><small>Rs. 5,000</small></div></div>
+            <div class="setting-row"><div><b>Estimated delivery</b><small>4–7 days</small></div></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- SECURITY -->
+      <section class="admin-view" id="view-security" data-title="Security & Audit" data-subtitle="Admin authorization, destructive-action safety and activity history.">
+        <div class="admin-grid two">
+          <section class="panel">
+            <div class="panel-head"><div><h2>Required production protection</h2></div></div>
+            <ul class="security-checks">
+              <li><span class="good">Implemented</span> Supabase Auth verifies an approved staff role</li>
+              <li><span class="good">Implemented</span> RLS blocks unauthorized catalogue/order access</li>
+              <li><span class="good">Implemented</span> `/api/admin/*` re-verifies authorization server-side</li>
+              <li><span class="good">Implemented</span> Archive/restore replaces routine hard deletion</li>
+              <li><span class="good">Implemented</span> Sensitive admin changes are audit logged</li>
+              <li><span class="bad">Staging verify</span> Cloudflare/admin route protection and headers</li>
+            </ul>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><h2>Audit log</h2><p>Who changed what and when.</p></div></div>
+            <div class="empty-mini">Sign in as Owner to load the live audit history.</div>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<!-- PRODUCT EDITOR -->
+<div class="admin-modal" id="productEditor" aria-hidden="true">
+  <div class="modal-backdrop" data-close-modal></div>
+  <section class="admin-modal-card" role="dialog" aria-modal="true" aria-labelledby="productEditorTitle">
+    <div class="modal-head"><div><small id="productEditorMode">PRODUCT</small><h2 id="productEditorTitle">Edit product</h2></div><button class="icon-btn" data-close-modal aria-label="Close product editor">×</button></div>
+    <div class="editor-grid">
+      <form id="productForm" class="editor-form">
+        <input type="hidden" id="editProductId">
+        <label>Product name<input id="editName" required></label>
+        <div class="form-two"><label>Price (Rs.)<input id="editPrice" type="number" min="0" required></label><label>Old price (Rs.)<input id="editOldPrice" type="number" min="0"></label></div>
+        <div class="form-two"><label>Category<select id="editCategory"></select></label><label>Pack / size<input id="editPack"></label></div>
+        <div class="form-two"><label>Badge<select id="editBadge"><option value="">None</option><option>Sale</option><option>New</option><option>Chaska Pick</option><option>Limited</option></select></label><label>Visibility<select id="editVisibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></label></div>
+        <label>Description<textarea id="editDescription" rows="5"></textarea></label>
+        <label>Image path<div style="display:flex;gap:8px"><input id="editImage" placeholder="/images/p123.webp" style="flex:1"><button type="button" class="btn secondary" id="uploadImageBtn" style="white-space:nowrap">📤 Upload</button></div><input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/avif" style="display:none"></label>
+        <label class="checkline"><input type="checkbox" id="editBundle"> This product is a Chaska Box / bundle</label>
+        <div class="action-row sticky-actions"><button type="button" class="btn secondary" id="aiImproveProduct">✦ Improve with Copilot</button><button type="button" class="btn danger" id="archiveProduct">Archive</button><button class="btn primary" type="submit">Save product</button></div>
+        <p class="safe-note">Product changes are saved only through the authenticated server API and remain subject to staff permissions.</p>
+      </form>
+      <aside class="product-live-preview"><small>CUSTOMER PREVIEW</small><div id="productPreviewCard"></div></aside>
+    </div>
+  </section>
+</div>
+
+<div class="admin-toast" id="adminToast" role="status" aria-live="polite"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
+<script src="/supabase-config.js?v=4"></script>
+<script src="/admin.js?v=3" defer></script>
+<script src="/admin-live.js?v=2" defer></script>
 </body>
 </html>
