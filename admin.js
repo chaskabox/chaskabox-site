@@ -46,7 +46,7 @@
       if(!data)throw new Error('Could not load public product catalogue'); state.products=data;
       // Rehydrate locally-created review drafts without touching the real catalogue.
       Object.values(state.drafts.products||{}).filter(p=>p&&p._new).forEach(p=>{ if(!state.products.some(x=>Number(x.id)===Number(p.id))) state.products.push(p); });
-      state.categories=[...new Set(state.products.map(p=>p.category).filter(Boolean))].sort();
+      state.categories=[...new Set(state.products.map(p=>(p.category||'').trim()).filter(Boolean))].sort();
       hydrateSelectors(); renderDashboard(); renderProducts(); renderBoxProducts();
       return true;
     }catch(err){
@@ -105,13 +105,14 @@
 
   function slugify(s){return String(s||'').toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');}
   function filteredProducts(){
-    const q=($('#productSearch')?.value||'').trim().toLowerCase(); const cat=$('#productCategory')?.value||''; const vis=$('#productVisibility')?.value||'';
+    const q=($('#productSearch')?.value||'').trim().toLowerCase(); const cat=($('#productCategory')?.value||'').trim(); const vis=$('#productVisibility')?.value||'';
+    const normCat=s=>(s||'').trim();
     return state.products.map(mergedProduct).filter(p=>{
       const archived=isArchived(p.id);
-      if(vis==='archived') return archived && (!q || `${p.name} ${p.category} ${p.pack||''}`.toLowerCase().includes(q)) && (!cat || p.category===cat);
+      if(vis==='archived') return archived && (!q || `${p.name} ${p.category} ${p.pack||''}`.toLowerCase().includes(q)) && (!cat || normCat(p.category)===cat);
       if(archived) return false;
       if(q && !`${p.name} ${p.category} ${p.pack||''}`.toLowerCase().includes(q)) return false;
-      if(cat && p.category!==cat) return false;
+      if(cat && normCat(p.category)!==cat) return false;
       if(vis==='visible' && isHidden(p.id)) return false;
       if(vis==='hidden' && !isHidden(p.id)) return false;
       if(vis==='bundle' && !p.bundle) return false;
@@ -137,6 +138,11 @@
   function bindProductControls(){
     ['productSearch','productCategory','productVisibility'].forEach(id=>$('#'+id)?.addEventListener(id==='productSearch'?'input':'change',()=>{state.visibleLimit=40;renderProducts();}));
     $('#loadMoreProducts')?.addEventListener('click',()=>{state.visibleLimit+=40;renderProducts();});
+    $('#resetFiltersBtn')?.addEventListener('click',()=>{
+      $('#productSearch').value=''; $('#productCategory').value=''; $('#productVisibility').value='';
+      state.visibleLimit=40; state.selected.clear();
+      renderProducts();
+    });
     $('#productAdminGrid')?.addEventListener('click',e=>{
       const card=e.target.closest('[data-product-id]'); if(!card)return; const id=Number(card.dataset.productId);
       if(e.target.classList.contains('product-select')){e.target.checked?state.selected.add(id):state.selected.delete(id);renderProducts();return;}

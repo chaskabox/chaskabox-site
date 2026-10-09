@@ -269,6 +269,23 @@ function uuidv4() {
   return [...a].map((b,i)=>(i===4||i===6||i===8||i===10?'-':'')+b.toString(16).padStart(2,'0')).join('');
 }
 
+// Idempotency: reuse the same key for retries of an unchanged order.
+// Key is persisted in sessionStorage, keyed by cart content hash.
+// A changed cart gets a fresh key.
+function getIdempotencyKey(itemRows){
+  const cartHash = itemRows.map(i=>i.id+':'+i.qty).sort().join('|');
+  try{
+    const stored = JSON.parse(sessionStorage.getItem('cb_idempotency')||'{}');
+    if(stored.hash === cartHash && stored.key) return stored.key;
+    const key = uuidv4();
+    sessionStorage.setItem('cb_idempotency', JSON.stringify({hash: cartHash, key}));
+    return key;
+  }catch(e){ return uuidv4(); }
+}
+function clearIdempotencyKey(){
+  try{ sessionStorage.removeItem('cb_idempotency'); }catch(e){}
+}
+
 
 function saveLocalPurchaseSummary(order){
   // Intentionally excludes customer name, phone and address. This supports reorder UX without persisting PII.
@@ -340,7 +357,7 @@ async function placeOrder() {
   // Build server-authoritative API payload (contract §4).
   // Prices/totals are IGNORED by the server — it recalculates from the DB.
   const apiPayload = {
-    idempotency_key: uuidv4(),
+    idempotency_key: getIdempotencyKey(itemRows),
     items: itemRows.map(i => ({ product_id: i.id, qty: i.qty })),
     customer: {
       name: $('#f_name').value.trim(),
@@ -379,6 +396,7 @@ async function placeOrder() {
 
   saveLocalPurchaseSummary(order);
   CART = {}; localStorage.removeItem('chaskabox-cart');
+  clearIdempotencyKey(); // Order confirmed — next order gets a fresh key
   $('#coMain').style.display = 'none'; $('#coDone').style.display = '';
   $('#doneNo').textContent = finalOrderNo;
   if ($('#doneTotal')) $('#doneTotal').textContent = fmt(finalTotal);
