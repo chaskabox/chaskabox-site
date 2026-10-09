@@ -551,10 +551,29 @@ a.cat:hover b{color:var(--red)}
 .faq-grid summary{cursor:pointer;font-weight:800;color:var(--ink)}
 .faq-grid p{margin-top:9px;color:var(--muted);font-size:13px}
 
-/* fresh promise */
-.fresh{margin-top:34px}
-.freshlist .ficon{font-size:15px;font-weight:900;color:#3a2400}
+/* fresh promise - sourced after order section */
+.fresh{margin-top:34px;padding:40px 20px}
+.freshwrap{max-width:1100px;margin:0 auto}
+.freshhead{text-align:center;margin-bottom:32px}
+.freshpill{display:inline-block;background:linear-gradient(135deg,#ff9a3c,#ff7a18);color:#fff;font-size:12px;font-weight:800;letter-spacing:1.5px;padding:8px 20px;border-radius:999px;margin-bottom:16px}
+.freshhead h2{font-size:clamp(24px,4vw,36px);font-weight:900;color:var(--ink);margin-bottom:12px}
+.freshhead h2 em{font-style:normal;color:#ff7a18}
+.freshdesc{font-size:15px;color:var(--muted);max-width:640px;margin:0 auto;line-height:1.6}
+.freshdesc b{color:var(--ink)}
+.freshcols{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+.freshlist{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.freshlist li{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--border);border-radius:16px;padding:16px 18px;box-shadow:var(--shadow)}
+.freshlist .ficon{flex-shrink:0;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#fff4e0,#ffe0b3);border-radius:12px;font-size:18px;font-weight:900;color:#3a2400}
+.freshlist .ftxt{display:flex;flex-direction:column;gap:4px}
+.freshlist .ftxt b{font-size:14px;color:var(--ink);line-height:1.4}
+.freshlist .ftxt span{font-size:13px;color:var(--muted);line-height:1.5}
+.freshpick{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:24px;box-shadow:var(--shadow);position:sticky;top:90px}
+.pickbadge{display:inline-block;background:linear-gradient(135deg,#ff9a3c,#ff7a18);color:#fff;font-size:12px;font-weight:800;padding:6px 16px;border-radius:999px;margin-bottom:16px}
 .freshvideo[hidden]{display:none!important}
+@media(max-width:768px){
+  .freshcols{grid-template-columns:1fr}
+  .freshpick{position:static}
+}
 
 /* footer */
 .fbrand img{height:64px;width:auto;margin-bottom:10px}
