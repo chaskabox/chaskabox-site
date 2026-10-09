@@ -30,3 +30,8 @@
 .existing-box-card .box-badge.visible{background:#ecfdf5;color:#065f46}
 .existing-box-card .box-actions{margin-top:4px;display:flex;gap:6px}
 .existing-box-card .box-actions .btn{flex:1}
+
+/* Neutral loading state for admin section placeholders (post-login data fetch) */
+.admin-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 20px;color:var(--muted,#888)}
+.admin-loading .spinner{width:32px;height:32px;border:3px solid rgba(0,0,0,.1);border-top-color:var(--accent,#e8730c);border-radius:50%;animation:admin-spin .8s linear infinite}
+@keyframes admin-spin{to{transform:rotate(360deg)}}

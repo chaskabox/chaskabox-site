@@ -104,8 +104,7 @@
           <button class="btn secondary" disabled>Export CSV</button>
         </div>
         <div class="panel empty-backend">
-          <div class="empty-icon">▤</div>
-          <h2>Sign in to load live orders</h2>
+          <div class="admin-loading"><div class="spinner"></div><h2>Loading orders…</h2></div>
           <p>Approved staff can manage guest and account orders, payment verification, fulfilment, notification retries and audit history from this screen.</p>
           <div class="feature-chip-row"><span>Payment verification</span><span>Status timeline</span><span>Customer WhatsApp</span><span>Invoice/packing slip</span><span>Refund/cancel</span><span>CSV export</span></div>
         </div>
@@ -180,7 +179,7 @@
 
       <!-- CUSTOMERS -->
       <section class="admin-view" id="view-customers" data-title="Customers" data-subtitle="Customer history, order value and support context for authorized staff.">
-        <div class="panel empty-backend"><div class="empty-icon">♙</div><h2>Sign in to load customers</h2><p>Authorized staff can review customer order context without exposing customer data to unauthorized roles.</p></div>
+        <div class="panel empty-backend"><div class="admin-loading"><div class="spinner"></div><h2>Loading customers…</h2></div><p>Authorized staff can review customer order context without exposing customer data to unauthorized roles.</p></div>
       </section>
 
       <!-- REVIEWS -->
@@ -190,7 +189,7 @@
 
       <!-- MEDIA -->
       <section class="admin-view" id="view-media" data-title="Media Library" data-subtitle="Manage product images and promotional assets safely.">
-        <div class="panel empty-backend"><div class="empty-icon">▣</div><h2>Sign in to load the media library</h2><p>Authorized content staff can upload validated image types to controlled storage and copy their public URLs into product records.</p></div>
+        <div class="panel empty-backend"><div class="admin-loading"><div class="spinner"></div><h2>Loading media library…</h2></div><p>Authorized content staff can upload validated image types to controlled storage and copy their public URLs into product records.</p></div>
       </section>
 
       <!-- PREVIEW -->
@@ -278,7 +277,7 @@
               <button class="btn primary" id="addCategoryBtn">+ New Category</button>
             </div>
           </div>
-          <div id="categoryList" class="existing-box-grid"><p class="muted">Sign in to load categories.</p></div>
+          <div id="categoryList" class="existing-box-grid"><div class="admin-loading"><div class="spinner"></div><p>Loading categories…</p></div></div>
         </div>
       </section>
 
