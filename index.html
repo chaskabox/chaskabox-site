@@ -25,7 +25,8 @@
   });
 </script>
 -->
-<link rel="stylesheet" href="/styles.css?v=7">
+<link rel="stylesheet" href="/styles.css?v=8">
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 </head>
 <body>
@@ -34,7 +35,7 @@
 <header>
   <div class="hwrap">
     <button class="tbtn mnav-btn" onclick="toggleMnav()" title="Menu" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
-    <a class="logo" href="/"><img src="/images/logo-navy.png" alt="ChaskaBox" class="logo-img"></a>
+    <a class="logo" href="/"><img src="/images/logo-navy.png" alt="ChaskaBox" class="logo-img" fetchpriority="high"></a>
     <nav class="hnav" aria-label="Main navigation">
       <a href="/shop/">Shop</a>
       <div class="hdrop">
