@@ -802,6 +802,8 @@ document.addEventListener('click', function(e){
   if(url.pathname.startsWith('/product/')) return;
   // Skip checkout and admin (separate HTML files)
   if(url.pathname === '/checkout.html' || url.pathname === '/admin.html') return;
+  // Skip static policy/support pages (separate HTML files - let browser handle for full load)
+  if(/^\/(about|contact|privacy-policy|refund-policy|shipping-policy|terms)\/?$/.test(url.pathname)) return;
   // Preserve Ctrl/Cmd-click, Shift-click, middle-click (open in new tab)
   if(e.ctrlKey || e.metaKey || e.shiftKey || e.button === 1) return;
   // Skip target=_blank
