@@ -9,6 +9,27 @@
 <link rel="stylesheet" href="/admin.css?v=2">
 </head>
 <body>
+<!-- Auth bootstrap gate: visible until admin-live.js verifies the staff session.
+     When signed out, only this (or the staff login form) is shown — never
+     misleading empty admin data. -->
+<div id="adminBoot" class="admin-boot" role="status" aria-live="polite">
+  <div class="admin-boot-card">
+    <div class="spinner"></div>
+    <p>Verifying admin session…</p>
+  </div>
+</div>
+<script>
+/* Fallback: if admin-live.js itself fails to load, never trap the user on the
+   boot screen forever. (admin-live.js sets window.chaskaAdminBooted via hideBoot.) */
+setTimeout(function(){
+  try{
+    if(!window.chaskaAdminBooted && !document.getElementById('liveAdminLogin')){
+      var b=document.getElementById('adminBoot');
+      if(b) b.innerHTML='<div class="admin-boot-card"><p>Admin scripts failed to load. Please check your connection and reload.</p><button class="btn primary" onclick="location.reload()">Reload</button></div>';
+    }
+  }catch(e){}
+},30000);
+</script>
 <div class="admin-shell">
   <aside class="admin-sidebar" id="adminSidebar">
     <a class="admin-brand" href="/" target="_blank" rel="noopener">

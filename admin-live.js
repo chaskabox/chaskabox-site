@@ -8,16 +8,30 @@
 
   async function ensureClient(){ if(typeof initSupabase!=='function') return false; return await initSupabase(); }
   async function token(){ if(!SB) return ''; const {data}=await SB.auth.getSession(); session=data?.session||null; return session?.access_token||''; }
-  async function api(path,{method='GET',body,headers={}}={}){
-    const t=await token(); if(!t) throw new Error('Sign in required');
+  async function api(path,{method='GET',body,headers={}}={},_retried){
+    const t=await token();
+    if(!t){ const e=new Error('Sign in required'); e.status=401; throw e; }
     const h={Authorization:`Bearer ${t}`,...headers}; let payload=body;
     if(body!==undefined && !(body instanceof FormData)){h['Content-Type']='application/json';payload=JSON.stringify(body);}
-    const r=await fetch(path,{method,headers:h,body:payload}); const text=await r.text(); let data={}; try{data=text?JSON.parse(text):{}}catch{data={raw:text}};
-    if(!r.ok) throw new Error(data?.error?.message||data?.error||`Request failed (${r.status})`); return data;
+    let r;
+    try{ r=await fetch(path,{method,headers:h,body:payload}); }
+    catch(netErr){ const e=new Error('Network error — check connection and retry'); e.status=0; throw e; }
+    // Stale access-token race: the stored token may have expired just before this
+    // call. Refresh once and retry so a valid session is never mistaken for signed-out.
+    if(r.status===401 && !_retried && typeof SB!=='undefined' && SB){
+      try{
+        const {data:rd}=await SB.auth.refreshSession();
+        if(rd && rd.session && rd.session.access_token){ session=rd.session; return await api(path,{method,body,headers},true); }
+      }catch(e){/* fall through to the 401 error below */}
+    }
+    const text=await r.text(); let data={}; try{data=text?JSON.parse(text):{}}catch{data={raw:text}};
+    if(!r.ok){ const e=new Error(data?.error?.message||data?.error||`Request failed (${r.status})`); e.status=r.status; e.code=data?.error?.code; throw e; }
+    return data;
   }
   window.chaskaAdminApi=api;
   function toast(msg){const el=$('#adminToast'); if(!el)return; el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2500);}
   function showLogin(message='Sign in with an approved staff account.'){
+    hideBoot(); // bootstrap gate off — the login form is the only thing shown now
     let el=$('#liveAdminLogin'); if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);} el.hidden=false;
     el.innerHTML=`<form class="live-login-card" id="liveLoginForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Staff sign in</h1><p>${esc(message)}</p><label>Email<input id="liveEmail" type="email" autocomplete="username" required></label><label>Password<input id="livePassword" type="password" autocomplete="current-password" required></label><div id="liveLoginError" class="live-error" hidden></div><button class="btn primary" type="submit">Sign in</button><a href="/" class="text-btn">← Storefront</a></form>`;
     $('#liveLoginForm').onsubmit=async e=>{e.preventDefault();const err=$('#liveLoginError');err.hidden=true;try{if(!(await ensureClient()))throw new Error('Supabase public configuration unavailable');const res=await SB.auth.signInWithPassword({email:$('#liveEmail').value.trim(),password:$('#livePassword').value});if(res.error)throw res.error;session=res.data.session;await bootAuthenticated();el.hidden=true;}catch(x){err.textContent=x.message||'Sign-in failed';err.hidden=false;}};
@@ -50,15 +64,45 @@
       if(name==='notifications' && roleAllows('owner','manager')) await loadNotifications();
       if(name==='health' && roleAllows('owner','manager')) await loadHealth();
       if(name==='assistant' && roleAllows('owner','manager','content')) await loadAICenter();
-    }catch(e){toast(e.message)}
+    }catch(e){
+      // Session died mid-use: send back to the staff login instead of showing dead views.
+      if(e && e.status===401){ try{await SB?.auth?.signOut();}catch(se){} showLogin(); return; }
+      toast(e.message);
+    }
+  }
+  /* ============ AUTH BOOTSTRAP GATE ============
+     The #adminBoot overlay covers the shell until the staff session is verified.
+     Signed-out visitors see only the overlay or the staff login form — never
+     misleading empty/stale admin data. */
+  let bootDone=false;
+  function hideBoot(){ const b=$('#adminBoot'); if(b) b.style.display='none'; bootDone=true; try{window.chaskaAdminBooted=true;}catch(e){} }
+  function showBootError(msg){
+    bootDone=true;
+    const b=$('#adminBoot'); if(!b) return;
+    b.innerHTML=`<div class="admin-boot-card"><div class="spinner"></div><p>${esc(msg)}</p><button class="btn primary" onclick="location.reload()">Reload</button></div>`;
   }
   async function bootAuthenticated(){
-    try{me=await getMe();}catch(e){await SB?.auth?.signOut();showLogin('This account is not authorized for the ChaskaBox admin panel.');return;}
+    let fresh=false;
+    try{
+      // Proactively refresh so a just-expired access token never fails the first check.
+      try{ const {data:rd}=await SB.auth.refreshSession(); if(rd?.session?.access_token){ session=rd.session; fresh=true; } }catch(e){}
+      if(!fresh){ const {data}=await SB.auth.getSession(); session=data?.session||null; }
+      me=await getMe();
+    }catch(e){
+      // A network blip must NEVER destroy a valid session — only real auth
+      // failures (401/403) sign out. Anything else shows a retry state.
+      if(e && e.status===0){ showBootError('Could not reach the server. Check your connection and reload.'); return; }
+      try{ await SB?.auth?.signOut(); }catch(se){}
+      hideBoot();
+      showLogin(e && e.status===403 ? 'This account is not authorized for the ChaskaBox admin panel.' : undefined);
+      return;
+    }
     $('#backendState').className='backend-state'; $('#backendState').innerHTML=`<span></span><b>Live backend</b><small>${esc(me.role)} · authenticated</small>`;
     $('#securityNotice').className='security-notice live'; $('#securityNotice').innerHTML=`<strong>Live secure mode:</strong> authenticated as <b>${esc(me.role)}</b>. Every write is re-authorized server-side and audited.`;
     const foot=$('.admin-sidebar-foot'); if(foot&&!$('#adminSignOut')) foot.insertAdjacentHTML('beforeend','<button class="text-btn" id="adminSignOut">Sign out</button>');
     $('#adminSignOut')?.addEventListener('click',async()=>{await SB.auth.signOut();location.reload()});
     wireNav(); wireOrderFilters(); wireLiveProductEditor(); wireHomepage(); wireMedia(); wireSettings(); wireBoxLive();
+    hideBoot(); // session verified — reveal the console; views show their own loaders
     await Promise.allSettled([loadDashboard(),loadProducts()]);
     // Boot legacy admin.js catalogue UI now that we are authenticated.
     try{ await window.chaskaAdminDataBoot?.(); }catch(e){}
@@ -416,6 +460,8 @@
   }
 
   async function init(){
+    // Safety net: never leave the console stuck on "Verifying admin session…".
+    setTimeout(()=>{ if(!bootDone) showBootError('Session check is taking too long. Please reload and try again.'); }, 25000);
     if(!(await ensureClient())){showLogin('Public Supabase configuration could not be loaded.');return;}
     const {data}=await SB.auth.getSession();session=data?.session||null;if(!session){showLogin();return;}await bootAuthenticated();
   }
@@ -662,7 +708,6 @@
   }
 
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
-})();
 
   /* ============ BRANDS ============ */
   async function loadBrands(){
@@ -913,8 +958,9 @@
     $('#downloadBackupBtn')?.addEventListener('click', async ()=>{
       try{
         toast('Preparing backup…');
+        const bt=await token();
         const res = await fetch('/api/admin/backup', {
-          headers: { 'Authorization': `Bearer ${session?.access_token||''}` },
+          headers: { 'Authorization': `Bearer ${bt}` },
         });
         if(!res.ok) throw new Error('Backup failed');
         const blob = await res.blob();
@@ -1111,3 +1157,4 @@
       }catch(e){toast(e.message||'Failed');}
     });
   }
+})();
