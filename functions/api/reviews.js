@@ -1,4 +1,8 @@
 /**
+ * GET /api/reviews?product_id=X  (PUBLIC)
+ * Returns ONLY approved reviews via the public_reviews view.
+ * Never exposes pending/rejected reviews, user_id, or order_id.
+ *
  * POST /api/reviews  (PUBLIC)
  * Submit a product review. No auth required, strictly rate-limited (contract §3: 5/min/IP).
  * Body: { product_id, rating (1..5 int), text (3..1000 chars) }
@@ -11,6 +15,30 @@
  */
 import { sb, json, httpError, readJson } from './admin/_lib/auth.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
+
+export const onRequestGet = async (context) => {
+  try {
+    const url = new URL(context.request.url);
+    const productId = url.searchParams.get('product_id');
+    if (!productId) httpError('product_id is required', 400, 'missing_field');
+
+    // public_reviews view: approved only, no PII
+    const reviews = await sb(
+      context,
+      `/rest/v1/public_reviews?product_id=eq.${encodeURIComponent(productId)}&order=created_at.desc&limit=50&select=id,product_id,rating,review_text,verified_purchase,admin_reply,created_at`
+    );
+
+    const list = Array.isArray(reviews) ? reviews : [];
+    const count = list.length;
+    const avg = count ? Math.round((list.reduce((s, r) => s + Number(r.rating || 0), 0) / count) * 10) / 10 : 0;
+
+    return json({ ok: true, product_id: Number(productId), count, avg_rating: avg, reviews: list });
+  } catch (e) {
+    if (e instanceof Response) return e;
+    console.error('[api/reviews] GET error', e);
+    return json({ error: { code: 'INTERNAL', message: 'Could not load reviews' } }, 500);
+  }
+};
 
 export const onRequestPost = async (context) => {
   try {

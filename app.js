@@ -419,10 +419,11 @@ function renderProductDetail(id){
         <div class="product-help"><b>Need ingredients or allergen details?</b><span>Message ChaskaBox on WhatsApp before ordering. If an item becomes unavailable, we will contact you before any substitution.</span></div>
       </div>
     </div>
-  </div>${relatedHTML}`;
+  </div>${relatedHTML}<div id="reviewsMount"></div>`;
   showView('product');
   window.scrollTo(0,0);
   if(typeof window.chaskaTrack==='function') window.chaskaTrack('product_view',{id:p.id,name:p.name,price:p.price,category:p.category});
+  if(window.ReviewsWidget) ReviewsWidget.mount('#reviewsMount', p.id);
 }
 // Image lightbox for product zoom
 function openImageLightbox(src, alt){

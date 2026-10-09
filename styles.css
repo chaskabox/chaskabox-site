@@ -841,3 +841,38 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
   .progress-track span{transition:none!important}
   .payopt.sel{transform:none!important}
 }
+
+/* ---------- Reviews widget ---------- */
+.rw-wrap{max-width:760px;margin:36px auto 0;padding:0 4px}
+.rw-wrap h2{font-size:20px;margin:0 0 14px;color:var(--navy)}
+.rw-summary{display:flex;align-items:center;gap:10px;margin-bottom:18px;font-size:15px}
+.rw-stars{color:#e8a020;font-size:18px;letter-spacing:2px}
+.rw-summary b{font-size:17px}
+.rw-summary span{color:var(--muted)}
+.rw-list{display:grid;gap:14px;margin-bottom:26px}
+.rw-item{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px}
+.rw-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.rw-head .rw-stars{font-size:15px}
+.rw-verified{font-size:11px;font-weight:700;color:#1a7a3a;background:#e6f6ec;border-radius:999px;padding:2px 9px}
+.rw-date{margin-left:auto;font-size:12px;color:var(--muted)}
+.rw-text{margin:0;font-size:14px;line-height:1.55}
+.rw-reply{margin-top:10px;padding:10px 12px;background:var(--sel-bg,#f4f6fb);border-radius:8px;font-size:13px}
+.rw-empty{text-align:center;padding:28px 16px;background:var(--card);border:1px dashed var(--border);border-radius:12px;margin-bottom:26px}
+.rw-empty p{margin:0 0 6px;font-size:15px;font-weight:600}
+.rw-empty-sub{font-weight:400!important;color:var(--muted);font-size:13px!important}
+.rw-form{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+.rw-form h3{margin:0 0 4px;font-size:16px}
+.rw-note{font-size:12px;color:var(--muted);margin:0 0 14px}
+.rw-field{margin-bottom:14px}
+.rw-field label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+.rw-rate{display:flex;gap:6px;flex-wrap:wrap}
+.rw-rate label{cursor:pointer}
+.rw-rate input{position:absolute;opacity:0;pointer-events:none}
+.rw-rate span{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px;color:#c98a1b}
+.rw-rate input:checked+span{background:#fff7e6;border-color:#e8a020;font-weight:700}
+.rw-rate input:focus-visible+span{outline:3px solid var(--focus);outline-offset:2px}
+.rw-form textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px;font:inherit;font-size:14px;resize:vertical}
+.rw-submit{margin-top:4px}
+.rw-msg{font-size:13px;margin:10px 0 0;min-height:18px}
+.rw-loading,.rw-error{text-align:center;color:var(--muted);padding:24px}
+@media(max-width:760px){.rw-wrap{margin-top:28px}}
