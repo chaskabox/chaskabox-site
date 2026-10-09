@@ -30,6 +30,9 @@
   async function loadView(name){
     try{
       if(name==='orders') await loadOrders();
+      if(name==='analytics' && roleAllows('owner','manager')) await loadAnalytics();
+      if(name==='coupons' && roleAllows('owner','manager')) await loadCoupons();
+      if(name==='shipping' && roleAllows('owner','manager')) await loadShipping();
       if(name==='resolutions' && roleAllows('owner','manager')) await loadResolutions();
       if(name==='customers' && roleAllows('owner','manager')) await loadCustomers();
       if(name==='reviews' && roleAllows('owner','manager','content')) await loadReviews();
@@ -413,6 +416,24 @@
       api('/api/admin/brands',{method:'POST',body:{name:name.trim()}}).then(()=>{toast('Brand added');loadBrands();}).catch(e=>toast(e.message));
     });
     $('#refreshResolutions')?.addEventListener('click',()=>loadResolutions());
+    $('#refreshAnalytics')?.addEventListener('click',()=>loadAnalytics());
+    $('#refreshCoupons')?.addEventListener('click',()=>loadCoupons());
+    $('#addCouponBtn')?.addEventListener('click',()=>{
+      const code=prompt('Coupon code (e.g. CHASKA10):'); if(!code?.trim()) return;
+      const type=prompt('Type: percent or fixed','percent'); if(!['percent','fixed'].includes(type)) return;
+      const value=prompt(type==='percent'?'Discount % (max 90):':'Discount Rs.:'); if(!value) return;
+      const min=prompt('Minimum order Rs. (0 for none):','0');
+      api('/api/admin/coupons',{method:'POST',body:{code, discount_type:type, discount_value:Number(value), min_order:Number(min)||0}})
+        .then(()=>{toast('Coupon created');loadCoupons();}).catch(e=>toast(e.message));
+    });
+    $('#refreshShipping')?.addEventListener('click',()=>loadShipping());
+    $('#addZoneBtn')?.addEventListener('click',()=>{
+      const name=prompt('Zone name:'); if(!name?.trim()) return;
+      const fee=prompt('Delivery fee Rs.:','300'); if(fee===null) return;
+      const freeAbove=prompt('Free delivery above Rs. (blank for none):','');
+      api('/api/admin/shipping-zones',{method:'POST',body:{name:name.trim(), fee:Number(fee)||0, free_above:freeAbove?Number(freeAbove):null}})
+        .then(()=>{toast('Zone added');loadShipping();}).catch(e=>toast(e.message));
+    });
     $('#resolutionStatusFilter')?.addEventListener('change',()=>loadResolutions());
     $('#addResolutionBtn')?.addEventListener('click',()=>{
       const issue_type=prompt('Issue type (refund/replacement/complaint/damaged/missing_item/late_delivery/other):','complaint');
@@ -720,4 +741,90 @@
     style.textContent=`:root{--primary:${t.primary_color};--accent:${t.accent_color};--bg:${t.background_color};--text:${t.text_color};--radius:${t.border_radius}px} body{font-family:${t.font_family}}`;
     document.head.appendChild(style);
     toast('Preview applied (not saved)');
+  }
+
+  /* ============ COUPONS ============ */
+  async function loadCoupons(){
+    const el=$('#couponList'); if(!el) return;
+    el.innerHTML='<div class="admin-loading"><div class="spinner"></div><p>Loading…</p></div>';
+    try{
+      const d=await api('/api/admin/coupons');
+      const coupons=d.coupons||[];
+      if(!coupons.length){el.innerHTML='<p class="muted">No coupons yet. Click "+ New Coupon".</p>';return;}
+      el.innerHTML=coupons.map(c=>`
+        <div class="existing-box-card" style="margin-bottom:10px">
+          <h4 style="font-family:monospace;font-size:18px">${esc(c.code)} <span class="box-badge ${c.is_active?'visible':'hidden'}">${c.is_active?'Active':'Disabled'}</span></h4>
+          <div class="box-meta">
+            <span>${c.discount_type==='percent'?c.discount_value+'% off':'Rs.'+c.discount_value+' off'}</span><span>·</span>
+            ${c.min_order?`<span>Min Rs.${c.min_order}</span><span>·</span>`:''}
+            <span>${c.used_count}${c.max_uses?'/'+c.max_uses:''} used</span>
+            ${c.valid_until?`<span>·</span><span>Until ${new Date(c.valid_until).toLocaleDateString()}</span>`:''}
+          </div>
+          <div class="box-actions">
+            <button class="btn secondary compact" data-toggle-coupon="${c.id}">${c.is_active?'Disable':'Enable'}</button>
+            <button class="btn danger compact" data-del-coupon="${c.id}">Delete</button>
+          </div>
+        </div>`).join('');
+      el.querySelectorAll('[data-toggle-coupon]').forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.toggleCoupon;
+        const c=coupons.find(x=>String(x.id)===String(id));
+        await api(`/api/admin/coupons/${id}`,{method:'PATCH',body:{is_active:!c.is_active}});
+        toast('Coupon updated'); loadCoupons();
+      });
+      el.querySelectorAll('[data-del-coupon]').forEach(b=>b.onclick=async()=>{
+        if(!confirm('Delete this coupon?')) return;
+        await api(`/api/admin/coupons/${b.dataset.delCoupon}`,{method:'DELETE'});
+        toast('Coupon deleted'); loadCoupons();
+      });
+    }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+  }
+
+  /* ============ SHIPPING ZONES ============ */
+  async function loadShipping(){
+    const el=$('#shippingList'); if(!el) return;
+    el.innerHTML='<div class="admin-loading"><div class="spinner"></div><p>Loading…</p></div>';
+    try{
+      const d=await api('/api/admin/shipping-zones');
+      const zones=d.zones||[];
+      if(!zones.length){el.innerHTML='<p class="muted">No zones. Click "+ New Zone".</p>';return;}
+      el.innerHTML=zones.map(z=>`
+        <div class="existing-box-card" style="margin-bottom:10px">
+          <h4>${esc(z.name)} <span class="box-badge ${z.is_active?'visible':'hidden'}">${z.is_active?'Active':'Disabled'}</span></h4>
+          <div class="box-meta">
+            <span>Fee: Rs.${z.fee}</span><span>·</span>
+            ${z.free_above?`<span>Free above Rs.${z.free_above}</span><span>·</span>`:''}
+            <span>${(z.cities||[]).length?esc(z.cities.join(', ')):'All cities'}</span>
+          </div>
+        </div>`).join('');
+    }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+  }
+
+  /* ============ ANALYTICS ============ */
+  async function loadAnalytics(){
+    const el=$('#analyticsContent'); if(!el) return;
+    el.innerHTML='<div class="admin-loading"><div class="spinner"></div><p>Loading analytics…</p></div>';
+    try{
+      const [m7, m30] = await Promise.all([
+        api('/api/admin/metrics?days=7'),
+        api('/api/admin/metrics?days=30'),
+      ]);
+      const bar=(label,val,max,color)=>`
+        <div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${label}</span><b>${val}</b></div>
+        <div style="background:#f1f5f9;border-radius:6px;height:10px;margin-top:4px"><div style="width:${Math.min(100,(val/max)*100)}%;background:${color};height:10px;border-radius:6px"></div></div></div>`;
+
+      el.innerHTML=`
+        <div class="admin-grid two" style="margin-bottom:16px">
+          <div class="existing-box-card"><h4>Last 7 days</h4><div class="box-meta"><span>${m7.orders||0} orders</span><span>·</span><span>${money(m7.recognized_sales_pkr||0)} sales</span></div></div>
+          <div class="existing-box-card"><h4>Last 30 days</h4><div class="box-meta"><span>${m30.orders||0} orders</span><span>·</span><span>${money(m30.recognized_sales_pkr||0)} sales</span></div></div>
+        </div>
+        <h3 style="margin:16px 0 8px">Order Status (30d)</h3>
+        ${bar('New', m30.new_orders||0, m30.orders||1, '#3b82f6')}
+        ${bar('Delivered', m30.delivered_orders||0, m30.orders||1, '#16a34a')}
+        ${bar('Cancelled', m30.cancelled_orders||0, m30.orders||1, '#dc2626')}
+        <h3 style="margin:16px 0 8px">Revenue Breakdown (30d)</h3>
+        ${bar('Verified prepaid', m30.verified_prepaid_sales_pkr||0, m30.recognized_sales_pkr||1, '#8b5cf6')}
+        ${bar('Delivered COD', m30.delivered_cod_sales_pkr||0, m30.recognized_sales_pkr||1, '#f59e0b')}
+        ${bar('Pending payment', m30.pending_prepaid_value_pkr||0, m30.gross_order_value_pkr||1, '#6b7280')}
+        <p class="muted" style="margin-top:16px;font-size:12px">Recognized sales = verified prepaid + delivered COD (refunds excluded).</p>`;
+    }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }

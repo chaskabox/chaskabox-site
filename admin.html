@@ -19,6 +19,9 @@
       <button class="admin-nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button>
       <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
       <button class="admin-nav-btn" data-view="resolutions"><span>🛠️</span> Refunds & Issues</button>
+      <button class="admin-nav-btn" data-view="coupons"><span>🎟️</span> Coupons</button>
+      <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
+      <button class="admin-nav-btn" data-view="analytics"><span>📊</span> Analytics</button>
       <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
       <button class="admin-nav-btn" data-view="categories"><span>📁</span> Categories</button>
       <button class="admin-nav-btn" data-view="brands"><span>🏷️</span> Brands</button>
@@ -139,6 +142,42 @@
       </section>
 
       <!-- PRODUCTS -->
+      <section class="admin-view" id="view-coupons" data-title="Coupons" data-subtitle="Discount codes for customers.">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Discount Coupons</h2><p>Create promo codes — percent or fixed Rs. off</p></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn secondary" id="refreshCoupons">↻ Refresh</button>
+              <button class="btn primary" id="addCouponBtn">+ New Coupon</button>
+            </div>
+          </div>
+          <div id="couponList"><div class="admin-loading"><div class="spinner"></div><p>Loading…</p></div></div>
+        </div>
+      </section>
+
+      <section class="admin-view" id="view-shipping" data-title="Shipping Zones" data-subtitle="Delivery fees and free-shipping thresholds.">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Shipping Zones</h2><p>Fees by zone; free delivery above threshold</p></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn secondary" id="refreshShipping">↻ Refresh</button>
+              <button class="btn primary" id="addZoneBtn">+ New Zone</button>
+            </div>
+          </div>
+          <div id="shippingList"><div class="admin-loading"><div class="spinner"></div><p>Loading…</p></div></div>
+        </div>
+      </section>
+
+      <section class="admin-view" id="view-analytics" data-title="Analytics" data-subtitle="Sales trends, top products and order insights.">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>📊 Sales Analytics</h2><p>Last 30 days overview</p></div>
+            <button class="btn secondary" id="refreshAnalytics">↻ Refresh</button>
+          </div>
+          <div id="analyticsContent"><div class="admin-loading"><div class="spinner"></div><p>Loading analytics…</p></div></div>
+        </div>
+      </section>
+
       <section class="admin-view" id="view-products" data-title="Products" data-subtitle="Search, preview, edit, hide, archive and create catalogue items.">
         <div class="toolbar product-toolbar">
           <div class="searchbox"><span>⌕</span><input id="productSearch" placeholder="Search name, category, pack…"></div>
