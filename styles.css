@@ -356,7 +356,7 @@ div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="n
 .mnav-list a:hover{background:var(--sel-bg)}
 @media(max-width:760px){
   .mnav-btn{display:inline-flex!important}
-  .logo-img{height:72px!important;margin:-11px 0!important}
+  .logo-img{height:88px!important;margin:-15px 0!important}
   .herocollage{width:160px;height:130px}
   .herocollage img{width:80px;height:80px}
   /* Mobile: only hamburger, search, bag in header - use classes (not attribute selectors) */
