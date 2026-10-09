@@ -30,6 +30,7 @@
   async function loadView(name){
     try{
       if(name==='orders') await loadOrders();
+      if(name==='resolutions' && roleAllows('owner','manager')) await loadResolutions();
       if(name==='customers' && roleAllows('owner','manager')) await loadCustomers();
       if(name==='reviews' && roleAllows('owner','manager','content')) await loadReviews();
       if(name==='homepage' && roleAllows('owner','manager','content')) await loadHomepage();
@@ -39,6 +40,8 @@
       if(name==='products' && roleAllows('owner','manager','content')) await loadProducts();
       if(name==='boxes' && roleAllows('owner','manager','content')) await enableBoxBuilder();
       if(name==='categories' && roleAllows('owner','manager','content')) await loadCategories();
+      if(name==='theme' && roleAllows('owner','manager')) await loadTheme();
+      if(name==='brands' && roleAllows('owner','manager','content')) await loadBrands();
       if(name==='navigation' && roleAllows('owner','manager','content')) await loadNavigation();
       if(name==='notifications' && roleAllows('owner','manager')) await loadNotifications();
       if(name==='health' && roleAllows('owner','manager')) await loadHealth();
@@ -95,6 +98,37 @@
     $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{try{const st=b.dataset.status;let body={fulfilment_status:st};if(st==='cancelled'){const reason=prompt('Cancellation reason (required):');if(!reason)return;body.cancel_reason=reason;}await api(`/api/admin/orders/${id}/status`,{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
     $$('[data-pay]',modal).forEach(b=>b.onclick=async()=>{try{await api(`/api/admin/orders/${id}/payment/verify`,{method:'POST',body:{decision:b.dataset.pay}});toast('Payment updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
     $('[data-retry]',modal).onclick=async()=>{try{await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast('Notification queued for retry')}catch(e){toast(e.message)}};
+    // Print invoice / packing slip
+    const printBar = document.createElement('div');
+    printBar.style.cssText = 'display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)';
+    printBar.innerHTML = `<button class="btn secondary" id="printInvoiceBtn">🖨️ Print Invoice</button><button class="btn secondary" id="printPackingBtn">📦 Packing Slip</button>`;
+    modal.querySelector('.live-order-card').appendChild(printBar);
+    $('#printInvoiceBtn').onclick = () => printInvoice(o, items, false);
+    $('#printPackingBtn').onclick = () => printInvoice(o, items, true);
+  }
+
+  function printInvoice(o, items, isPacking){
+    const w = window.open('', '_blank', 'width=800,height=900');
+    const rows = items.map((i,idx)=>`<tr><td>${idx+1}</td><td>${esc(i.product_name)}<br><small>${esc(i.pack||'')}</small></td><td>${i.quantity}</td>${isPacking?'':`<td style="text-align:right">${money(i.line_total)}</td>`}</tr>`).join('');
+    w.document.write(`<!DOCTYPE html><html><head><title>${isPacking?'Packing Slip':'Invoice'} ${esc(o.order_number)}</title><style>
+      body{font-family:Arial,sans-serif;max-width:700px;margin:20px auto;padding:20px;color:#222}
+      .head{display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #1a2b5c;padding-bottom:12px;margin-bottom:16px}
+      .head h1{margin:0;color:#1a2b5c;font-size:24px}
+      table{width:100%;border-collapse:collapse;margin:16px 0}
+      th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:14px}
+      th{background:#f4f6fb}
+      .totals{text-align:right;margin-top:12px}
+      .totals p{margin:4px 0}
+      .addr{background:#f9fafb;padding:12px;border-radius:8px;margin:12px 0;font-size:14px}
+      @media print{.no-print{display:none} body{margin:0}}
+    </style></head><body>
+      <div class="head"><div><h1>🍬 ChaskaBox</h1><small>Pakistani Snacks · chaskabox.online</small></div><div style="text-align:right"><b>${isPacking?'PACKING SLIP':'INVOICE'}</b><br>${esc(o.order_number)}<br>${new Date(o.created_at).toLocaleDateString('en-PK')}</div></div>
+      <div class="addr"><b>Ship to:</b><br>${esc(o.customer_name)}<br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</div>
+      <table><tr><th>#</th><th>Item</th><th>Qty</th>${isPacking?'':'<th style="text-align:right">Amount</th>'}</tr>${rows}</table>
+      ${isPacking?`<p><b>Total items: ${items.reduce((s,i)=>s+Number(i.quantity||0),0)}</b></p>`:`<div class="totals"><p>Subtotal: ${money(o.subtotal)}</p><p>Delivery: ${money(o.delivery_fee)}</p><p style="font-size:18px"><b>Total: ${money(o.total)}</b></p><p>Payment: ${esc(o.payment_method)} (${esc(o.payment_status)})</p></div>`}
+      <p class="no-print" style="margin-top:24px"><button onclick="window.print()" style="padding:10px 24px;font-size:16px;cursor:pointer">🖨️ Print</button></p>
+    </body></html>`);
+    w.document.close();
   }
 
   let productPage = 1, productTotalPages = 1, productTotal = 0;
@@ -164,10 +198,12 @@
     }
   }
   function openLiveProduct(id){
-    const p=products.find(x=>String(x.id)===String(id)); if(!p)return; $('#editProductId').value=p.id;$('#editName').value=p.name||'';$('#editPrice').value=p.price||'';$('#editOldPrice').value=p.old_price||'';$('#editCategory').value=p.category||'';$('#editPack').value=p.pack||'';$('#editBadge').value=p.badge||'';$('#editVisibility').value=p.visibility==='visible'?'visible':'hidden';$('#editDescription').value=p.description||'';$('#editImage').value=p.image_url||'';$('#editBundle').checked=!!p.is_bundle;$('#productEditorTitle').textContent='Edit '+p.name;$('#productEditor').classList.add('open');$('#productEditor').setAttribute('aria-hidden','false');
+    const p=products.find(x=>String(x.id)===String(id)); if(!p)return; $('#editProductId').value=p.id;$('#editName').value=p.name||'';$('#editPrice').value=p.price||'';$('#editOldPrice').value=p.old_price||'';$('#editCategory').value=p.category||'';$('#editPack').value=p.pack||'';$('#editBadge').value=p.badge||'';$('#editVisibility').value=p.visibility==='visible'?'visible':'hidden';$('#editDescription').value=p.description||'';$('#editImage').value=p.image_url||'';$('#editBundle').checked=!!p.is_bundle;
+    $('#editSeoTitle').value=p.seo_title||'';$('#editSeoDesc').value=p.seo_description||'';$('#editOgImage').value=p.og_image||'';$('#editCanonical').value=p.canonical_url||'';
+    $('#productEditorTitle').textContent='Edit '+p.name;$('#productEditor').classList.add('open');$('#productEditor').setAttribute('aria-hidden','false');
   }
   function wireLiveProductEditor(){
-    const form=$('#productForm'); if(!form)return; form.addEventListener('submit',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();const id=$('#editProductId').value;const body={name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),old_price:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,description:$('#editDescription').value.trim(),image_url:$('#editImage').value.trim(),visibility:$('#editVisibility').value};try{const saved=id?await api(`/api/admin/products/${id}`,{method:'PATCH',body}):await api('/api/admin/products',{method:'POST',body});const savedId=saved?.product?.id||id;toast('Product saved');$('#productEditor').classList.remove('open');await loadProducts();if(savedId){api('/api/admin/ai-reindex',{method:'POST',body:{product_ids:[Number(savedId)],stale_only:false,limit:1}}).catch(()=>{});}}catch(x){toast(x.message)}},true);
+    const form=$('#productForm'); if(!form)return; form.addEventListener('submit',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();const id=$('#editProductId').value;const body={name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),old_price:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,description:$('#editDescription').value.trim(),image_url:$('#editImage').value.trim(),visibility:$('#editVisibility').value,seo_title:$('#editSeoTitle').value.trim()||null,seo_description:$('#editSeoDesc').value.trim()||null,og_image:$('#editOgImage').value.trim()||null,canonical_url:$('#editCanonical').value.trim()||null};try{const saved=id?await api(`/api/admin/products/${id}`,{method:'PATCH',body}):await api('/api/admin/products',{method:'POST',body});const savedId=saved?.product?.id||id;toast('Product saved');$('#productEditor').classList.remove('open');await loadProducts();if(savedId){api('/api/admin/ai-reindex',{method:'POST',body:{product_ids:[Number(savedId)],stale_only:false,limit:1}}).catch(()=>{});}}catch(x){toast(x.message)}},true);
     $('#archiveProduct')?.addEventListener('click',async e=>{const id=$('#editProductId').value;if(!id||!me)return;e.preventDefault();e.stopImmediatePropagation();if(!confirm('Archive this product?'))return;try{await api(`/api/admin/products/${id}/archive`,{method:'POST',body:{}});toast('Product archived');$('#productEditor').classList.remove('open');loadProducts()}catch(x){toast(x.message)}},true);
   }
 
@@ -371,6 +407,30 @@
     document.querySelectorAll('[data-close-cat-modal]').forEach(b=>b.addEventListener('click',closeCategoryEditor));
     $('#refreshCategories')?.addEventListener('click',()=>loadCategories());
     $('#addCategoryBtn')?.addEventListener('click',()=>openCategoryEditor(null));
+    $('#refreshBrands')?.addEventListener('click',()=>loadBrands());
+    $('#addBrandBtn')?.addEventListener('click',()=>{
+      const name=prompt('Brand name:'); if(!name?.trim()) return;
+      api('/api/admin/brands',{method:'POST',body:{name:name.trim()}}).then(()=>{toast('Brand added');loadBrands();}).catch(e=>toast(e.message));
+    });
+    $('#refreshResolutions')?.addEventListener('click',()=>loadResolutions());
+    $('#resolutionStatusFilter')?.addEventListener('change',()=>loadResolutions());
+    $('#addResolutionBtn')?.addEventListener('click',()=>{
+      const issue_type=prompt('Issue type (refund/replacement/complaint/damaged/missing_item/late_delivery/other):','complaint');
+      if(!issue_type) return;
+      const description=prompt('Describe the issue:'); if(!description) return;
+      const order_number=prompt('Order number (optional):')||null;
+      const customer_name=prompt('Customer name (optional):')||null;
+      api('/api/admin/resolutions',{method:'POST',body:{issue_type,description,order_number,customer_name}}).then(()=>{toast('Case created');loadResolutions();}).catch(e=>toast(e.message));
+    });
+    $('#saveThemeBtn')?.addEventListener('click',async()=>{
+      try{await api('/api/admin/theme',{method:'PUT',body:{settings:collectTheme()}});toast('Theme saved');}catch(e){toast(e.message);}
+    });
+    $('#previewThemeBtn')?.addEventListener('click',previewTheme);
+    $('#resetThemeBtn')?.addEventListener('click',async()=>{
+      if(!confirm('Reset theme to defaults?')) return;
+      const defaults={primary_color:'#1a2b5c',accent_color:'#f59e0b',background_color:'#ffffff',text_color:'#1f2937',font_family:'system-ui',border_radius:'12',logo_url:'/logo.png',favicon_url:'/favicon.ico',announcement_enabled:'false',announcement_text:''};
+      try{await api('/api/admin/theme',{method:'PUT',body:{settings:defaults}});toast('Theme reset');loadTheme();}catch(e){toast(e.message);}
+    });
     $('#categoryForm')?.addEventListener('submit',async e=>{
       e.preventDefault();
       const id=$('#catId').value;
@@ -456,6 +516,8 @@
       }
     }catch(e){toast(e.message);}
     $('#refreshNotifStatus')?.addEventListener('click',loadNotifications,{once:true});
+    $('#refreshTemplates')?.addEventListener('click',loadTemplates);
+    loadTemplates();
   }
 
   // ============ SYSTEM HEALTH ============
@@ -501,3 +563,161 @@
 
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
 })();
+
+  /* ============ BRANDS ============ */
+  async function loadBrands(){
+    const listEl=$('#brandList'); if(!listEl) return;
+    listEl.innerHTML='<div class="admin-loading"><div class="spinner"></div><p>Loading brands…</p></div>';
+    try{
+      const d=await api('/api/admin/brands');
+      const brands=d.brands||[];
+      if(!brands.length){listEl.innerHTML='<p class="muted">No brands found.</p>';return;}
+      listEl.innerHTML=brands.map(b=>`
+        <div class="existing-box-card">
+          <h4>${esc(b.name)} ${b._auto?'<small style="opacity:.6">(auto-detected)</small>':''}</h4>
+          <div class="box-meta">
+            <span>/${esc(b.slug||'')}</span><span>·</span>
+            <span>${b.product_count||0} products</span>
+            <span class="box-badge ${b.is_visible?'visible':'hidden'}">${b.is_visible?'Visible':'Hidden'}</span>
+          </div>
+          ${b.description?`<p class="muted" style="font-size:12px">${esc(b.description)}</p>`:''}
+          <div class="box-actions">
+            ${b.id?`<button class="btn secondary compact" data-edit-brand="${b.id}">✏️ Edit</button>
+            <button class="btn secondary compact" data-toggle-brand="${b.id}">${b.is_visible?'👁️ Hide':'👁️ Show'}</button>`:`
+            <button class="btn primary compact" data-add-brand="${esc(b.name)}">+ Add brand</button>`}
+          </div>
+        </div>`).join('');
+      listEl.querySelectorAll('[data-toggle-brand]').forEach(btn=>btn.onclick=async()=>{
+        const id=btn.dataset.toggleBrand;
+        const b=brands.find(x=>String(x.id)===String(id));
+        await api(`/api/admin/brands/${id}`,{method:'PATCH',body:{is_visible:!b.is_visible}});
+        toast(b.is_visible?'Brand hidden':'Brand visible'); loadBrands();
+      });
+      listEl.querySelectorAll('[data-add-brand]').forEach(btn=>btn.onclick=async()=>{
+        const name=btn.dataset.addBrand;
+        await api('/api/admin/brands',{method:'POST',body:{name}});
+        toast('Brand added'); loadBrands();
+      });
+      listEl.querySelectorAll('[data-edit-brand]').forEach(btn=>btn.onclick=()=>openBrandEditor(btn.dataset.editBrand, brands));
+    }catch(e){listEl.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+  }
+  function openBrandEditor(id, brands){
+    const b=(brands||[]).find(x=>String(x.id)===String(id)); if(!b) return;
+    const name=prompt('Brand name:', b.name); if(!name) return;
+    const desc=prompt('Description (optional):', b.description||'');
+    const logo=prompt('Logo URL (optional):', b.logo_url||'');
+    api(`/api/admin/brands/${id}`,{method:'PATCH',body:{name:name.trim(),description:desc,logo_url:logo}}).then(()=>{toast('Brand updated');loadBrands();}).catch(e=>toast(e.message));
+  }
+
+  /* ============ NOTIFICATION TEMPLATES ============ */
+  async function loadTemplates(){
+    const el=$('#templateList'); if(!el) return;
+    el.innerHTML='<p class="muted">Loading…</p>';
+    try{
+      const d=await api('/api/admin/notification-templates');
+      const templates=d.templates||[];
+      if(!templates.length){el.innerHTML='<p class="muted">No templates found. Run migration 024.</p>';return;}
+      el.innerHTML=templates.map(t=>`
+        <div class="existing-box-card" style="margin-bottom:12px">
+          <h4>${esc(t.name)} <span class="box-badge">${esc(t.channel)}</span> ${t.is_active?'':'<span class="box-badge hidden">Disabled</span>'}</h4>
+          ${t.subject?`<div style="margin:6px 0"><label style="font-size:12px">Subject:</label><input data-tpl-subject="${t.id}" value="${esc(t.subject)}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px"></div>`:''}
+          <div style="margin:6px 0"><label style="font-size:12px">Body:</label><textarea data-tpl-body="${t.id}" rows="4" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-family:inherit">${esc(t.body)}</textarea></div>
+          <div style="font-size:11px;color:var(--muted)">Variables: ${(t.variables||[]).map(v=>`{{${v}}}`).join(', ')}</div>
+          <div class="box-actions" style="margin-top:8px">
+            <button class="btn primary compact" data-save-tpl="${t.id}">💾 Save</button>
+            <button class="btn secondary compact" data-toggle-tpl="${t.id}">${t.is_active?'Disable':'Enable'}</button>
+          </div>
+        </div>`).join('');
+      el.querySelectorAll('[data-save-tpl]').forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.saveTpl;
+        const subject=document.querySelector(`[data-tpl-subject="${id}"]`)?.value;
+        const body=document.querySelector(`[data-tpl-body="${id}"]`).value;
+        await api(`/api/admin/notification-templates/${id}`,{method:'PATCH',body:{subject,body}});
+        toast('Template saved'); loadTemplates();
+      });
+      el.querySelectorAll('[data-toggle-tpl]').forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.toggleTpl;
+        const t=templates.find(x=>String(x.id)===String(id));
+        await api(`/api/admin/notification-templates/${id}`,{method:'PATCH',body:{is_active:!t.is_active}});
+        toast(t.is_active?'Template disabled':'Template enabled'); loadTemplates();
+      });
+    }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+  }
+
+  /* ============ RESOLUTIONS ============ */
+  async function loadResolutions(){
+    const el=$('#resolutionList'); if(!el) return;
+    el.innerHTML='<div class="admin-loading"><div class="spinner"></div><p>Loading cases…</p></div>';
+    try{
+      const status=$('#resolutionStatusFilter')?.value;
+      const d=await api('/api/admin/resolutions'+(status?`?status=${status}`:''));
+      const cases=d.cases||[];
+      if(!cases.length){el.innerHTML='<p class="muted">No cases. Click "+ New Case" to create one.</p>';return;}
+      const typeEmoji={refund:'💰',replacement:'🔄',complaint:'😟',damaged:'📦',missing_item:'❓',late_delivery:'🚚',other:'📝'};
+      const statusColor={open:'#dc2626',in_progress:'#d97706',resolved:'#16a34a',rejected:'#6b7280'};
+      el.innerHTML=cases.map(c=>`
+        <div class="existing-box-card" style="margin-bottom:12px;border-left:4px solid ${statusColor[c.status]||'#ccc'}">
+          <h4>${typeEmoji[c.issue_type]||'📝'} ${esc(c.issue_type.replace('_',' '))} ${c.order_number?`<small>· ${esc(c.order_number)}</small>`:''}</h4>
+          <div class="box-meta"><span>${esc(c.customer_name||'—')}</span><span>·</span><span>${esc(c.customer_phone||'')}</span><span>·</span><span class="box-badge">${esc(c.status.replace('_',' '))}</span>${c.refund_amount?`<span>· Rs.${c.refund_amount} refund</span>`:''}</div>
+          <p style="font-size:13px;margin:8px 0">${esc(c.description)}</p>
+          ${c.resolution?`<p style="font-size:13px;background:#f0fdf4;padding:8px;border-radius:6px"><b>Resolution:</b> ${esc(c.resolution)}</p>`:''}
+          <div class="box-actions">
+            ${c.status==='open'?`<button class="btn secondary compact" data-res-status="${c.id}|in_progress">▶️ Start</button>`:''}
+            ${['open','in_progress'].includes(c.status)?`<button class="btn primary compact" data-res-resolve="${c.id}">✅ Resolve</button><button class="btn secondary compact" data-res-status="${c.id}|rejected">✖️ Reject</button>`:''}
+          </div>
+        </div>`).join('');
+      el.querySelectorAll('[data-res-status]').forEach(b=>b.onclick=async()=>{
+        const [id,st]=b.dataset.resStatus.split('|');
+        await api(`/api/admin/resolutions/${id}`,{method:'PATCH',body:{status:st}});
+        toast('Case updated'); loadResolutions();
+      });
+      el.querySelectorAll('[data-res-resolve]').forEach(b=>b.onclick=async()=>{
+        const id=b.dataset.resResolve;
+        const resolution=prompt('Resolution details:'); if(!resolution) return;
+        const refund=prompt('Refund amount (Rs., 0 if none):','0');
+        await api(`/api/admin/resolutions/${id}`,{method:'PATCH',body:{status:'resolved',resolution,refund_amount:Number(refund)||0}});
+        toast('Case resolved'); loadResolutions();
+      });
+    }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+  }
+
+  /* ============ THEME STUDIO ============ */
+  let themeCache = {};
+  async function loadTheme(){
+    try{
+      const d=await api('/api/admin/theme');
+      themeCache=d.theme||{};
+      $('#themePrimary').value=themeCache.primary_color||'#1a2b5c';
+      $('#themeAccent').value=themeCache.accent_color||'#f59e0b';
+      $('#themeBg').value=themeCache.background_color||'#ffffff';
+      $('#themeText').value=themeCache.text_color||'#1f2937';
+      $('#themeFont').value=themeCache.font_family||'system-ui';
+      $('#themeRadius').value=themeCache.border_radius||'12';
+      $('#themeLogo').value=themeCache.logo_url||'';
+      $('#themeFavicon').value=themeCache.favicon_url||'';
+      $('#themeAnnEnabled').checked=themeCache.announcement_enabled==='true';
+      $('#themeAnnText').value=themeCache.announcement_text||'';
+    }catch(e){toast('Failed to load theme: '+e.message);}
+  }
+  function collectTheme(){
+    return {
+      primary_color: $('#themePrimary').value,
+      accent_color: $('#themeAccent').value,
+      background_color: $('#themeBg').value,
+      text_color: $('#themeText').value,
+      font_family: $('#themeFont').value,
+      border_radius: $('#themeRadius').value,
+      logo_url: $('#themeLogo').value,
+      favicon_url: $('#themeFavicon').value,
+      announcement_enabled: $('#themeAnnEnabled').checked?'true':'false',
+      announcement_text: $('#themeAnnText').value,
+    };
+  }
+  function previewTheme(){
+    const t=collectTheme();
+    const style=document.getElementById('themePreviewStyle')||document.createElement('style');
+    style.id='themePreviewStyle';
+    style.textContent=`:root{--primary:${t.primary_color};--accent:${t.accent_color};--bg:${t.background_color};--text:${t.text_color};--radius:${t.border_radius}px} body{font-family:${t.font_family}}`;
+    document.head.appendChild(style);
+    toast('Preview applied (not saved)');
+  }

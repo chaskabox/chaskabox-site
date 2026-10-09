@@ -18,11 +18,14 @@
     <nav class="admin-nav" aria-label="Admin sections">
       <button class="admin-nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button>
       <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
+      <button class="admin-nav-btn" data-view="resolutions"><span>🛠️</span> Refunds & Issues</button>
       <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
       <button class="admin-nav-btn" data-view="categories"><span>📁</span> Categories</button>
+      <button class="admin-nav-btn" data-view="brands"><span>🏷️</span> Brands</button>
       <button class="admin-nav-btn" data-view="boxes"><span>📦</span> Chaska Box Builder</button>
       <button class="admin-nav-btn" data-view="homepage"><span>⌂</span> Homepage Builder</button>
       <button class="admin-nav-btn" data-view="navigation"><span>🧭</span> Navigation</button>
+      <button class="admin-nav-btn" data-view="theme"><span>🎨</span> Theme Studio</button>
       <button class="admin-nav-btn" data-view="customers"><span>♙</span> Customers</button>
       <button class="admin-nav-btn" data-view="reviews"><span>★</span> Reviews</button>
       <button class="admin-nav-btn" data-view="media"><span>▣</span> Media Library</button>
@@ -112,6 +115,27 @@
           <div class="panel-head"><div><h2>Required order workflow</h2><p>The final backend should use these explicit states.</p></div></div>
           <div class="status-flow"><span>New</span><i>→</i><span>Payment / COD confirmed</span><i>→</i><span>Sourcing</span><i>→</i><span>Packed</span><i>→</i><span>Dispatched</span><i>→</i><span>Delivered</span></div>
         </section>
+      </section>
+
+      <!-- RESOLUTIONS -->
+      <section class="admin-view" id="view-resolutions" data-title="Refunds & Issues" data-subtitle="Track customer complaints, refunds and resolutions.">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Resolution Cases</h2><p>Customer issues, refunds and complaints</p></div>
+            <div style="display:flex;gap:8px">
+              <select id="resolutionStatusFilter" style="padding:8px;border:1px solid var(--border);border-radius:8px">
+                <option value="">All statuses</option>
+                <option value="open">Open</option>
+                <option value="in_progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              <button class="btn secondary" id="refreshResolutions">↻ Refresh</button>
+              <button class="btn primary" id="addResolutionBtn">+ New Case</button>
+            </div>
+          </div>
+          <div id="resolutionList"><div class="admin-loading"><div class="spinner"></div><p>Loading cases…</p></div></div>
+        </div>
       </section>
 
       <!-- PRODUCTS -->
@@ -282,6 +306,19 @@
         </div>
       </section>
 
+      <section class="admin-view" id="view-brands" data-title="Brands" data-subtitle="Manage product brands, logos and visibility.">
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>All Brands</h2><p>Brands are detected from product names. Add logos and descriptions.</p></div>
+            <div style="display:flex;gap:8px">
+              <button class="btn secondary" id="refreshBrands">↻ Refresh</button>
+              <button class="btn primary" id="addBrandBtn">+ New Brand</button>
+            </div>
+          </div>
+          <div id="brandList" class="existing-box-grid"><div class="admin-loading"><div class="spinner"></div><p>Loading brands…</p></div></div>
+        </div>
+      </section>
+
       <section class="admin-view" id="view-navigation" data-title="Navigation" data-subtitle="Edit header, footer and mobile menus.">
         <div class="admin-grid two">
           <section class="panel">
@@ -293,6 +330,52 @@
             <div id="footerNavList" class="section-manager"><p class="muted">Loading…</p></div>
           </section>
         </div>
+      </section>
+
+      <section class="admin-view" id="view-theme" data-title="Theme Studio" data-subtitle="Customize colors, fonts, logo and site appearance.">
+        <div class="admin-grid two">
+          <section class="panel">
+            <div class="panel-head"><div><h2>🎨 Colors</h2><p>Site color scheme</p></div></div>
+            <div style="display:grid;gap:12px;padding:4px">
+              <label style="display:flex;justify-content:space-between;align-items:center">Primary color<input type="color" id="themePrimary" style="width:60px;height:36px;border:none;cursor:pointer"></label>
+              <label style="display:flex;justify-content:space-between;align-items:center">Accent color<input type="color" id="themeAccent" style="width:60px;height:36px;border:none;cursor:pointer"></label>
+              <label style="display:flex;justify-content:space-between;align-items:center">Background<input type="color" id="themeBg" style="width:60px;height:36px;border:none;cursor:pointer"></label>
+              <label style="display:flex;justify-content:space-between;align-items:center">Text color<input type="color" id="themeText" style="width:60px;height:36px;border:none;cursor:pointer"></label>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><h2>✏️ Typography & Style</h2><p>Fonts and shapes</p></div></div>
+            <div style="display:grid;gap:12px;padding:4px">
+              <label>Font family<select id="themeFont" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+                <option value="system-ui">System (default)</option>
+                <option value="Inter, system-ui">Inter</option>
+                <option value="Georgia, serif">Georgia (serif)</option>
+                <option value="'Segoe UI', system-ui">Segoe UI</option>
+              </select></label>
+              <label>Corner radius (px)<input type="number" id="themeRadius" min="0" max="24" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px"></label>
+            </div>
+          </section>
+        </div>
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head"><div><h2>🖼️ Logo & Branding</h2><p>Site logo and favicon</p></div></div>
+          <div style="display:grid;gap:12px;padding:4px">
+            <label>Logo URL<input id="themeLogo" placeholder="/logo.png" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px"></label>
+            <label>Favicon URL<input id="themeFavicon" placeholder="/favicon.ico" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px"></label>
+          </div>
+        </section>
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head"><div><h2>📢 Announcement Bar</h2><p>Top banner message</p></div></div>
+          <div style="display:grid;gap:12px;padding:4px">
+            <label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="themeAnnEnabled"> Show announcement bar</label>
+            <label>Message<input id="themeAnnText" placeholder="Free delivery on orders over Rs.5000!" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px"></label>
+          </div>
+        </section>
+        <div style="margin-top:16px;display:flex;gap:12px">
+          <button class="btn primary" id="saveThemeBtn">💾 Save Theme</button>
+          <button class="btn secondary" id="previewThemeBtn">👁️ Preview</button>
+          <button class="btn secondary" id="resetThemeBtn">↺ Reset to defaults</button>
+        </div>
+        <p class="safe-note" style="margin-top:12px">Theme changes apply to the storefront after saving. Preview shows changes without saving.</p>
       </section>
 
       <section class="admin-view" id="view-notifications" data-title="Notification Center" data-subtitle="Resend email, WhatsApp/WAHA status, outbox queue and retry.">
@@ -309,6 +392,10 @@
         <section class="panel" style="margin-top:16px">
           <div class="panel-head"><div><h2>Recent Failures</h2><p>Failed notifications with retry option</p></div></div>
           <div id="notifFailures"><p class="muted">Loading…</p></div>
+        </section>
+        <section class="panel" style="margin-top:16px">
+          <div class="panel-head"><div><h2>📝 Message Templates</h2><p>Edit email & WhatsApp templates. Use {{variable}} placeholders.</p></div><button class="btn secondary compact" id="refreshTemplates">↻ Refresh</button></div>
+          <div id="templateList"><p class="muted">Loading…</p></div>
         </section>
       </section>
 
@@ -339,6 +426,15 @@
         <div class="form-two"><label>Category<select id="editCategory"></select></label><label>Pack / size<input id="editPack"></label></div>
         <div class="form-two"><label>Badge<select id="editBadge"><option value="">None</option><option>Sale</option><option>New</option><option>Chaska Pick</option><option>Limited</option></select></label><label>Visibility<select id="editVisibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></label></div>
         <label>Description<textarea id="editDescription" rows="5"></textarea></label>
+        <details class="seo-details" style="margin:12px 0;border:1px solid var(--border);border-radius:10px;padding:10px">
+          <summary style="cursor:pointer;font-weight:700">🔍 SEO Settings</summary>
+          <div style="margin-top:10px;display:grid;gap:10px">
+            <label>SEO Title (60 chars max)<input id="editSeoTitle" maxlength="60" placeholder="Defaults to product name"></label>
+            <label>Meta Description (160 chars max)<textarea id="editSeoDesc" rows="2" maxlength="160" placeholder="Defaults to product description"></textarea></label>
+            <label>OG Image URL<input id="editOgImage" placeholder="Defaults to product image"></label>
+            <label>Canonical URL<input id="editCanonical" placeholder="Defaults to product page URL"></label>
+          </div>
+        </details>
         <label>Image path<div style="display:flex;gap:8px"><input id="editImage" placeholder="/images/p123.webp" style="flex:1"><button type="button" class="btn secondary" id="uploadImageBtn" style="white-space:nowrap">📤 Upload</button></div><input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/avif" style="display:none"></label>
         <label class="checkline"><input type="checkbox" id="editBundle"> This product is a Chaska Box / bundle</label>
         <div class="action-row sticky-actions"><button type="button" class="btn secondary" id="aiImproveProduct">✦ Improve with Copilot</button><button type="button" class="btn danger" id="archiveProduct">Archive</button><button class="btn primary" type="submit">Save product</button></div>

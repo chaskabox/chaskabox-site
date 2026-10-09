@@ -11,6 +11,7 @@ const STOCK_STATES = new Set(['available', 'limited', 'unavailable', 'sourced_af
 const LIST_COLS = [
   'id', 'slug', 'name', 'price', 'old_price', 'category', 'brand', 'pack',
   'description', 'badge', 'image_url', 'is_bundle', 'visibility', 'stock_state',
+  'seo_title', 'seo_description', 'og_image', 'canonical_url',
   'created_at', 'updated_at',
 ].join(',');
 

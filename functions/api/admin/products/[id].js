@@ -14,6 +14,7 @@ const STOCK_STATES = new Set(['available', 'limited', 'unavailable', 'sourced_af
 const EDITABLE = new Set([
   'name', 'slug', 'price', 'old_price', 'category', 'brand', 'pack',
   'description', 'badge', 'image_url', 'visibility', 'stock_state', 'tags',
+  'seo_title', 'seo_description', 'og_image', 'canonical_url',
 ]);
 
 async function loadProduct(context, id) {
