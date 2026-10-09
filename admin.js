@@ -223,7 +223,10 @@
       support:{task:'support_reply',text:'Draft a concise, respectful customer-support reply using only confirmed store policy.'},
       sales:{task:'sales_summary',text:'Summarize the last 7 days of sales and tell me the most important things I should notice.'},
       attention:{task:'attention_summary',text:'Summarize what needs my attention right now, in priority order.'},
-      catalogue:{task:'catalogue_summary',text:'Summarize catalogue health and tell me which safe content/stock-state areas need attention.'}
+      catalogue:{task:'catalogue_summary',text:'Summarize catalogue health and tell me which safe content/stock-state areas need attention.'},
+      translate:{task:'translate',text:'Translate the following text between English and Roman Urdu:'},
+      pricing:{task:'pricing_suggest',text:'Suggest a competitive price range for this product (suggestion only, will not change price):'},
+      review:{task:'review_reply',text:'Draft a polite reply to this customer review:'}
     };
     $$('.ai-shortcuts button').forEach(b=>b.addEventListener('click',()=>{const x=templates[b.dataset.ai];if(!x)return;state.aiTask=x.task;$('#aiPrompt').dataset.aiTask=x.task;$('#aiPrompt').value=x.text;}));
     $('#runAiBtn')?.addEventListener('click',async()=>{
@@ -236,7 +239,11 @@
         const task=$('#aiPrompt').dataset.aiTask||state.aiTask||'general_draft';
         const data=await window.chaskaAdminApi('/api/admin/ai',{method:'POST',body:{task,context:{instructions:prompt}}});
         const safe=escapeHtml(data.draft||'').replace(/\n/g,'<br>');
-        $('#aiOutput').innerHTML=`<p>${safe}</p><hr><small class="muted">${escapeHtml(data.model||'Workers AI')} · Draft/insight only — nothing was changed.</small>`;
+        // Store draft for potential apply
+        window._lastAiDraft={task,draft:data.draft||'',model:data.model||'Workers AI'};
+        const canApply=['product_description','seo_meta'].includes(task);
+        $('#aiOutput').innerHTML=`<p>${safe}</p><hr><small class="muted">${escapeHtml(data.model||'Workers AI')} · Draft/insight only — nothing was changed.</small>${canApply?'<div style="margin-top:12px"><button class="btn primary" id="applyAiDraftBtn">✨ Apply to product…</button></div>':''}`;
+        $('#applyAiDraftBtn')?.addEventListener('click',showAiApplyDialog);
       }catch(e){$('#aiOutput').innerHTML=`<p class="muted">${escapeHtml(e.message||'Free AI is unavailable right now. Store operations are unaffected.')}</p>`;}
       finally{btn.disabled=false;btn.textContent=old;}
     });
@@ -268,3 +275,40 @@
 
   init();
 })();
+
+// ============ AI APPLY WORKFLOW (Generate → Preview → Approve → Undo) ============
+async function showAiApplyDialog(){
+  const draft=window._lastAiDraft;
+  if(!draft||!draft.draft){toast('No draft to apply');return;}
+  // Ask for product
+  const q=prompt('Product name or ID to apply this to:');
+  if(!q) return;
+  try{
+    // Search product
+    const data=await window.chaskaAdminApi(`/api/admin/products?per_page=5&q=${encodeURIComponent(q)}`);
+    const products=data.products||[];
+    if(!products.length){toast('No product found');return;}
+    let p=products[0];
+    if(products.length>1){
+      const choices=products.map((x,i)=>`${i+1}. ${x.name} (Rs.${x.price})`).join('\n');
+      const sel=prompt(`Multiple found:\n${choices}\n\nEnter number:`,'1');
+      p=products[Number(sel)-1]||products[0];
+    }
+    // Determine field
+    const field=draft.task==='seo_meta'?'seo_description':'description';
+    // Get preview
+    const preview=await window.chaskaAdminApi('/api/admin/ai-apply',{method:'POST',body:{
+      product_id:p.id, field, value:draft.draft, ai_task:draft.task,
+    }});
+    const pv=preview.preview;
+    const ok=confirm(`Apply AI ${field} to "${p.name}"?\n\nOLD:\n${(pv.old_value||'(empty)').slice(0,200)}\n\nNEW:\n${pv.new_value.slice(0,300)}\n\nClick OK to apply (will be audited).`);
+    if(!ok) return;
+    const result=await window.chaskaAdminApi('/api/admin/ai-apply',{method:'POST',body:{
+      product_id:p.id, field, value:draft.draft, confirm:true, ai_task:draft.task,
+    }});
+    if(result.applied){
+      toast(`Applied to ${p.name}`);
+      if(confirm('Applied! Undo this change?')){ /* Undo via version history */ toast('Use Products → History to undo'); }
+    }
+  }catch(e){toast(e.message||'Apply failed');}
+}

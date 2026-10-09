@@ -207,6 +207,21 @@
   }
   function wireLiveProductEditor(){
     const form=$('#productForm'); if(!form)return; form.addEventListener('submit',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();const id=$('#editProductId').value;const body={name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),old_price:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,description:$('#editDescription').value.trim(),image_url:$('#editImage').value.trim(),visibility:$('#editVisibility').value,seo_title:$('#editSeoTitle').value.trim()||null,seo_description:$('#editSeoDesc').value.trim()||null,og_image:$('#editOgImage').value.trim()||null,canonical_url:$('#editCanonical').value.trim()||null};try{const saved=id?await api(`/api/admin/products/${id}`,{method:'PATCH',body}):await api('/api/admin/products',{method:'POST',body});const savedId=saved?.product?.id||id;toast('Product saved');$('#productEditor').classList.remove('open');await loadProducts();if(savedId){api('/api/admin/ai-reindex',{method:'POST',body:{product_ids:[Number(savedId)],stale_only:false,limit:1}}).catch(()=>{});}}catch(x){toast(x.message)}},true);
+    // Inline AI: improve description
+    $('#aiImproveProduct')?.addEventListener('click',async()=>{
+      const name=$('#editName').value.trim();
+      if(!name){toast('Enter product name first');return;}
+      const btn=$('#aiImproveProduct'); const old=btn.textContent; btn.disabled=true; btn.textContent='✦ Thinking…';
+      try{
+        const data=await api('/api/admin/ai',{method:'POST',body:{task:'product_description',context:{instructions:`Write a concise appetizing description (40-70 words) for: ${name}, ${$('#editCategory').value}, ${$('#editPack').value}. Roman Urdu-friendly tone.`}}});
+        const draft=data.draft||'';
+        if(confirm(`AI suggestion:\n\n${draft.slice(0,400)}\n\nUse this description? (You can edit it after)`)){
+          $('#editDescription').value=draft;
+          toast('Description updated — review and Save');
+        }
+      }catch(e){toast(e.message||'AI unavailable');}
+      finally{btn.disabled=false;btn.textContent=old;}
+    });
     $('#productHistoryBtn')?.addEventListener('click',()=>{
       const id=$('#editProductId').value;
       if(!id){toast('Save the product first');return;}

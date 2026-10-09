@@ -20,6 +20,12 @@ const ALLOWED_TASKS = new Set([
   'sales_summary',
   'attention_summary',
   'catalogue_summary',
+  'translate',
+  'pricing_suggest',
+  'inventory_insight',
+  'customer_insight',
+  'order_insight',
+  'review_reply',
 ]);
 
 const SENSITIVE_INSIGHT_TASKS = new Set(['sales_summary', 'attention_summary']);
@@ -46,6 +52,12 @@ const TASK_PROMPTS = {
   sales_summary: 'Explain the supplied seven-day commerce metrics. Clearly distinguish gross order value from recognized sales and pending prepaid value. Highlight practical observations without inventing causes.',
   attention_summary: 'Summarize the supplied operational exceptions into a short prioritized action list.',
   catalogue_summary: 'Summarize the supplied catalogue state: visible/draft/hidden/archived and stock-state counts; suggest safe content actions only.',
+  translate: 'Translate the supplied text between English and Roman Urdu. Keep brand names unchanged. Return only the translation.',
+  pricing_suggest: 'Suggest a competitive price range for this Pakistani snack product based on pack size and category. Give a range (not a single price) and explain reasoning. NEVER set a price — this is a suggestion only.',
+  inventory_insight: 'Analyze the supplied inventory/stock data. Identify low-stock items, overstocked items, and suggest reorder priorities. Do not invent stock numbers.',
+  customer_insight: 'Summarize customer patterns from the supplied ANONYMIZED order data (no names/phones). Identify repeat buyers, average order value trends, and suggestions.',
+  order_insight: 'Analyze the supplied order fulfilment data. Identify bottlenecks, delayed orders, and process improvements.',
+  review_reply: 'Draft a polite, professional reply to this customer review in Roman Urdu + simple English. Thank them, address their point, invite them back.',
 };
 
 const SYSTEM_GUARDRAILS = [
