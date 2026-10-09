@@ -134,8 +134,9 @@ export async function onRequest(context) {
   }
 
   // ---- rate limit (per IP, endpoint-namespaced) ----
+  // Tightened: 30 orders/min/IP with burst of 10 (blocks spam, allows legit retries)
   const ip = getClientIp(request);
-  const rl = await takeToken(`orders:${ip}`, env);
+  const rl = await takeToken(`orders:${ip}`, env, { capacity: 10, perMinute: 30 });
   if (!rl.allowed) {
     return Errors.rateLimited(rl.retryAfterSec);
   }

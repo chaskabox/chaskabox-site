@@ -237,7 +237,37 @@ function closeFilters(){
 }
 function clearAllFilters(){
   shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';shopState.badge='';
+  syncShopURL();
   renderShopContent();
+}
+// URL sync: keep shop filters in query params for refresh/Back support
+function syncShopURL(){
+  try{
+    if(!location.pathname.startsWith('/shop')) return;
+    const p=new URLSearchParams();
+    if(shopState.q) p.set('q',shopState.q);
+    if(shopState.cat) p.set('cat',shopState.cat);
+    if(shopState.sort && shopState.sort!=='feat') p.set('sort',shopState.sort);
+    if(shopState.brands.length) p.set('brands',shopState.brands.join(','));
+    if(shopState.maxPrice) p.set('maxPrice',shopState.maxPrice);
+    if(shopState.pack) p.set('pack',shopState.pack);
+    if(shopState.badge) p.set('badge',shopState.badge);
+    const qs=p.toString();
+    const url=location.pathname+(qs?'?'+qs:'');
+    history.replaceState(null,'',url);
+  }catch(e){}
+}
+function restoreShopFromURL(){
+  try{
+    const p=new URLSearchParams(location.search);
+    shopState.q=p.get('q')||'';
+    // cat comes from path, not query
+    shopState.sort=p.get('sort')||'feat';
+    shopState.brands=(p.get('brands')||'').split(',').filter(Boolean);
+    shopState.maxPrice=+(p.get('maxPrice')||0);
+    shopState.pack=p.get('pack')||'';
+    shopState.badge=p.get('badge')||'';
+  }catch(e){}
 }
 function activeFilterCount(){
   return shopState.brands.length+(shopState.maxPrice?1:0)+(shopState.pack?1:0)+(shopState.badge?1:0);
@@ -346,6 +376,7 @@ function renderShopResults(){
   else if(canSmart){const seq=++smartSearchSeq;clearTimeout(smartSearchTimer);$('#shopGrid').innerHTML='<div class="empty">✦ Looking for smart matches…</div>';smartSearchTimer=setTimeout(()=>renderSmartSearchResults(shopState.q,seq),420);}
   else {clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML='<div class="empty">No products found. Try another search.</div>';}
   renderFilterChips();updateApplyBtn();
+  syncShopURL();
   const ms=$('#mSort'); if(ms)ms.value=shopState.sort;
   if(typeof revealObs!=='undefined'&&revealObs){
     [...document.querySelectorAll('#shopGrid .card')].forEach((c,i)=>{c.classList.add('reveal');c.style.transitionDelay=((i%8)*45)+'ms';});
@@ -747,6 +778,7 @@ function route(){
     renderHomeRoute();
   } else if(path === '/shop/'){
     shopState.cat = '';
+    restoreShopFromURL();
     renderShopRoute();
   } else if(path === '/bundles/'){
     renderBundlesRoute();

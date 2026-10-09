@@ -31,7 +31,8 @@ export async function onRequest(context) {
   if (request.method !== 'POST') return Errors.methodNotAllowed();
 
   const ip = getClientIp(request);
-  const rl = await Promise.resolve(takeToken(`track-order:${ip}`, env));
+  // Tightened: 60 lookups/min/IP with burst of 20 (blocks enumeration, allows normal use)
+  const rl = await Promise.resolve(takeToken(`track-order:${ip}`, env, { capacity: 20, perMinute: 60 }));
   if (!rl.allowed) return Errors.rateLimited(rl.retryAfterSec);
 
   const parsed = await readBody(request);
