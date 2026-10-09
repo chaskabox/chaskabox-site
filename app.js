@@ -368,7 +368,7 @@ function openProduct(id){
     <div style="margin-bottom:10px"><span class="price" style="font-size:22px">${fmt(p.price)}</span>${old}</div>
     <p style="font-size:13px;color:var(--muted);margin-bottom:14px">${esc(p.desc||'')}</p>
     <div class="qty" style="margin-bottom:12px"><button onclick="mQty(-1)">−</button><b id="mqty">1</b><button onclick="mQty(1)">+</button></div>
-    <button class="add" style="padding:12px 26px;font-size:15px" onclick="addToCart(${p.id},+document.getElementById('mqty').textContent,this);closeModal()">Add to Bag</button>
+    <button class="pdbtn" onclick="addToCart(${p.id},+document.getElementById('mqty').textContent,this);closeModal()">Add to Bag</button>
     </div></div>`;
   $('#pmodal').classList.add('open');
   $('#pmodal').setAttribute('aria-hidden','false');
