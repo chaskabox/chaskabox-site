@@ -1,7 +1,27 @@
 /* Public storefront runtime settings bridge. Common owner-editable contact/copy
- * values come from site_settings so normal operational changes need no code edit. */
+ * values come from site_settings so normal operational changes need no code edit.
+ *
+ * Also: global broken-image fallback. If a product image 404s (missing file),
+ * swap it for the styled "Photo coming soon" placeholder instead of a broken icon.
+ */
 (() => {
   'use strict';
+  // Broken product image -> placeholder (capture phase catches <img> errors)
+  document.addEventListener('error', function (e) {
+    const t = e.target;
+    if (t && t.tagName === 'IMG' && !t.dataset.imgFallback) {
+      t.dataset.imgFallback = '1';
+      const wrap = t.closest('.pimg, .pd-img, .pickimg, .dynamic-pd-img');
+      const cat = t.alt || '';
+      if (wrap) {
+        wrap.innerHTML = '<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>' +
+          cat.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])) +
+          '</small></div>';
+      } else {
+        t.style.display = 'none';
+      }
+    }
+  }, true);
   const DEFAULT_PHONE='0332-0005381', DEFAULT_EMAIL='Chaskabox.mzg@gmail.com';
   const DEFAULT_ADDRESS='Near Ahmad Drink Corner, Railway Road, Bhatti Hussainabad, Muzaffargarh, Pakistan';
   const money=n=>`Rs. ${Number(n||0).toLocaleString('en-PK')}`;
