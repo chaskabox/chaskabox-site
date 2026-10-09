@@ -63,7 +63,7 @@
     $('#metricOrders').textContent=attention.counts?.new_orders ?? orders.filter(o=>o.fulfilment_status==='new').length;
     $('#metricRevenue').textContent=money(metrics.recognized_sales_pkr||0);
     const revenueCard=$('#metricRevenue')?.closest('.metric-card'); if(revenueCard){const small=revenueCard.querySelector('small');if(small)small.textContent='Recognized sales · 30 days';}
-    $('#orderNavCount').textContent=attention.counts?.new_orders ?? 0;
+    $('#orderNavCount').textContent=orders.length;
     let panel=$('#needsAttentionPanel'); if(!panel){panel=document.createElement('section');panel.id='needsAttentionPanel';panel.className='panel';$('#view-dashboard').appendChild(panel);} const rows=attention.needs_attention||[];
     panel.innerHTML=`<div class="panel-head"><div><h2>Needs attention</h2><p>Only exceptions that need owner/staff action.</p></div><button class="text-btn" id="refreshAttention">Refresh</button></div>${rows.length?`<div class="attention-list">${rows.slice(0,12).map(x=>`<button class="attention-row" data-open-order="${esc(x.id)}"><span class="attention-dot ${esc(x.reason)}"></span><div><b>${esc(x.order_number)} · ${esc(x.customer_name)}</b><small>${esc(x.reason.replaceAll('_',' '))} · ${x.age_minutes} min · ${money(x.total)}</small></div><span>Open →</span></button>`).join('')}</div>`:'<div class="empty-mini">Nothing urgent right now.</div>'}`;
     $('#refreshAttention')?.addEventListener('click',loadDashboard); $$('[data-open-order]',panel).forEach(b=>b.onclick=()=>openOrder(b.dataset.openOrder));
