@@ -40,7 +40,7 @@ async function init() {
     if(!loaded) throw new Error('Could not load product catalogue');
     PRODUCTS=loaded;
   } catch (e) {
-    showOrderError('We could not load the current product catalogue. Please refresh and try again.');
+    showOrderError('We could not load the current product catalogue.', () => location.reload());
     return;
   }
 
@@ -61,6 +61,11 @@ async function init() {
 
   renderSummary();
   prefillFromAccount();
+  // Init completed: enable Place Order (it starts disabled in HTML).
+  // applyPaymentAvailability() may have disabled it when no payment method
+  // is enabled — respect that and keep it disabled in that case.
+  const placeBtnEl = document.getElementById('placeBtn');
+  if (placeBtnEl && Object.values(PAYMENT_ENABLED).some(Boolean)) placeBtnEl.disabled = false;
 }
 
 async function prefillFromAccount() {
@@ -204,10 +209,22 @@ function orderNo() {
   return `CB-${dd}${mm}${yy}-${rnd}`;
 }
 
-function showOrderError(message){
+function showOrderError(message, retryFn){
   const el = $('#orderError');
   if (!el) return;
-  el.textContent = message;
+  el.textContent = '';
+  const span = document.createElement('span');
+  span.textContent = message;
+  el.appendChild(span);
+  if (typeof retryFn === 'function') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cta';
+    btn.style.marginLeft = '12px';
+    btn.textContent = 'Try Again';
+    btn.addEventListener('click', () => { clearOrderError(); retryFn(); });
+    el.appendChild(btn);
+  }
   el.hidden = false;
   el.scrollIntoView({behavior:'smooth',block:'center'});
 }
@@ -334,7 +351,7 @@ async function placeOrder() {
     payment_method: PAY === 'cod' ? 'cod' : (PAY === 'jazzcash' ? 'jazzcash' : 'bank_transfer'),
     transaction_reference: reference,
     turnstile_token: turnstileToken,
-    customer_note: note || undefined
+    customer_note: (wantVideo ? (note ? note + ' ' : '') + '[Packing video requested]' : note) || undefined
   };
 
   // Server-authoritative order creation. Cart is cleared ONLY on API success.

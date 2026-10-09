@@ -1,4 +1,7 @@
 /* ChaskaBox Static Store — navy #1a2b5c branding */
+/* Skip link: visually hidden until focused (keyboard/screen-reader users) */
+.skip-link{position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;z-index:9999;background:var(--navy);color:#fff;padding:10px 16px;border-radius:8px;font-weight:700}
+.skip-link:focus{left:12px;top:12px;width:auto;height:auto}
 :root{
   --navy:#1a2b5c; --navy-dark:#122046; --gold:#f5b301; --orange:#ff6b35;
   --bg:#faf7f0; --card:#ffffff; --ink:#1c2333; --muted:#6b7280;

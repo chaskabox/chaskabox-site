@@ -10,6 +10,11 @@ async function initAccount(){
   return true;
 }
 function closeAuthModal(){ const m=document.getElementById('acctmodal'); if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');} }
+function toggleAccount(){
+  // If signed in, go to account page; otherwise open sign-in modal
+  if(ACCOUNT_SESSION){ location.href='/account/'; return; }
+  openAuthModal('signin');
+}
 function openAuthModal(mode='signin'){
   const m=document.getElementById('acctmodal'), b=document.getElementById('abody'); if(!m||!b)return;
   const signup=mode==='signup';
@@ -19,6 +24,8 @@ function openAuthModal(mode='signin'){
   <div id="authErr" class="order-error" role="alert" hidden></div><button class="cta" id="authSubmit">${signup?'Create account':'Sign in'}</button>
   <button class="text-btn" id="authSwitch">${signup?'Already have an account? Sign in':'New here? Create account'}</button></div>`;
   m.classList.add('open'); m.setAttribute('aria-hidden','false');
+  // Move keyboard focus into the modal for accessibility
+  setTimeout(()=>{ const f=b.querySelector('input'); if(f) f.focus(); },50);
   document.getElementById('authSwitch').onclick=()=>openAuthModal(signup?'signin':'signup');
   document.getElementById('authSubmit').onclick=async()=>{
     const email=document.getElementById('authEmail').value.trim(), password=document.getElementById('authPass').value;

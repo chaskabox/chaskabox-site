@@ -40,5 +40,20 @@ export async function verifyTurnstile(env, token, remoteIp) {
   } catch {
     return false;
   }
-  return data.success === true;
+  if (data.success !== true) return false;
+
+  // Hostname binding: the token must have been solved on an allowed hostname.
+  // This limits cross-site token replay. Fails closed on missing/mismatch.
+  const allowed = (env.TURNSTILE_ALLOWED_HOSTNAMES ||
+    'chaskabox.online,www.chaskabox.online,chaskabox-staging.pages.dev')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (env.ENVIRONMENT === 'local-dev') allowed.push('localhost', '127.0.0.1');
+  const hostname = String(data.hostname || '').toLowerCase();
+  if (!hostname || !allowed.includes(hostname)) {
+    console.error('[turnstile] hostname not allowed', { hostname });
+    return false;
+  }
+  return true;
 }
