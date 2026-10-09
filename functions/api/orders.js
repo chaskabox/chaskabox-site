@@ -28,7 +28,7 @@
  * Replay : 200 { ..., idempotent_replay: true }
  */
 
-import { selectOne, selectIn, rpc, isUniqueViolation, insertRows } from './_lib/db.js';
+import { selectOne, selectIn, rpc, isUniqueViolation, insertRows, updateRows } from './_lib/db.js';
 import { notifyOwner } from './_lib/notify.js';
 import { validateOrderPayload } from './_lib/validate.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
@@ -237,17 +237,43 @@ export async function onRequest(context) {
           // Direct Resend/WAHA notification (best-effort, async)
           // This ensures owner gets notified even without outbox processor
           try {
+            // Ensure subtotal/delivery_fee are present (RPC may omit them).
+            // Fall back to a direct DB read so the owner email never shows Rs.undefined.
+            let notifyRow = result.row;
+            if (notifyRow.subtotal == null || notifyRow.delivery_fee == null) {
+              try {
+                const fresh = await selectOne(env, 'orders', { id: result.row.id });
+                if (fresh) notifyRow = { ...notifyRow, ...fresh };
+              } catch (e) { /* keep RPC row */ }
+            }
             const orderForNotify = {
-              id: result.row.id,
-              order_number: result.row.order_number,
+              id: notifyRow.id,
+              order_number: notifyRow.order_number,
               customer_name: value.customer.name,
               customer_phone: value.customer.phone,
-              total: result.row.total,
-              payment_method: result.row.payment_method,
-              payment_status: result.row.payment_status,
-              created_at: result.row.created_at,
+              subtotal: notifyRow.subtotal,
+              delivery_fee: notifyRow.delivery_fee,
+              total: notifyRow.total,
+              payment_method: notifyRow.payment_method,
+              payment_status: notifyRow.payment_status,
+              created_at: notifyRow.created_at,
             };
             const notifyResult = await notifyOwner(env, orderForNotify);
+            // Persist notification delivery status on the order row (best-effort).
+            try {
+              const nowIso = new Date().toISOString();
+              const patch = {
+                email_sent: notifyResult.email_sent,
+                email_error: notifyResult.email_error || null,
+                whatsapp_sent: notifyResult.whatsapp_sent,
+                whatsapp_error: notifyResult.whatsapp_error || null,
+              };
+              if (notifyResult.email_sent) patch.email_sent_at = nowIso;
+              if (notifyResult.whatsapp_sent) patch.whatsapp_sent_at = nowIso;
+              await updateRows(env, 'orders', { id: result.row.id }, patch);
+            } catch (statusErr) {
+              logError('orders:notify-status', statusErr);
+            }
             logError('orders:notify-direct', new Error(JSON.stringify({
               email_sent: notifyResult.email_sent,
               email_error: notifyResult.email_error,

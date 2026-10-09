@@ -25,7 +25,7 @@ function orderIdentity(order) {
 }
 
 function adminOrderUrl(env, order) {
-  const base = cleanBaseUrl(env.ADMIN_BASE_URL, 'https://chaskabox-staging.pages.dev');
+  const base = cleanBaseUrl(env.ADMIN_BASE_URL, 'https://chaskabox.online');
   const id = order?.id ?? order?.order_id;
   return id ? `${base}/admin.html#order-${encodeURIComponent(id)}` : `${base}/admin.html`;
 }
@@ -86,8 +86,8 @@ export async function sendOwnerEmail(env, order) {
       `Address: ${order.customer_address || ''}${order.customer_city ? `, ${order.customer_city}` : ''}\n` +
       `${order.customer_note ? `Note: ${order.customer_note}\n` : ''}\n` +
       `Items:\n${items}\n\n` +
-      `Subtotal: Rs.${order.subtotal}\n` +
-      `Delivery: Rs.${order.delivery_fee}\n` +
+      `Subtotal: Rs.${order.subtotal ?? 'N/A'}\n` +
+      `Delivery: Rs.${order.delivery_fee ?? 'N/A'}\n` +
       `Total: Rs.${order.total}\n\n` +
       `Payment: ${order.payment_method}\n` +
       `Payment status: ${order.payment_status}\n` +
