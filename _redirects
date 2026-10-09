@@ -1,0 +1,4 @@
+# Brands landing page redirect — /brands/ has no dedicated route,
+# redirect to shop where brand filtering lives (header dropdown uses goBrand -> /shop/).
+/brands/ /shop/ 301
+/brands /shop/ 301
