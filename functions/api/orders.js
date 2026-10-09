@@ -30,6 +30,7 @@
 
 import { selectOne, selectIn, selectMany, rpc, isUniqueViolation, insertRows, updateRows } from './_lib/db.js';
 import { notifyOwner, notifyCustomer } from './_lib/notify.js';
+import { creditLoyaltyPoints, redeemLoyaltyPoints } from './loyalty.js';
 import { validateOrderPayload } from './_lib/validate.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
 import { verifyTurnstile } from './_lib/turnstile.js';
@@ -276,6 +277,21 @@ export async function onRequest(context) {
             try {
               await notifyCustomer(env, orderForNotify);
             } catch (e) { /* customer notify optional */ }
+            // Loyalty points: 1 point per Rs. 100 (best-effort, never fail the order)
+            try {
+              const custPhone = orderForNotify.customer_phone || orderForNotify.phone;
+              const orderTotal = orderForNotify.total || orderForNotify.grand_total;
+              // Redeem first (if requested), then credit new points on the net total
+              const redeemPts = Math.floor(Number(value.loyalty_points) || 0);
+              let redeemedDiscount = 0;
+              if (redeemPts > 0 && value.loyalty_phone) {
+                const red = await redeemLoyaltyPoints(context, value.loyalty_phone, redeemPts);
+                if (red.ok) redeemedDiscount = red.discount;
+              }
+              if (custPhone && orderTotal) {
+                await creditLoyaltyPoints(context, custPhone, Math.max(0, orderTotal - redeemedDiscount), notifyRow.id);
+              }
+            } catch (e) { /* loyalty optional */ }
             // Persist notification delivery status on the order row (best-effort).
             // Idempotency: only update if not already marked sent (prevents duplicate marking).
             try {

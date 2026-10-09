@@ -13,6 +13,7 @@
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../../_lib/auth.js';
 import { enqueueCustomerNotification } from '../../_lib/customer-notify.js';
+import { sendStatusUpdate } from '../../../_lib/notify.js';
 
 const TRANSITIONS = {
   new: ['sourcing', 'cancelled'],
@@ -89,5 +90,7 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'fulfilment'], asyn
   const label = String(next).replaceAll('_',' ');
   await enqueueCustomerNotification(context, finalOrder, 'order_status', next,
     `ChaskaBox order update\nOrder: ${finalOrder.order_number}\nStatus: ${label}\nTrack: ${trackingBase}/track-order.html?order=${encodeURIComponent(finalOrder.order_number)}`);
+  // Advanced WhatsApp: instant status update to customer (best-effort)
+  try { await sendStatusUpdate(context.env, finalOrder, next); } catch (e) { /* never block status change */ }
   return json({ order: finalOrder, transition: { from: current, to: next } });
 });

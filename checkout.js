@@ -157,9 +157,15 @@ function renderSummary() {
     return `<div class="sumrow"><span class="sum-product">${img}<span>${esc(p.name)} <small>× ${Number(q)}</small></span></span><span>${fmt(Number(p.price) * Number(q))}</span></div>`;
   }).join('');
   const sub = cartSubtotal(), del = deliveryFee(sub);
+  const loyalDisc = window._loyaltyDiscount || 0;
   $('#s_sub').textContent = fmt(sub);
   $('#s_del').innerHTML = del === 0 ? '<span class="free">FREE</span>' : fmt(del);
-  $('#s_tot').textContent = fmt(sub + del);
+  const loyalRow = $('#loyaltyRow');
+  if(loyalRow){
+    loyalRow.hidden = !loyalDisc;
+    $('#s_loyal').textContent = '-' + fmt(loyalDisc);
+  }
+  $('#s_tot').textContent = fmt(Math.max(0, sub + del - loyalDisc));
   const hint = $('#freeHint');
   if (!hint) return;
   if (isPrepaid() && sub < FREE_ABOVE) {
@@ -352,7 +358,9 @@ async function placeOrder() {
     payment_method: PAY === 'cod' ? 'cod' : (PAY === 'jazzcash' ? 'jazzcash' : 'bank_transfer'),
     transaction_reference: reference,
     turnstile_token: turnstileToken,
-    customer_note: (wantVideo ? (note ? note + ' ' : '') + '[Packing video requested]' : note) || undefined
+    customer_note: (wantVideo ? (note ? note + ' ' : '') + '[Packing video requested]' : note) || undefined,
+    loyalty_phone: window._loyaltyPhone || undefined,
+    loyalty_points: window._loyaltyDiscount || 0
   };
 
   // Server-authoritative order creation. Cart is cleared ONLY on API success.
@@ -379,7 +387,7 @@ async function placeOrder() {
   };
 
   saveLocalPurchaseSummary(order);
-  CART = {}; localStorage.removeItem('chaskabox-cart');
+  CART = {}; localStorage.removeItem('chaskabox-cart'); localStorage.removeItem('chaskabox-cart-ts');
   $('#coMain').style.display = 'none'; $('#coDone').style.display = '';
   $('#doneNo').textContent = finalOrderNo;
   if ($('#doneTotal')) $('#doneTotal').textContent = fmt(finalTotal);
@@ -402,3 +410,43 @@ async function placeOrder() {
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+/* ---------- Loyalty points ---------- */
+window._loyaltyDiscount = 0;
+window._loyaltyPhone = '';
+document.addEventListener('DOMContentLoaded', () => {
+  const checkBtn = document.getElementById('loyalCheck');
+  const applyBtn = document.getElementById('loyalApply');
+  if(!checkBtn) return;
+  checkBtn.addEventListener('click', async () => {
+    const phone = document.getElementById('loyalPhone').value.trim();
+    const msg = document.getElementById('loyalMsg');
+    if(!phone){ msg.textContent = 'Please enter your phone number.'; return; }
+    msg.textContent = 'Checking…';
+    try{
+      const r = await fetch(`/api/loyalty?phone=${encodeURIComponent(phone)}`);
+      const d = await r.json();
+      if(!r.ok) throw new Error(d?.error?.message || 'Error');
+      if(d.points > 0){
+        msg.textContent = `You have ${d.points} points = Rs. ${d.points} off!`;
+        applyBtn.style.display = '';
+        applyBtn.dataset.points = d.points;
+        applyBtn.dataset.phone = d.phone;
+        applyBtn.textContent = `Apply ${d.points} points (Rs. ${d.points} off)`;
+      } else {
+        msg.textContent = 'No points yet. Points are earned on every order!';
+        applyBtn.style.display = 'none';
+      }
+    }catch(e){ msg.textContent = 'Could not check points. Try again.'; }
+  });
+  applyBtn.addEventListener('click', () => {
+    const pts = Number(applyBtn.dataset.points || 0);
+    if(pts <= 0) return;
+    window._loyaltyDiscount = pts;
+    window._loyaltyPhone = applyBtn.dataset.phone || '';
+    document.getElementById('loyalMsg').textContent = `✓ ${pts} points applied (Rs. ${pts} off)`;
+    applyBtn.style.display = 'none';
+    if(typeof renderSummary === 'function') renderSummary();
+    else location.reload();
+  });
+});

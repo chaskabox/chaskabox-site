@@ -95,8 +95,18 @@
         <div style="margin-top:10px">
           <div class="sumrow"><span>Subtotal</span><span id="s_sub">Rs. 0</span></div>
           <div class="sumrow"><span>Delivery</span><span id="s_del">Rs. 0</span></div>
+          <div class="sumrow" id="loyaltyRow" hidden><span>🎁 Loyalty discount</span><span id="s_loyal">-Rs. 0</span></div>
           <div class="sumrow total"><span>Total</span><span id="s_tot">Rs. 0</span></div>
         </div>
+        <details class="loyalty-box" style="margin:12px 0;padding:10px;border:1px dashed var(--border);border-radius:10px">
+          <summary style="cursor:pointer;font-weight:700;font-size:13px">🎁 Have loyalty points?</summary>
+          <div style="margin-top:8px;display:flex;gap:6px">
+            <input id="loyalPhone" type="tel" placeholder="03XX-XXXXXXX" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px" inputmode="tel">
+            <button type="button" id="loyalCheck" class="cta" style="padding:8px 12px;font-size:13px">Check</button>
+          </div>
+          <p id="loyalMsg" style="font-size:12px;margin:6px 0 0;min-height:16px"></p>
+          <button type="button" id="loyalApply" class="cta" style="display:none;margin-top:6px;padding:8px 12px;font-size:13px;width:100%">Apply points</button>
+        </details>
         <div class="hint" id="freeHint" hidden></div>
         <div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light"></div>
         <button class="placebtn" id="placeBtn" type="button" disabled>Place Order →</button>

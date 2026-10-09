@@ -217,3 +217,21 @@ export async function sendCustomerWhatsApp(env, order, message) {
     return {sent:true,skipped:false,error:null};
   } catch(err){ return {sent:false,skipped:false,error:String(err?.message||err)}; }
 }
+
+/**
+ * Advanced WhatsApp: order status update to customer.
+ * Called when admin changes fulfilment_status. Best-effort, never throws.
+ */
+export async function sendStatusUpdate(env, order, newStatus) {
+  const statusText = {
+    'pending': 'received and is being prepared',
+    'confirmed': 'confirmed! We are sourcing your snacks fresh from the market',
+    'packed': 'packed and ready for dispatch',
+    'shipped': 'on its way! 🚚',
+    'delivered': 'delivered! Enjoy your chaska! 🎉',
+    'cancelled': 'cancelled. Contact us if this is a mistake.',
+  }[newStatus] || `updated to: ${newStatus}`;
+
+  const msg = `🍬 *ChaskaBox Update*\n\nHi! Your order *${order.order_number}* is ${statusText}\n\nTrack: https://chaskabox.online/track-order.html?order=${encodeURIComponent(order.order_number || '')}\n\nQuestions? Reply to this message.`;
+  return sendCustomerWhatsApp(env, order, msg);
+}

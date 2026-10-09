@@ -892,9 +892,30 @@ document.addEventListener('click', function(e){
 function loadCart(){try{CART=JSON.parse(localStorage.getItem('chaskabox-cart')||'{}');}catch(e){CART={};}}
 function saveCart(){
   localStorage.setItem('chaskabox-cart',JSON.stringify(CART));
+  // Abandoned cart: track last activity (cleared on successful order)
+  if(Object.keys(CART).length) localStorage.setItem('chaskabox-cart-ts', String(Date.now()));
+  else localStorage.removeItem('chaskabox-cart-ts');
   updateBadge(); renderDrawer();
   if(normalizePath(location.pathname)==='/cart/') renderCartPage();
 }
+/* Abandoned cart reminder: if cart has items untouched for 2+ hours, nudge on return */
+function checkAbandonedCart(){
+  try{
+    const ts = Number(localStorage.getItem('chaskabox-cart-ts') || 0);
+    if(!ts || !Object.keys(CART).length) return;
+    const hours = (Date.now() - ts) / 3600000;
+    if(hours < 2 || sessionStorage.getItem('abandoned-nudged')) return;
+    sessionStorage.setItem('abandoned-nudged', '1');
+    const n = Object.values(CART).reduce((s,q) => s + (Number(q)||0), 0);
+    const bar = document.createElement('div');
+    bar.className = 'abandoned-nudge';
+    bar.innerHTML = `<span>🛍️ You left <b>${n} item${n===1?'':'s'}</b> in your bag!</span><a href="/cart/">Complete order →</a><button aria-label="Dismiss">✕</button>`;
+    bar.querySelector('button').onclick = () => bar.remove();
+    document.body.prepend(bar);
+    setTimeout(() => bar.classList.add('show'), 100);
+  }catch(e){}
+}
+function clearAbandonedCart(){ localStorage.removeItem('chaskabox-cart-ts'); }
 let toastTimer=null;
 function showCartToast(p,qty){
   let t=document.getElementById('cartToast');
@@ -1232,6 +1253,7 @@ document.addEventListener('keydown',event=>{
 document.addEventListener('DOMContentLoaded',async()=>{
   fixMobileHeader();
   loadCart(); await loadProducts(); updateBadge(); updateWishCount();
+  checkAbandonedCart();
   initReveals(); initTilt(); initCardTilt(); initPromo(); renderPackingVideo();
   renderHeaderDropdowns();
   /* premium header: deeper shadow once scrolled */

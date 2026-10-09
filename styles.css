@@ -887,3 +887,9 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
 .empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
 .empty-state p{margin:0 0 8px;font-size:15px}
 .empty-state .cta{margin-top:12px;display:inline-block}
+
+/* ---------- Abandoned cart nudge ---------- */
+.abandoned-nudge{display:flex;align-items:center;gap:12px;justify-content:center;background:#1a2b5c;color:#fff;padding:10px 16px;font-size:14px;transform:translateY(-100%);transition:transform .3s;position:sticky;top:0;z-index:100}
+.abandoned-nudge.show{transform:translateY(0)}
+.abandoned-nudge a{color:#f2b705;font-weight:700;text-decoration:none;white-space:nowrap}
+.abandoned-nudge button{background:none;border:none;color:#fff;opacity:.7;cursor:pointer;font-size:16px;padding:4px}
