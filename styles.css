@@ -736,6 +736,8 @@ a.cat:hover b{color:var(--red)}
 .search-all{width:100%;border:0;border-top:1px solid var(--border-soft);background:var(--sel-bg);color:var(--navy);padding:11px 12px;text-align:left;font-weight:850}
 .shop-search-suggestions a{display:grid!important;grid-template-columns:38px 1fr auto!important;align-items:center}
 .shop-search-suggestions img{width:38px;height:38px;object-fit:contain;background:var(--pimg-bg);border-radius:7px}
+.shop-search-suggestions a.suggest-brand,.shop-search-suggestions a.suggest-cat,.home-search-suggestions a.suggest-brand,.home-search-suggestions a.suggest-cat{display:flex!important;justify-content:space-between;align-items:center;background:var(--sel-bg);font-size:12px}
+.shop-search-suggestions a.suggest-brand small,.shop-search-suggestions a.suggest-cat small,.home-search-suggestions a.suggest-brand small,.home-search-suggestions a.suggest-cat small{color:var(--muted);font-size:10px;margin-left:6px}
 .shop-search-suggestions span{display:flex;flex-direction:column;min-width:0}.shop-search-suggestions span b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.shop-search-suggestions small{color:var(--muted)}
 
 /* calmer collapsible desktop filters */

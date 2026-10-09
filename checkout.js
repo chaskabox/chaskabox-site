@@ -16,6 +16,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 
 async function init() {
   try {
+    if(typeof window.chaskaTrack==='function') window.chaskaTrack('checkout_start',{});
     const cfg = await fetch('/api/storefront-config', {cache:'no-cache'}).then(r=>r.ok?r.json():null);
     const st = cfg?.settings || {};
     const settingNumber = (value, fallback) => { const n = Number(value); return Number.isFinite(n) ? n : fallback; };
@@ -395,6 +396,7 @@ async function placeOrder() {
     $('#doneMsg').innerHTML = `Your bank-transfer reference <b>${esc(reference)}</b> has been submitted for verification. Amount: <b>${fmt(finalTotal)}</b>. We'll prepare the order after payment is verified.`;
   }
   if (wantVideo) $('#doneMsg').innerHTML += '<br><br>🎬 <b>Packing video requested.</b> We will try to send a short clip on WhatsApp if operations allow.';
+  if(typeof window.chaskaTrack==='function') window.chaskaTrack('order_complete',{total:finalTotal,payment:payMethod});
   celebrateOrder();
   window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
 }

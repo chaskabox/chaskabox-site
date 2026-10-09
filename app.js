@@ -203,6 +203,7 @@ function filterPanelHTML(){
     +`<details class="fgroup filter-group"><summary>Brand ${selectedBrands}</summary><div class="filter-options">${brands.map(b=>'<label><input type="checkbox" value="'+esc(b)+'" '+(shopState.brands.includes(b)?'checked':'')+' onchange="toggleBrand(this)"> '+esc(b)+'</label>').join('')}</div></details>`
     +`<details class="fgroup filter-group"><summary>Price</summary><div class="filter-options"><input type="range" min="100" max="${maxP}" step="50" value="${shopState.maxPrice||maxP}" oninput="shopState.maxPrice=+this.value;this.closest('.fgroup').querySelector('.pval').textContent=fmt(+this.value);renderShopResults()"><div class="pval">${fmt(shopState.maxPrice||maxP)}</div></div></details>`
     +`<details class="fgroup filter-group"><summary>Pack size</summary><div class="filter-options"><select onchange="shopState.pack=this.value;renderShopResults()"><option value="">All packs</option>${packs.map(p=>'<option '+(shopState.pack===p?'selected':'')+' value="'+esc(p)+'">'+esc(p)+'</option>').join('')}</select></div></details>`
+    +`<details class="fgroup filter-group"><summary>Deals</summary><div class="filter-options"><label><input type="checkbox" ${shopState.badge==='Sale'?'checked':''} onchange="shopState.badge=this.checked?'Sale':'';renderShopResults()"> On Sale</label></div></details>`
     +'<button class="fclear" onclick="clearAllFilters()">Clear filters</button>';
 }
 function renderShopContent(){
@@ -278,6 +279,8 @@ function filteredShop(){
   if(sort==='lo')list=[...list].sort((a,b)=>a.price-b.price);
   else if(sort==='hi')list=[...list].sort((a,b)=>b.price-a.price);
   else if(sort==='az')list=[...list].sort((a,b)=>a.name.localeCompare(b.name));
+  else if(sort==='new')list=[...list].sort((a,b)=>(b.id||0)-(a.id||0));
+  else if(sort==='pop')list=[...list].sort((a,b)=>(b.rating||0)-(a.rating||0));
   return list;
 }
 let shopSearchTimer;
@@ -290,6 +293,8 @@ function renderShopList(){
     +'<option value="lo" '+(sort==='lo'?'selected':'')+'>Price: Low → High</option>'
     +'<option value="hi" '+(sort==='hi'?'selected':'')+'>Price: High → Low</option>'
     +'<option value="az" '+(sort==='az'?'selected':'')+'>Name A–Z</option>'
+    +'<option value="new" '+(sort==='new'?'selected':'')+'>Newest</option>'
+    +'<option value="pop" '+(sort==='pop'?'selected':'')+'>Popular</option>'
     +'</select><span class="cnt" id="shopResultCount"></span>';
   renderShopResults();
 }
@@ -389,9 +394,12 @@ function renderProductDetail(id){
   $('#pdCrumbCat').textContent=p.category||'All Snacks';
   $('#pdCrumbCat').setAttribute('onclick',`goShop('${esc(p.category||'')}');return false`);
   $('#pdCrumbName').textContent=p.name;
+  // Related products: same category, exclude current
+  const related=activeProducts().filter(x=>x.id!==p.id&&x.category===p.category).slice(0,4);
+  const relatedHTML=related.length?`<section class="pd-related"><h2>You may also like</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${related.map(r=>productCardHTML(r)).join('')}</div></section>`:'';
   $('#pdetail').innerHTML=`<div class="pdetail">
     <div class="pd-grid">
-      <div class="pd-imgwrap">${badge}<div class="pd-img">${img}</div></div>
+      <div class="pd-imgwrap">${badge}<div class="pd-img" onclick="openImageLightbox('${esc(assetUrl(p.img||''))}','${esc(p.name)}')" style="cursor:zoom-in" title="Click to zoom">${img}</div></div>
       <div class="pd-info">
         ${catlabel}
         <h1>${esc(p.name)}</h1>
@@ -409,9 +417,34 @@ function renderProductDetail(id){
         <div class="product-help"><b>Need ingredients or allergen details?</b><span>Message ChaskaBox on WhatsApp before ordering. If an item becomes unavailable, we will contact you before any substitution.</span></div>
       </div>
     </div>
-  </div>`;
+  </div>${relatedHTML}`;
   showView('product');
   window.scrollTo(0,0);
+  if(typeof window.chaskaTrack==='function') window.chaskaTrack('product_view',{id:p.id,name:p.name,price:p.price,category:p.category});
+}
+// Image lightbox for product zoom
+function openImageLightbox(src, alt){
+  if(!src) return;
+  let lb=document.getElementById('imgLightbox');
+  if(!lb){
+    lb=document.createElement('div');
+    lb.id='imgLightbox';
+    lb.setAttribute('role','dialog');
+    lb.setAttribute('aria-modal','true');
+    lb.setAttribute('aria-label','Product image enlarged. Press Escape to close.');
+    lb.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:grid;place-items:center;padding:20px;cursor:zoom-out';
+    lb.innerHTML='<img style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:12px" alt="">';
+    lb.onclick=()=>lb.style.display='none';
+    lb.tabIndex=-1;
+    document.body.appendChild(lb);
+    document.addEventListener('keydown',function escHandler(e){
+      if(e.key==='Escape'&&lb.style.display!=='none'){lb.style.display='none';}
+    });
+  }
+  const img=lb.querySelector('img');
+  img.src=src; img.alt=alt||'Product image';
+  lb.style.display='grid';
+  lb.focus();
 }
 function pdBack(){ history.back(); }
 function pdQty(d){const e=$('#pdqty');e.textContent=Math.max(1,+e.textContent+d);}
@@ -548,7 +581,11 @@ function renderCartPage(){
   const threshold=Math.max(0,settingNum('prepaid_free_delivery_threshold_pkr',5000));
   const remaining=Math.max(0,threshold-subtotal), pct=threshold<=0?100:Math.min(100,Math.round(subtotal/threshold*100));
   const progress=remaining?`<p><b>${fmt(remaining)}</b> more to unlock FREE delivery with prepaid payment.</p>`:'<p><b>🎉 Free delivery unlocked</b> for prepaid payment.</p>';
-  el.innerHTML=`<div class="section cart-page"><div class="crumbs"><a href="/">Home</a> <span>›</span> Bag</div><div class="section-head"><div><span class="eyebrow">YOUR CHASKA</span><h1>Your Snack Bag</h1></div><a href="/shop/">Continue shopping →</a></div><div class="cart-page-layout"><div class="cart-page-items">${rows}</div><aside class="cart-summary"><h3>Order summary</h3><div class="drow"><span>Subtotal</span><b>${fmt(subtotal)}</b></div><div class="shipping-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div>${progress}</div><p class="cart-note">COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery · Prepaid ${fmt(threshold)}+: free delivery</p><a class="checkoutbtn cart-checkout" href="/checkout.html">Proceed to Checkout →</a></aside></div></div>`;
+  const cartIds=new Set(items.map(([id])=>String(id)));
+  const cartCats=[...new Set(items.map(([id])=>{const pr=PRODUCTS.find(x=>x.id==id);return pr&&pr.category;}).filter(Boolean))];
+  const crossSell=activeProducts().filter(p=>!cartIds.has(String(p.id))&&cartCats.indexOf(p.category)>=0).slice(0,4);
+  const crossHTML=crossSell.length?`<section class="cart-cross"><h2>Complete your chaska</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">${crossSell.map(p=>productCardHTML(p)).join('')}</div></section>`:'';
+  el.innerHTML=`<div class="section cart-page"><div class="crumbs"><a href="/">Home</a> <span>›</span> Bag</div><div class="section-head"><div><span class="eyebrow">YOUR CHASKA</span><h1>Your Snack Bag</h1></div><a href="/shop/">Continue shopping →</a></div><div class="cart-page-layout"><div class="cart-page-items">${rows}</div><aside class="cart-summary"><h3>Order summary</h3><div class="drow"><span>Subtotal</span><b>${fmt(subtotal)}</b></div><div class="shipping-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div>${progress}</div><p class="cart-note">COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery · Prepaid ${fmt(threshold)}+: free delivery</p><a class="checkoutbtn cart-checkout" href="/checkout.html">Proceed to Checkout →</a></aside></div>${crossHTML}</div>`;
   animateProgressIn(el,'cart',pct);
 }
 function setCartPageQty(id,qty){ if(qty<=0)delete CART[id]; else CART[id]=qty; saveCart(); renderCartPage(); }
@@ -626,18 +663,44 @@ function focusShopSearch(){
 }
 
 let homeSuggestIndex=-1;
+// Fuzzy match: returns true if query matches text with up to 1 typo per 4 chars
+function fuzzyMatch(query, text){
+  const q=query.toLowerCase(), t=text.toLowerCase();
+  if(t.includes(q)) return true;
+  if(q.length<3) return false;
+  // Simple edit-distance-1 check: try removing one char from query
+  for(let i=0;i<q.length;i++){
+    const shortened=q.slice(0,i)+q.slice(i+1);
+    if(t.includes(shortened)) return true;
+  }
+  return false;
+}
+function getMatchingBrands(q){
+  const brands=[...new Set(activeProducts().map(p=>getBrand(p.name)))];
+  return brands.filter(b=>fuzzyMatch(q,b)).slice(0,3);
+}
+function getMatchingCategories(q){
+  const cats=[...new Set(activeProducts().map(p=>p.category).filter(Boolean))];
+  return cats.filter(c=>fuzzyMatch(q,c)).slice(0,3);
+}
 function renderHomeSearchSuggestions(value){
   const box=document.getElementById('homeSearchSuggestions'); if(!box)return;
   const raw=String(value||'').trim(), q=raw.toLowerCase(); homeSuggestIndex=-1;
   if(q.length<2){box.hidden=true;box.innerHTML='';return;}
   const allMatches=activeProducts().filter(p=>{
     const hay=[p.name,p.category,p.brand,getBrand(p.name)].filter(Boolean).join(' ').toLowerCase();
-    return hay.includes(q);
+    return fuzzyMatch(q, hay);
   });
   const matches=allMatches.slice(0,6);
+  const brands=getMatchingBrands(q);
+  const cats=getMatchingCategories(q);
   box.hidden=false;
   box.setAttribute('role','listbox');
-  box.innerHTML=matches.length?matches.map((p,i)=>`<a role="option" data-hidx="${i}" href="${productHref(p.id)}"><img src="${esc(assetUrl(p.img||''))}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.pack||p.category||'')}</small></span><strong>${fmt(p.price)}</strong></a>`).join('')+`<button class="search-all" type="button" onclick="searchAllFromHome()">See all ${allMatches.length} result${allMatches.length===1?'':'s'} →</button>`:'<div class="search-empty">No exact match — press Search to browse all results.</div>';
+  let html='';
+  if(brands.length) html+=brands.map(b=>`<a role="option" class="suggest-brand" href="/shop/?brand=${encodeURIComponent(b)}"><span>🏷️ <b>${esc(b)}</b> <small>Brand</small></span><span>→</span></a>`).join('');
+  if(cats.length) html+=cats.map(c=>`<a role="option" class="suggest-cat" href="/shop/?cat=${encodeURIComponent(c)}"><span>📁 <b>${esc(c)}</b> <small>Category</small></span><span>→</span></a>`).join('');
+  html+=matches.length?matches.map((p,i)=>`<a role="option" data-hidx="${i}" href="${productHref(p.id)}"><img src="${esc(assetUrl(p.img||''))}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.pack||p.category||'')}</small></span><strong>${fmt(p.price)}</strong></a>`).join('')+`<button class="search-all" type="button" onclick="searchAllFromHome()">See all ${allMatches.length} result${allMatches.length===1?'':'s'} →</button>`:'<div class="search-empty">No exact match — press Search to browse all results.</div>';
+  box.innerHTML=html;
 }
 function setHomeSuggestion(index){
   const box=document.getElementById('homeSearchSuggestions');if(!box||box.hidden)return;
@@ -650,6 +713,7 @@ function searchAllFromHome(){ submitHomeSearch(); }
 function submitHomeSearch(){
   const input=document.getElementById('homeSearch');
   const q=(input?.value||'').trim();
+  if(typeof window.chaskaTrack==='function' && q) window.chaskaTrack('search',{query:q,source:'home'});
   shopState={q,cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''};
   navigate('/shop/');
   setTimeout(()=>document.getElementById('fq')?.focus(),80);
@@ -669,11 +733,17 @@ function renderHeaderSearchSuggestions(value){
   if(q.length<2){box.hidden=true;box.innerHTML='';return;}
   const allMatches=activeProducts().filter(p=>{
     const hay=[p.name,p.category,p.brand,getBrand(p.name)].filter(Boolean).join(' ').toLowerCase();
-    return hay.includes(q);
+    return fuzzyMatch(q, hay);
   });
   const matches=allMatches.slice(0,6);
+  const brands=getMatchingBrands(q);
+  const cats=getMatchingCategories(q);
   box.hidden=false;
-  box.innerHTML=matches.length?matches.map((p,i)=>`<a role="option" data-hidx="${i}" href="${productHref(p.id)}"><img src="${esc(assetUrl(p.img||''))}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.pack||p.category||'')}</small></span><strong>${fmt(p.price)}</strong></a>`).join(''):'<div class="search-empty">No matches — press Enter to search.</div>';
+  let html='';
+  if(brands.length) html+=brands.map(b=>`<a role="option" class="suggest-brand" href="/shop/?brand=${encodeURIComponent(b)}"><span>🏷️ <b>${esc(b)}</b> <small>Brand</small></span><span>→</span></a>`).join('');
+  if(cats.length) html+=cats.map(c=>`<a role="option" class="suggest-cat" href="/shop/?cat=${encodeURIComponent(c)}"><span>📁 <b>${esc(c)}</b> <small>Category</small></span><span>→</span></a>`).join('');
+  html+=matches.length?matches.map((p,i)=>`<a role="option" data-hidx="${i}" href="${productHref(p.id)}"><img src="${esc(assetUrl(p.img||''))}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.pack||p.category||'')}</small></span><strong>${fmt(p.price)}</strong></a>`).join(''):'<div class="search-empty">No matches — press Enter to search.</div>';
+  box.innerHTML=html;
 }
 function headerSearchKey(event){
   const box=document.getElementById('headerSearchSuggestions');
@@ -832,6 +902,7 @@ function addToCart(id,qty=1,el){
   qty=Math.max(1,Number(qty)||1);
   if(el) flyToCart(el,id);
   CART[id]=(CART[id]||0)+qty; saveCart(); popBadge();
+  if(typeof window.chaskaTrack==='function') window.chaskaTrack('add_to_cart',{id:p.id,name:p.name,price:p.price,qty});
   if(el && el.closest && el.closest('.card')){
     const old=el.innerHTML; el.innerHTML='Added ✓'; el.disabled=true;
     setTimeout(()=>{ if(document.body.contains(el)){el.innerHTML=old;el.disabled=false;} },850);

@@ -12,3 +12,18 @@
     const s=document.createElement('script'); s.async=true; s.src='https://www.clarity.ms/tag/'+encodeURIComponent(id); document.head.appendChild(s);
   }catch(e){ console.warn('analytics bootstrap skipped',e); }
 })();
+
+/* Conversion event tracking */
+window.chaskaTrack = window.chaskaTrack || function(event, data){
+  try {
+    const payload = {event, data: data||{}, ts: Date.now(), path: location.pathname};
+    // Log to console in dev, send to endpoint in prod
+    if (location.hostname === 'localhost' || location.hostname.includes('pages.dev')) {
+      console.log('[track]', event, data);
+    }
+    // Send to analytics endpoint (fire and forget)
+    if (navigator.sendBeacon) {
+      navigator.sendBeacon('/api/analytics/event', JSON.stringify(payload));
+    }
+  } catch(e) {}
+};
