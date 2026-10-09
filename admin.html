@@ -202,6 +202,14 @@
           <section class="panel">
             <div class="panel-head"><div><h2>🎨 Generate Image</h2><p>Free via Pollinations.ai — no API key needed</p></div></div>
             <div style="display:grid;gap:12px;padding:4px">
+              <div>
+                <label style="font-size:13px;font-weight:600">📸 ChaskaBox Style Presets</label>
+                <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
+                  <button type="button" class="btn secondary compact" data-preset="chaskabox">📦 ChaskaBox Product Style</button>
+                  <button type="button" class="btn secondary compact" data-preset="boxitem">🎁 Box + Single Item</button>
+                  <button type="button" class="btn secondary compact" data-preset="single">🍬 Single Pack Shot</button>
+                </div>
+              </div>
               <label>Prompt<textarea id="studioPrompt" rows="3" placeholder="e.g. Colorful Pakistani candy box on white background, product photography" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px"></textarea></label>
               <label>📷 Reference product photo (optional)<input type="file" id="studioRefImage" accept="image/*" style="padding:8px">
               <small class="muted">AI is photo ko base bana kar naya image banayega (banner ke liye behtreen)</small></label>
@@ -230,6 +238,7 @@
             <div id="studioActions" style="display:none;margin-top:12px;gap:8px">
               <button class="btn secondary" id="downloadImageBtn">⬇️ Download</button>
               <button class="btn secondary" id="newVariationBtn">🔄 New variation</button>
+              <button class="btn primary" id="useForProductBtn">📦 Use for Product…</button>
             </div>
           </section>
         </div>

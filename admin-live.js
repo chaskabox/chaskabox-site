@@ -1010,7 +1010,22 @@
   /* ============ AI IMAGE STUDIO ============ */
   let lastGeneratedImage = null;
   let studioRefImageData = null;
+  // ChaskaBox product photo style presets (match site standards)
+  const STUDIO_PRESETS = {
+    chaskabox: 'Professional product photography, Pakistani snack packaging, clean white background, studio lighting, sharp focus, centered, e-commerce product shot, high detail',
+    boxitem: 'Product box with single item pack beside it, clean white background, professional studio lighting, clear and close, e-commerce style, sharp focus',
+    single: 'Single snack pack product shot, clean white background, professional studio lighting, centered, sharp focus, e-commerce product photography',
+  };
   function initImageStudio(){
+    // Style presets
+    document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click', ()=>{
+      const p=STUDIO_PRESETS[b.dataset.preset];
+      if(p){
+        const cur=$('#studioPrompt').value.trim();
+        $('#studioPrompt').value = cur ? cur + ', ' + p : p;
+        toast('Style preset added');
+      }
+    }));
     // Reference image upload
     $('#studioRefImage')?.addEventListener('change', e=>{
       const file=e.target.files?.[0];
@@ -1057,4 +1072,42 @@
       toast('Downloaded');
     });
     $('#newVariationBtn')?.addEventListener('click', ()=>$('#generateImageBtn').click());
+    // Use generated image for a product: upload to media library + set as product image
+    $('#useForProductBtn')?.addEventListener('click', async ()=>{
+      if(!lastGeneratedImage){toast('Pehle image generate karen');return;}
+      const q=prompt('Kis product ke liye? (naam ya ID likhen):');
+      if(!q?.trim()) return;
+      try{
+        toast('Upload ho raha hai…');
+        // Find product
+        const sData=await api(`/api/admin/products?per_page=5&q=${encodeURIComponent(q.trim())}`);
+        const prods=sData.products||[];
+        if(!prods.length){toast('Product nahi mila');return;}
+        let p=prods[0];
+        if(prods.length>1){
+          const ch=prods.map((x,i)=>`${i+1}. ${x.name}`).join('\n');
+          const sel=prompt(`Kaunsa?\n${ch}\n\nNumber likhen:`,'1');
+          p=prods[Number(sel)-1]||prods[0];
+        }
+        // Convert data URL → Blob → upload to media library
+        let imageBlob;
+        if(lastGeneratedImage.startsWith('data:')){
+          const res=await fetch(lastGeneratedImage);
+          imageBlob=await res.blob();
+        }else{
+          // Remote URL (Pollinations) — fetch and upload
+          const res=await fetch(lastGeneratedImage);
+          imageBlob=await res.blob();
+        }
+        const fd=new FormData();
+        fd.append('file', imageBlob, `ai-product-${p.id}-${Date.now()}.png`);
+        const up=await api('/api/admin/media',{method:'POST',body:fd});
+        const imageUrl=up?.url;
+        if(!imageUrl){toast('Upload fail');return;}
+        // Confirm and apply
+        if(!confirm(`"${p.name}" ki image update karen?\n\nNayi: ${imageUrl}\n\n(Purani version history mein save ho jayegi)`)) return;
+        await api(`/api/admin/products/${p.id}`,{method:'PATCH',body:{image_url:imageUrl}});
+        toast(`✅ ${p.name} ki image update ho gayi!`);
+      }catch(e){toast(e.message||'Failed');}
+    });
   }
