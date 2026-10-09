@@ -124,11 +124,13 @@ function renderHomeContent(){
   // Curated homepage shelves: fast discovery without dumping the full catalogue
   shelfSeq=0;
   let html='';
-  const sale=act.filter(p=>p.oldPrice&&p.oldPrice>p.price).slice(0,10);
-  const picks=curatedProducts('chaska_picks',act.filter(p=>p.category!=='Bundles').slice(0,10));
-  const bundles=curatedProducts('boxes',(cats['Bundles']||[]).slice(0,10));
-  const chatpata=curatedProducts('chatpata_picks',(cats['Snacks & Nimco']||[]).slice(0,10));
-  const newest=curatedProducts('new_items',[...act].sort((a,b)=>Number(b.id)-Number(a.id)).slice(0,10));
+  // Homepage shelves: only products WITH real photos (no "Photo coming soon" on showcase)
+  const actImg=act.filter(p=>p.img);
+  const sale=actImg.filter(p=>p.oldPrice&&p.oldPrice>p.price).slice(0,10);
+  const picks=curatedProducts('chaska_picks',actImg.filter(p=>p.category!=='Bundles').slice(0,10));
+  const bundles=curatedProducts('boxes',(cats['Bundles']||[]).filter(p=>p.img).slice(0,10));
+  const chatpata=curatedProducts('chatpata_picks',actImg.filter(p=>p.category==='Snacks & Nimco').slice(0,10));
+  const newest=curatedProducts('new_items',actImg.sort((a,b)=>Number(b.id)-Number(a.id)).slice(0,10));
   if(sale.length) html+=shelf('🔥 Deals Worth Grabbing',sale,'#b42318','', 'Sale','deals');
   if(picks.length) html+=shelf('⭐ Chaska Picks',picks,'#1a2b5c','','','chaska_picks');
   if(bundles.length) html+=shelf('📦 Chaska Boxes',bundles,'#d49a17','Bundles','','boxes');
@@ -137,7 +139,7 @@ function renderHomeContent(){
   $('#shelves').innerHTML=html;
   const wp=$('#weeklyPick');
   if(wp){
-    const pick=sale[0]||picks[0]||act[0];
+    const pick=sale[0]||picks[0]||actImg[0];
     if(pick){
       wp.innerHTML=`<a class="pickcard" href="${productHref(pick.id)}"><div class="pickimg"><img src="${esc(assetUrl(pick.img||''))}" alt="${esc(pick.name)}" loading="lazy"></div><div class="pickinfo"><div class="picktag">${esc((pick.category||'ChaskaBox').toUpperCase())}</div><b>${esc(pick.name)}</b><div class="pickprice">${fmt(pick.price)}</div><span class="alink">View snack →</span></div></a>`;
     } else wp.innerHTML='';
