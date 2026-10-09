@@ -260,6 +260,7 @@ export async function onRequest(context) {
             };
             const notifyResult = await notifyOwner(env, orderForNotify);
             // Persist notification delivery status on the order row (best-effort).
+            // Idempotency: only update if not already marked sent (prevents duplicate marking).
             try {
               const nowIso = new Date().toISOString();
               const patch = {
@@ -270,7 +271,16 @@ export async function onRequest(context) {
               };
               if (notifyResult.email_sent) patch.email_sent_at = nowIso;
               if (notifyResult.whatsapp_sent) patch.whatsapp_sent_at = nowIso;
-              await updateRows(env, 'orders', { id: result.row.id }, patch);
+              const updateRes = await updateRows(env, 'orders', { id: notifyRow.id }, patch);
+              // Verify the update actually applied (updateRows returns array of updated rows)
+              const updated = Array.isArray(updateRes) ? updateRes[0] : updateRes;
+              if (!updated || updated.email_sent !== notifyResult.email_sent) {
+                logError('orders:notify-status-mismatch', new Error(JSON.stringify({
+                  order_id: notifyRow.id,
+                  expected_email_sent: notifyResult.email_sent,
+                  actual: updated ? updated.email_sent : 'no-row-returned',
+                })));
+              }
             } catch (statusErr) {
               logError('orders:notify-status', statusErr);
             }
