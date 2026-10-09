@@ -242,7 +242,8 @@
         // Store draft for potential apply
         window._lastAiDraft={task,draft:data.draft||'',model:data.model||'Workers AI'};
         const canApply=['product_description','seo_meta'].includes(task);
-        $('#aiOutput').innerHTML=`<p>${safe}</p><hr><small class="muted">${escapeHtml(data.model||'Workers AI')} · Draft/insight only — nothing was changed.</small>${canApply?'<div style="margin-top:12px"><button class="btn primary" id="applyAiDraftBtn">✨ Apply to product…</button></div>':''}`;
+        const usage=data.usage_today!=null?`<small class="muted"> · ${data.usage_today} AI calls today</small>`:'';
+        $('#aiOutput').innerHTML=`<p>${safe}</p><hr><small class="muted">${escapeHtml(data.model||'Workers AI')} · Draft/insight only — nothing was changed.${usage}</small>${canApply?'<div style="margin-top:12px"><button class="btn primary" id="applyAiDraftBtn">✨ Apply to product…</button></div>':''}`;
         $('#applyAiDraftBtn')?.addEventListener('click',showAiApplyDialog);
       }catch(e){$('#aiOutput').innerHTML=`<p class="muted">${escapeHtml(e.message||'Free AI is unavailable right now. Store operations are unaffected.')}</p>`;}
       finally{btn.disabled=false;btn.textContent=old;}

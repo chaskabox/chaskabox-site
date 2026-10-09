@@ -196,7 +196,16 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
       temperature: task.endsWith('_summary') ? 0.15 : 0.45,
     });
     await audit(context,{actorId:user.id,actorRole:role,action:'ai.draft_generated',entityType:'ai',entityId:'n/a',after:{task,draft_chars:result.text.length,model:result.model}});
-    return json({task,draft:result.text,model:result.model,source:serverContext?'trusted_server_metrics':'admin_supplied_context',warnings:['DRAFT/INSIGHT ONLY — nothing was changed or published.','Verify factual product claims before using generated copy.']});
+    // Track usage for quota display (best-effort)
+    sb(context, '/rest/v1/ai_usage', { method:'POST', body:{ task, user_id: user.id, success: true } }).catch(()=>{});
+    // Get today's usage count
+    const today = new Date().toISOString().slice(0,10);
+    let usageToday = 0;
+    try {
+      const usage = await sb(context, `/rest/v1/ai_usage?created_at=gte.${today}&select=id`);
+      usageToday = (usage||[]).length;
+    } catch(e) {}
+    return json({task,draft:result.text,model:result.model,source:serverContext?'trusted_server_metrics':'admin_supplied_context',usage_today:usageToday,warnings:['DRAFT/INSIGHT ONLY — nothing was changed or published.','Verify factual product claims before using generated copy.']});
   } catch (error) {
     console.error('[admin-ai] Workers AI error',error?.message||error);
     httpError('Free AI is temporarily unavailable or daily quota is exhausted. Store operations are unaffected.',503,'ai_unavailable');
