@@ -876,3 +876,14 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
 .rw-msg{font-size:13px;margin:10px 0 0;min-height:18px}
 .rw-loading,.rw-error{text-align:center;color:var(--muted);padding:24px}
 @media(max-width:760px){.rw-wrap{margin-top:28px}}
+
+/* ---------- Wishlist ---------- */
+.wishbtn{position:absolute;top:8px;right:8px;z-index:3;width:32px;height:32px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.92);color:#999;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform .15s,color .15s}
+.wishbtn:hover{transform:scale(1.12)}
+.wishbtn.on{color:#e5484d;border-color:#e5484d}
+.card{position:relative}
+.pdwish{width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background:var(--card);font-size:20px;color:#999;cursor:pointer;flex-shrink:0}
+.pdwish.on{color:#e5484d;border-color:#e5484d}
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state p{margin:0 0 8px;font-size:15px}
+.empty-state .cta{margin-top:12px;display:inline-block}

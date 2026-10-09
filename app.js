@@ -488,7 +488,7 @@ function applyHomeCms(){
 }
 /* ---------- views ---------- */
 function showView(v){
-  const views=['home','shop','product','account','cart','404'];
+  const views=['home','shop','product','account','cart','wishlist','404'];
   views.forEach(name=>{
     const el=document.getElementById('view-'+name);
     if(!el) return;
@@ -827,6 +827,8 @@ function route(){
     renderCartRoute();
   } else if(path === '/account/'){
     renderAccountRoute();
+  } else if(path === '/wishlist/'){
+    renderWishlistRoute();
   } else if(path.startsWith('/category/')){
     const slug = path.replace('/category/', '').replace(/\/$/, '');
     renderCategoryRoute(slug);
@@ -1229,7 +1231,7 @@ document.addEventListener('keydown',event=>{
 /* ---------- init ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
   fixMobileHeader();
-  loadCart(); await loadProducts(); updateBadge();
+  loadCart(); await loadProducts(); updateBadge(); updateWishCount();
   initReveals(); initTilt(); initCardTilt(); initPromo(); renderPackingVideo();
   renderHeaderDropdowns();
   /* premium header: deeper shadow once scrolled */
@@ -1265,4 +1267,45 @@ function renderMnav(){
     <a href="/shop/" onclick="goBadge('Sale');return false">🔥 Deals</a>
     <div style="border-top:1px solid var(--border);margin:8px 0"></div>
     <a href="/account/" onclick="closeMnav()">👤 My Account</a>`;
+}
+
+/* ---------- Wishlist ---------- */
+function getWishlist(){ try{ return JSON.parse(localStorage.getItem('chaskabox-wishlist')||'[]'); }catch{ return []; } }
+function saveWishlist(w){ localStorage.setItem('chaskabox-wishlist', JSON.stringify(w)); updateWishCount(); }
+function isWished(id){ return getWishlist().includes(Number(id)); }
+function toggleWishlist(id, btn){
+  id = Number(id);
+  let w = getWishlist();
+  if(w.includes(id)) w = w.filter(x => x !== id);
+  else w.push(id);
+  saveWishlist(w);
+  // Update all heart buttons for this product
+  document.querySelectorAll(`[data-wish="${id}"]`).forEach(b => {
+    b.classList.toggle('on', w.includes(id));
+    b.setAttribute('aria-pressed', w.includes(id) ? 'true' : 'false');
+  });
+  if(btn){ btn.classList.toggle('on', w.includes(id)); }
+  // Refresh wishlist view if open
+  if(location.pathname === '/wishlist/') renderWishlistRoute();
+}
+function wishBtnHTML(p){
+  const on = isWished(p.id) ? ' on' : '';
+  return `<button class="wishbtn${on}" data-wish="${p.id}" aria-label="Add to wishlist" aria-pressed="${isWished(p.id)}" onclick="event.preventDefault();toggleWishlist(${p.id},this)">♥</button>`;
+}
+function updateWishCount(){
+  const n = getWishlist().length;
+  document.querySelectorAll('.wishcount').forEach(el => {
+    el.textContent = n;
+    el.style.display = n ? '' : 'none';
+  });
+}
+function renderWishlistRoute(){
+  const w = getWishlist();
+  const products = w.map(id => activeProducts().find(p => Number(p.id) === Number(id))).filter(Boolean);
+  const html = products.length
+    ? `<div class="grid">${products.map(p => cardHTML(p)).join('')}</div>`
+    : `<div class="empty-state"><p>🤍 Your wishlist is empty.</p><p>Tap the ♥ on any snack to save it here.</p><a class="cta" href="/shop/">Browse snacks →</a></div>`;
+  $('#view-wishlist').innerHTML = `<div class="section"><span class="eyebrow">SAVED</span><h1>My Wishlist (${products.length})</h1>${html}</div>`;
+  showView('wishlist');
+  window.scrollTo(0,0);
 }
