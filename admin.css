@@ -35,3 +35,10 @@
 .admin-loading{display:flex;flex-direction:column;align-items:center;gap:12px;padding:40px 20px;color:var(--muted,#888)}
 .admin-loading .spinner{width:32px;height:32px;border:3px solid rgba(0,0,0,.1);border-top-color:var(--accent,#e8730c);border-radius:50%;animation:admin-spin .8s linear infinite}
 @keyframes admin-spin{to{transform:rotate(360deg)}}
+
+/* ---------- Admin pagination ---------- */
+.admin-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0;padding:12px 16px;background:var(--card,#fff);border:1px solid var(--border,#e5e7eb);border-radius:12px;font-size:13px;flex-wrap:wrap}
+.admin-pagination .pg-btns{display:flex;gap:6px;flex-wrap:wrap}
+.admin-pagination button{padding:7px 12px;border:1px solid var(--border,#e5e7eb);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600}
+.admin-pagination button:hover{background:#f4f6fb}
+.admin-pagination button.active{background:#1a2b5c;color:#fff;border-color:#1a2b5c}

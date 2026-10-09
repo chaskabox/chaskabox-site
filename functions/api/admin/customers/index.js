@@ -58,8 +58,31 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
     count: true,
   });
 
+  let customers = data || [];
+
+  // Fallback: if customers table is empty, aggregate from orders
+  // (customers are identified by phone; orders always have customer info)
+  if (!customers.length && !q && page === 1) {
+    try {
+      const orders = await sb(context, '/rest/v1/orders?select=customer_name,customer_phone,created_at&order=created_at.desc&limit=1000');
+      const seen = new Map();
+      (orders || []).forEach(o => {
+        const phone = String(o.customer_phone || '').trim();
+        if (!phone || seen.has(phone)) return;
+        seen.set(phone, {
+          id: `order-${phone}`,
+          user_id: null,
+          name: o.customer_name || 'Customer',
+          phone,
+          created_at: o.created_at,
+        });
+      });
+      customers = [...seen.values()];
+    } catch (e) { /* fallback failed, show empty */ }
+  }
+
   return json({
-    customers: await enrich(context, data || []),
-    page, per_page: per, total, total_pages: Math.ceil(total / per),
+    customers: await enrich(context, customers),
+    page, per_page: per, total: total || customers.length, total_pages: Math.ceil((total || customers.length) / per),
   });
 });

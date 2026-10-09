@@ -12,10 +12,25 @@ function slugify(s) {
 
 export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (context) => {
   const cats = await sb(context, '/rest/v1/categories?select=*&order=position.asc');
-  // Get product counts
+  // Get product counts: from junction table AND from products.category text field
+  // (products use text category like "Snacks & Nimco"; junction table may be empty)
   const counts = await sb(context, '/rest/v1/category_products?select=category_id');
   const byCat = {};
   (counts || []).forEach(r => { byCat[r.category_id] = (byCat[r.category_id] || 0) + 1; });
+  // Also count via products.category text field matched to category name/slug
+  try {
+    const prods = await sb(context, '/rest/v1/products?select=category&limit=1000');
+    const byName = {};
+    (prods || []).forEach(p => {
+      const c = String(p.category || '').trim();
+      if (c) byName[c] = (byName[c] || 0) + 1;
+    });
+    (cats || []).forEach(c => {
+      const nameCount = byName[c.name] || 0;
+      // Use whichever count is higher (junction or text match)
+      if (nameCount > (byCat[c.id] || 0)) byCat[c.id] = nameCount;
+    });
+  } catch (e) { /* fallback to junction counts only */ }
   const enriched = (cats || []).map(c => ({ ...c, product_count: byCat[c.id] || 0 }));
   return json({ categories: enriched });
 });

@@ -59,11 +59,15 @@
   }
 
   async function loadDashboard(){
-    const [attention,od,metrics]=await Promise.all([api('/api/admin/attention'),api('/api/admin/orders?per_page=100'),api('/api/admin/metrics?days=30')]); orders=od.orders||[];
-    $('#metricOrders').textContent=attention.counts?.new_orders ?? orders.filter(o=>o.fulfilment_status==='new').length;
+    let attention={counts:{},needs_attention:[]}, od={orders:[]}, metrics={};
+    try{
+      [attention,od,metrics]=await Promise.all([api('/api/admin/attention'),api('/api/admin/orders?per_page=100'),api('/api/admin/metrics?days=30')]);
+    }catch(e){ console.warn('[dashboard] API error', e); }
+    const dashOrders=od.orders||[];
+    $('#metricOrders').textContent=attention.counts?.new_orders ?? dashOrders.filter(o=>o.fulfilment_status==='new').length ?? 0;
     $('#metricRevenue').textContent=money(metrics.recognized_sales_pkr||0);
     const revenueCard=$('#metricRevenue')?.closest('.metric-card'); if(revenueCard){const small=revenueCard.querySelector('small');if(small)small.textContent='Recognized sales · 30 days';}
-    $('#orderNavCount').textContent=orders.length;
+    $('#orderNavCount').textContent=dashOrders.length;
     let panel=$('#needsAttentionPanel'); if(!panel){panel=document.createElement('section');panel.id='needsAttentionPanel';panel.className='panel';$('#view-dashboard').appendChild(panel);} const rows=attention.needs_attention||[];
     panel.innerHTML=`<div class="panel-head"><div><h2>Needs attention</h2><p>Only exceptions that need owner/staff action.</p></div><button class="text-btn" id="refreshAttention">Refresh</button></div>${rows.length?`<div class="attention-list">${rows.slice(0,12).map(x=>`<button class="attention-row" data-open-order="${esc(x.id)}"><span class="attention-dot ${esc(x.reason)}"></span><div><b>${esc(x.order_number)} · ${esc(x.customer_name)}</b><small>${esc(x.reason.replaceAll('_',' '))} · ${x.age_minutes} min · ${money(x.total)}</small></div><span>Open →</span></button>`).join('')}</div>`:'<div class="empty-mini">Nothing urgent right now.</div>'}`;
     $('#refreshAttention')?.addEventListener('click',loadDashboard); $$('[data-open-order]',panel).forEach(b=>b.onclick=()=>openOrder(b.dataset.openOrder));
@@ -93,9 +97,37 @@
     $('[data-retry]',modal).onclick=async()=>{try{await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast('Notification queued for retry')}catch(e){toast(e.message)}};
   }
 
-  async function loadProducts(){
-    const data=await api('/api/admin/products?per_page=100'); products=data.products||[]; $('#metricProducts').textContent=data.total??products.length; $('#productNavCount').textContent=data.total??products.length;
+  let productPage = 1, productTotalPages = 1, productTotal = 0;
+  const PRODUCT_PER_PAGE = 50;
+  async function loadProducts(page){
+    productPage = page || 1;
+    const data=await api(`/api/admin/products?per_page=${PRODUCT_PER_PAGE}&page=${productPage}`); products=data.products||[];
+    productTotal = data.total ?? products.length;
+    productTotalPages = data.total_pages ?? 1;
+    $('#metricProducts').textContent=productTotal; $('#productNavCount').textContent=productTotal;
     renderFilteredProducts();
+    renderProductPagination();
+  }
+  function renderProductPagination(){
+    let pag = $('#productPagination');
+    if(!pag){
+      const grid = $('#productAdminGrid');
+      if(!grid) return;
+      pag = document.createElement('div');
+      pag.id = 'productPagination';
+      pag.className = 'admin-pagination';
+      grid.after(pag);
+    }
+    if(productTotalPages <= 1){ pag.innerHTML=''; pag.style.display='none'; return; }
+    pag.style.display='flex';
+    let btns = '';
+    if(productPage > 1) btns += `<button data-pg="${productPage-1}">← Prev</button>`;
+    // Page numbers (window of 5)
+    const start = Math.max(1, productPage - 2), end = Math.min(productTotalPages, start + 4);
+    for(let i=start; i<=end; i++) btns += `<button data-pg="${i}" class="${i===productPage?'active':''}">${i}</button>`;
+    if(productPage < productTotalPages) btns += `<button data-pg="${productPage+1}">Next →</button>`;
+    pag.innerHTML = `<span>Page ${productPage} of ${productTotalPages} (${productTotal} products)</span><div class="pg-btns">${btns}</div>`;
+    pag.querySelectorAll('[data-pg]').forEach(b => b.onclick = () => { loadProducts(Number(b.dataset.pg)); window.scrollTo({top:0,behavior:'smooth'}); });
   }
   function getProductFilters(){
     const q=($('#productSearch')?.value||'').trim().toLowerCase();
@@ -217,12 +249,13 @@
         const vis=(b.visibility||'draft').toLowerCase();
         const visClass=vis==='visible'?'visible':(vis==='hidden'?'hidden':'');
         const itemCount=b.item_count ?? (b.items||[]).length;
+        const countLabel = itemCount > 0 ? `${itemCount} items` : '⚠️ No items — edit to add';
         return `
         <div class="existing-box-card">
           <h4>${esc(b.title||b.name||'Untitled Box')}</h4>
           <div class="box-meta">
             <span class="box-price">${money(b.selling_price||b.price||0)}</span>
-            <span>·</span><span>${itemCount} item${itemCount!==1?'s':''}</span>
+            <span>·</span><span>${countLabel}</span>
             <span class="box-badge ${visClass}">${esc(b.visibility||'draft')}</span>
           </div>
           <div class="box-actions">
