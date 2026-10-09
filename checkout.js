@@ -40,7 +40,7 @@ async function init() {
     if(!loaded) throw new Error('Could not load product catalogue');
     PRODUCTS=loaded;
   } catch (e) {
-    showOrderError('We could not load the current product catalogue. Please refresh and try again.');
+    showOrderError('We could not load the current product catalogue.', () => location.reload());
     return;
   }
 
@@ -61,6 +61,11 @@ async function init() {
 
   renderSummary();
   prefillFromAccount();
+  // Init completed: enable Place Order (it starts disabled in HTML).
+  // applyPaymentAvailability() may have disabled it when no payment method
+  // is enabled — respect that and keep it disabled in that case.
+  const placeBtnEl = document.getElementById('placeBtn');
+  if (placeBtnEl && Object.values(PAYMENT_ENABLED).some(Boolean)) placeBtnEl.disabled = false;
 }
 
 async function prefillFromAccount() {
@@ -204,10 +209,22 @@ function orderNo() {
   return `CB-${dd}${mm}${yy}-${rnd}`;
 }
 
-function showOrderError(message){
+function showOrderError(message, retryFn){
   const el = $('#orderError');
   if (!el) return;
-  el.textContent = message;
+  el.textContent = '';
+  const span = document.createElement('span');
+  span.textContent = message;
+  el.appendChild(span);
+  if (typeof retryFn === 'function') {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cta';
+    btn.style.marginLeft = '12px';
+    btn.textContent = 'Try Again';
+    btn.addEventListener('click', () => { clearOrderError(); retryFn(); });
+    el.appendChild(btn);
+  }
   el.hidden = false;
   el.scrollIntoView({behavior:'smooth',block:'center'});
 }
@@ -250,6 +267,23 @@ function uuidv4() {
   if (crypto?.randomUUID) return crypto.randomUUID();
   const a=new Uint8Array(16); crypto.getRandomValues(a); a[6]=(a[6]&15)|64; a[8]=(a[8]&63)|128;
   return [...a].map((b,i)=>(i===4||i===6||i===8||i===10?'-':'')+b.toString(16).padStart(2,'0')).join('');
+}
+
+// Idempotency: reuse the same key for retries of an unchanged order.
+// Key is persisted in sessionStorage, keyed by cart content hash.
+// A changed cart gets a fresh key.
+function getIdempotencyKey(itemRows){
+  const cartHash = itemRows.map(i=>i.id+':'+i.qty).sort().join('|');
+  try{
+    const stored = JSON.parse(sessionStorage.getItem('cb_idempotency')||'{}');
+    if(stored.hash === cartHash && stored.key) return stored.key;
+    const key = uuidv4();
+    sessionStorage.setItem('cb_idempotency', JSON.stringify({hash: cartHash, key}));
+    return key;
+  }catch(e){ return uuidv4(); }
+}
+function clearIdempotencyKey(){
+  try{ sessionStorage.removeItem('cb_idempotency'); }catch(e){}
 }
 
 
@@ -323,7 +357,7 @@ async function placeOrder() {
   // Build server-authoritative API payload (contract §4).
   // Prices/totals are IGNORED by the server — it recalculates from the DB.
   const apiPayload = {
-    idempotency_key: uuidv4(),
+    idempotency_key: getIdempotencyKey(itemRows),
     items: itemRows.map(i => ({ product_id: i.id, qty: i.qty })),
     customer: {
       name: $('#f_name').value.trim(),
@@ -334,7 +368,7 @@ async function placeOrder() {
     payment_method: PAY === 'cod' ? 'cod' : (PAY === 'jazzcash' ? 'jazzcash' : 'bank_transfer'),
     transaction_reference: reference,
     turnstile_token: turnstileToken,
-    customer_note: note || undefined
+    customer_note: (wantVideo ? (note ? note + ' ' : '') + '[Packing video requested]' : note) || undefined
   };
 
   // Server-authoritative order creation. Cart is cleared ONLY on API success.
@@ -362,6 +396,7 @@ async function placeOrder() {
 
   saveLocalPurchaseSummary(order);
   CART = {}; localStorage.removeItem('chaskabox-cart');
+  clearIdempotencyKey(); // Order confirmed — next order gets a fresh key
   $('#coMain').style.display = 'none'; $('#coDone').style.display = '';
   $('#doneNo').textContent = finalOrderNo;
   if ($('#doneTotal')) $('#doneTotal').textContent = fmt(finalTotal);
