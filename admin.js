@@ -138,6 +138,11 @@
   function bindProductControls(){
     ['productSearch','productCategory','productVisibility'].forEach(id=>$('#'+id)?.addEventListener(id==='productSearch'?'input':'change',()=>{state.visibleLimit=40;renderProducts();}));
     $('#loadMoreProducts')?.addEventListener('click',()=>{state.visibleLimit+=40;renderProducts();});
+    $('#resetFiltersBtn')?.addEventListener('click',()=>{
+      $('#productSearch').value=''; $('#productCategory').value=''; $('#productVisibility').value='';
+      state.visibleLimit=40; state.selected.clear();
+      renderProducts();
+    });
     $('#productAdminGrid')?.addEventListener('click',e=>{
       const card=e.target.closest('[data-product-id]'); if(!card)return; const id=Number(card.dataset.productId);
       if(e.target.classList.contains('product-select')){e.target.checked?state.selected.add(id):state.selected.delete(id);renderProducts();return;}
