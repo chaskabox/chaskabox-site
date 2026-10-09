@@ -185,6 +185,22 @@ export async function notifyOwner(env, order, options = {}) {
   };
 }
 
+function customerThankYouText(order, trackingBase) {
+  const tracking = order?.order_number
+    ? `${trackingBase}/track-order.html?order=${encodeURIComponent(order.order_number)}`
+    : trackingBase;
+  const total = order?.total != null ? `Rs. ${order.total}` : '';
+  const payment = /jazzcash/i.test(order?.payment_method || '')
+    ? 'JazzCash Advance'
+    : 'Cash on Delivery';
+  return `Assalam-o-Alaikum! 🎉\nChaskaBox mein order ka shukriya!\n\nOrder: #${order?.order_number || ''}\nTotal: ${total} (${payment})\nDelivery: 5-7 din mein\n\nTrack karo: ${tracking}\n\nKoi sawal ho to reply karein. Shukriya! 🙏`;
+}
+
+export async function notifyCustomer(env, order) {
+  const trackingBase = cleanBaseUrl(env.PUBLIC_BASE_URL || env.ADMIN_BASE_URL || 'https://chaskabox.online');
+  return sendCustomerWhatsApp(env, order, customerThankYouText(order, trackingBase));
+}
+
 export async function sendCustomerWhatsApp(env, order, message) {
   const baseUrl = cleanBaseUrl(env.WAHA_API_URL);
   const apiKey = env.WAHA_API_KEY;

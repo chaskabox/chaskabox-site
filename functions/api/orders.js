@@ -29,7 +29,7 @@
  */
 
 import { selectOne, selectIn, selectMany, rpc, isUniqueViolation, insertRows, updateRows } from './_lib/db.js';
-import { notifyOwner } from './_lib/notify.js';
+import { notifyOwner, notifyCustomer } from './_lib/notify.js';
 import { validateOrderPayload } from './_lib/validate.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
 import { verifyTurnstile } from './_lib/turnstile.js';
@@ -272,6 +272,10 @@ export async function onRequest(context) {
               }
             } catch (e) { /* items optional for notification */ }
             const notifyResult = await notifyOwner(env, orderForNotify);
+            // Customer thank-you WhatsApp (best-effort: never fail the order if this fails)
+            try {
+              await notifyCustomer(env, orderForNotify);
+            } catch (e) { /* customer notify optional */ }
             // Persist notification delivery status on the order row (best-effort).
             // Idempotency: only update if not already marked sent (prevents duplicate marking).
             try {
