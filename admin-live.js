@@ -207,6 +207,13 @@
   }
   function wireLiveProductEditor(){
     const form=$('#productForm'); if(!form)return; form.addEventListener('submit',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();const id=$('#editProductId').value;const body={name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),old_price:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,description:$('#editDescription').value.trim(),image_url:$('#editImage').value.trim(),visibility:$('#editVisibility').value,seo_title:$('#editSeoTitle').value.trim()||null,seo_description:$('#editSeoDesc').value.trim()||null,og_image:$('#editOgImage').value.trim()||null,canonical_url:$('#editCanonical').value.trim()||null};try{const saved=id?await api(`/api/admin/products/${id}`,{method:'PATCH',body}):await api('/api/admin/products',{method:'POST',body});const savedId=saved?.product?.id||id;toast('Product saved');$('#productEditor').classList.remove('open');await loadProducts();if(savedId){api('/api/admin/ai-reindex',{method:'POST',body:{product_ids:[Number(savedId)],stale_only:false,limit:1}}).catch(()=>{});}}catch(x){toast(x.message)}},true);
+    $('#productHistoryBtn')?.addEventListener('click',()=>{
+      const id=$('#editProductId').value;
+      if(!id){toast('Save the product first');return;}
+      const panel=$('#productHistoryPanel');
+      if(panel.style.display==='block'){panel.style.display='none';return;}
+      loadProductHistory(id);
+    });
     $('#archiveProduct')?.addEventListener('click',async e=>{const id=$('#editProductId').value;if(!id||!me)return;e.preventDefault();e.stopImmediatePropagation();if(!confirm('Archive this product?'))return;try{await api(`/api/admin/products/${id}/archive`,{method:'POST',body:{}});toast('Product archived');$('#productEditor').classList.remove('open');loadProducts()}catch(x){toast(x.message)}},true);
   }
 
@@ -234,11 +241,66 @@
   function wireSettings(){}
   async function loadSettings(){
     const d=await api('/api/admin/settings'), map=Object.fromEntries((d.settings||[]).map(x=>[x.key,x.value])),view=$('#view-settings');view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Commerce settings</h2><p>Validated public-safe values. Secrets stay in Cloudflare.</p></div></div><label>COD delivery fee (PKR)<input id="setCodFee" type="number" min="0" max="100000" value="${esc(map.cod_delivery_fee_pkr??300)}"></label><label>Prepaid delivery fee (PKR)<input id="setPreFee" type="number" min="0" max="100000" value="${esc(map.prepaid_delivery_fee_pkr??300)}"></label><label>Free prepaid threshold (PKR)<input id="setThreshold" type="number" min="0" max="1000000" value="${esc(map.prepaid_free_delivery_threshold_pkr??5000)}"></label><label>Delivery estimate<input id="setEstimate" maxlength="80" value="${esc(map.delivery_estimate??'4-7 days')}"></label><hr><h3>Storefront contact & promo</h3><label>Support WhatsApp<input id="setSupportWhatsApp" maxlength="25" value="${esc(map.support_whatsapp??'0332-0005381')}"></label><label>Support email<input id="setSupportEmail" type="email" maxlength="254" value="${esc(map.support_email??'Chaskabox.mzg@gmail.com')}"></label><label>Store address<textarea id="setStoreAddress" rows="3" maxlength="300">${esc(map.store_address??'Near Ahmad Drink Corner, Railway Road, Bhatti Hussainabad, Muzaffargarh, Pakistan')}</textarea></label><label>Announcement / promo bar<input id="setPromo" maxlength="180" value="${esc(map.promo_text??'Original sealed packs · Pakistan-wide delivery · COD + prepaid')}"></label><button class="btn primary" id="saveSettings">Save settings</button></section><section class="panel"><div class="panel-head"><div><h2>Payment availability</h2></div></div><label class="checkline"><input id="setCod" type="checkbox" ${map.cod_enabled!==false?'checked':''}> Cash on Delivery</label><label class="checkline"><input id="setJazz" type="checkbox" ${map.jazzcash_enabled!==false?'checked':''}> JazzCash</label><label class="checkline"><input id="setBank" type="checkbox" ${map.bank_transfer_enabled!==false?'checked':''}> Bank Transfer</label><hr><h3>Prepaid receiving details</h3><label>JazzCash Till ID<input id="setJazzTill" maxlength="40" value="${esc(map.jazzcash_till_id??'981716438')}"></label><label>JazzCash QR URL<input id="setJazzQr" maxlength="500" value="${esc(map.jazzcash_qr_url??'/images/jazzcash-qr.webp')}"></label><label>Bank<input id="setBankName" maxlength="100" value="${esc(map.bank_transfer_details?.bank??'Punjab Bank')}"></label><label>Account title<input id="setBankTitle" maxlength="120" value="${esc(map.bank_transfer_details?.account_title??'RAMEEZ ASLAM')}"></label><label>Account number<input id="setBankAccount" maxlength="80" value="${esc(map.bank_transfer_details?.account_number??'6050435151500017')}"></label><hr><h3>Free AI features</h3><label class="checkline"><input id="setAiHelp" type="checkbox" ${map.ai_customer_assistant_enabled!==false?'checked':''}> Customer Chaska Help AI</label><label class="checkline"><input id="setAiSearch" type="checkbox" ${map.ai_semantic_search_enabled!==false?'checked':''}> Semantic product search</label><p class="safe-note">AI uses the Cloudflare Workers AI free allocation. Checkout/orders never depend on AI.</p><p class="safe-note">All values are validated again by the API and database. Test checkout after meaningful pricing changes.</p></section></div>`;
-    $('#saveSettings').onclick=async()=>{try{await api('/api/admin/settings',{method:'PATCH',body:{settings:{cod_delivery_fee_pkr:Number($('#setCodFee').value),prepaid_delivery_fee_pkr:Number($('#setPreFee').value),prepaid_free_delivery_threshold_pkr:Number($('#setThreshold').value),delivery_estimate:$('#setEstimate').value.trim(),support_whatsapp:$('#setSupportWhatsApp').value.trim(),support_email:$('#setSupportEmail').value.trim(),store_address:$('#setStoreAddress').value.trim(),promo_text:$('#setPromo').value.trim(),jazzcash_till_id:$('#setJazzTill').value.trim(),jazzcash_qr_url:$('#setJazzQr').value.trim(),bank_transfer_details:{bank:$('#setBankName').value.trim(),account_title:$('#setBankTitle').value.trim(),account_number:$('#setBankAccount').value.trim()},cod_enabled:$('#setCod').checked,jazzcash_enabled:$('#setJazz').checked,bank_transfer_enabled:$('#setBank').checked,ai_customer_assistant_enabled:$('#setAiHelp').checked,ai_semantic_search_enabled:$('#setAiSearch').checked}}});toast('Settings saved and storefront will refresh automatically')}catch(e){toast(e.message)}};
+    $('#saveSettings').onclick=async()=>{try{
+      // Get real values from masked fields
+      const getVal=id=>{const el=document.getElementById(id);return el.getRealValue?el.getRealValue():el.value;};
+      await api('/api/admin/settings',{method:'PATCH',body:{settings:{cod_delivery_fee_pkr:Number($('#setCodFee').value),prepaid_delivery_fee_pkr:Number($('#setPreFee').value),prepaid_free_delivery_threshold_pkr:Number($('#setThreshold').value),delivery_estimate:$('#setEstimate').value.trim(),support_whatsapp:getVal('setSupportWhatsApp'),support_email:$('#setSupportEmail').value.trim(),store_address:$('#setStoreAddress').value.trim(),promo_text:$('#setPromo').value.trim(),jazzcash_till_id:getVal('setJazzTill'),jazzcash_qr_url:$('#setJazzQr').value.trim(),bank_transfer_details:{bank:$('#setBankName').value.trim(),account_title:getVal('setBankTitle'),account_number:getVal('setBankAccount')},cod_enabled:$('#setCod').checked,jazzcash_enabled:$('#setJazz').checked,bank_transfer_enabled:$('#setBank').checked,ai_customer_assistant_enabled:$('#setAiHelp').checked,ai_semantic_search_enabled:$('#setAiSearch').checked}}});toast('Settings saved and storefront will refresh automatically')}catch(e){toast(e.message)}};
+    // Mask sensitive fields by default
+    wireSensitiveField('setJazzTill', map.jazzcash_till_id);
+    wireSensitiveField('setBankTitle', map.bank_transfer_details?.account_title);
+    wireSensitiveField('setBankAccount', map.bank_transfer_details?.account_number);
+    wireSensitiveField('setSupportWhatsApp', map.support_whatsapp);
   }
 
   async function loadSecurity(){
-    const view=$('#view-security');const [audit,staff]=await Promise.all([api('/api/admin/audit?per_page=50'),api('/api/admin/staff')]);view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Staff roles</h2><p>Least-privilege access. Owner-only changes.</p></div></div><div class="staff-list">${(staff.staff||[]).map(s=>`<div><code>${esc(s.user_id)}</code><b>${esc(s.role)}</b><span class="pill ${s.active?'on':''}">${s.active?'Active':'Disabled'}</span></div>`).join('')}</div><hr><h3>Invite staff</h3><div class="form-two"><label>Email<input id="staffEmail" type="email"></label><label>Role<select id="staffRole"><option>content</option><option>fulfilment</option><option>manager</option><option>owner</option></select></label></div><button class="btn primary" id="inviteStaff">Send invite</button></section><section class="panel"><div class="panel-head"><div><h2>Recent audit log</h2><p>Who changed what and when.</p></div></div><div class="history-list">${(audit.events||[]).map(a=>`<div><b>${esc(a.action)}</b><small>${fmtDate(a.created_at)} · ${esc(a.actor_role)} · ${esc(a.entity_type)} ${esc(a.entity_id)}</small></div>`).join('')||'<small>No audit events.</small>'}</div></section></div>`;$('#inviteStaff').onclick=async()=>{try{await api('/api/admin/staff',{method:'POST',body:{email:$('#staffEmail').value.trim(),role:$('#staffRole').value}});toast('Staff invite sent');loadSecurity()}catch(e){toast(e.message)}};
+    const view=$('#view-security');const [audit,staff]=await Promise.all([api('/api/admin/audit?per_page=50'),api('/api/admin/staff')]);view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Staff roles</h2><p>Least-privilege access. Owner-only changes.</p></div></div><div class="staff-list">${(staff.staff||[]).map(s=>`<div><code>${esc(s.user_id)}</code><b>${esc(s.role)}</b><span class="pill ${s.active?'on':''}">${s.active?'Active':'Disabled'}</span></div>`).join('')}</div><hr><h3>Invite staff</h3><div class="form-two"><label>Email<input id="staffEmail" type="email"></label><label>Role<select id="staffRole"><option>content</option><option>fulfilment</option><option>manager</option><option>owner</option></select></label></div><button class="btn primary" id="inviteStaff">Send invite</button></section><section class="panel"><div class="panel-head"><div><h2>Recent audit log</h2><p>Who changed what and when.</p></div></div><div class="history-list">${(audit.events||[]).map(a=>`<div><b>${esc(a.action)}</b><small>${fmtDate(a.created_at)} · ${esc(a.actor_role)} · ${esc(a.entity_type)} ${esc(a.entity_id)}</small></div>`).join('')||'<small>No audit events.</small>'}</div></section></div>
+    <section class="panel" style="margin-top:16px"><div class="panel-head"><div><h2>🔐 Two-Factor (MFA)</h2><p>Protect your admin account with an authenticator app</p></div></div><div id="mfaSection"><p class="muted">Loading…</p></div></section>
+    <section class="panel" style="margin-top:16px"><div class="panel-head"><div><h2>📱 Sessions</h2><p>Manage your login sessions</p></div></div><div style="padding:8px"><button class="btn danger" id="signOutAllBtn">Sign out all devices</button><p class="muted" style="font-size:12px;margin-top:8px">This will sign you out everywhere. You'll need to sign in again.</p></div></section>`;$('#inviteStaff').onclick=async()=>{try{await api('/api/admin/staff',{method:'POST',body:{email:$('#staffEmail').value.trim(),role:$('#staffRole').value}});toast('Staff invite sent');loadSecurity()}catch(e){toast(e.message)}};
+    loadMFAStatus();
+    $('#signOutAllBtn').onclick=async()=>{
+      if(!confirm('Sign out from all devices?')) return;
+      try{await SB.auth.signOut({scope:'global'});toast('Signed out everywhere');location.reload();}catch(e){toast(e.message);}
+    };
+  }
+
+  async function loadMFAStatus(){
+    const el=$('#mfaSection'); if(!el||!SB) return;
+    try{
+      const {data,error}=await SB.auth.mfa.listFactors();
+      if(error) throw error;
+      const factors=data?.totp||[];
+      if(factors.length){
+        el.innerHTML=`<p>✅ MFA is <b>enabled</b> (${factors.length} authenticator${factors.length>1?'s':''})</p><button class="btn secondary" id="disableMfaBtn">Disable MFA</button>`;
+        $('#disableMfaBtn').onclick=async()=>{
+          if(!confirm('Disable two-factor authentication?')) return;
+          const {error}=await SB.auth.mfa.unenroll({factorId:factors[0].id});
+          if(error) toast(error.message); else {toast('MFA disabled');loadMFAStatus();}
+        };
+      }else{
+        el.innerHTML=`<p class="muted">MFA is not enabled. Add an extra layer of security.</p><button class="btn primary" id="enableMfaBtn">Enable MFA</button><div id="mfaEnroll" style="display:none;margin-top:12px"></div>`;
+        $('#enableMfaBtn').onclick=startMFAEnroll;
+      }
+    }catch(e){el.innerHTML=`<p class="muted">MFA unavailable: ${esc(e.message)}</p>`;}
+  }
+
+  async function startMFAEnroll(){
+    const box=$('#mfaEnroll'); box.style.display='block'; box.innerHTML='<p class="muted">Setting up…</p>';
+    try{
+      const {data,error}=await SB.auth.mfa.enroll({factorType:'totp',friendlyName:'Admin phone'});
+      if(error) throw error;
+      box.innerHTML=`
+        <p><b>Step 1:</b> Scan this QR with Google Authenticator / Authy:</p>
+        <div style="background:#fff;padding:12px;display:inline-block;border-radius:8px"><img src="${data.totp.qr_code}" alt="MFA QR" style="width:180px;height:180px"></div>
+        <p style="margin-top:8px"><b>Step 2:</b> Enter the 6-digit code:</p>
+        <div style="display:flex;gap:8px"><input id="mfaCode" placeholder="000000" maxlength="6" style="padding:8px;border:1px solid var(--border);border-radius:8px;width:120px"><button class="btn primary" id="verifyMfaBtn">Verify</button></div>`;
+      $('#verifyMfaBtn').onclick=async()=>{
+        const code=$('#mfaCode').value.trim();
+        const {data:ch,error:chErr}=await SB.auth.mfa.challenge({factorId:data.id});
+        if(chErr){toast(chErr.message);return;}
+        const {error:vErr}=await SB.auth.mfa.verify({factorId:data.id,challengeId:ch.id,code});
+        if(vErr) toast(vErr.message); else {toast('MFA enabled!');loadMFAStatus();}
+      };
+    }catch(e){box.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
 
   let editingBoxId = null;
@@ -417,6 +479,7 @@
     });
     $('#refreshResolutions')?.addEventListener('click',()=>loadResolutions());
     $('#refreshAnalytics')?.addEventListener('click',()=>loadAnalytics());
+    initBackup();
     $('#refreshCoupons')?.addEventListener('click',()=>loadCoupons());
     $('#addCouponBtn')?.addEventListener('click',()=>{
       const code=prompt('Coupon code (e.g. CHASKA10):'); if(!code?.trim()) return;
@@ -827,4 +890,103 @@
         ${bar('Pending payment', m30.pending_prepaid_value_pkr||0, m30.gross_order_value_pkr||1, '#6b7280')}
         <p class="muted" style="margin-top:16px;font-size:12px">Recognized sales = verified prepaid + delivered COD (refunds excluded).</p>`;
     }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+  }
+
+  /* ============ BACKUP ============ */
+  function initBackup(){
+    $('#downloadBackupBtn')?.addEventListener('click', async ()=>{
+      try{
+        toast('Preparing backup…');
+        const res = await fetch('/api/admin/backup', {
+          headers: { 'Authorization': `Bearer ${session?.access_token||''}` },
+        });
+        if(!res.ok) throw new Error('Backup failed');
+        const blob = await res.blob();
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `chaskabox-backup-${new Date().toISOString().slice(0,10)}.json`;
+        a.click();
+        toast('Backup downloaded');
+      }catch(e){toast(e.message);}
+    });
+    $('#restoreBackupBtn')?.addEventListener('click', async ()=>{
+      const file = $('#restoreFileInput')?.files?.[0];
+      if(!file){toast('Select a backup file first');return;}
+      if(!confirm('⚠️ This will OVERWRITE catalogue data. Continue?')) return;
+      const confirm2 = prompt('Type RESTORE to confirm:');
+      if(confirm2 !== 'RESTORE'){toast('Cancelled');return;}
+      try{
+        const text = await file.text();
+        const backup = JSON.parse(text);
+        await api('/api/admin/backup', { method:'POST', body:{ confirm:'RESTORE', backup } });
+        toast('Restore complete');
+      }catch(e){toast(e.message);}
+    });
+  }
+
+  /* ============ PRODUCT VERSION HISTORY ============ */
+  async function loadProductHistory(productId){
+    const panel=$('#productHistoryPanel'), list=$('#productHistoryList');
+    if(!panel||!list) return;
+    panel.style.display='block';
+    list.innerHTML='<p class="muted">Loading…</p>';
+    try{
+      const d=await api(`/api/admin/products/${productId}/versions`);
+      const versions=d.versions||[];
+      if(!versions.length){list.innerHTML='<p class="muted">No history yet. Changes will appear here.</p>';return;}
+      list.innerHTML=versions.map(v=>`
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;border-bottom:1px solid var(--border);font-size:13px">
+          <span>${new Date(v.created_at).toLocaleString()} · ${esc(v.changed_by||'')} · ${esc(v.change_type)}</span>
+          <button class="btn secondary compact" data-revert-version="${v.id}">↩️ Revert</button>
+        </div>`).join('');
+      list.querySelectorAll('[data-revert-version]').forEach(b=>b.onclick=async()=>{
+        if(!confirm('Revert to this version? Current state will be saved as a new version.')) return;
+        await api(`/api/admin/products/${productId}/versions`,{method:'POST',body:{version_id:b.dataset.revertVersion}});
+        toast('Reverted'); loadProducts(); panel.style.display='none';
+      });
+    }catch(e){list.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+  }
+
+  /* ============ SENSITIVE FIELD MASKING ============ */
+  function maskValue(val){
+    if(!val) return '';
+    const s=String(val);
+    if(s.length<=4) return '••••';
+    return '••••••••'+s.slice(-4);
+  }
+  function wireSensitiveField(inputId, realValue){
+    const input=document.getElementById(inputId);
+    if(!input) return;
+    // Store real value, show masked
+    input.dataset.realValue=realValue||'';
+    input.value=maskValue(realValue);
+    input.readOnly=true;
+    input.style.background='#f8fafc';
+    // Add reveal button
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='btn secondary compact'; btn.textContent='👁️ Reveal';
+    btn.style.marginLeft='8px';
+    input.parentNode.style.display='flex';
+    input.parentNode.style.alignItems='center';
+    input.style.flex='1';
+    input.parentNode.appendChild(btn);
+    let revealed=false;
+    btn.onclick=()=>{
+      revealed=!revealed;
+      if(revealed){
+        input.value=input.dataset.realValue;
+        input.readOnly=false;
+        input.style.background='';
+        btn.textContent='🙈 Hide';
+      }else{
+        // Save any edits back to real value
+        input.dataset.realValue=input.value;
+        input.value=maskValue(input.value);
+        input.readOnly=true;
+        input.style.background='#f8fafc';
+        btn.textContent='👁️ Reveal';
+      }
+    };
+    // When saving, use the real value
+    input.getRealValue=()=>input.dataset.realValue;
   }

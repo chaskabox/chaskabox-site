@@ -58,6 +58,20 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (
 
   const before = {};
   for (const k of Object.keys(patch)) before[k] = product[k];
+
+  // Save version snapshot before update (for history/revert)
+  try {
+    await sb(context, '/rest/v1/product_versions', {
+      method: 'POST',
+      body: {
+        product_id: product.id,
+        snapshot: product,
+        changed_by: user.email || user.id,
+        change_type: 'update',
+      },
+    });
+  } catch (e) { /* version save is best-effort */ }
+
   const updated = await sb(context, `/rest/v1/products?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH',
     body: patch,
