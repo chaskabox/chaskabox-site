@@ -3,7 +3,7 @@
  * PATCH  — update brand. Roles: owner, manager.
  * DELETE — delete brand. Roles: owner.
  */
-import { withAdmin, sb, json, httpError, readJson, audit } from '../../_lib/auth.js';
+import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
 
 function slugify(s) {
   return String(s || '').toLowerCase().trim()

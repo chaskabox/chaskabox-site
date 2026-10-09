@@ -1,7 +1,7 @@
 /**
  * /api/admin/coupons/:id — PATCH toggle/update, DELETE. Roles: owner, manager.
  */
-import { withAdmin, sb, json, httpError, readJson, audit } from '../../_lib/auth.js';
+import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
 
 export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { user }) => {
   const id = context.params.id;
