@@ -95,9 +95,41 @@
 
   async function loadProducts(){
     const data=await api('/api/admin/products?per_page=100'); products=data.products||[]; $('#metricProducts').textContent=data.total??products.length; $('#productNavCount').textContent=data.total??products.length;
-    const grid=$('#productAdminGrid'); if(!grid)return; grid.innerHTML=products.map(p=>`<article class="admin-product-card" data-product-id="${p.id}"><span class="visibility-chip ${p.visibility==='visible'?'':'hidden-product'}">${esc(p.visibility)}</span><div class="admin-product-image">${p.image_url?`<img src="${esc(p.image_url)}" alt="">`:'<span class="placeholder">🍿</span>'}</div><div class="admin-product-body"><h3>${esc(p.name)}</h3><div class="admin-product-meta">${esc(p.category)} · ${esc(p.pack||'')}</div><div class="admin-product-price"><strong>${money(p.price)}</strong>${p.old_price?`<del>${money(p.old_price)}</del>`:''}</div><div class="admin-card-actions"><button data-live-edit="${p.id}">Edit</button><button data-live-vis="${p.id}">${p.visibility==='visible'?'Hide':'Show'}</button></div></div></article>`).join('');
-    $('#productResultCount').textContent=`${data.total??products.length} products`; $('#loadMoreProducts').style.display='none';
+    renderFilteredProducts();
+  }
+  function getProductFilters(){
+    const q=($('#productSearch')?.value||'').trim().toLowerCase();
+    const cat=($('#productCategory')?.value||'').trim();
+    const vis=$('#productVisibility')?.value||'';
+    return {q, cat, vis};
+  }
+  function renderFilteredProducts(){
+    const {q, cat, vis}=getProductFilters();
+    const normCat=s=>(s||'').trim();
+    const filtered=products.filter(p=>{
+      if(vis==='archived' && p.visibility!=='archived') return false;
+      if(vis!=='archived' && p.visibility==='archived') return false;
+      if(q && !`${p.name||''} ${p.category||''} ${p.pack||''}`.toLowerCase().includes(q)) return false;
+      if(cat && normCat(p.category)!==cat) return false;
+      if(vis==='visible' && p.visibility!=='visible') return false;
+      if(vis==='hidden' && p.visibility!=='hidden') return false;
+      if(vis==='bundle' && !p.is_bundle) return false;
+      return true;
+    });
+    const grid=$('#productAdminGrid'); if(!grid)return; grid.innerHTML=filtered.map(p=>`<article class="admin-product-card" data-product-id="${p.id}"><span class="visibility-chip ${p.visibility==='visible'?'':'hidden-product'}">${esc(p.visibility)}</span><div class="admin-product-image">${p.image_url?`<img src="${esc(p.image_url)}" alt="">`:'<span class="placeholder">🍿</span>'}</div><div class="admin-product-body"><h3>${esc(p.name)}</h3><div class="admin-product-meta">${esc(p.category)} · ${esc(p.pack||'')}</div><div class="admin-product-price"><strong>${money(p.price)}</strong>${p.old_price?`<del>${money(p.old_price)}</del>`:''}</div><div class="admin-card-actions"><button data-live-edit="${p.id}">Edit</button><button data-live-vis="${p.id}">${p.visibility==='visible'?'Hide':'Show'}</button></div></div></article>`).join('') || '<div class="panel"><p class="muted">No matching products.</p></div>';
+    $('#productResultCount').textContent=`Showing ${filtered.length} of ${products.length} products`; $('#loadMoreProducts').style.display='none';
     $$('[data-live-edit]',grid).forEach(b=>b.onclick=()=>openLiveProduct(b.dataset.liveEdit)); $$('[data-live-vis]',grid).forEach(b=>b.onclick=async()=>{const p=products.find(x=>String(x.id)===String(b.dataset.liveVis));try{await api(`/api/admin/products/${p.id}`,{method:'PATCH',body:{visibility:p.visibility==='visible'?'hidden':'visible'}});toast('Visibility updated');loadProducts()}catch(e){toast(e.message)}});
+    // Wire filter inputs to re-render (if not already wired)
+    if(!renderFilteredProducts._wired){
+      renderFilteredProducts._wired=true;
+      ['productSearch','productCategory','productVisibility'].forEach(id=>{
+        $('#'+id)?.addEventListener(id==='productSearch'?'input':'change',()=>renderFilteredProducts());
+      });
+      $('#resetFiltersBtn')?.addEventListener('click',()=>{
+        $('#productSearch').value=''; $('#productCategory').value=''; $('#productVisibility').value='';
+        renderFilteredProducts();
+      });
+    }
   }
   function openLiveProduct(id){
     const p=products.find(x=>String(x.id)===String(id)); if(!p)return; $('#editProductId').value=p.id;$('#editName').value=p.name||'';$('#editPrice').value=p.price||'';$('#editOldPrice').value=p.old_price||'';$('#editCategory').value=p.category||'';$('#editPack').value=p.pack||'';$('#editBadge').value=p.badge||'';$('#editVisibility').value=p.visibility==='visible'?'visible':'hidden';$('#editDescription').value=p.description||'';$('#editImage').value=p.image_url||'';$('#editBundle').checked=!!p.is_bundle;$('#productEditorTitle').textContent='Edit '+p.name;$('#productEditor').classList.add('open');$('#productEditor').setAttribute('aria-hidden','false');
