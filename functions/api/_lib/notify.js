@@ -93,7 +93,7 @@ export async function sendOwnerEmail(env, order) {
       `Payment: ${order.payment_method}\n` +
       `Payment status: ${order.payment_status}\n` +
       `${order.transaction_reference ? `Reference: ${order.transaction_reference}\n` : ''}` +
-      `Fulfilment: ${order.fulfilment_status}\n\n` +
+      `Fulfilment: ${order.fulfilment_status || 'new'}\n\n` +
       `Admin: ${adminOrderUrl(env, order)}`;
 
     const idempotencyKey = `chaskabox-owner-order-${orderIdentity(order)}`.slice(0, 240);
@@ -193,7 +193,7 @@ function customerThankYouText(order, trackingBase) {
   const payment = /jazzcash/i.test(order?.payment_method || '')
     ? 'JazzCash Advance'
     : 'Cash on Delivery';
-  return `Assalam-o-Alaikum! 🎉\nChaskaBox mein order ka shukriya!\n\nOrder: #${order?.order_number || ''}\nTotal: ${total} (${payment})\nDelivery: 5-7 din mein\n\nTrack karo: ${tracking}\n\nKoi sawal ho to reply karein. Shukriya! 🙏`;
+  return `Assalam-o-Alaikum! 🎉\nChaskaBox mein order ka shukriya!\n\nOrder: #${order?.order_number || ''}\nTotal: ${total} (${payment})\nDelivery: 4-7 din mein\n\nTrack karo: ${tracking}\n\nKoi sawal ho to reply karein. Shukriya! 🙏`;
 }
 
 export async function notifyCustomer(env, order) {
