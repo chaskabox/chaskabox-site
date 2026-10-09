@@ -43,6 +43,7 @@
       if(name==='products' && roleAllows('owner','manager','content')) await loadProducts();
       if(name==='boxes' && roleAllows('owner','manager','content')) await enableBoxBuilder();
       if(name==='categories' && roleAllows('owner','manager','content')) await loadCategories();
+      if(name==='studio' && roleAllows('owner','manager','content')) initImageStudio();
       if(name==='theme' && roleAllows('owner','manager')) await loadTheme();
       if(name==='brands' && roleAllows('owner','manager','content')) await loadBrands();
       if(name==='navigation' && roleAllows('owner','manager','content')) await loadNavigation();
@@ -1004,4 +1005,36 @@
     };
     // When saving, use the real value
     input.getRealValue=()=>input.dataset.realValue;
+  }
+
+  /* ============ AI IMAGE STUDIO ============ */
+  let lastGeneratedImage = null;
+  function initImageStudio(){
+    $('#generateImageBtn')?.addEventListener('click', async ()=>{
+      const prompt=$('#studioPrompt').value.trim();
+      if(!prompt||prompt.length<10){toast('Prompt likhen (min 10 chars)');return;}
+      const btn=$('#generateImageBtn'); const old=btn.textContent;
+      btn.disabled=true; btn.textContent='✨ Generating…';
+      $('#studioPreview').innerHTML='<div class="admin-loading"><div class="spinner"></div><p>AI image bana raha hai…</p></div>';
+      $('#studioActions').style.display='none';
+      try{
+        const data=await api('/api/admin/ai-image',{method:'POST',body:{
+          prompt, type:$('#studioType').value, style:$('#studioStyle').value,
+        }});
+        lastGeneratedImage=data.image_url;
+        $('#studioPreview').innerHTML=`<img src="${data.image_url}" alt="Generated" style="max-width:100%;border-radius:8px"><p class="muted" style="font-size:11px;margin-top:8px">Via ${esc(data.source)}</p>`;
+        $('#studioActions').style.display='flex';
+        if(data.warnings) toast(data.warnings[0]);
+      }catch(e){toast(e.message||'Generation failed');$('#studioPreview').innerHTML='<p class="muted">Failed. Try again.</p>';}
+      finally{btn.disabled=false;btn.textContent=old;}
+    });
+    $('#downloadImageBtn')?.addEventListener('click', ()=>{
+      if(!lastGeneratedImage) return;
+      const a=document.createElement('a');
+      a.href=lastGeneratedImage;
+      a.download=`chaskabox-ai-${Date.now()}.png`;
+      a.click();
+      toast('Downloaded');
+    });
+    $('#newVariationBtn')?.addEventListener('click', ()=>$('#generateImageBtn').click());
   }

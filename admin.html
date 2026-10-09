@@ -23,6 +23,7 @@
       <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
       <button class="admin-nav-btn" data-view="analytics"><span>📊</span> Analytics</button>
       <button class="admin-nav-btn" data-view="backup"><span>💾</span> Backup</button>
+      <button class="admin-nav-btn" data-view="studio"><span>🎨</span> Image Studio</button>
       <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
       <button class="admin-nav-btn" data-view="categories"><span>📁</span> Categories</button>
       <button class="admin-nav-btn" data-view="brands"><span>🏷️</span> Brands</button>
@@ -194,6 +195,41 @@
             <div><button class="btn danger" id="restoreBackupBtn">Restore from file</button></div>
           </div>
         </section>
+      </section>
+
+      <section class="admin-view" id="view-studio" data-title="AI Image Studio" data-subtitle="Generate product images & banners with free AI.">
+        <div class="admin-grid two">
+          <section class="panel">
+            <div class="panel-head"><div><h2>🎨 Generate Image</h2><p>Free via Pollinations.ai — no API key needed</p></div></div>
+            <div style="display:grid;gap:12px;padding:4px">
+              <label>Prompt<textarea id="studioPrompt" rows="3" placeholder="e.g. Colorful Pakistani candy box on white background, product photography" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px"></textarea></label>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <label>Type<select id="studioType" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+                  <option value="product">Product image (square)</option>
+                  <option value="banner">Banner (wide)</option>
+                  <option value="social">Social post (square)</option>
+                </select></label>
+                <label>Style<select id="studioStyle" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
+                  <option value="">Default</option>
+                  <option value="product photography, studio lighting">Product photo</option>
+                  <option value="digital art, vibrant">Digital art</option>
+                  <option value="minimalist, clean">Minimalist</option>
+                  <option value="watercolor">Watercolor</option>
+                </select></label>
+              </div>
+              <div><button class="btn primary" id="generateImageBtn">✨ Generate</button></div>
+              <p class="muted" style="font-size:12px">⚠️ AI images are for banners/decoration only. Product photos must use real manufacturer images (your rule).</p>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><h2>Preview</h2></div></div>
+            <div id="studioPreview" style="min-height:200px;display:flex;align-items:center;justify-content:center;background:#f8fafc;border-radius:8px"><p class="muted">Generated image will appear here</p></div>
+            <div id="studioActions" style="display:none;margin-top:12px;gap:8px">
+              <button class="btn secondary" id="downloadImageBtn">⬇️ Download</button>
+              <button class="btn secondary" id="newVariationBtn">🔄 New variation</button>
+            </div>
+          </section>
+        </div>
       </section>
 
       <section class="admin-view" id="view-products" data-title="Products" data-subtitle="Search, preview, edit, hide, archive and create catalogue items.">
