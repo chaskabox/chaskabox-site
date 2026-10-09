@@ -359,7 +359,7 @@ div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="n
 .mnav-list a:hover{background:var(--sel-bg)}
 @media(max-width:760px){
   .mnav-btn{display:inline-flex!important}
-  .logo-img{height:48px!important;margin:0!important}
+  .logo-img{height:64px!important;margin:0!important}
   .herocollage{width:160px;height:130px}
   .herocollage img{width:80px;height:80px}
   /* Mobile: only hamburger, search, bag in header - use classes (not attribute selectors) */
@@ -476,7 +476,7 @@ button:disabled{cursor:not-allowed;opacity:.55}
 .hwrap{min-height:70px}
 .hnav{gap:24px}
 .hnav>a,.hdrop-btn{font-size:14px;font-weight:750}
-.logo-img{height:48px}
+.logo-img{height:64px}
 .hbtn.solid{padding:9px 16px;min-width:82px;justify-content:center}
 
 /* hero */
