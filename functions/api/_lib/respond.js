@@ -26,10 +26,10 @@ export function ok(payload, status = 200, extraHeaders = {}) {
 }
 
 /** Customer-safe error envelope. */
-export function apiError(code, message, status = 400, details) {
+export function apiError(code, message, status = 400, details, extraHeaders = {}) {
   const body = { error: { code, message } };
   if (details !== undefined) body.error.details = details;
-  return json(status, body);
+  return json(status, body, extraHeaders);
 }
 
 export const Errors = {
@@ -37,9 +37,12 @@ export const Errors = {
   invalidJson: () => apiError('INVALID_JSON', 'Request body must be valid JSON.', 400),
   payloadTooLarge: () => apiError('PAYLOAD_TOO_LARGE', 'Request body is too large.', 413),
   validation: (details) => apiError('VALIDATION_ERROR', 'Some fields are invalid. Please review and try again.', 400, details),
-  rateLimited: (retryAfterSec) =>
-    apiError('RATE_LIMITED', 'Too many requests. Please wait a moment and try again.', 429,
-      [{ field: 'request', message: `Retry after ${retryAfterSec}s.` }]),
+  rateLimited: (retryAfterSec) => {
+    const secs = Math.max(1, Math.ceil(Number(retryAfterSec) || 60));
+    return apiError('RATE_LIMITED', 'Too many requests. Please wait a moment and try again.', 429,
+      [{ field: 'request', message: `Retry after ${secs}s.` }],
+      { 'Retry-After': String(secs) });
+  },
   productUnavailable: (productIds) =>
     apiError('PRODUCT_UNAVAILABLE', 'One or more items in your bag are no longer available. Please review your bag.', 422,
       productIds.map(id => ({ field: 'items', message: `Product ${id} is unavailable.` }))),
