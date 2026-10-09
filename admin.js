@@ -14,8 +14,33 @@
   function toast(msg){ const el=$('#adminToast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove('show'),2200); }
   function setArrayMembership(key,id,on){ id=Number(id); const set=new Set(state.drafts[key]||[]); on?set.add(id):set.delete(id); state.drafts[key]=[...set]; saveDrafts(); }
 
-  async function init(){
-    bindNavigation(); bindGeneral(); bindProductControls(); bindBoxBuilder(); bindPreview(); bindCopilot(); bindEditor();
+  async function checkAdminSession(){
+    try{
+      if(typeof initSupabase!=='function') return false;
+      const ok=await initSupabase(); if(!ok||!window.SB) return false;
+      const {data}=await window.SB.auth.getSession();
+      return !!(data&&data.session&&data.session.access_token);
+    }catch(e){ return false; }
+  }
+
+  function clearAdminRenders(){
+    // Defensive: ensure no catalogue/counts/controls are visible before auth.
+    state.products=[]; state.categories=[];
+    const grid=$('#productAdminGrid'); if(grid) grid.innerHTML='';
+    const rc=$('#productResultCount'); if(rc) rc.textContent='';
+    const mp=$('#metricProducts'); if(mp) mp.textContent='—';
+    const mb=$('#metricBundles'); if(mb) mb.textContent='—';
+    const mo=$('#metricOrders'); if(mo) mo.textContent='—';
+    const mr=$('#metricRevenue'); if(mr) mr.textContent='—';
+    const cb=$('#categoryBars'); if(cb) cb.innerHTML='';
+    const pnc=$('#productNavCount'); if(pnc) pnc.textContent='—';
+    const bpl=$('#boxProductList'); if(bpl) bpl.innerHTML='';
+  }
+
+  async function loadAdminData(){
+    // Auth-gated: never fetch or render admin catalogue without a live session.
+    const authed=await checkAdminSession();
+    if(!authed){ clearAdminRenders(); return false; }
     try{
       let data=null; for(const url of ['/api/products','/products.json']){try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error(`HTTP ${res.status}`);const rows=await res.json();if(Array.isArray(rows)){data=rows;break;}}catch(e){}}
       if(!data)throw new Error('Could not load public product catalogue'); state.products=data;
@@ -23,9 +48,20 @@
       Object.values(state.drafts.products||{}).filter(p=>p&&p._new).forEach(p=>{ if(!state.products.some(x=>Number(x.id)===Number(p.id))) state.products.push(p); });
       state.categories=[...new Set(state.products.map(p=>p.category).filter(Boolean))].sort();
       hydrateSelectors(); renderDashboard(); renderProducts(); renderBoxProducts();
+      return true;
     }catch(err){
       $('#metricProducts').textContent='!'; $('#productAdminGrid').innerHTML=`<div class="panel"><b>Could not load catalogue snapshot</b><p class="muted">${escapeHtml(err.message)}</p></div>`;
+      return false;
     }
+  }
+  // Exposed for admin-live.js: boot legacy admin data only after successful sign-in.
+  window.chaskaAdminDataBoot=loadAdminData;
+
+  async function init(){
+    bindNavigation(); bindGeneral(); bindProductControls(); bindBoxBuilder(); bindPreview(); bindCopilot(); bindEditor();
+    // SECURITY: do not fetch or render any admin data until authenticated.
+    // admin-live.js calls window.chaskaAdminDataBoot() inside bootAuthenticated().
+    await loadAdminData();
   }
 
   function bindNavigation(){

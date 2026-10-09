@@ -53,6 +53,8 @@
     $('#adminSignOut')?.addEventListener('click',async()=>{await SB.auth.signOut();location.reload()});
     wireNav(); wireOrderFilters(); wireLiveProductEditor(); wireHomepage(); wireMedia(); wireSettings(); wireBoxLive();
     await Promise.allSettled([loadDashboard(),loadProducts()]);
+    // Boot legacy admin.js catalogue UI now that we are authenticated.
+    try{ await window.chaskaAdminDataBoot?.(); }catch(e){}
     const hash=location.hash||''; if(hash.startsWith('#order-')){ const id=hash.slice(7); document.querySelector('[data-view="orders"]')?.click(); setTimeout(()=>openOrder(id),250); }
   }
 
