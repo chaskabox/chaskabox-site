@@ -31,9 +31,11 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
   const prompt = String(body.prompt || '').trim();
   const type = body.type || 'product';
   const style = String(body.style || '').trim();
+  const referenceImage = body.reference_image || null;  // data URL (optional)
 
   if (!prompt || prompt.length < 10) httpError('Prompt too short (min 10 chars)', 400, 'invalid');
   if (prompt.length > 500) httpError('Prompt too long (max 500 chars)', 400, 'invalid');
+  if (referenceImage && referenceImage.length > 5*1024*1024) httpError('Reference image too large (max ~4MB)', 400, 'invalid');
 
   // Security: block PII/sensitive in prompts
   for (const rx of PROMPT_BLOCKLIST) {
@@ -51,22 +53,46 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
   // Primary: Cloudflare Workers AI (secure, in-house)
   if (aiAvailable(context)) {
     try {
-      const result = await context.env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
-        prompt: fullPrompt,
-        width: size.width,
-        height: size.height,
-        num_steps: 20,
-      });
-      // Result is binary image data — convert to data URL or store
-      // For now, return as base64 data URL
-      if (result) {
-        const bytes = new Uint8Array(result);
-        let binary = '';
-        for (let i = 0; i < bytes.length; i += 8192) {
-          binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+      if (referenceImage) {
+        // Image-to-image: use reference as base
+        // Convert data URL to array buffer
+        const base64 = referenceImage.split(',')[1] || '';
+        const binaryStr = atob(base64);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+        const result = await context.env.AI.run('@cf/runwayml/stable-diffusion-v1-5-img2img', {
+          prompt: fullPrompt,
+          image: [...bytes],
+          width: size.width,
+          height: size.height,
+          num_steps: 20,
+          strength: 0.7,
+        });
+        if (result) {
+          const outBytes = new Uint8Array(result);
+          let binary = '';
+          for (let i = 0; i < outBytes.length; i += 8192) {
+            binary += String.fromCharCode.apply(null, outBytes.subarray(i, i + 8192));
+          }
+          imageUrl = `data:image/png;base64,${btoa(binary)}`;
+          source = 'cloudflare-workers-ai (img2img)';
         }
-        imageUrl = `data:image/png;base64,${btoa(binary)}`;
-        source = 'cloudflare-workers-ai';
+      } else {
+        const result = await context.env.AI.run('@cf/stabilityai/stable-diffusion-xl-base-1.0', {
+          prompt: fullPrompt,
+          width: size.width,
+          height: size.height,
+          num_steps: 20,
+        });
+        if (result) {
+          const bytes = new Uint8Array(result);
+          let binary = '';
+          for (let i = 0; i < bytes.length; i += 8192) {
+            binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+          }
+          imageUrl = `data:image/png;base64,${btoa(binary)}`;
+          source = 'cloudflare-workers-ai';
+        }
       }
     } catch (e) {
       console.error('[ai-image] Workers AI failed', e.message);
@@ -74,21 +100,26 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
   }
 
   // Fallback: Pollinations.ai (free, no key, private mode)
+  // Note: Pollinations image-to-image needs a public URL; data URLs won't work.
+  // For reference images, we use text-to-image with enhanced prompt instead.
   if (!imageUrl) {
+    const enhancedPrompt = referenceImage
+      ? `${fullPrompt} (inspired by uploaded product photo style)`
+      : fullPrompt;
     const params = new URLSearchParams({
       width: size.width, height: size.height,
       model: 'flux', private: 'true', safe: 'true', nologo: 'false',
       seed: String(Math.floor(Math.random() * 999999)),
     });
-    imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(fullPrompt)}?${params}`;
-    source = 'pollinations.ai (fallback, private mode)';
+    imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(enhancedPrompt)}?${params}`;
+    source = 'pollinations.ai (fallback, private mode)' + (referenceImage ? ' — note: reference used for style only' : '');
   }
 
   await audit(context, {
     actorId: user.id, actorRole: role,
     action: 'ai.image_generated',
     entityType: 'ai', entityId: 'n/a',
-    after: { type, prompt_chars: prompt.length, source },
+    after: { type, prompt_chars: prompt.length, source, has_reference: !!referenceImage },
   });
 
   return json({

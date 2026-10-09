@@ -1009,7 +1009,26 @@
 
   /* ============ AI IMAGE STUDIO ============ */
   let lastGeneratedImage = null;
+  let studioRefImageData = null;
   function initImageStudio(){
+    // Reference image upload
+    $('#studioRefImage')?.addEventListener('change', e=>{
+      const file=e.target.files?.[0];
+      if(!file) return;
+      if(file.size>4*1024*1024){toast('Image 4MB se choti honi chahiye');return;}
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        studioRefImageData=ev.target.result;
+        $('#studioRefImg').src=studioRefImageData;
+        $('#studioRefPreview').style.display='block';
+      };
+      reader.readAsDataURL(file);
+    });
+    $('#clearRefBtn')?.addEventListener('click', ()=>{
+      studioRefImageData=null;
+      $('#studioRefImage').value='';
+      $('#studioRefPreview').style.display='none';
+    });
     $('#generateImageBtn')?.addEventListener('click', async ()=>{
       const prompt=$('#studioPrompt').value.trim();
       if(!prompt||prompt.length<10){toast('Prompt likhen (min 10 chars)');return;}
@@ -1020,6 +1039,7 @@
       try{
         const data=await api('/api/admin/ai-image',{method:'POST',body:{
           prompt, type:$('#studioType').value, style:$('#studioStyle').value,
+          reference_image: studioRefImageData,
         }});
         lastGeneratedImage=data.image_url;
         $('#studioPreview').innerHTML=`<img src="${data.image_url}" alt="Generated" style="max-width:100%;border-radius:8px"><p class="muted" style="font-size:11px;margin-top:8px">Via ${esc(data.source)}</p>`;
