@@ -66,6 +66,14 @@ export async function selectOne(env, table, filters, select = '*') {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
+/** SELECT many rows matching filters. Returns array. */
+export async function selectMany(env, table, filters, select = '*') {
+  const q = '?' + new URLSearchParams({ select }).toString()
+    + Object.entries(filters).map(([k, v]) => `&${encodeURIComponent(k)}=eq.${encodeURIComponent(v)}`).join('');
+  const rows = await sbRequest(env, `/${table}`, { query: q });
+  return Array.isArray(rows) ? rows : [];
+}
+
 /** SELECT many rows where column IN (values). Returns array. */
 export async function selectIn(env, table, column, values, select = '*') {
   if (!values.length) return [];

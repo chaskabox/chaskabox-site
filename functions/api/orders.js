@@ -28,7 +28,7 @@
  * Replay : 200 { ..., idempotent_replay: true }
  */
 
-import { selectOne, selectIn, rpc, isUniqueViolation, insertRows, updateRows } from './_lib/db.js';
+import { selectOne, selectIn, selectMany, rpc, isUniqueViolation, insertRows, updateRows } from './_lib/db.js';
 import { notifyOwner } from './_lib/notify.js';
 import { validateOrderPayload } from './_lib/validate.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
@@ -258,6 +258,19 @@ export async function onRequest(context) {
               payment_status: notifyRow.payment_status,
               created_at: notifyRow.created_at,
             };
+            // Fetch order items for concise WhatsApp summary (best-effort).
+            try {
+              const items = await selectMany(env, 'order_items', { order_id: notifyRow.id });
+              if (items && items.length) {
+                orderForNotify.items = items.map(it => ({
+                  product_name: it.product_name,
+                  pack: it.pack,
+                  qty: it.quantity,
+                  quantity: it.quantity,
+                  unit_price: it.unit_price,
+                }));
+              }
+            } catch (e) { /* items optional for notification */ }
             const notifyResult = await notifyOwner(env, orderForNotify);
             // Persist notification delivery status on the order row (best-effort).
             // Idempotency: only update if not already marked sent (prevents duplicate marking).

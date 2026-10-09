@@ -56,14 +56,15 @@ function normalizeWhatsAppChatId(value) {
 }
 
 function ownerText(env, order) {
+  const items = itemLines(order);
   return `🛒 *New ChaskaBox Order*\n` +
     `Order: #${order.order_number}\n` +
     `Customer: ${order.customer_name}\n` +
     `Phone: ${order.customer_phone}\n` +
     `Total: Rs.${order.total}\n` +
-    `Payment: ${order.payment_method}\n` +
-    `Status: ${order.payment_status}\n` +
-    `Open Admin: ${adminOrderUrl(env, order)}`;
+    `Payment: ${order.payment_method} (${order.payment_status})\n` +
+    (items ? `\nItems:\n${items}\n` : '') +
+    `\nOpen Admin: ${adminOrderUrl(env, order)}`;
 }
 
 export async function sendOwnerEmail(env, order) {
