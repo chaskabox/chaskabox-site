@@ -63,7 +63,7 @@ header.scrolled{box-shadow:0 8px 28px rgba(26,43,92,.16)}
 /* final navigation polish */
 .hwrap,.logo-img{transition:min-height .2s ease,height .2s ease,padding .2s ease}
 header.scrolled .hwrap{min-height:58px;padding-top:2px;padding-bottom:2px}
-header.scrolled .logo-img{height:46px}
+header.scrolled .logo-img{height:58px;margin:-6px 0}
 .header-search{width:clamp(180px,18vw,290px);display:flex;align-items:center;border:1.5px solid var(--border);border-radius:999px;background:var(--input-bg);overflow:hidden}
 .header-search:focus-within{border-color:var(--navy);box-shadow:0 0 0 3px rgba(26,43,92,.09)}
 .header-search input{min-width:0;flex:1;border:0;background:transparent;color:var(--ink);padding:9px 4px 9px 13px;outline:0;font:inherit;font-size:13px}
@@ -338,8 +338,8 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 
-/* Brand logo */
-.logo-img{height:68px;width:auto}
+/* Brand logo - bigger icon, header height unchanged */
+.logo-img{height:88px;width:auto;margin:-10px 0}
 
 /* Hide Netlify branding badge */
 /* Hide Netlify branding badge */
@@ -356,7 +356,7 @@ div[class*="netlify" i], a[href*="netlify.com"], iframe[src*="netlify"], [id*="n
 .mnav-list a:hover{background:var(--sel-bg)}
 @media(max-width:760px){
   .mnav-btn{display:inline-flex!important}
-  .logo-img{height:48px!important}
+  .logo-img{height:60px!important;margin:-6px 0!important}
   .herocollage{width:160px;height:130px}
   .herocollage img{width:80px;height:80px}
   /* Mobile: only hamburger, search, bag in header - use classes (not attribute selectors) */
