@@ -1,32 +1,30 @@
 /**
- * /api/admin/products/:id/versions
- * GET — list version history. POST — revert to a version.
- * Roles: owner, manager, content (view); owner, manager (revert).
+ * /api/admin/product-versions
+ * GET  ?product_id=123 — list version history. Roles: owner, manager, content.
+ * POST {product_id, version_id} — revert to a version. Roles: owner, manager.
  */
-import { withAdmin, sb, json, httpError, readJson, audit } from '../../../_lib/auth.js';
+import { withAdmin, sb, json, httpError, readJson, audit } from './_lib/auth.js';
 
 export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (context) => {
-  const id = context.params.id;
-  if (!id) httpError('Product id required', 400);
+  const url = new URL(context.request.url);
+  const id = url.searchParams.get('product_id');
+  if (!id) httpError('product_id required', 400);
   const versions = await sb(context,
     `/rest/v1/product_versions?product_id=eq.${encodeURIComponent(id)}&select=id,changed_by,change_type,created_at&order=created_at.desc&limit=20`);
   return json({ versions: versions || [] });
 });
 
 export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
-  const id = context.params.id;
-  if (!id) httpError('Product id required', 400);
   const body = await readJson(context.request);
+  const id = body.product_id;
   const versionId = body.version_id;
-  if (!versionId) httpError('version_id required', 400);
+  if (!id || !versionId) httpError('product_id and version_id required', 400);
 
-  // Load the version snapshot
   const versions = await sb(context,
     `/rest/v1/product_versions?id=eq.${encodeURIComponent(versionId)}&product_id=eq.${encodeURIComponent(id)}&select=snapshot`);
   if (!versions || !versions.length) httpError('Version not found', 404);
   const snapshot = versions[0].snapshot;
 
-  // Save current as a version before reverting
   const current = await sb(context, `/rest/v1/products?id=eq.${encodeURIComponent(id)}&select=*`);
   if (current && current.length) {
     await sb(context, '/rest/v1/product_versions', {
@@ -35,7 +33,6 @@ export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { u
     }).catch(() => {});
   }
 
-  // Restore snapshot (only editable fields)
   const EDITABLE = ['name','slug','price','old_price','category','brand','pack','description','badge','image_url','visibility','stock_state','seo_title','seo_description','og_image','canonical_url'];
   const patch = {};
   for (const k of EDITABLE) if (snapshot[k] !== undefined) patch[k] = snapshot[k];

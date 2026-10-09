@@ -947,7 +947,7 @@
     panel.style.display='block';
     list.innerHTML='<p class="muted">Loading…</p>';
     try{
-      const d=await api(`/api/admin/products/${productId}/versions`);
+      const d=await api(`/api/admin/product-versions?product_id=${productId}`);
       const versions=d.versions||[];
       if(!versions.length){list.innerHTML='<p class="muted">No history yet. Changes will appear here.</p>';return;}
       list.innerHTML=versions.map(v=>`
@@ -957,7 +957,7 @@
         </div>`).join('');
       list.querySelectorAll('[data-revert-version]').forEach(b=>b.onclick=async()=>{
         if(!confirm('Revert to this version? Current state will be saved as a new version.')) return;
-        await api(`/api/admin/products/${productId}/versions`,{method:'POST',body:{version_id:b.dataset.revertVersion}});
+        await api(`/api/admin/product-versions`,{method:'POST',body:{product_id:productId,version_id:b.dataset.revertVersion}});
         toast('Reverted'); loadProducts(); panel.style.display='none';
       });
     }catch(e){list.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
