@@ -194,7 +194,7 @@
   }
 
   let productPage = 1, productTotalPages = 1, productTotal = 0;
-  const PRODUCT_PER_PAGE = 50;
+  const PRODUCT_PER_PAGE = 1000; // All products on one page (no pagination)
   async function loadProducts(page){
     productPage = page || 1;
     const data=await api(`/api/admin/products?per_page=${PRODUCT_PER_PAGE}&page=${productPage}`); products=data.products||[];

@@ -65,7 +65,7 @@ function validateProductInput(body, isCreate) {
 export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (context) => {
   const url = new URL(context.request.url);
   const sp = url.searchParams;
-  const { page, per, rangeHeader } = pagination(url, 25, 100);
+  const { page, per, rangeHeader } = pagination(url, 1000, 1000);
 
   const filters = [];
   const q = sanitizeSearch(sp.get('q'));
