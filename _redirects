@@ -1,1 +1,4 @@
 # /brands/ is now a real Brands directory page (Phase 2A: brands/index.html).
+# Brand detail pages: serve the SPA shell for /brand/<slug>/
+# (client-side JS reads the slug and renders the brand)
+/brand/*  /brand/index.html  200
