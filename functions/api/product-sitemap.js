@@ -15,7 +15,17 @@ export async function onRequestGet({ env }) {
       const img = p.image_url ? `<image:image><image:loc>${x(p.image_url)}</image:loc></image:image>` : '';
       return `  <url><loc>https://chaskabox.online/product/${x(p.id)}/</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.8</priority>${img}</url>`;
     }).join('\n');
-    const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n</urlset>`;
+    // Phase 2A: brand directory + brand detail URLs
+    let brandUrls = '  <url><loc>https://chaskabox.online/brands/</loc><changefreq>daily</changefreq><priority>0.7</priority></url>';
+    try {
+      const brands = await sbRequest(env, '/brands', {
+        query: '?select=slug,updated_at&is_visible=eq.true&order=slug.asc&limit=200',
+      });
+      brandUrls += '\n' + (brands || []).map(b =>
+        `  <url><loc>https://chaskabox.online/brand/${x(b.slug)}/</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`
+      ).join('\n');
+    } catch { /* brands table may not have new columns yet; directory URL still listed */ }
+    const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n${brandUrls}\n</urlset>`;
     return new Response(body, { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public,max-age=1800' } });
   } catch (e) {
     return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>', { status: 503, headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'no-store' } });

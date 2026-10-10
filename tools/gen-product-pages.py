@@ -22,6 +22,10 @@ def esc(s):
 def brand_of(name):
     return str(name or "").split("|")[0].strip() or "ChaskaBox"
 
+def brand_slug(name):
+    slug = re.sub(r"[^a-z0-9]+", "-", str(name or "").lower().strip())
+    return slug.strip("-") or "brand"
+
 
 CATEGORY_SLUGS = {
     "Biscuits & Wafers": "biscuits-and-wafers",
@@ -111,7 +115,7 @@ def main():
     <div class="pd-info">
       {catlabel}
       <h1>{esc(name)}</h1>
-      <div class="pd-brand">{esc(brand)}</div>
+      <div class="pd-brand"><a href="/brand/{brand_slug(brand)}/" style="color:inherit">{esc(brand)}</a></div>
       <div class="pd-price"><span class="price" style="font-size:26px">{price_fmt}</span>{old_html}{save_html}</div>
       <div class="ppack" style="margin-bottom:10px">{esc(pack)}</div>
       <p class="pd-desc">{esc(desc) if desc else 'Product details are being updated. Contact ChaskaBox if you need ingredient or allergen information before ordering.'}</p>

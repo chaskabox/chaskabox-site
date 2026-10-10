@@ -182,14 +182,17 @@ function renderHeaderDropdowns(){
     if(db){
       const bc={}; activeProducts().forEach(p=>{const b=getBrand(p.name);bc[b]=(bc[b]||0)+1;});
       const top=Object.entries(bc).sort((a,b)=>b[1]-a[1]).slice(0,9);
-      db.innerHTML='<a href="/shop/">🏷️ All Brands</a>'
-        +top.map(([b,n])=>'<a href="#" onclick="goBrand(&quot;'+esc(b)+'&quot;);return false">'+esc(b)+'<span class="cnt">'+n+'</span></a>').join('');
+      db.innerHTML='<a href="/brands/">🏷️ All Brands</a>'
+        +top.map(([b,n])=>'<a href="/brand/'+brandSlug(b)+'/">'+esc(b)+'<span class="cnt">'+n+'</span></a>').join('');
     }
   }catch(e){ console.warn('header dropdowns', e); }
 }
 function getBrand(name){
   const m=String(name||'').split('|')[0].trim();
   return m||'ChaskaBox';
+}
+function brandSlug(name){
+  return String(name||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'brand';
 }
 function filterPanelHTML(){
   const all=activeProducts();
@@ -488,7 +491,7 @@ function applyHomeCms(){
 }
 /* ---------- views ---------- */
 function showView(v){
-  const views=['home','shop','product','account','cart','wishlist','404'];
+  const views=['home','shop','product','account','cart','wishlist','brands','brand','404'];
   views.forEach(name=>{
     const el=document.getElementById('view-'+name);
     if(!el) return;
@@ -554,6 +557,112 @@ function renderBundlesRoute(){
   shopState.cat='Bundles';
   showView('shop');
   renderShopContent();
+}
+
+/* ---------- Phase 2A: Brand directory + brand detail ---------- */
+let _brandsCache=null;
+async function fetchBrands(){
+  if(_brandsCache) return _brandsCache;
+  try{
+    const r=await fetch('/api/brands',{headers:{'Accept':'application/json'}});
+    const d=await r.json();
+    _brandsCache=(d&&d.brands)||[];
+  }catch(e){ _brandsCache=[]; }
+  return _brandsCache;
+}
+function renderBrandsRoute(){
+  setPageMeta('Pakistani Snack Brands | ChaskaBox','/brands/',false,'Browse all Pakistani snack brands at ChaskaBox: Hilal, Kolson, Mayfair, Candyland, Giggly & more. Shop your favourite brands online with COD.');
+  showView('brands');
+  renderBrandsDirectory();
+}
+async function renderBrandsDirectory(){
+  const grid=document.getElementById('brandGrid');
+  const countEl=document.getElementById('brandCount');
+  const azEl=document.getElementById('brandAZ');
+  if(!grid) return;
+  grid.innerHTML='<p class="muted" style="grid-column:1/-1">Loading brands...</p>';
+  const brands=await fetchBrands();
+  if(countEl) countEl.textContent=brands.length+' brands';
+  const q=(document.getElementById('brandSearch')?.value||'').toLowerCase();
+  const list=brands.filter(b=>!q||b.name.toLowerCase().includes(q));
+  // A-Z filter chips
+  if(azEl){
+    const letters=[...new Set(brands.map(b=>(b.name[0]||'#').toUpperCase()))].sort();
+    azEl.innerHTML='<button class="fchip" data-az="">All</button>'+letters.map(l=>`<button class="fchip" data-az="${l}">${l}</button>`).join('');
+    azEl.querySelectorAll('[data-az]').forEach(btn=>{btn.onclick=()=>{renderBrandsDirectory(btn.dataset.az);};});
+  }
+  const az=(arguments[0]||'').toUpperCase();
+  const shown=list.filter(b=>!az||(b.name[0]||'').toUpperCase()===az);
+  grid.innerHTML=shown.length?shown.map(b=>{
+    const logo=b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name)} logo" loading="lazy" style="max-height:56px;max-width:100%;object-fit:contain">`:`<span style="font-size:34px">🏷️</span>`;
+    return `<a class="card" href="/brand/${esc(b.slug)}/" style="text-decoration:none;text-align:center;padding:18px 12px;display:block">
+      <div style="height:64px;display:flex;align-items:center;justify-content:center">${logo}</div>
+      <div class="pname" style="margin-top:8px">${esc(b.name)}</div>
+      <div class="pcat">${b.productCount} products</div></a>`;
+  }).join(''):'<p class="muted" style="grid-column:1/-1">No brands found.</p>';
+}
+async function renderBrandRoute(slug){
+  if(!slug){ render404('/brand/'); return; }
+  const v=document.getElementById('view-brand');
+  showView('brand');
+  const titleEl=document.getElementById('brandTitle');
+  if(titleEl) titleEl.textContent='Loading...';
+  try{
+    const r=await fetch('/api/brands?slug='+encodeURIComponent(slug),{headers:{'Accept':'application/json'}});
+    const d=await r.json();
+    const brand=d&&d.brand;
+    if(!brand){ render404('/brand/'+slug+'/'); return; }
+    const seoTitle=brand.seoTitle||`${brand.name} Snacks Online in Pakistan | ChaskaBox`;
+    const seoDesc=brand.seoDescription||`Shop ${brand.name} snacks online at ChaskaBox Pakistan. Original sealed packs, COD available, 4-7 day nationwide delivery.`;
+    setPageMeta(seoTitle,'/brand/'+brand.slug+'/',false,seoDesc);
+    // OG tags per brand
+    setMetaTag('property','og:title',seoTitle);
+    setMetaTag('property','og:description',seoDesc);
+    setMetaTag('property','og:url','https://chaskabox.online/brand/'+brand.slug+'/');
+    if(brand.ogImage||brand.logo) setMetaTag('property','og:image',brand.ogImage||brand.logo);
+    document.getElementById('brandCrumb').textContent=brand.name;
+    titleEl.textContent=`${brand.name} Snacks Online in Pakistan`;
+    document.getElementById('brandProdCount').textContent=brand.productCount+' products';
+    if(brand.long||brand.short) document.getElementById('brandIntro').textContent=brand.long||brand.short;
+    if(brand.hero) document.getElementById('brandHero').innerHTML=`<img src="${esc(brand.hero)}" alt="${esc(brand.name)}" style="width:100%;border-radius:14px;max-height:280px;object-fit:cover" loading="lazy">`;
+    // Breadcrumb schema
+    setBrandBreadcrumbSchema(brand);
+    // Products
+    const pr=await fetch('/api/brand-products?slug='+encodeURIComponent(slug),{headers:{'Accept':'application/json'}});
+    const pd=await pr.json();
+    const products=(pd&&pd.products)||[];
+    const grid=document.getElementById('brandGrid');
+    if(grid) grid.innerHTML=products.length?products.map(cardHTML).join(''):'<p class="muted" style="grid-column:1/-1">No products yet for this brand.</p>';
+    // Wire sort
+    const sortSel=document.getElementById('brandSort');
+    if(sortSel) sortSel.onchange=()=>{ sortBrandProducts(products,sortSel.value); };
+  }catch(e){
+    if(titleEl) titleEl.textContent='Brand unavailable';
+  }
+}
+function sortBrandProducts(products,mode){
+  const arr=[...products];
+  if(mode==='lo') arr.sort((a,b)=>a.price-b.price);
+  else if(mode==='hi') arr.sort((a,b)=>b.price-a.price);
+  else if(mode==='az') arr.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(mode==='new') arr.sort((a,b)=>b.id-a.id);
+  else if(mode==='pop') arr.sort((a,b)=>(b.badge==='Bestseller')-(a.badge==='Bestseller'));
+  const grid=document.getElementById('brandGrid');
+  if(grid) grid.innerHTML=arr.map(cardHTML).join('');
+}
+function setMetaTag(attr,key,val){
+  let m=document.querySelector(`meta[${attr}="${key}"]`);
+  if(!m){ m=document.createElement('meta'); m.setAttribute(attr,key); document.head.appendChild(m); }
+  m.content=val;
+}
+function setBrandBreadcrumbSchema(brand){
+  let s=document.getElementById('brandBreadcrumbSchema');
+  if(!s){ s=document.createElement('script'); s.id='brandBreadcrumbSchema'; s.type='application/ld+json'; document.head.appendChild(s); }
+  s.textContent=JSON.stringify({"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[
+    {"@type":"ListItem","position":1,"name":"Home","item":"https://chaskabox.online/"},
+    {"@type":"ListItem","position":2,"name":"Brands","item":"https://chaskabox.online/brands/"},
+    {"@type":"ListItem","position":3,"name":brand.name,"item":"https://chaskabox.online/brand/"+brand.slug+"/"}
+  ]});
 }
 function renderCategoryRoute(slug){
   const catName=CATEGORY_SLUGS[slug];
@@ -823,6 +932,11 @@ function route(){
     renderShopRoute();
   } else if(path === '/bundles/'){
     renderBundlesRoute();
+  } else if(path === '/brands/'){
+    renderBrandsRoute();
+  } else if(path.startsWith('/brand/')){
+    const slug = path.replace('/brand/', '').replace(/\/$/, '') || new URLSearchParams(location.search).get('slug') || '';
+    renderBrandRoute(slug);
   } else if(path === '/cart/'){
     renderCartRoute();
   } else if(path === '/account/'){
