@@ -1,5 +1,5 @@
 -- ============================================================================
--- ChaskaBox — Migration 030: Analytics RPC functions (Phase 2B)
+-- ChaskaBox — Migration 031: Analytics RPC functions (Phase 2B)
 -- OFFLINE. Apply once in Supabase SQL Editor (production).
 --
 -- SECURITY DEFINER functions owned by postgres; they run with the owner's

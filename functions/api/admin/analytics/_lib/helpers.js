@@ -4,7 +4,7 @@
  *   max 366 days). Returns UTC-midnight Date boundaries (to is exclusive).
  * - callRpc: POSTs to a Supabase RPC via the service-role REST client and
  *   converts a "function does not exist" DB error into a clear 503 telling
- *   the owner to apply database/migrations/030_analytics_rpc.sql.
+ *   the owner to apply database/migrations/031_analytics_rpc.sql.
  */
 import { httpError } from '../../_lib/auth.js';
 
@@ -57,7 +57,7 @@ export async function callRpc(context, sb, fn, body) {
     }
     if (/analytics_/i.test(msg) && /does not exist|not exist|could not find/i.test(msg)) {
       httpError(
-        'Analytics database functions are not installed. Apply database/migrations/030_analytics_rpc.sql in the Supabase SQL Editor, then retry.',
+        'Analytics database functions are not installed. Apply database/migrations/031_analytics_rpc.sql in the Supabase SQL Editor, then retry.',
         503,
         'analytics_not_installed'
       );
