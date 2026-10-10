@@ -213,7 +213,24 @@
     $('#boxPrice')?.addEventListener('input',renderBoxSummary); $('#previewBoxBtn')?.addEventListener('click',()=>{if(!state.box.size){toast('Choose products first');return;}toast('Box preview is reflected in the builder totals. Product-page preview will be wired to secure drafts.');});
     $('#saveBoxDraftBtn')?.addEventListener('click',()=>{toast('Sign in to save this Chaska Box through the secure backend.');});
   }
-  function renderBoxProducts(){ if(!state.products.length)return; const q=($('#boxProductSearch')?.value||'').toLowerCase(); const rows=state.products.map(mergedProduct).filter(p=>!isArchived(p.id)&&!p.bundle&&(!q||`${p.name} ${p.category}`.toLowerCase().includes(q))).slice(0,80); $('#boxProductList').innerHTML=rows.map(p=>{const img=p.img?`/${String(p.img).replace(/^\//,'')}`:'';return `<div class="box-product-row">${img?`<img src="${escapeHtml(img)}" alt="">`:'<div></div>'}<div><h4>${escapeHtml(p.name)}</h4><small>${money(p.price)} · ${escapeHtml(p.pack||'')}</small></div><button data-add-box="${p.id}" aria-label="Add ${escapeHtml(p.name)}">+</button></div>`}).join(''); }
+  function renderBoxProducts(){
+    const listEl=$('#boxProductList');
+    if(!listEl) return;
+    if(!state.products.length){
+      listEl.innerHTML='<p class="muted" style="padding:20px;text-align:center">Loading products…</p>';
+      return;
+    }
+    const q=($('#boxProductSearch')?.value||'').toLowerCase().trim();
+    const rows=state.products.map(mergedProduct).filter(p=>!isArchived(p.id)&&!p.bundle&&(!q||`${p.name} ${p.category} ${p.brand||''}`.toLowerCase().includes(q))).slice(0,80);
+    if(!rows.length){
+      listEl.innerHTML=`<p class="muted" style="padding:20px;text-align:center">${q?`No products match "${escapeHtml(q)}".`:'No products available.'}</p>`;
+      return;
+    }
+    listEl.innerHTML=`<p class="muted" style="font-size:12px;margin-bottom:8px">${rows.length} product${rows.length!==1?'s':''}${q?` matching "${escapeHtml(q)}"`:''}</p>`+rows.map(p=>{
+      const img=p.img?`/${String(p.img).replace(/^\//,'')}`:'';
+      return `<div class="box-product-row" style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">${img?`<img src="${escapeHtml(img)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:6px">`:'<div style="width:48px;height:48px;background:#f1f5f9;border-radius:6px"></div>'}<div style="flex:1;min-width:0"><h4 style="margin:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name)}</h4><small style="color:var(--muted)">${money(p.price)} · ${escapeHtml(p.pack||p.category||'')}</small></div><button data-add-box="${p.id}" aria-label="Add ${escapeHtml(p.name)}" style="padding:8px 16px;font-size:16px">+</button></div>`
+    }).join('');
+  }
   function renderBoxSummary(){ if(!state.box.size){$('#boxSelectedItems').innerHTML='<p class="muted">No products selected yet.</p>';$('#boxRetailValue').textContent=money(0);$('#boxCustomerPrice').textContent=money(Number($('#boxPrice').value||0));$('#boxSaving').textContent=money(0);return;}let retail=0;$('#boxSelectedItems').innerHTML=[...state.box].map(([id,qty])=>{const p=mergedProduct(state.products.find(x=>Number(x.id)===Number(id)));retail+=Number(p.price||0)*qty;return `<div class="builder-item"><span>${escapeHtml(p.name)}</span><div class="qty-controls"><button data-box-action="minus" data-id="${id}">−</button><b>${qty}</b><button data-box-action="plus" data-id="${id}">+</button></div><button class="text-btn" data-box-action="remove" data-id="${id}">Remove</button></div>`}).join('');const price=Number($('#boxPrice').value||0);$('#boxRetailValue').textContent=money(retail);$('#boxCustomerPrice').textContent=money(price);$('#boxSaving').textContent=price&&retail>price?money(retail-price):money(0); }
 
   function bindPreview(){
