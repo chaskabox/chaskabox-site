@@ -30,11 +30,6 @@ export function parseRange(url) {
   }
   const from = new Date(fromStr + 'T00:00:00Z');
   const to = new Date(toStr + 'T00:00:00Z');
-  // UI sends `to` as an inclusive date (e.g. today). Make it exclusive by adding 1 day,
-  // unless it was the default (which already adds 1 day above).
-  if (sp.get('to')) {
-    to.setUTCDate(to.getUTCDate() + 1);
-  }
   if (
     Number.isNaN(from.getTime()) ||
     Number.isNaN(to.getTime()) ||
@@ -42,6 +37,11 @@ export function parseRange(url) {
     isoDate(to) !== toStr
   ) {
     httpError('Invalid calendar date.', 400, 'invalid_date');
+  }
+  // UI sends `to` as an inclusive date (e.g. today). Make it exclusive by adding 1 day,
+  // unless it was the default (which already adds 1 day above).
+  if (sp.get('to')) {
+    to.setUTCDate(to.getUTCDate() + 1);
   }
   if (from >= to) httpError('"from" must be before "to".', 400, 'invalid_range');
   if (to - from > 366 * 86400000) {
