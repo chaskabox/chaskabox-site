@@ -10,13 +10,13 @@ const STEPS = ['product_view', 'add_to_cart', 'cart_viewed', 'checkout_started',
 const LABELS = { product_view: 'Product View', add_to_cart: 'Add to Cart', cart_viewed: 'Cart Viewed', checkout_started: 'Checkout Started', order_created: 'Order Created' };
 
 export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
-  const { from, to } = parseRange(context);
+  const { fromStr, toStr } = parseRange(new URL(context.request.url));
   const steps = [];
   for (let i = 0; i < STEPS.length; i++) {
     const s = STEPS[i];
     let count = 0;
     try {
-      const res = await sb(context, `/rest/v1/funnel_events?event=eq.${s}&created_at=gte.${from}T00:00:00&created_at=lte.${to}T23:59:59&select=id`, { count: true });
+      const res = await sb(context, `/rest/v1/funnel_events?event=eq.${s}&created_at=gte.${fromStr}T00:00:00&created_at=lte.${toStr}T23:59:59&select=id`, { count: true });
       count = res?.total ?? 0;
     } catch { count = 0; }
     const prev = i === 0 ? count : steps[i - 1].count;

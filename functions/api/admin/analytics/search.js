@@ -7,8 +7,8 @@ import { withAdmin, sb, json } from '../_lib/auth.js';
 import { parseRange } from './_lib/helpers.js';
 
 export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
-  const { from, to } = parseRange(context);
-  const base = `/rest/v1/search_logs?created_at=gte.${from}T00:00:00&created_at=lte.${to}T23:59:59&select=query,results_count,created_at`;
+  const { fromStr, toStr } = parseRange(new URL(context.request.url));
+  const base = `/rest/v1/search_logs?created_at=gte.${fromStr}T00:00:00&created_at=lte.${toStr}T23:59:59&select=query,results_count,created_at`;
 
   const topQ = await sb(context, `${base}&order=created_at.desc&limit=1000`);
   const qmap = {};
