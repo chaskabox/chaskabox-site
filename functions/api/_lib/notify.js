@@ -232,6 +232,31 @@ export async function sendStatusUpdate(env, order, newStatus) {
     'cancelled': 'cancelled. Contact us if this is a mistake.',
   }[newStatus] || `updated to: ${newStatus}`;
 
-  const msg = `🍬 *ChaskaBox Update*\n\nHi! Your order *${order.order_number}* is ${statusText}\n\nTrack: https://chaskabox.online/track-order.html?order=${encodeURIComponent(order.order_number || '')}\n\nQuestions? Reply to this message.`;
+  let msg = `🍬 *ChaskaBox Update*\n\nHi! Your order *${order.order_number}* is ${statusText}\n\nTrack: https://chaskabox.online/track-order.html?order=${encodeURIComponent(order.order_number || '')}`;
+
+  // Add review links for delivered orders
+  if (newStatus === 'delivered') {
+    try {
+      // Fetch order items to build review links
+      const sbUrl = `${env.SUPABASE_URL}/rest/v1/order_items?order_id=eq.${encodeURIComponent(order.id)}&select=product_id,products(name)`;
+      const res = await fetch(sbUrl, {
+        headers: { 'apikey': env.SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` },
+      });
+      if (res.ok) {
+        const items = await res.json();
+        if (Array.isArray(items) && items.length) {
+          const links = items.slice(0, 5).map(it => {
+            const pid = it.product_id;
+            const pname = it.products?.name || `Product ${pid}`;
+            return `• ${pname}: https://chaskabox.online/product/${pid}/#reviews`;
+          }).join('\n');
+          msg += `\n\n⭐ *Enjoyed your snacks? Please review!*\n${links}`;
+          if (items.length > 5) msg += `\n…and ${items.length - 5} more on your track page`;
+        }
+      }
+    } catch (e) { /* review links are best-effort */ }
+  }
+
+  msg += `\n\nQuestions? Reply to this message.`;
   return sendCustomerWhatsApp(env, order, msg);
 }
