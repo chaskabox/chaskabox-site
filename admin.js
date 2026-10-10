@@ -80,6 +80,7 @@
     $('#adminSidebar').classList.remove('open'); $('#sidebarBackdrop')?.classList.remove('show'); window.scrollTo({top:0,behavior:'smooth'});
     try{const d=document.documentElement; d.style.display='none'; void d.offsetHeight; d.style.display='';}catch(e){}
     if(name==='preview') refreshPreview();
+    if(name==='box-builder'||name==='boxes'){ bindBoxBuilder(); renderBoxProducts(); }
   }
 
   function bindGeneral(){
@@ -206,6 +207,7 @@
   }
 
   function bindBoxBuilder(){
+    if(bindBoxBuilder._done) return; bindBoxBuilder._done=true;
     $('#boxProductSearch')?.addEventListener('input',renderBoxProducts); $('#boxProductList')?.addEventListener('click',e=>{const b=e.target.closest('[data-add-box]');if(!b)return;const id=Number(b.dataset.addBox);state.box.set(id,(state.box.get(id)||0)+1);renderBoxSummary();});
     $('#boxSelectedItems')?.addEventListener('click',e=>{const b=e.target.closest('[data-box-action]');if(!b)return;const id=Number(b.dataset.id), a=b.dataset.boxAction, q=state.box.get(id)||0;if(a==='plus')state.box.set(id,q+1);if(a==='minus'){q<=1?state.box.delete(id):state.box.set(id,q-1);}if(a==='remove')state.box.delete(id);renderBoxSummary();});
     $('#boxPrice')?.addEventListener('input',renderBoxSummary); $('#previewBoxBtn')?.addEventListener('click',()=>{if(!state.box.size){toast('Choose products first');return;}toast('Box preview is reflected in the builder totals. Product-page preview will be wired to secure drafts.');});
