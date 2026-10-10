@@ -991,8 +991,34 @@
         ${bar('Verified prepaid', m30.verified_prepaid_sales_pkr||0, m30.recognized_sales_pkr||1, '#8b5cf6')}
         ${bar('Delivered COD', m30.delivered_cod_sales_pkr||0, m30.recognized_sales_pkr||1, '#f59e0b')}
         ${bar('Pending payment', m30.pending_prepaid_value_pkr||0, m30.gross_order_value_pkr||1, '#6b7280')}
-        <p class="muted" style="margin-top:16px;font-size:12px">Recognized sales = verified prepaid + delivered COD (refunds excluded).</p>`;
+        <p class="muted" style="margin-top:16px;font-size:12px">Recognized sales = verified prepaid + delivered COD (refunds excluded).</p>
+        <h3 style="margin:24px 0 8px">\U0001f50d SEO Health</h3>
+        <div id="seoHealth"><p class="muted">Checking…</p></div>`;
     }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+    try{ await checkSeoHealth(); }catch(e){}
+  }
+
+  async function checkSeoHealth(){
+    const el=$('#seoHealth'); if(!el) return;
+    const checks=[];
+    const check=async(name,url,validate)=>{
+      try{
+        const r=await fetch(url,{cache:'no-store'});
+        const t=await r.text();
+        const ok=r.ok&&validate(t);
+        checks.push({name,ok,detail:r.ok?(ok?'OK':'Content issue'):('HTTP '+r.status)});
+      }catch(e){ checks.push({name,ok:false,detail:'Fetch failed'}); }
+    };
+    await Promise.all([
+      check('robots.txt','/robots.txt',t=>t.includes('sitemap-products.xml')),
+      check('Main sitemap','/sitemap.xml',t=>(t.match(/<url>/g)||[]).length>=10),
+      check('Product sitemap (static)','/sitemap-products.xml',t=>(t.match(/<url>/g)||[]).length>=100),
+      check('Product sitemap (dynamic)','/api/product-sitemap',t=>(t.match(/<url>/g)||[]).length>=100),
+    ]);
+    el.innerHTML='<div style="display:grid;gap:8px">'+checks.map(c=>
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--border);border-radius:8px">'
+      +'<span>'+(c.ok?'\u2705':'\u274c')+' '+c.name+'</span><small class="muted">'+c.detail+'</small></div>'
+    ).join('')+'</div><p class="muted" style="font-size:11px;margin-top:8px">Static product pages include Product + Offer + Breadcrumb schema. Dynamic ?id= URLs redirect to static pages.</p>';
   }
 
   /* ============ BACKUP ============ */
