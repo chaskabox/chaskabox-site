@@ -4,7 +4,7 @@
   const esc = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const fmt = n => `Rs. ${Number(n||0).toLocaleString('en-PK')}`;
   const asset = s => { s=String(s||''); if(!s)return ''; return /^(?:https?:|data:|blob:|\/)/i.test(s)?s:'/'+s.replace(/^\.\//,''); };
-  const productHref = id => `/product/?id=${encodeURIComponent(id)}`;
+  const productHref = id => `/product/${encodeURIComponent(id)}/`;
   let products = [], product = null, settings = {};
   function loadCart(){try{return JSON.parse(localStorage.getItem('chaskabox-cart')||'{}')}catch{return {}}}
   function saveCart(c){localStorage.setItem('chaskabox-cart',JSON.stringify(c));updateBag();}
@@ -23,7 +23,7 @@
     if(window.ReviewsWidget) ReviewsWidget.mount('#reviewsMount', product.id);
     document.title=`${product.name} | ChaskaBox`;
     const m=document.querySelector('meta[name="description"]');if(m)m.content=String(product.desc||`Buy ${product.name} from ChaskaBox.`).slice(0,155);
-    const canonical=document.createElement('link');canonical.rel='canonical';canonical.href=`https://chaskabox.online/product/?id=${encodeURIComponent(product.id)}`;document.head.appendChild(canonical);
+    const canonical=document.createElement('link');canonical.rel='canonical';canonical.href=`https://chaskabox.online/product/${encodeURIComponent(product.id)}/`;document.head.appendChild(canonical);
     history.replaceState(null,'',productHref(product.id));
   }
   async function init(){

@@ -1,15 +1,23 @@
 import { sbRequest } from './_lib/db.js';
-// Legacy generated product pages/sitemap cover IDs <= 272. Admin-created products use IDs above this cutoff.
-const LEGACY_STATIC_ID_MAX = 272;
+// Dynamic product sitemap: ALL visible products (not just new IDs).
+// Static sitemap-products.xml covers the same URLs as a fallback;
+// this endpoint is always fresh (new/updated products appear immediately).
 const x = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 export async function onRequestGet({ env }) {
   try {
-    const rows = await sbRequest(env, '/public_products', { query: `?select=id,updated_at&id=gt.${LEGACY_STATIC_ID_MAX}&order=id.asc&limit=5000` }).catch(async()=>
-      sbRequest(env, '/public_products', { query: `?select=id&id=gt.${LEGACY_STATIC_ID_MAX}&order=id.asc&limit=5000` })
+    const rows = await sbRequest(env, '/public_products', {
+      query: `?select=id,updated_at,image_url&order=id.asc&limit=5000`
+    }).catch(async () =>
+      sbRequest(env, '/public_products', { query: `?select=id&order=id.asc&limit=5000` })
     );
-    const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${(rows||[]).map(p=>`  <url><loc>https://chaskabox.online/product/?id=${x(p.id)}</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>`).join('\n')}\n</urlset>`;
-    return new Response(body,{headers:{'Content-Type':'application/xml; charset=utf-8','Cache-Control':'public,max-age=1800'}});
+    const urls = (rows || []).map(p => {
+      const lastmod = p.updated_at ? `<lastmod>${x(String(p.updated_at).slice(0, 10))}</lastmod>` : '';
+      const img = p.image_url ? `<image:image><image:loc>${x(p.image_url)}</image:loc></image:image>` : '';
+      return `  <url><loc>https://chaskabox.online/product/${x(p.id)}/</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.8</priority>${img}</url>`;
+    }).join('\n');
+    const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n</urlset>`;
+    return new Response(body, { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public,max-age=1800' } });
   } catch (e) {
-    return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>',{status:503,headers:{'Content-Type':'application/xml; charset=utf-8','Cache-Control':'no-store'}});
+    return new Response('<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>', { status: 503, headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'no-store' } });
   }
 }

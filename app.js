@@ -26,7 +26,7 @@ function deliveryRange(){
   return `From ${f(a)} to ${f(b)}`;
 }
 
-function productHref(id){return '/product/?id='+encodeURIComponent(id);}
+function productHref(id){return '/product/'+encodeURIComponent(id)+'/';}
 
 /* ---------- cards ---------- */
 function bundleFanHTML(p){

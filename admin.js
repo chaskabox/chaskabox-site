@@ -94,7 +94,7 @@
     const route=$('#previewRoute');
     if(route){
       const cg=document.createElement('optgroup'); cg.label='Categories'; state.categories.forEach(c=>{const o=document.createElement('option');o.value='/category/'+slugify(c)+'/';o.textContent=c;cg.appendChild(o)}); route.appendChild(cg);
-      const pg=document.createElement('optgroup');pg.label='Sample products';state.products.filter(p=>Number(p.id)>0).slice(0,12).forEach(p=>{const o=document.createElement('option');o.value='/product/?id='+encodeURIComponent(p.id);o.textContent=p.name;pg.appendChild(o)});route.appendChild(pg);
+      const pg=document.createElement('optgroup');pg.label='Sample products';state.products.filter(p=>Number(p.id)>0).slice(0,12).forEach(p=>{const o=document.createElement('option');o.value='/product/'+encodeURIComponent(p.id)+ '/';o.textContent=p.name;pg.appendChild(o)});route.appendChild(pg);
     }
     $('#productNavCount').textContent=state.products.filter(p=>!isArchived(p.id)).length;
   }

@@ -155,7 +155,16 @@ def main():
         }
         if img:
             jd["image"] = og_image
-        json_ld = json.dumps(jd, ensure_ascii=False)
+        breadcrumb = {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                {"@type": "ListItem", "position": 1, "name": "Home", "item": "https://chaskabox.online/"},
+                {"@type": "ListItem", "position": 2, "name": cat, "item": "https://chaskabox.online" + category_url(cat)},
+                {"@type": "ListItem", "position": 3, "name": name, "item": canonical},
+            ],
+        }
+        json_ld = json.dumps(jd, ensure_ascii=False) + '</script>\n<script type="application/ld+json">' + json.dumps(breadcrumb, ensure_ascii=False)
 
         page = TEMPLATE
         page = page.replace("%%TITLE%%", esc(title))
