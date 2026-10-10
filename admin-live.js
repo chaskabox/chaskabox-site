@@ -75,7 +75,8 @@
      Signed-out visitors see only the overlay or the staff login form — never
      misleading empty/stale admin data. */
   let bootDone=false;
-  function hideBoot(){ const b=$('#adminBoot'); if(b) b.style.display='none'; bootDone=true; try{window.chaskaAdminBooted=true;}catch(e){} try{window.dispatchEvent(new Event('resize'));}catch(e){} }
+  function hideBoot(){ const b=$('#adminBoot'); if(b) b.style.display='none'; bootDone=true; try{window.chaskaAdminBooted=true;}catch(e){} try{forceRepaint();}catch(e){} }
+  function forceRepaint(){ const d=document.documentElement; d.style.display='none'; void d.offsetHeight; d.style.display=''; }
   function showBootError(msg){
     bootDone=true;
     const b=$('#adminBoot'); if(!b) return;
