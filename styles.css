@@ -893,3 +893,9 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
 .abandoned-nudge.show{transform:translateY(0)}
 .abandoned-nudge a{color:#f2b705;font-weight:700;text-decoration:none;white-space:nowrap}
 .abandoned-nudge button{background:none;border:none;color:#fff;opacity:.7;cursor:pointer;font-size:16px;padding:4px}
+
+/* Checkout form two-column + checkbox */
+.form-two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.form-two{grid-template-columns:1fr}}
+.checkbox-field label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
+.checkbox-field input[type="checkbox"]{width:18px;height:18px;accent-color:var(--navy)}

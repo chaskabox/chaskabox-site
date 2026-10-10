@@ -61,7 +61,7 @@ async function init() {
   if (fv) fv.addEventListener('change', () => $('#videoOpt').classList.toggle('sel', fv.checked));
 
   renderSummary();
-  prefillFromAccount();
+  // prefillFromAccount removed - autofillCustomerDetails handles it
   // Init completed: enable Place Order (it starts disabled in HTML).
   // applyPaymentAvailability() may have disabled it when no payment method
   // is enabled — respect that and keep it disabled in that case.
@@ -69,28 +69,6 @@ async function init() {
   if (placeBtnEl && Object.values(PAYMENT_ENABLED).some(Boolean)) placeBtnEl.disabled = false;
 }
 
-async function prefillFromAccount() {
-  try {
-    if (typeof initSupabase !== 'function' || !initSupabase() || !SB) return;
-    const { data: sess } = await SB.auth.getSession();
-    if (!sess?.session?.user) return;
-    const uid = sess.session.user.id;
-    const { data: addrs } = await SB.from('addresses').select('*').eq('user_id', uid).order('is_default', { ascending: false }).limit(1);
-    if (addrs?.length) {
-      const a = addrs[0];
-      if (a.full_name && !$('#f_name').value) $('#f_name').value = a.full_name;
-      if (a.phone && !$('#f_phone').value) $('#f_phone').value = a.phone;
-      if (a.address && !$('#f_addr').value) $('#f_addr').value = a.address;
-      if (a.city && !$('#f_city').value) $('#f_city').value = a.city;
-    } else {
-      const { data: prof } = await SB.from('profiles').select('name,phone').eq('id', uid).single();
-      if (prof) {
-        if (prof.name && !$('#f_name').value) $('#f_name').value = prof.name;
-        if (prof.phone && !$('#f_phone').value) $('#f_phone').value = prof.phone;
-      }
-    }
-  } catch(e) { console.warn('prefill failed', e); }
-}
 
 
 function applyPaymentAvailability(settings={}) {
@@ -215,8 +193,15 @@ function validEmail(v) {
 
 function checkForm() {
   let ok = true;
+  // Combine first + last into full name for backend compat
+  const fname = ($('#f_fname')?.value || '').trim();
+  const lname = ($('#f_lname')?.value || '').trim();
+  const fullName = (fname + ' ' + lname).trim();
+  const nameInput = $('#f_name');
+  if(nameInput) nameInput.value = fullName;
   const need = [
-    ['f_name','e_name',v=>v.trim().length>=3],
+    ['f_fname','e_fname',v=>v.trim().length>=2],
+    ['f_lname','e_lname',v=>v.trim().length>=2],
     ['f_phone','e_phone',validPhone],
     ['f_email','e_email',validEmail],
     ['f_addr','e_addr',v=>v.trim().length>=8],
@@ -497,6 +482,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ============ CUSTOMER DETAILS SAVE & AUTOFILL ============ */
 async function saveCustomerDetails(d){
+  // Only save if user checked "Save this information"
+  const saveChecked = $('#f_saveinfo')?.checked !== false;
+  if(!saveChecked) return;
   // Save to localStorage for autofill (guests)
   try {
     localStorage.setItem('cb_customer', JSON.stringify(d));
@@ -516,6 +504,13 @@ async function saveCustomerDetails(d){
 }
 
 async function autofillCustomerDetails(){
+  const fillName = (fullName) => {
+    if(!fullName) return;
+    const parts = fullName.trim().split(/\s+/);
+    if($('#f_fname') && !$('#f_fname').value) $('#f_fname').value = parts[0] || '';
+    if($('#f_lname') && !$('#f_lname').value) $('#f_lname').value = parts.slice(1).join(' ') || '';
+    if($('#f_name')) $('#f_name').value = fullName;
+  };
   // Logged in? Use profile + default address
   try {
     if(typeof ACCOUNT_SESSION !== 'undefined' && ACCOUNT_SESSION && typeof SB !== 'undefined' && SB){
@@ -524,7 +519,7 @@ async function autofillCustomerDetails(){
         SB.from('profiles').select('name,phone').eq('id', uid).maybeSingle(),
         SB.from('addresses').select('address,city').eq('user_id', uid).eq('is_default', true).maybeSingle()
       ]);
-      if(profile?.name && $('#f_name') && !$('#f_name').value) $('#f_name').value = profile.name;
+      if(profile?.name) fillName(profile.name);
       if(profile?.phone && $('#f_phone') && !$('#f_phone').value) $('#f_phone').value = profile.phone;
       if(ACCOUNT_SESSION.user.email && $('#f_email') && !$('#f_email').value) $('#f_email').value = ACCOUNT_SESSION.user.email;
       if(addrs){
@@ -537,7 +532,7 @@ async function autofillCustomerDetails(){
   // Guest? Use localStorage
   try {
     const saved = JSON.parse(localStorage.getItem('cb_customer')||'{}');
-    if(saved.name && $('#f_name') && !$('#f_name').value) $('#f_name').value = saved.name;
+    if(saved.name) fillName(saved.name);
     if(saved.phone && $('#f_phone') && !$('#f_phone').value) $('#f_phone').value = saved.phone;
     if(saved.email && $('#f_email') && !$('#f_email').value) $('#f_email').value = saved.email;
     if(saved.address && $('#f_addr') && !$('#f_addr').value) $('#f_addr').value = saved.address;
