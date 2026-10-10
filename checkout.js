@@ -180,18 +180,45 @@ function renderSummary() {
 }
 
 function normalizePhone(v) {
-  const d = String(v||'').replace(/\D/g,'').slice(0,11);
-  if (d.length === 11) return `${d.slice(0,4)}-${d.slice(4,11)}`;
+  let d = String(v||'').replace(/\D/g,'');
+  // Handle country codes: +92XXXXXXXXXX, 92XXXXXXXXXX, 0092XXXXXXXXXX -> 03XXXXXXXXX
+  if(d.startsWith('0092')) d = '0' + d.slice(4);
+  else if(d.startsWith('92') && d.length === 12) d = '0' + d.slice(2);
+  d = d.slice(0, 11);
+  if(d.length === 11 && d.startsWith('03')) return `${d.slice(0,4)}-${d.slice(4,11)}`;
   return d;
 }
-function phoneDigits(v){ return String(v||'').replace(/\D/g,''); }
-function validPhone(v) { const d = phoneDigits(v); return d.length === 11 && d.startsWith('03'); }
+function phoneDigits(v){
+  let d = String(v||'').replace(/\D/g,'');
+  if(d.startsWith('0092')) d = '0' + d.slice(4);
+  else if(d.startsWith('92') && d.length === 12) d = '0' + d.slice(2);
+  return d.slice(0, 11);
+}
+function validPhone(v) {
+  const d = phoneDigits(v);
+  if(d.length !== 11 || !d.startsWith('03')) return false;
+  // Validate Pakistan mobile prefixes: 030x-034x (all valid), 035x (AJK), 036x (?)
+  const prefix = d.slice(0, 4);
+  const validPrefixes = ['0300','0301','0302','0303','0304','0305','0306','0307','0308','0309',
+    '0310','0311','0312','0313','0314','0315','0316','0317','0318','0319',
+    '0320','0321','0322','0323','0324','0325','0326','0327','0328','0329',
+    '0330','0331','0332','0333','0334','0335','0336','0337','0338','0339',
+    '0340','0341','0342','0343','0344','0345','0346','0347','0348','0349',
+    '0355','0360'];
+  return validPrefixes.includes(prefix);
+}
+function validEmail(v) {
+  v = String(v||'').trim();
+  if(!v) return true; // Email is optional
+  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+}
 
 function checkForm() {
   let ok = true;
   const need = [
     ['f_name','e_name',v=>v.trim().length>=3],
     ['f_phone','e_phone',validPhone],
+    ['f_email','e_email',validEmail],
     ['f_addr','e_addr',v=>v.trim().length>=8],
     ['f_city','e_city',v=>v.trim().length>=2]
   ];
@@ -352,6 +379,7 @@ async function placeOrder() {
     customer: {
       name: $('#f_name').value.trim(),
       phone: phone,
+      email: $('#f_email').value.trim() || undefined,
       address: $('#f_addr').value.trim(),
       city: $('#f_city').value.trim()
     },
@@ -387,6 +415,14 @@ async function placeOrder() {
   };
 
   saveLocalPurchaseSummary(order);
+  // Save customer details for autofill (profile if logged in, localStorage if guest)
+  saveCustomerDetails({
+    name: $('#f_name').value.trim(),
+    phone: normalizePhone($('#f_phone').value),
+    email: $('#f_email').value.trim(),
+    address: $('#f_addr').value.trim(),
+    city: $('#f_city').value.trim()
+  });
   CART = {}; localStorage.removeItem('chaskabox-cart'); localStorage.removeItem('chaskabox-cart-ts');
   $('#coMain').style.display = 'none'; $('#coDone').style.display = '';
   $('#doneNo').textContent = finalOrderNo;
@@ -457,4 +493,59 @@ document.addEventListener('DOMContentLoaded', () => {
     if(typeof renderSummary === 'function') renderSummary();
     else location.reload();
   });
+});
+
+/* ============ CUSTOMER DETAILS SAVE & AUTOFILL ============ */
+async function saveCustomerDetails(d){
+  // Save to localStorage for autofill (guests)
+  try {
+    localStorage.setItem('cb_customer', JSON.stringify(d));
+  } catch(e){}
+  // Save to profile if logged in
+  try {
+    if(typeof ACCOUNT_SESSION !== 'undefined' && ACCOUNT_SESSION && typeof SB !== 'undefined' && SB){
+      const uid = ACCOUNT_SESSION.user.id;
+      await SB.from('profiles').upsert({
+        id: uid,
+        name: d.name,
+        phone: d.phone,
+        updated_at: new Date().toISOString()
+      });
+    }
+  } catch(e){}
+}
+
+async function autofillCustomerDetails(){
+  // Logged in? Use profile + default address
+  try {
+    if(typeof ACCOUNT_SESSION !== 'undefined' && ACCOUNT_SESSION && typeof SB !== 'undefined' && SB){
+      const uid = ACCOUNT_SESSION.user.id;
+      const [{data: profile}, {data: addrs}] = await Promise.all([
+        SB.from('profiles').select('name,phone').eq('id', uid).maybeSingle(),
+        SB.from('addresses').select('address,city').eq('user_id', uid).eq('is_default', true).maybeSingle()
+      ]);
+      if(profile?.name && $('#f_name') && !$('#f_name').value) $('#f_name').value = profile.name;
+      if(profile?.phone && $('#f_phone') && !$('#f_phone').value) $('#f_phone').value = profile.phone;
+      if(ACCOUNT_SESSION.user.email && $('#f_email') && !$('#f_email').value) $('#f_email').value = ACCOUNT_SESSION.user.email;
+      if(addrs){
+        if($('#f_addr') && !$('#f_addr').value) $('#f_addr').value = addrs.address || '';
+        if($('#f_city') && !$('#f_city').value) $('#f_city').value = addrs.city || '';
+      }
+      return;
+    }
+  } catch(e){}
+  // Guest? Use localStorage
+  try {
+    const saved = JSON.parse(localStorage.getItem('cb_customer')||'{}');
+    if(saved.name && $('#f_name') && !$('#f_name').value) $('#f_name').value = saved.name;
+    if(saved.phone && $('#f_phone') && !$('#f_phone').value) $('#f_phone').value = saved.phone;
+    if(saved.email && $('#f_email') && !$('#f_email').value) $('#f_email').value = saved.email;
+    if(saved.address && $('#f_addr') && !$('#f_addr').value) $('#f_addr').value = saved.address;
+    if(saved.city && $('#f_city') && !$('#f_city').value) $('#f_city').value = saved.city;
+  } catch(e){}
+}
+
+// Auto-fill on page load
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(autofillCustomerDetails, 500);
 });

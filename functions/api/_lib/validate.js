@@ -78,10 +78,12 @@ export function validateOrderPayload(body) {
   const c = body.customer || {};
   const name = s(c.name);
   const phone = validPhoneDigits(c.phone);
+  const email = s(c.email);
   const address = s(c.address);
   const city = s(c.city);
   if (name.length < 3 || name.length > 100) need('customer.name', 'Name must be 3–100 characters.');
   if (!phone) need('customer.phone', 'Phone must be an 11-digit Pakistani mobile number starting with 03.');
+  if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) need('customer.email', 'Email must be valid.');
   if (address.length < 8 || address.length > 500) need('customer.address', 'Address must be 8–500 characters.');
   if (city.length < 2 || city.length > 100) need('customer.city', 'City must be 2–100 characters.');
 
@@ -126,7 +128,7 @@ export function validateOrderPayload(body) {
     value: {
       idempotency_key,
       items,
-      customer: { name, phone, address, city },
+      customer: { name, phone, email: email || null, address, city },
       payment_method,
       transaction_reference: PREPAID_METHODS.includes(payment_method) ? transaction_reference : null,
       customer_note,

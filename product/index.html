@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<script>/* SEO: dynamic ?id= URLs redirect to pre-rendered static PDPs with full metadata */(function(){var id=new URLSearchParams(location.search).get('id');if(id&&/^\d+$/.test(id)){location.replace('/product/'+id+'/');}})();</script>
+<script>/* SEO: dynamic ?id= URLs redirect to pre-rendered static PDPs with full metadata */(function(){var id=new URLSearchParams(location.search).get('id');if(id&&/^\d+$/.test(id)){location.replace('/product/'+id+'/'+(location.hash||''));}})();</script>
 <title>Product | ChaskaBox</title><meta name="description" content="Shop original Pakistani snacks from ChaskaBox.">
 <link rel="canonical" href="https://chaskabox.online/product/">
 <meta name="theme-color" content="#1a2b5c"><link rel="icon" href="/images/logo-navy.png"><link rel="stylesheet" href="/styles.css?v=8">

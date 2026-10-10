@@ -87,6 +87,7 @@
     if(!rel||document.querySelector('.reviews-sec')) return;
     const sec=document.createElement('section');
     sec.className='reviews-sec';
+    sec.id='reviews';
     sec.innerHTML='<h2>Customer Reviews</h2><div class="reviews-list"><p class="muted">Loading reviews…</p></div>'
       +'<details class="review-form-wrap"><summary>Write a review</summary>'
       +'<form class="review-form"><label>Rating<select name="rating" required><option value="5">★★★★★ (5)</option><option value="4">★★★★ (4)</option><option value="3">★★★ (3)</option><option value="2">★★ (2)</option><option value="1">★ (1)</option></select></label>'
@@ -94,6 +95,9 @@
       +'<button type="submit" class="btn primary">Submit review</button>'
       +'<p class="muted review-note">Reviews are moderated before appearing.</p></form></details>';
     rel.after(sec);
+    // The section is injected ~800ms after load, so the browser's native
+    // #reviews scroll (which fired before the section existed) misses it.
+    if(location.hash==='#reviews'){try{sec.scrollIntoView({block:'start'});}catch(e){}}
     const list=sec.querySelector('.reviews-list');
     // Load approved reviews
     try{
