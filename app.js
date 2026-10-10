@@ -1482,6 +1482,14 @@ function toggleWishlist(id, btn){
   if(wasIn) w = w.filter(x => x !== id);
   else w.push(id);
   saveWishlist(w);
+  // Sync to server if logged in (cross-device)
+  try{
+    if(typeof ACCOUNT_SESSION !== 'undefined' && ACCOUNT_SESSION && typeof SB !== 'undefined' && SB){
+      const uid = ACCOUNT_SESSION.user.id;
+      if(wasIn) SB.from('wishlists').delete().eq('user_id', uid).eq('product_id', id).then(()=>{});
+      else SB.from('wishlists').upsert({user_id: uid, product_id: id}, {onConflict: 'user_id,product_id'}).then(()=>{});
+    }
+  }catch(e){}
   // Track for analytics
   try{ let sid=null; try{ sid=localStorage.getItem('cb_sid'); }catch(e){}
     fetch('/api/wishlist-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:id,action:wasIn?'remove':'add',session_id:sid})}).catch(()=>{});

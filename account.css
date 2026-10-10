@@ -1,0 +1,22 @@
+/* ChaskaBox customer account styles */
+.account-main{max-width:800px;margin:0 auto;padding:20px 16px 60px}
+.account-main h1{font-size:28px;margin:0 0 20px}
+.acct-order{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}
+.acct-order:last-child{border-bottom:0}
+.acct-order small{display:block;color:var(--muted);font-size:12px;margin-top:4px}
+.order-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.addr-card{border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px}
+.addr-card p{margin:6px 0;color:var(--muted);font-size:14px}
+.addr-actions{display:flex;gap:12px;margin-top:8px}
+.pill{background:#eef2f7;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:700}
+.text-btn.danger{color:#b42318}
+.review-row{padding:12px 0;border-bottom:1px solid var(--border)}
+.review-row:last-child{border-bottom:0}
+.review-row p{margin:6px 0}
+.review-row small{color:var(--muted)}
+.acct-signin{text-align:center;padding:40px 20px}
+.acct-signin h3{margin:0 0 8px}
+@media(max-width:600px){
+  .acct-order{flex-direction:column;align-items:flex-start}
+  .account-main{padding:16px 12px 40px}
+}

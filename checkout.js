@@ -406,6 +406,14 @@ async function placeOrder() {
   if (wantVideo) $('#doneMsg').innerHTML += '<br><br>🎬 <b>Packing video requested.</b> We will try to send a short clip on WhatsApp if operations allow.';
   if(typeof window.chaskaTrack==='function') window.chaskaTrack('order_complete',{total:finalTotal,payment:payMethod});
   celebrateOrder();
+  // Offer account creation to guest customers (optional, never mandatory)
+  if(typeof ACCOUNT_SESSION !== 'undefined' && !ACCOUNT_SESSION && typeof openAuthModal === 'function'){
+    const offerEl = document.getElementById('doneAccountOffer');
+    if(offerEl){
+      offerEl.style.display = '';
+      offerEl.querySelector('button').onclick = () => openAuthModal('signup');
+    }
+  }
   window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
 }
 
