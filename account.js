@@ -144,11 +144,18 @@ async function reOrder(orderId){
   if(!SB) return;
   const {data: items} = await SB.from('order_items').select('product_id, quantity').eq('order_id', orderId);
   if(!items?.length) { alert('No items found in this order.'); return; }
-  // Add to cart via existing cart function
-  for(const it of items){
-    if(typeof addToCart === 'function') addToCart(it.product_id, it.quantity);
-  }
-  alert(`${items.length} items added to cart!`);
+  // Add to cart via localStorage (works without app.js)
+  try {
+    let cart = {};
+    try { cart = JSON.parse(localStorage.getItem('chaskabox-cart')||'{}'); } catch {}
+    for(const it of items){
+      const pid = String(it.product_id);
+      cart[pid] = (cart[pid]||0) + (it.quantity||1);
+    }
+    localStorage.setItem('chaskabox-cart', JSON.stringify(cart));
+    localStorage.setItem('chaskabox-cart-ts', String(Date.now()));
+  } catch(e){}
+  alert(`${items.length} item(s) added to cart!`);
   location.href = '/';
 }
 
