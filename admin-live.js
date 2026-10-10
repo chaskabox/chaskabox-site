@@ -295,7 +295,36 @@
     const d=await api('/api/admin/customers?per_page=100'), view=$('#view-customers');view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Customers</h2><p>Order history and recognized customer value.</p></div></div><div class="live-table-wrap"><table class="live-table"><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Recognized spend</th><th>Last order</th></tr></thead><tbody>${(d.customers||[]).map(c=>`<tr><td><b>${esc(c.name||'—')}</b></td><td>${esc(c.phone||'—')}</td><td>${c.order_count||0}</td><td>${money(c.lifetime_spend)}</td><td>${esc(c.last_order_number||'—')}<small>${c.last_order_at?fmtDate(c.last_order_at):''}</small></td></tr>`).join('')}</tbody></table></div></div>`;
   }
   async function loadReviews(){
-    const d=await api('/api/admin/reviews?per_page=100'),view=$('#view-reviews');view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Review moderation</h2><p>Only real customer submissions; no fabricated ratings.</p></div></div><div class="review-list">${(d.reviews||[]).map(r=>`<article class="review-admin-row"><div><b>${'★'.repeat(Number(r.rating||0))}</b><p>${esc(r.review_text)}</p><small>${esc(r.moderation_status)}${r.verified_purchase?' · verified purchase':''}</small></div><div>${r.moderation_status==='pending'?`<button class="btn primary compact" data-review="${r.id}" data-review-action="approve">Approve</button><button class="btn secondary compact" data-review="${r.id}" data-review-action="reject">Reject</button>`:''}</div></article>`).join('')||'<div class="empty-mini">No reviews.</div>'}</div></div>`;$$('[data-review]',view).forEach(b=>b.onclick=async()=>{try{await api(`/api/admin/reviews/${b.dataset.review}`,{method:'PATCH',body:{action:b.dataset.reviewAction}});toast('Review updated');loadReviews()}catch(e){toast(e.message)}});
+    const d=await api('/api/admin/reviews?per_page=100'),view=$('#view-reviews');
+    view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Review moderation</h2><p>Only real customer submissions; no fabricated ratings.</p></div></div><div class="review-list">${(d.reviews||[]).map(r=>{
+      const pname=r.products?.name||('Product #'+r.product_id);
+      const reviewer=r.user_id?('User: '+String(r.user_id).slice(0,8)+'…'):'Guest (no account)';
+      const replyHtml=r.admin_reply?`<div class="admin-reply" style="margin-top:6px;padding:8px;background:#f0f7ff;border-radius:6px"><b>Your reply:</b> ${esc(r.admin_reply)}</div>`:'';
+      const replyForm=`<div style="margin-top:8px;display:flex;gap:6px"><input type="text" placeholder="Write a reply (optional)" data-reply-input="${r.id}" value="${esc(r.admin_reply||'')}" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:6px;font-size:12px"><button class="btn secondary compact" data-reply-save="${r.id}">Save reply</button></div>`;
+      return `<article class="review-admin-row" style="border-bottom:1px solid #eee;padding:12px 0"><div><b>${'★'.repeat(Number(r.rating||0))}${'☆'.repeat(5-Number(r.rating||0))}</b> <span style="font-weight:600">${esc(pname)}</span><p style="margin:6px 0">${esc(r.review_text)}</p><small style="color:#666">${esc(r.moderation_status)}${r.verified_purchase?' · ✓ verified purchase':''} · ${esc(reviewer)} · ${new Date(r.created_at).toLocaleDateString('en-PK')}</small>${replyHtml}${replyForm}</div><div style="margin-top:8px">${r.moderation_status==='pending'?`<button class="btn primary compact" data-review="${r.id}" data-review-action="approve">Approve</button> <button class="btn secondary compact" data-review="${r.id}" data-review-action="reject">Reject</button>`:''}</div></article>`;
+    }).join('')||'<div class="empty-mini">No reviews.</div>'}</div></div>`;
+    // Approve/reject
+    $$('[data-review]',view).forEach(b=>b.onclick=async()=>{
+      try{
+        const replyInput=view.querySelector(`[data-reply-input="${b.dataset.review}"]`);
+        const reply=replyInput?replyInput.value.trim():undefined;
+        await api(`/api/admin/reviews/${b.dataset.review}`,{method:'PATCH',body:{action:b.dataset.reviewAction,reply}});
+        toast('Review updated');loadReviews();
+      }catch(e){toast(e.message)}
+    });
+    // Save reply without changing status
+    $$('[data-reply-save]',view).forEach(b=>b.onclick=async()=>{
+      try{
+        const id=b.dataset.replySave;
+        const replyInput=view.querySelector(`[data-reply-input="${id}"]`);
+        const reply=replyInput?replyInput.value.trim():'';
+        // Get current status to preserve it
+        const review=(d.reviews||[]).find(r=>String(r.id)===String(id));
+        const action=review?.moderation_status==='approved'?'approve':(review?.moderation_status==='rejected'?'reject':'approve');
+        await api(`/api/admin/reviews/${id}`,{method:'PATCH',body:{action,reply}});
+        toast('Reply saved');loadReviews();
+      }catch(e){toast(e.message)}
+    });
   }
   function wireHomepage(){}
   async function loadHomepage(){
