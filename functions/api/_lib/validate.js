@@ -89,7 +89,20 @@ export function validateOrderPayload(body) {
   const city = s(c.city);
   if (name.length < 3 || name.length > 100) need('customer.name', 'Name must be 3–100 characters.');
   if (!phone) need('customer.phone', 'Phone must be an 11-digit Pakistani mobile number starting with 03.');
-  if (email && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) need('customer.email', 'Email must be valid.');
+  if (email) {
+    const em = email.toLowerCase();
+    const emailOk = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(em);
+    const [elocal, edomain] = em.split('@');
+    const fakeLocal = /^(test|fake|dummy|sample|example|abc|xyz|aaa|xxx|asdf|qwerty|123|user|demo)[0-9]*$/.test(elocal||'');
+    const fakeDomain = /^(test|fake|dummy|sample|example|mail|email|temp)[0-9]*\.(com|net|org|pk)$/.test(edomain||'');
+    const repeated = /(.)\1{3,}/.test(elocal||'');
+    const disposable = ['tempmail.com','guerrillamail.com','10minutemail.com','throwaway.email','mailinator.com','temp-mail.org','fakeinbox.com','trashmail.com','yopmail.com','dispostable.com','getnada.com','mohmal.com','sharklasers.com','grr.la','guerrillamailblock.com','pokemail.net','spam4.me','bccto.me','chacuo.net','maildrop.cc','mailnesia.com','mintemail.com','mytemp.email','tempail.com','tempemail.net','throwawaymail.com','trash-mail.com','wegwerfmail.de'];
+    if(!emailOk || fakeLocal || fakeDomain || repeated || disposable.includes(edomain) || (elocal||'').length < 2){
+      need('customer.email', 'Email must be valid.');
+    }
+  } else {
+    need('customer.email', 'Email is required.');
+  }
   if (address.length < 8 || address.length > 500) need('customer.address', 'Address must be 8–500 characters.');
   if (city.length < 2 || city.length > 100) need('customer.city', 'City must be 2–100 characters.');
 

@@ -197,9 +197,26 @@ function validPhone(v) {
   return d.length >= 7 && d.length <= 15;
 }
 function validEmail(v) {
-  v = String(v||'').trim();
-  if(!v) return true; // Email is optional
-  return /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
+  v = String(v||'').trim().toLowerCase();
+  if(!v) return false; // Email is now REQUIRED
+  // Basic format
+  if(!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v)) return false;
+  const [local, domain] = v.split('@');
+  // Reject obviously fake patterns
+  if(/^(test|fake|dummy|sample|example|abc|xyz|aaa|xxx|asdf|qwerty|123|user|demo)[0-9]*$/.test(local)) return false;
+  if(/^(test|fake|dummy|sample|example|mail|email|temp)[0-9]*\.(com|net|org|pk)$/.test(domain)) return false;
+  // Reject repeated characters (aaaa@, etc.)
+  if(/(.)\1{3,}/.test(local)) return false;
+  // Reject disposable/temporary email domains
+  const disposable = ['tempmail.com','guerrillamail.com','10minutemail.com','throwaway.email','mailinator.com',
+    'temp-mail.org','fakeinbox.com','trashmail.com','yopmail.com','dispostable.com','getnada.com',
+    'mohmal.com','sharklasers.com','grr.la','guerrillamailblock.com','pokemail.net','spam4.me',
+    'bccto.me','chacuo.net','dispostable.com','maildrop.cc','mailnesia.com','mintemail.com',
+    'mytemp.email','tempail.com','tempemail.net','throwawaymail.com','trash-mail.com','wegwerfmail.de'];
+  if(disposable.includes(domain)) return false;
+  // Local part must be reasonable length
+  if(local.length < 2 || local.length > 64) return false;
+  return true;
 }
 
 function checkForm() {
@@ -216,7 +233,8 @@ function checkForm() {
     ['f_phone','e_phone',validPhone],
     ['f_email','e_email',validEmail],
     ['f_addr','e_addr',v=>v.trim().length>=8],
-    ['f_city','e_city',v=>v.trim().length>=2]
+    ['f_city','e_city',v=>v.trim().length>=2],
+    ['f_country','e_country',v=>v.trim().length>=2]
   ];
   need.forEach(([f,e,fn]) => {
     const good = fn($('#'+f)?.value || '');
