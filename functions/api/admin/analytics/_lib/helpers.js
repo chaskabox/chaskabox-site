@@ -30,6 +30,11 @@ export function parseRange(url) {
   }
   const from = new Date(fromStr + 'T00:00:00Z');
   const to = new Date(toStr + 'T00:00:00Z');
+  // UI sends `to` as an inclusive date (e.g. today). Make it exclusive by adding 1 day,
+  // unless it was the default (which already adds 1 day above).
+  if (sp.get('to')) {
+    to.setUTCDate(to.getUTCDate() + 1);
+  }
   if (
     Number.isNaN(from.getTime()) ||
     Number.isNaN(to.getTime()) ||
