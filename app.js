@@ -635,7 +635,7 @@ async function renderBrandRoute(slug){
     if(grid) grid.innerHTML=products.length?products.map(cardHTML).join(''):'<p class="muted" style="grid-column:1/-1">No products yet for this brand.</p>';
     // Wire sort
     const sortSel=document.getElementById('brandSort');
-    if(sortSel) sortSel.onchange=()=>{ sortBrandProducts(products,sortSel.value); };
+    if(sortSel) sortSel.onchange=()=>{ logFilter('sort',sortSel.value,'brand'); sortBrandProducts(products,sortSel.value); };
     // Best sellers section
     const bestSellers=products.filter(p=>p.badge==='Bestseller').slice(0,8);
     // Featured products section
@@ -686,6 +686,13 @@ function setMetaTag(attr,key,val){
   let m=document.querySelector(`meta[${attr}="${key}"]`);
   if(!m){ m=document.createElement('meta'); m.setAttribute(attr,key); document.head.appendChild(m); }
   m.content=val;
+}
+// Filter/discovery analytics tracking (fire-and-forget)
+function logFilter(filter_type, filter_value, page){
+  try{
+    let sid=null; try{ sid=localStorage.getItem('cb_sid')||(localStorage.setItem('cb_sid','s'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)),localStorage.getItem('cb_sid')); }catch(e){}
+    fetch('/api/filter-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filter_type,filter_value:filter_value||null,page:page||location.pathname,session_id:sid})}).catch(()=>{});
+  }catch(e){}
 }
 function setBrandBreadcrumbSchema(brand){
   let s=document.getElementById('brandBreadcrumbSchema');
@@ -1445,9 +1452,14 @@ function isWished(id){ return getWishlist().includes(Number(id)); }
 function toggleWishlist(id, btn){
   id = Number(id);
   let w = getWishlist();
-  if(w.includes(id)) w = w.filter(x => x !== id);
+  const wasIn = w.includes(id);
+  if(wasIn) w = w.filter(x => x !== id);
   else w.push(id);
   saveWishlist(w);
+  // Track for analytics
+  try{ let sid=null; try{ sid=localStorage.getItem('cb_sid'); }catch(e){}
+    fetch('/api/wishlist-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:id,action:wasIn?'remove':'add',session_id:sid})}).catch(()=>{});
+  }catch(e){}
   // Update all heart buttons for this product
   document.querySelectorAll(`[data-wish="${id}"]`).forEach(b => {
     b.classList.toggle('on', w.includes(id));

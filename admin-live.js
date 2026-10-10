@@ -817,8 +817,8 @@
         <label>Slug (auto)<input id="beSlug" value="${esc(b.slug||'')}" placeholder="auto-generated"></label>
       </div>
       <div class="form-two">
-        <label>Logo URL<input id="beLogo" value="${esc(b.logo_url||'')}" placeholder="https://…"></label>
-        <label>Hero / banner URL<input id="beHero" value="${esc(b.hero_image_url||'')}"></label>
+        <label>Logo URL<input id="beLogo" value="${esc(b.logo_url||'')}" placeholder="https://…"><input type="file" id="beLogoFile" accept="image/*" style="margin-top:4px"></label>
+        <label>Hero / banner URL<input id="beHero" value="${esc(b.hero_image_url||'')}"><input type="file" id="beHeroFile" accept="image/*" style="margin-top:4px"></label>
       </div>
       <label>Short description<input id="beShort" value="${esc(b.short_description||'')}" maxlength="160"></label>
       <label>Long description<textarea id="beLong" rows="4">${esc(b.long_description||b.description||'')}</textarea></label>
@@ -849,6 +849,18 @@
     modal.querySelectorAll('[data-close-brand]').forEach(x=>x.onclick=()=>modal.classList.remove('open'));
     const val=id=>modal.querySelector(id)?.value.trim()||'';
     modal.querySelector('#bePreview').onclick=()=>{const slug=val('#beSlug')||b.slug;if(slug)window.open(`/brand/${encodeURIComponent(slug)}/`,'_blank');};
+    // File upload handlers
+    const uploadFile=async(file,type)=>{
+      if(!file) return;
+      try{toast('Uploading…');
+        const fd=new FormData(); fd.append('file',file); fd.append('type',type);
+        const d=await api('/api/admin/brand-upload',{method:'POST',body:fd});
+        if(d.ok&&d.url){ modal.querySelector(type==='logo'?'#beLogo':'#beHero').value=d.url; toast('Uploaded!'); }
+        else toast('Upload failed');
+      }catch(e){toast(e.message)}
+    };
+    modal.querySelector('#beLogoFile').onchange=e=>uploadFile(e.target.files[0],'logo');
+    modal.querySelector('#beHeroFile').onchange=e=>uploadFile(e.target.files[0],'hero');
     modal.querySelector('#beAiDesc').onclick=async()=>{
       try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_description',brand:b.name}});
       const t=r.text||r.result||'';if(t){modal.querySelector('#beLong').value=t;toast('Description generated — review before saving');}}catch(e){toast(e.message)}};
@@ -1125,7 +1137,7 @@
           </div>
         </div>
         <div id="analyticsTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-          ${['products','categories','brands','customers','search','funnel','notifications','shipping','issues','geography','coupons','refunds','boxes'].map(t=>`<button class="btn secondary compact" data-atab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
+          ${['products','categories','brands','customers','search','funnel','notifications','shipping','issues','geography','coupons','refunds','boxes','filters','wishlist'].map(t=>`<button class="btn secondary compact" data-atab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
         </div>
         <div id="analyticsTabContent"><p class="muted">Pick a tab above.</p></div>
         <h3 style="margin:24px 0 8px">🔍 SEO Health</h3><div id="seoHealth"><p class="muted">Checking…</p></div>`;
@@ -1168,6 +1180,8 @@
     if(type==='coupons'){if(data.available===false)return `<p class="muted">${esc(data.reason||'No coupon data.')}</p>`;const cs=data.coupons||[];if(!cs.length)return '<p class="muted">No coupon usage for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>Code</th><th>Uses</th><th>Discount</th></tr>${cs.map(c=>`<tr><td><b>${esc(c.code)}</b></td><td>${c.uses||0}</td><td>${money2(c.discount)}</td></tr>`).join('')}</table></div>`;}
     if(type==='refunds'){if(data.available===false)return `<p class="muted">${esc(data.reason||'No refund data.')}</p>`;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total cases</h4><div style="font-size:22px;font-weight:800">${data.total_cases||0}</div></div><div class="existing-box-card"><h4>Open</h4><div style="font-size:22px;font-weight:800">${data.open_cases||0}</div></div><div class="existing-box-card"><h4>Total refund</h4><div style="font-size:22px;font-weight:800">${money2(data.total_refund)}</div></div></div>`;}
     if(type==='boxes'){const bx=Array.isArray(data)?data:(data.rows||[]);if(!bx.length)return '<p class="muted">No box data for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>Box</th><th>Orders</th><th>Units</th><th>Revenue</th></tr>${bx.map(b=>`<tr><td><b>${esc(b.box_name)}</b></td><td>${b.orders||0}</td><td>${b.units||0}</td><td>${money2(b.revenue)}</td></tr>`).join('')}</table></div>`;}
+    if(type==='filters'){if(!data.total_uses)return '<p class="muted">No filter usage tracked yet.</p>';return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total filter uses</h4><div style="font-size:22px;font-weight:800">${data.total_uses||0}</div></div></div><h4>By type</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Filter</th><th>Uses</th></tr>${(data.by_type||[]).map(f=>`<tr><td><b>${esc(f.type)}</b></td><td>${f.uses}</td></tr>`).join('')}</table></div><h4 style="margin-top:12px">Top values</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Type</th><th>Value</th><th>Uses</th></tr>${(data.by_value||[]).slice(0,15).map(f=>`<tr><td>${esc(f.type)}</td><td>${esc(f.value||'—')}</td><td>${f.uses}</td></tr>`).join('')}</table></div>`;}
+    if(type==='wishlist'){if(!data.total_adds)return '<p class="muted">No wishlist activity tracked yet.</p>';return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total adds</h4><div style="font-size:22px;font-weight:800">${data.total_adds||0}</div></div><div class="existing-box-card"><h4>Removes</h4><div style="font-size:22px;font-weight:800">${data.total_removes||0}</div></div></div><h4>Most wishlisted</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Product ID</th><th>Adds</th></tr>${(data.top_products||[]).map(p=>`<tr><td><b>${p.product_id}</b></td><td>${p.adds}</td></tr>`).join('')}</table></div>`;}
     return `<pre class="muted" style="font-size:11px;max-height:300px;overflow:auto">${esc(JSON.stringify(rows.slice(0,10),null,1))}</pre>`;
   }
 
