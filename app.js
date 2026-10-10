@@ -636,6 +636,38 @@ async function renderBrandRoute(slug){
     // Wire sort
     const sortSel=document.getElementById('brandSort');
     if(sortSel) sortSel.onchange=()=>{ sortBrandProducts(products,sortSel.value); };
+    // Best sellers section
+    const bestSellers=products.filter(p=>p.badge==='Bestseller').slice(0,8);
+    // Featured products section
+    const featuredIds=brand.featuredProductIds||[];
+    const featured=featuredIds.length?products.filter(p=>featuredIds.includes(p.id)).slice(0,8):[];
+    // Deals section
+    const deals=products.filter(p=>p.badge==='Sale'||p.mrp>p.price).slice(0,8);
+    let extraHTML='';
+    if(bestSellers.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">⭐ Best Sellers</h2><div class="grid">${bestSellers.map(cardHTML).join('')}</div></section>`;
+    if(deals.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">🏷️ Deals</h2><div class="grid">${deals.map(cardHTML).join('')}</div></section>`;
+    if(featured.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">✨ Featured</h2><div class="grid">${featured.map(cardHTML).join('')}</div></section>`;
+    // Related brands (other visible brands)
+    try{
+      const br=await fetch('/api/brands',{headers:{'Accept':'application/json'}});
+      const bd=await br.json();
+      const others=((bd&&bd.brands)||[]).filter(b=>b.slug!==slug&&b.isVisible!==false).slice(0,6);
+      if(others.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">🔗 Related Brands</h2><div style="display:flex;gap:12px;flex-wrap:wrap">${others.map(b=>`<a href="/brand/${esc(b.slug)}/" style="padding:10px 16px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit">${b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name)}" style="height:24px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(b.name)}</b></a>`).join('')}</div></section>`;
+    }catch(e){}
+    // FAQ section
+    const faqEl=document.getElementById('brandFAQ');
+    if(faqEl){
+      const faqs=[
+        {q:`Where can I buy ${brand.name} snacks online in Pakistan?`,a:`You can buy original ${brand.name} snacks online at ChaskaBox with cash on delivery and 4-7 day nationwide delivery.`},
+        {q:`Are ${brand.name} products original?`,a:`Yes, all ${brand.name} products at ChaskaBox are original sealed packs sourced from the market on order.`},
+        {q:`What is the delivery time for ${brand.name} products?`,a:`Delivery takes 4-7 days nationwide. COD orders pay Rs. 300 delivery; prepaid orders over Rs. 5,000 get free delivery.`}
+      ];
+      faqEl.innerHTML=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">❓ Frequently Asked Questions</h2>${faqs.map(f=>`<details style="margin-bottom:8px;border:1px solid var(--line);border-radius:10px;padding:12px"><summary style="cursor:pointer;font-weight:600">${esc(f.q)}</summary><p style="margin:8px 0 0;color:var(--muted)">${esc(f.a)}</p></details>`).join('')}</section>`;
+    }
+    if(extraHTML){
+      const grid2=document.getElementById('brandGrid');
+      if(grid2) grid2.insertAdjacentHTML('afterend',extraHTML);
+    }
   }catch(e){
     if(titleEl) titleEl.textContent='Brand unavailable';
   }

@@ -835,11 +835,15 @@
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn secondary" id="beAiDesc">✨ Generate description</button>
         <button class="btn secondary" id="beAiSeo">✨ Generate SEO</button>
+        <button class="btn secondary" id="beAiFeat">✨ Suggest featured</button>
+        <button class="btn secondary" id="beAiFaq">✨ FAQ ideas</button>
         <button class="btn secondary" id="bePreview">👁 Preview page</button>
       </div>
+      <div id="beAiFaqOut" style="display:none;background:var(--bg-soft);border-radius:8px;padding:12px;font-size:13px"></div>
       <div class="action-row">
         <button class="btn secondary" data-close-brand>Cancel</button>
-        <button class="btn primary" id="beSave">Save brand</button>
+        <button class="btn secondary" id="beDraft">📝 Save draft</button>
+        <button class="btn primary" id="beSave">🚀 Publish</button>
       </div>
     </div></section>`;
     modal.querySelectorAll('[data-close-brand]').forEach(x=>x.onclick=()=>modal.classList.remove('open'));
@@ -853,14 +857,30 @@
       if(r.seo_title)modal.querySelector('#beSeoTitle').value=r.seo_title;
       if(r.seo_description)modal.querySelector('#beSeoDesc').value=r.seo_description;
       toast('SEO generated — review before saving');}catch(e){toast(e.message)}};
-    modal.querySelector('#beSave').onclick=async()=>{
+    modal.querySelector('#beAiFeat').onclick=async()=>{
+      try{toast('Suggesting…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_featured',brand:b.name,slug:b.slug}});
+      const ids=r.featured_ids||r.ids||[];if(ids.length){modal.querySelector('#beFeat').value=ids.join(', ');toast('Featured suggestions applied — review before saving');}else toast('No suggestions');}catch(e){toast(e.message)}};
+    modal.querySelector('#beAiFaq').onclick=async()=>{
+      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_faq',brand:b.name}});
+      const out=modal.querySelector('#beAiFaqOut');const faqs=r.faqs||r.items||[];
+      if(faqs.length){out.style.display='block';out.innerHTML='<b>FAQ suggestions (copy what you like):</b><br>'+faqs.map(f=>`• <b>${esc(f.q||f)}</b>${f.a?`<br><span style="color:var(--muted)">${esc(f.a)}</span>`:''}`).join('<br><br>');}
+      else toast('No suggestions');}catch(e){toast(e.message)}};
+    const collectBrandBody=(forceVisible)=>{
       const feat=val('#beFeat').split(',').map(s=>parseInt(s.trim())).filter(n=>n>0);
-      const body={name:val('#beName'),slug:val('#beSlug')||undefined,logo_url:val('#beLogo')||null,
+      return {name:val('#beName'),slug:val('#beSlug')||undefined,logo_url:val('#beLogo')||null,
         hero_image_url:val('#beHero')||null,short_description:val('#beShort')||null,
         long_description:val('#beLong')||null,seo_title:val('#beSeoTitle')||null,
         seo_description:val('#beSeoDesc')||null,og_image_url:val('#beOg')||null,
         featured_product_ids:feat,sort_order:parseInt(val('#beSort'))||0,
-        is_visible:modal.querySelector('#beVisible').checked};
+        is_visible:forceVisible!==undefined?forceVisible:modal.querySelector('#beVisible').checked};
+    };
+    modal.querySelector('#beDraft').onclick=async()=>{
+      try{const body=collectBrandBody(false);
+        if(b.id) await api(`/api/admin/brands/${b.id}`,{method:'PATCH',body});
+        else await api('/api/admin/brands',{method:'POST',body});
+        toast('Draft saved (hidden from storefront)');modal.classList.remove('open');loadBrands();}catch(e){toast(e.message)}};
+    modal.querySelector('#beSave').onclick=async()=>{
+      const body=collectBrandBody(true);
       if(!body.name){toast('Brand name required');return;}
       try{await api(`/api/admin/brands/${id}`,{method:'PATCH',body});toast('Brand updated');
         modal.classList.remove('open');loadBrands();}catch(e){toast(e.message)}
@@ -1105,7 +1125,7 @@
           </div>
         </div>
         <div id="analyticsTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-          ${['products','categories','brands','customers','search','funnel','notifications','shipping','issues'].map(t=>`<button class="btn secondary compact" data-atab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
+          ${['products','categories','brands','customers','search','funnel','notifications','shipping','issues','geography','coupons','refunds','boxes'].map(t=>`<button class="btn secondary compact" data-atab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
         </div>
         <div id="analyticsTabContent"><p class="muted">Pick a tab above.</p></div>
         <h3 style="margin:24px 0 8px">🔍 SEO Health</h3><div id="seoHealth"><p class="muted">Checking…</p></div>`;
@@ -1144,6 +1164,10 @@
     if(type==='customers') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Customer</th><th>Orders</th><th>Recognized Spend</th><th>Last Order</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name||'—')}<small>${esc(r.phone||'')}</small></td><td>${r.orders||0}</td><td>${money2(r.spend||r.recognized_spend)}</td><td>${esc(r.last_order||r.last_purchase||'—')}</td></tr>`).join('')}</table></div>`;
     if(type==='search'){const d=data;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total searches</h4><div style="font-size:22px;font-weight:800">${d.total_searches||0}</div></div><div class="existing-box-card"><h4>No-result rate</h4><div style="font-size:22px;font-weight:800">${((d.no_result_rate||0)*100).toFixed(1)}%</div></div></div><h4>Top queries</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Query</th><th>Count</th><th>No-result</th></tr>${(d.top_queries||[]).map(q=>`<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.noResult||0}</td></tr>`).join('')}</table></div>`;}
     if(type==='funnel'){const steps=data.steps||[];return `<div style="display:grid;gap:8px">${steps.map((s,i)=>{const pct=s.count&&steps[0].count?Math.round(s.count/steps[0].count*100):0;return `<div><div style="display:flex;justify-content:space-between;font-size:12px"><span><b>${i+1}. ${esc(s.label)}</b></span><span>${s.count.toLocaleString()} (${pct}%)${i>0?` · drop-off ${s.dropoff.toLocaleString()}`:''}</span></div><div style="background:#f1f5f9;border-radius:6px;height:12px;margin-top:4px"><div style="width:${pct}%;background:#3b82f6;height:12px;border-radius:6px"></div></div></div>`}).join('')}</div><p class="muted" style="font-size:11px;margin-top:8px">${esc(data.note||'')}</p>`;}
+    if(type==='geography'){const cities=Array.isArray(data)?data:(data.rows||[]);if(!cities.length)return '<p class="muted">No city data for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>City</th><th>Orders</th><th>Revenue</th><th>Cancelled</th><th>Cancel Rate</th></tr>${cities.slice(0,25).map(c=>`<tr><td><b>${esc(c.city)}</b></td><td>${c.orders||0}</td><td>${money2(c.revenue)}</td><td>${c.cancelled||0}</td><td>${c.cancellation_rate||0}%</td></tr>`).join('')}</table></div>`;}
+    if(type==='coupons'){if(data.available===false)return `<p class="muted">${esc(data.reason||'No coupon data.')}</p>`;const cs=data.coupons||[];if(!cs.length)return '<p class="muted">No coupon usage for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>Code</th><th>Uses</th><th>Discount</th></tr>${cs.map(c=>`<tr><td><b>${esc(c.code)}</b></td><td>${c.uses||0}</td><td>${money2(c.discount)}</td></tr>`).join('')}</table></div>`;}
+    if(type==='refunds'){if(data.available===false)return `<p class="muted">${esc(data.reason||'No refund data.')}</p>`;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total cases</h4><div style="font-size:22px;font-weight:800">${data.total_cases||0}</div></div><div class="existing-box-card"><h4>Open</h4><div style="font-size:22px;font-weight:800">${data.open_cases||0}</div></div><div class="existing-box-card"><h4>Total refund</h4><div style="font-size:22px;font-weight:800">${money2(data.total_refund)}</div></div></div>`;}
+    if(type==='boxes'){const bx=Array.isArray(data)?data:(data.rows||[]);if(!bx.length)return '<p class="muted">No box data for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>Box</th><th>Orders</th><th>Units</th><th>Revenue</th></tr>${bx.map(b=>`<tr><td><b>${esc(b.box_name)}</b></td><td>${b.orders||0}</td><td>${b.units||0}</td><td>${money2(b.revenue)}</td></tr>`).join('')}</table></div>`;}
     return `<pre class="muted" style="font-size:11px;max-height:300px;overflow:auto">${esc(JSON.stringify(rows.slice(0,10),null,1))}</pre>`;
   }
 
