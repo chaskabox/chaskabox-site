@@ -241,7 +241,7 @@
       return;
     }
     const q=($('#boxProductSearch')?.value||'').toLowerCase().trim();
-    const rows=state.products.map(mergedProduct).filter(p=>!isArchived(p.id)&&!p.bundle&&(!q||`${p.name} ${p.category} ${p.brand||''}`.toLowerCase().includes(q))).slice(0,80);
+    const rows=state.products.map(mergedProduct).filter(p=>!isArchived(p.id)&&!p.bundle&&(!q||`${p.name} ${p.category} ${p.brand||''}`.toLowerCase().includes(q)));
     if(!rows.length){
       listEl.innerHTML=`<p class="muted" style="padding:20px;text-align:center">${q?`No products match "${escapeHtml(q)}".`:'No products available.'}</p>`;
       return;
