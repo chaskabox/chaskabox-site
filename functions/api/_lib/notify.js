@@ -248,7 +248,7 @@ export async function sendStatusUpdate(env, order, newStatus) {
           const links = items.slice(0, 5).map(it => {
             const pid = it.product_id;
             const pname = it.products?.name || `Product ${pid}`;
-            return `• ${pname}: https://chaskabox.online/product/?id=${pid}#reviews`;
+            return `• ${pname}: https://chaskabox.online/product/${pid}/#reviews`;
           }).join('\n');
           msg += `\n\n⭐ *Enjoyed your snacks? Please review!*\n${links}`;
           if (items.length > 5) msg += `\n…and ${items.length - 5} more on your track page`;

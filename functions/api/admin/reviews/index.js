@@ -27,7 +27,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
   if (sp.get('verified_purchase') === 'true') filters.push('verified_purchase=eq.true');
   if (sp.get('verified_purchase') === 'false') filters.push('verified_purchase=eq.false');
 
-  const query = ['select=*', 'order=created_at.desc', ...filters].join('&');
+  const query = ['select=*,products(name)', 'order=created_at.desc', ...filters].join('&');
   const { data, total } = await sb(context, `/rest/v1/reviews?${query}`, {
     headers: { Range: rangeHeader },
     count: true,

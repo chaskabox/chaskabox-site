@@ -13,7 +13,7 @@
  * - verified_purchase=false (a back-office job flips it when a delivered order exists)
  * - review_text is stored as-is; basic spam-shape checks applied
  */
-import { sb, json, httpError, readJson } from './admin/_lib/auth.js';
+import { sb, json, httpError, readJson, getUser } from './admin/_lib/auth.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
 
 export const onRequestGet = async (context) => {
@@ -66,14 +66,41 @@ export const onRequestPost = async (context) => {
     if (!p) httpError('Product not found', 404, 'not_found');
     if (p.visibility !== 'visible') httpError('Reviews are closed for this product', 403, 'not_reviewable');
 
+    // Link to authenticated user if available (optional — anonymous reviews still allowed)
+    const user = await getUser(context).catch(() => null);
+    const userId = user?.id || null;
+
+    // Check verified purchase: user has a delivered order containing this product
+    let verifiedPurchase = false;
+    let orderId = null;
+    if (userId) {
+      try {
+        const orders = await sb(context,
+          `/rest/v1/orders?user_id=eq.${encodeURIComponent(userId)}&fulfilment_status=eq.delivered&select=id&limit=50`
+        );
+        if (Array.isArray(orders) && orders.length) {
+          const orderIds = orders.map(o => o.id).join(',');
+          const items = await sb(context,
+            `/rest/v1/order_items?order_id=in.(${orderIds})&product_id=eq.${p.id}&select=order_id&limit=1`
+          );
+          if (Array.isArray(items) && items.length) {
+            verifiedPurchase = true;
+            orderId = items[0].order_id;
+          }
+        }
+      } catch { /* verified check is best-effort */ }
+    }
+
     const created = await sb(context, '/rest/v1/reviews', {
       method: 'POST',
       body: {
         product_id: p.id,
+        user_id: userId,
+        order_id: orderId,
         rating,
         review_text: text,
         moderation_status: 'pending',
-        verified_purchase: false,
+        verified_purchase: verifiedPurchase,
       },
     });
 

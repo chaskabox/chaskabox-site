@@ -123,7 +123,16 @@
       btn.disabled=true; btn.textContent='Submitting…';
       try{
         const fd=new FormData(form);
-        const r=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},
+        // Include auth token if user is logged in (links review to their account)
+        const headers={'Content-Type':'application/json'};
+        try{
+          if(typeof initSupabase==='function' && await initSupabase() && typeof SB!=='undefined' && SB){
+            const {data}=await SB.auth.getSession();
+            const token=data?.session?.access_token;
+            if(token) headers['Authorization']='Bearer '+token;
+          }
+        }catch{}
+        const r=await fetch('/api/reviews',{method:'POST',headers,
           body:JSON.stringify({product_id:Number(pid),rating:Number(fd.get('rating')),text:String(fd.get('text')).trim()})});
         if(!r.ok) throw new Error('Submit failed');
         form.innerHTML='<p class="review-thanks">Thanks! Your review was submitted and will appear after moderation. 🙏</p>';

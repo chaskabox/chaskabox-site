@@ -71,9 +71,18 @@
     if (!rating || text.length < 3) { msg.textContent = 'Please pick a rating and write a few words.'; return; }
     btn.disabled = true; msg.textContent = 'Submitting…';
     try {
+      // Include auth token if user is logged in (links review to their account)
+      const headers = { 'Content-Type': 'application/json' };
+      try {
+        if (typeof initSupabase === 'function' && await initSupabase() && typeof SB !== 'undefined' && SB) {
+          const { data } = await SB.auth.getSession();
+          const token = data?.session?.access_token;
+          if (token) headers['Authorization'] = 'Bearer ' + token;
+        }
+      } catch {}
       const res = await fetch('/api/reviews', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ product_id: productId, rating, text }),
       });
       const data = await res.json().catch(() => ({}));
