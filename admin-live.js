@@ -33,8 +33,9 @@
   function showLogin(message='Sign in with an approved staff account.'){
     hideBoot(); // bootstrap gate off — the login form is the only thing shown now
     let el=$('#liveAdminLogin'); if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);} el.hidden=false;
-    el.innerHTML=`<form class="live-login-card" id="liveLoginForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Staff sign in</h1><p>${esc(message)}</p><label>Email<input id="liveEmail" type="email" autocomplete="username" required></label><label>Password<input id="livePassword" type="password" autocomplete="current-password" required></label><div id="liveLoginError" class="live-error" hidden></div><button class="btn primary" type="submit">Sign in</button><a href="/" class="text-btn">← Storefront</a></form>`;
+    el.innerHTML=`<form class="live-login-card" id="liveLoginForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Staff sign in</h1><p>${esc(message)}</p><label>Email<input id="liveEmail" type="email" autocomplete="username" required></label><label>Password<input id="livePassword" type="password" autocomplete="current-password" required></label><div id="liveLoginError" class="live-error" hidden></div><div id="liveLoginMsg" class="live-msg" hidden></div><button class="btn primary" type="submit">Sign in</button><a href="#" id="forgotPwLink" class="text-btn">Forgot password?</a><a href="/" class="text-btn">← Storefront</a></form>`;
     $('#liveLoginForm').onsubmit=async e=>{e.preventDefault();const err=$('#liveLoginError');err.hidden=true;try{if(!(await ensureClient()))throw new Error('Supabase public configuration unavailable');const res=await SB.auth.signInWithPassword({email:$('#liveEmail').value.trim(),password:$('#livePassword').value});if(res.error)throw res.error;session=res.data.session;await bootAuthenticated();el.hidden=true;}catch(x){err.textContent=x.message||'Sign-in failed';err.hidden=false;}};
+    $('#forgotPwLink').onclick=async e=>{e.preventDefault();const err=$('#liveLoginError');const msg=$('#liveLoginMsg');err.hidden=true;msg.hidden=true;const email=$('#liveEmail').value.trim();if(!email){err.textContent='Enter your email above first';err.hidden=false;return;}try{if(!(await ensureClient()))throw new Error('Supabase unavailable');const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/admin/'});if(error)throw error;msg.textContent='Reset link sent to '+email+'. Check your inbox.';msg.hidden=false;}catch(x){err.textContent=x.message||'Reset failed';err.hidden=false;}};
   }
   async function getMe(){ return await api('/api/admin/me'); }
   function roleAllows(...roles){return me&&roles.includes(me.role)}
@@ -481,7 +482,32 @@
     // Safety net: never leave the console stuck on "Verifying admin session…".
     setTimeout(()=>{ if(!bootDone) showBootError('Session check is taking too long. Please reload and try again.'); }, 25000);
     if(!(await ensureClient())){showLogin('Public Supabase configuration could not be loaded.');return;}
+    // Password recovery: user clicked reset link in email
+    if(location.hash.includes('type=recovery')){
+      showResetPassword();
+      return;
+    }
     const {data}=await SB.auth.getSession();session=data?.session||null;if(!session){showLogin();return;}await bootAuthenticated();
+  }
+
+  function showResetPassword(){
+    const el=$('#liveLogin');
+    el.innerHTML=`<form class="live-login-card" id="resetPwForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Set new password</h1><p>Enter your new password below.</p><label>New password<input id="newPw1" type="password" autocomplete="new-password" required minlength="8"></label><label>Confirm password<input id="newPw2" type="password" autocomplete="new-password" required minlength="8"></label><div id="resetPwError" class="live-error" hidden></div><div id="resetPwMsg" class="live-msg" hidden></div><button class="btn primary" type="submit">Update password</button></form>`;
+    el.hidden=false;
+    $('#resetPwForm').onsubmit=async e=>{
+      e.preventDefault();
+      const err=$('#resetPwError');const msg=$('#resetPwMsg');err.hidden=true;msg.hidden=true;
+      const p1=$('#newPw1').value,p2=$('#newPw2').value;
+      if(p1!==p2){err.textContent='Passwords do not match';err.hidden=false;return;}
+      if(p1.length<8){err.textContent='Password must be at least 8 characters';err.hidden=false;return;}
+      try{
+        const {error}=await SB.auth.updateUser({password:p1});
+        if(error)throw error;
+        msg.textContent='Password updated! Redirecting to sign in…';msg.hidden=false;
+        await SB.auth.signOut();
+        setTimeout(()=>{location.hash='';location.reload();},1500);
+      }catch(x){err.textContent=x.message||'Update failed';err.hidden=false;}
+    };
   }
 
   // ============ CATEGORIES ============
