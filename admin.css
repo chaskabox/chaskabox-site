@@ -142,3 +142,5 @@ html,body{overflow-x:clip}
   .panel{padding:12px}
   .live-login-card{padding:20px}
 }
+.preview-fallback{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin-top:10px;text-align:center;font-size:13px}
+.preview-fallback a{color:var(--navy);font-weight:700}

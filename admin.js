@@ -255,8 +255,34 @@
 
   function bindPreview(){
     $('#previewRoute')?.addEventListener('change',refreshPreview); $('#refreshPreview')?.addEventListener('click',refreshPreview); $$('.viewport-switch button').forEach(b=>b.addEventListener('click',()=>{$$('.viewport-switch button').forEach(x=>x.classList.remove('active'));b.classList.add('active');$('#previewFrameWrap').style.width=b.dataset.width;}));
+    // Preview iframe fallback: if content doesn't render in 8s, show direct link
+    const pframe=$('#sitePreview');
+    if(pframe){
+      let previewTimer=null;
+      pframe.addEventListener('load',()=>{
+        clearTimeout(previewTimer);
+        previewTimer=setTimeout(()=>{
+          try{
+            const doc=pframe.contentDocument;
+            const bodyText=doc?.body?.innerText||'';
+            // If iframe body is nearly empty, content failed to render
+            if(bodyText.trim().length<200){
+              const wrap=$('#previewFrameWrap');
+              if(wrap && !wrap.querySelector('.preview-fallback')){
+                const fb=document.createElement('div');
+                fb.className='preview-fallback';
+                fb.innerHTML='<p>Preview did not render. <a href="'+pframe.src+'" target="_blank" rel="noopener">Open in new tab →</a></p>';
+                wrap.appendChild(fb);
+              }
+            }else{
+              pframe.parentElement?.querySelector('.preview-fallback')?.remove();
+            }
+          }catch(e){/* cross-origin, ignore */}
+        },8000);
+      });
+    }
   }
-  function refreshPreview(){ const route=$('#previewRoute')?.value||'/'; const frame=$('#sitePreview'); if(frame)frame.src=route+(route.includes('?')?'&':'?')+'_adminpreview='+Date.now(); const link=$('#openPreviewNew'); if(link)link.href=route; }
+  function refreshPreview(){ const route=$('#previewRoute')?.value||'/'; const frame=$('#sitePreview'); if(frame){frame.parentElement?.querySelector('.preview-fallback')?.remove();frame.src=route+(route.includes('?')?'&':'?')+'_adminpreview='+Date.now();} const link=$('#openPreviewNew'); if(link)link.href=route; }
 
   function bindCopilot(){
     const templates={
