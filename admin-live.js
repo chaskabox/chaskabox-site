@@ -1096,7 +1096,7 @@
           </div>
         </div>
         <div id="analyticsTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
-          ${['products','categories','brands','customers','search','notifications','shipping','issues'].map(t=>`<button class="btn secondary compact" data-atab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
+          ${['products','categories','brands','customers','search','funnel','notifications','shipping','issues'].map(t=>`<button class="btn secondary compact" data-atab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
         </div>
         <div id="analyticsTabContent"><p class="muted">Pick a tab above.</p></div>
         <h3 style="margin:24px 0 8px">🔍 SEO Health</h3><div id="seoHealth"><p class="muted">Checking…</p></div>`;
@@ -1134,6 +1134,7 @@
     if(type==='categories'||type==='brands') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Name</th><th>Orders</th><th>Units</th><th>Revenue</th><th>AOV</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name)}</td><td>${r.orders||0}</td><td>${r.units||0}</td><td>${money2(r.revenue||r.gross_value)}</td><td>${money2(r.aov)}</td></tr>`).join('')}</table></div>`;
     if(type==='customers') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Customer</th><th>Orders</th><th>Recognized Spend</th><th>Last Order</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name||'—')}<small>${esc(r.phone||'')}</small></td><td>${r.orders||0}</td><td>${money2(r.spend||r.recognized_spend)}</td><td>${esc(r.last_order||r.last_purchase||'—')}</td></tr>`).join('')}</table></div>`;
     if(type==='search'){const d=data;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total searches</h4><div style="font-size:22px;font-weight:800">${d.total_searches||0}</div></div><div class="existing-box-card"><h4>No-result rate</h4><div style="font-size:22px;font-weight:800">${((d.no_result_rate||0)*100).toFixed(1)}%</div></div></div><h4>Top queries</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Query</th><th>Count</th><th>No-result</th></tr>${(d.top_queries||[]).map(q=>`<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.noResult||0}</td></tr>`).join('')}</table></div>`;}
+    if(type==='funnel'){const steps=data.steps||[];return `<div style="display:grid;gap:8px">${steps.map((s,i)=>{const pct=s.count&&steps[0].count?Math.round(s.count/steps[0].count*100):0;return `<div><div style="display:flex;justify-content:space-between;font-size:12px"><span><b>${i+1}. ${esc(s.label)}</b></span><span>${s.count.toLocaleString()} (${pct}%)${i>0?` · drop-off ${s.dropoff.toLocaleString()}`:''}</span></div><div style="background:#f1f5f9;border-radius:6px;height:12px;margin-top:4px"><div style="width:${pct}%;background:#3b82f6;height:12px;border-radius:6px"></div></div></div>`}).join('')}</div><p class="muted" style="font-size:11px;margin-top:8px">${esc(data.note||'')}</p>`;}
     return `<pre class="muted" style="font-size:11px;max-height:300px;overflow:auto">${esc(JSON.stringify(rows.slice(0,10),null,1))}</pre>`;
   }
 

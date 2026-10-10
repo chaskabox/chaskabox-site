@@ -17,13 +17,22 @@
 window.chaskaTrack = window.chaskaTrack || function(event, data){
   try {
     const payload = {event, data: data||{}, ts: Date.now(), path: location.pathname};
-    // Log to console in dev, send to endpoint in prod
     if (location.hostname === 'localhost' || location.hostname.includes('pages.dev')) {
       console.log('[track]', event, data);
     }
-    // Send to analytics endpoint (fire and forget)
     if (navigator.sendBeacon) {
       navigator.sendBeacon('/api/analytics/event', JSON.stringify(payload));
+    }
+    // Phase 2: funnel analytics — forward key events to /api/funnel-log
+    const funnelMap={product_view:'product_view',add_to_cart:'add_to_cart',cart_viewed:'cart_viewed',checkout_started:'checkout_started',checkout_start:'checkout_started',order_created:'order_created',order_complete:'order_created'};
+    const fe=funnelMap[event];
+    if(fe){
+      try{
+        let sid=null; try{sid=localStorage.getItem('chaska_sid')||(localStorage.setItem('chaska_sid','s'+Date.now().toString(36)+Math.random().toString(36).slice(2,8)),localStorage.getItem('chaska_sid'));}catch{}
+        const body=JSON.stringify({event:fe,product_id:(data&&(data.id||data.product_id))||null,session_id:sid});
+        if(navigator.sendBeacon) navigator.sendBeacon('/api/funnel-log',body);
+        else fetch('/api/funnel-log',{method:'POST',headers:{'Content-Type':'application/json'},body}).catch(()=>{});
+      }catch{}
     }
   } catch(e) {}
 };
