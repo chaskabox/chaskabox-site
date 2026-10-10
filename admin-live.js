@@ -790,10 +790,66 @@
   }
   function openBrandEditor(id, brands){
     const b=(brands||[]).find(x=>String(x.id)===String(id)); if(!b) return;
-    const name=prompt('Brand name:', b.name); if(!name) return;
-    const desc=prompt('Description (optional):', b.description||'');
-    const logo=prompt('Logo URL (optional):', b.logo_url||'');
-    api(`/api/admin/brands/${id}`,{method:'PATCH',body:{name:name.trim(),description:desc,logo_url:logo}}).then(()=>{toast('Brand updated');loadBrands();}).catch(e=>toast(e.message));
+    let modal=$('#brandEditorModal');
+    if(!modal){modal=document.createElement('div');modal.id='brandEditorModal';modal.className='admin-modal';document.body.appendChild(modal);}
+    modal.classList.add('open');
+    const featIds=(b.featured_product_ids||[]).join(', ');
+    modal.innerHTML=`<div class="modal-backdrop" data-close-brand></div>
+    <section class="admin-modal-card"><div class="modal-head"><div><small>BRAND</small><h2>${esc(b.name)} — Edit</h2></div><button class="icon-btn" data-close-brand>×</button></div>
+    <div style="padding:18px;display:grid;gap:14px">
+      <div class="form-two">
+        <label>Brand name<input id="beName" value="${esc(b.name||'')}"></label>
+        <label>Slug (auto)<input id="beSlug" value="${esc(b.slug||'')}" placeholder="auto-generated"></label>
+      </div>
+      <div class="form-two">
+        <label>Logo URL<input id="beLogo" value="${esc(b.logo_url||'')}" placeholder="https://…"></label>
+        <label>Hero / banner URL<input id="beHero" value="${esc(b.hero_image_url||'')}"></label>
+      </div>
+      <label>Short description<input id="beShort" value="${esc(b.short_description||'')}" maxlength="160"></label>
+      <label>Long description<textarea id="beLong" rows="4">${esc(b.long_description||b.description||'')}</textarea></label>
+      <div class="form-two">
+        <label>SEO title<input id="beSeoTitle" value="${esc(b.seo_title||'')}"></label>
+        <label>OG image URL<input id="beOg" value="${esc(b.og_image_url||'')}"></label>
+      </div>
+      <label>Meta description<textarea id="beSeoDesc" rows="2">${esc(b.seo_description||'')}</textarea></label>
+      <div class="form-two">
+        <label>Featured product IDs (comma-separated)<input id="beFeat" value="${esc(featIds)}" placeholder="12, 45, 78"></label>
+        <label>Sort order<input id="beSort" type="number" value="${b.sort_order??b.position??0}"></label>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="beVisible" ${b.is_visible?'checked':''} style="width:auto"> Visible on storefront</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn secondary" id="beAiDesc">✨ Generate description</button>
+        <button class="btn secondary" id="beAiSeo">✨ Generate SEO</button>
+        <button class="btn secondary" id="bePreview">👁 Preview page</button>
+      </div>
+      <div class="action-row">
+        <button class="btn secondary" data-close-brand>Cancel</button>
+        <button class="btn primary" id="beSave">Save brand</button>
+      </div>
+    </div></section>`;
+    modal.querySelectorAll('[data-close-brand]').forEach(x=>x.onclick=()=>modal.classList.remove('open'));
+    const val=id=>modal.querySelector(id)?.value.trim()||'';
+    modal.querySelector('#bePreview').onclick=()=>{const slug=val('#beSlug')||b.slug;if(slug)window.open(`/brand/${encodeURIComponent(slug)}/`,'_blank');};
+    modal.querySelector('#beAiDesc').onclick=async()=>{
+      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_description',brand:b.name}});
+      const t=r.text||r.result||'';if(t){modal.querySelector('#beLong').value=t;toast('Description generated — review before saving');}}catch(e){toast(e.message)}};
+    modal.querySelector('#beAiSeo').onclick=async()=>{
+      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_seo',brand:b.name}});
+      if(r.seo_title)modal.querySelector('#beSeoTitle').value=r.seo_title;
+      if(r.seo_description)modal.querySelector('#beSeoDesc').value=r.seo_description;
+      toast('SEO generated — review before saving');}catch(e){toast(e.message)}};
+    modal.querySelector('#beSave').onclick=async()=>{
+      const feat=val('#beFeat').split(',').map(s=>parseInt(s.trim())).filter(n=>n>0);
+      const body={name:val('#beName'),slug:val('#beSlug')||undefined,logo_url:val('#beLogo')||null,
+        hero_image_url:val('#beHero')||null,short_description:val('#beShort')||null,
+        long_description:val('#beLong')||null,seo_title:val('#beSeoTitle')||null,
+        seo_description:val('#beSeoDesc')||null,og_image_url:val('#beOg')||null,
+        featured_product_ids:feat,sort_order:parseInt(val('#beSort'))||0,
+        is_visible:modal.querySelector('#beVisible').checked};
+      if(!body.name){toast('Brand name required');return;}
+      try{await api(`/api/admin/brands/${id}`,{method:'PATCH',body});toast('Brand updated');
+        modal.classList.remove('open');loadBrands();}catch(e){toast(e.message)}
+    };
   }
 
   /* ============ NOTIFICATION TEMPLATES ============ */
@@ -966,36 +1022,112 @@
   }
 
   /* ============ ANALYTICS ============ */
+  const ANALYTICS_RANGES=[
+    {id:'today',label:'Today'},{id:'yesterday',label:'Yesterday'},{id:'7d',label:'Last 7 days'},
+    {id:'30d',label:'Last 30 days'},{id:'month',label:'This month'},{id:'prevmonth',label:'Previous month'},{id:'custom',label:'Custom'}];
+  let analyticsRange='30d', analyticsCustomFrom='', analyticsCustomTo='';
+  function analyticsDates(){
+    const f=d=>d.toISOString().slice(0,10);
+    const now=new Date(); const t=new Date(now); const y=new Date(now); y.setDate(y.getDate()-1);
+    switch(analyticsRange){
+      case 'today': return {from:f(t),to:f(t)};
+      case 'yesterday': return {from:f(y),to:f(y)};
+      case '7d': {const s=new Date();s.setDate(s.getDate()-6);return {from:f(s),to:f(t)};}
+      case '30d': {const s=new Date();s.setDate(s.getDate()-29);return {from:f(s),to:f(t)};}
+      case 'month': return {from:f(new Date(now.getFullYear(),now.getMonth(),1)),to:f(t)};
+      case 'prevmonth': {const s=new Date(now.getFullYear(),now.getMonth()-1,1);const e=new Date(now.getFullYear(),now.getMonth(),0);return {from:f(s),to:f(e)};}
+      case 'custom': return {from:analyticsCustomFrom,to:analyticsCustomTo};
+      default: {const s=new Date();s.setDate(s.getDate()-29);return {from:f(s),to:f(t)};}
+    }
+  }
   async function loadAnalytics(){
     const el=$('#analyticsContent'); if(!el) return;
+    const {from,to}=analyticsDates();
     el.innerHTML='<div class="admin-loading"><div class="spinner"></div><p>Loading analytics…</p></div>';
+    const q=`?from=${from}&to=${to}`;
     try{
-      const [m7, m30] = await Promise.all([
-        api('/api/admin/metrics?days=7'),
-        api('/api/admin/metrics?days=30'),
+      const [rev, over, attn] = await Promise.all([
+        api('/api/admin/analytics/revenue'+q).catch(e=>({ok:false,error:e.message})),
+        api('/api/admin/analytics/overview'+q).catch(e=>({ok:false,error:e.message})),
+        api('/api/admin/analytics/attention'+q).catch(e=>({ok:false,error:e.message})),
       ]);
-      const bar=(label,val,max,color)=>`
-        <div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${label}</span><b>${val}</b></div>
-        <div style="background:#f1f5f9;border-radius:6px;height:10px;margin-top:4px"><div style="width:${Math.min(100,(val/max)*100)}%;background:${color};height:10px;border-radius:6px"></div></div></div>`;
-
+      const tip=t=>`<span title="${esc(t)}" style="cursor:help;border-bottom:1px dotted">ⓘ</span>`;
+      const card=(label,val,def)=>`<div class="existing-box-card"><h4>${label} ${def?tip(def):''}</h4><div style="font-size:22px;font-weight:800;color:var(--navy)">${val}</div></div>`;
+      const R=(rev.ok&&rev.data)||{};
+      const O=(over.ok&&over.data)||{};
+      const defs=(R.definitions)||{};
       el.innerHTML=`
-        <div class="admin-grid two" style="margin-bottom:16px">
-          <div class="existing-box-card"><h4>Last 7 days</h4><div class="box-meta"><span>${m7.orders||0} orders</span><span>·</span><span>${money(m7.recognized_sales_pkr||0)} sales</span></div></div>
-          <div class="existing-box-card"><h4>Last 30 days</h4><div class="box-meta"><span>${m30.orders||0} orders</span><span>·</span><span>${money(m30.recognized_sales_pkr||0)} sales</span></div></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+          ${ANALYTICS_RANGES.map(r=>`<button class="btn ${analyticsRange===r.id?'primary':'secondary'} compact" data-arange="${r.id}">${r.label}</button>`).join('')}
+          ${analyticsRange==='custom'?`<input type="date" id="aFrom" value="${analyticsCustomFrom}" style="padding:8px;border:1px solid var(--border);border-radius:8px"><input type="date" id="aTo" value="${analyticsCustomTo}" style="padding:8px;border:1px solid var(--border);border-radius:8px"><button class="btn primary compact" id="aApply">Apply</button>`:''}
         </div>
-        <h3 style="margin:16px 0 8px">Order Status (30d)</h3>
-        ${bar('New', m30.new_orders||0, m30.orders||1, '#3b82f6')}
-        ${bar('Delivered', m30.delivered_orders||0, m30.orders||1, '#16a34a')}
-        ${bar('Cancelled', m30.cancelled_orders||0, m30.orders||1, '#dc2626')}
-        <h3 style="margin:16px 0 8px">Revenue Breakdown (30d)</h3>
-        ${bar('Verified prepaid', m30.verified_prepaid_sales_pkr||0, m30.recognized_sales_pkr||1, '#8b5cf6')}
-        ${bar('Delivered COD', m30.delivered_cod_sales_pkr||0, m30.recognized_sales_pkr||1, '#f59e0b')}
-        ${bar('Pending payment', m30.pending_prepaid_value_pkr||0, m30.gross_order_value_pkr||1, '#6b7280')}
-        <p class="muted" style="margin-top:16px;font-size:12px">Recognized sales = verified prepaid + delivered COD (refunds excluded).</p>
-        <h3 style="margin:24px 0 8px">\U0001f50d SEO Health</h3>
-        <div id="seoHealth"><p class="muted">Checking…</p></div>`;
+        ${!rev.ok?`<p class="muted">Revenue: ${esc(rev.error||'unavailable')}${(rev.error||'').includes('not installed')?' — run migration 031 in Supabase SQL Editor.':''}</p>`:`
+        <h3>Revenue</h3>
+        <div class="metric-grid" style="margin-bottom:16px">
+          ${card('Gross Order Value',money(R.gross_order_value||0),defs.gross_order_value)}
+          ${card('Recognized Revenue',money(R.recognized_revenue||0),defs.recognized_revenue)}
+          ${card('Pending COD',money(R.pending_cod||0),defs.pending_cod)}
+          ${card('Confirmed Prepaid',money(R.confirmed_prepaid||0),defs.confirmed_prepaid)}
+        </div>`}
+        ${!over.ok?`<p class="muted">Overview: ${esc(over.error||'unavailable')}</p>`:`
+        <h3>Overview</h3>
+        <div class="metric-grid" style="margin-bottom:16px">
+          ${card('Orders',O.orders||0)}${card('Avg Order Value',money(O.aov||0))}
+          ${card('New Customers',O.new_customers||0)}${card('Repeat Customers',O.repeat_customers||0)}
+          ${card('Cancellation Rate',((O.cancellation_rate||0)*100).toFixed(1)+'%')}
+          ${card('Delivered COD',money(O.delivered_cod||0),defs.delivered_cod)}
+        </div>`}
+        <div class="admin-grid two" style="margin-bottom:16px">
+          <div class="existing-box-card"><h4>⚠️ Needs Attention</h4><div id="attnList"><p class="muted">Loading…</p></div></div>
+          <div class="existing-box-card"><h4>✨ Ask Chaska AI</h4>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+              <button class="btn secondary compact" data-aiq="Why did sales change this week?">Sales change?</button>
+              <button class="btn secondary compact" data-aiq="Which products are underperforming?">Underperformers?</button>
+              <button class="btn secondary compact" data-aiq="What needs my attention today?">Attention?</button>
+            </div>
+            <div id="aiInsightOut" class="ai-output" style="min-height:80px"><span class="muted">Pick a question or type below.</span></div>
+            <div style="display:flex;gap:6px;margin-top:8px"><input id="aiInsightQ" placeholder="Ask about your data…" style="flex:1;padding:8px;border:1px solid var(--border);border-radius:8px"><button class="btn primary compact" id="aiInsightAsk">Ask</button></div>
+          </div>
+        </div>
+        <div id="analyticsTabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+          ${['products','categories','brands','customers','notifications','shipping','issues'].map(t=>`<button class="btn secondary compact" data-atab="${t}">${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}
+        </div>
+        <div id="analyticsTabContent"><p class="muted">Pick a tab above.</p></div>
+        <h3 style="margin:24px 0 8px">🔍 SEO Health</h3><div id="seoHealth"><p class="muted">Checking…</p></div>`;
+      el.querySelectorAll('[data-arange]').forEach(b=>b.onclick=()=>{analyticsRange=b.dataset.arange;loadAnalytics();});
+      const ap=el.querySelector('#aApply'); if(ap) ap.onclick=()=>{analyticsCustomFrom=el.querySelector('#aFrom').value;analyticsCustomTo=el.querySelector('#aTo').value;loadAnalytics();};
+      // Attention
+      const attnEl=el.querySelector('#attnList');
+      if(attn.ok&&attn.data&&attn.data.items&&attn.data.items.length){
+        attnEl.innerHTML=attn.data.items.slice(0,8).map(i=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><b>${esc(i.title)}</b><br><span class="muted">${esc(i.detail||'')}</span></div>`).join('');
+      } else attnEl.innerHTML='<p class="muted">All clear — no issues detected. ✅</p>';
+      // AI insights
+      const askAI=async(q)=>{
+        const out=el.querySelector('#aiInsightOut'); out.innerHTML='<span class="muted">Thinking…</span>';
+        try{const r=await api('/api/admin/ai',{method:'POST',body:{task:'analytics_insight',question:q,range:{from,to},revenue:R,overview:O}});
+          out.textContent=r.text||r.result||'No insight returned.';}catch(e){out.textContent='Error: '+e.message}};
+      el.querySelectorAll('[data-aiq]').forEach(b=>b.onclick=()=>askAI(b.dataset.aiq));
+      el.querySelector('#aiInsightAsk').onclick=()=>{const q=el.querySelector('#aiInsightQ').value.trim();if(q)askAI(q);};
+      // Tabs
+      el.querySelectorAll('[data-atab]').forEach(b=>b.onclick=async()=>{
+        const t=b.dataset.atab; const c=el.querySelector('#analyticsTabContent');
+        c.innerHTML='<p class="muted">Loading…</p>';
+        try{const r=await api(`/api/admin/analytics/${t}${q}`);
+          if(!r.ok||r.available===false){c.innerHTML=`<p class="muted">${esc(r.reason||'No data available yet.')}</p>`;return;}
+          c.innerHTML=renderAnalyticsTable(t,r.data);
+        }catch(e){c.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
+      });
     }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
     try{ await checkSeoHealth(); }catch(e){}
+  }
+  function renderAnalyticsTable(type,data){
+    const rows=data.rows||data.items||[];
+    if(!rows.length) return '<p class="muted">No data for this range.</p>';
+    const money2=v=>'Rs. '+Number(v||0).toLocaleString();
+    if(type==='products') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Product</th><th>Units</th><th>Orders</th><th>Gross</th><th>Recognized</th><th>Trend</th></tr>${rows.slice(0,25).map(p=>`<tr><td>${esc(p.name||p.product_name)}<small>${esc(p.id||'')}</small></td><td>${p.units||0}</td><td>${p.orders||p.order_count||0}</td><td>${money2(p.gross||p.gross_value)}</td><td>${money2(p.recognized||p.recognized_revenue)}</td><td>${p.trend>0?'📈':p.trend<0?'📉':'➖'}</td></tr>`).join('')}</table></div>`;
+    if(type==='categories'||type==='brands') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Name</th><th>Orders</th><th>Units</th><th>Revenue</th><th>AOV</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name)}</td><td>${r.orders||0}</td><td>${r.units||0}</td><td>${money2(r.revenue||r.gross_value)}</td><td>${money2(r.aov)}</td></tr>`).join('')}</table></div>`;
+    if(type==='customers') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Customer</th><th>Orders</th><th>Recognized Spend</th><th>Last Order</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name||'—')}<small>${esc(r.phone||'')}</small></td><td>${r.orders||0}</td><td>${money2(r.spend||r.recognized_spend)}</td><td>${esc(r.last_order||r.last_purchase||'—')}</td></tr>`).join('')}</table></div>`;
+    return `<pre class="muted" style="font-size:11px;max-height:300px;overflow:auto">${esc(JSON.stringify(rows.slice(0,10),null,1))}</pre>`;
   }
 
   async function checkSeoHealth(){
