@@ -91,9 +91,19 @@ export async function onRequestPost(context) {
     const query = cleanQuery(body.query);
     if (query.length < 2) return json({ error: 'Search query is too short', code: 'invalid_query' }, 400);
 
+    // Phase 2: log search for analytics (fire-and-forget, no PII)
+    const logSearch = (count) => {
+      try {
+        const url = `${env.SUPABASE_URL}/rest/v1/search_logs`;
+        fetch(url, { method: 'POST', headers: { 'apikey': env.SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }, body: JSON.stringify({ query: query.slice(0, 200), results_count: count }) }).catch(()=>{});
+      } catch {}
+    };
+
     const enabled = await getSetting(env, 'ai_semantic_search_enabled', true);
     if (!enabled || !aiAvailable(context)) {
-      return json({ query, mode: 'lexical_fallback', products: await fallbackSearch(env, query) });
+      const fb = await fallbackSearch(env, query);
+      logSearch(fb.length);
+      return json({ query, mode: 'lexical_fallback', products: fb });
     }
 
     try {
@@ -105,6 +115,7 @@ export async function onRequestPost(context) {
       });
       rows = filterByPrice(rows, priceBounds(query)).slice(0, 8);
       if (!rows.length) rows = await fallbackSearch(env, query);
+      logSearch(rows.length);
       return json({ query, mode: rows.some((p) => p.similarity && p.similarity < 0.35) ? 'hybrid' : 'semantic', embedding_model: model, products: rows });
     } catch (error) {
       console.warn('[ai-search] semantic search unavailable; using deterministic fallback', error?.message || error);
