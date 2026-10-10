@@ -78,6 +78,7 @@
     $$('.admin-nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
     const view=$(`#view-${name}`); if(view){$('#viewTitle').textContent=view.dataset.title||name;$('#viewSubtitle').textContent=view.dataset.subtitle||'';}
     $('#adminSidebar').classList.remove('open'); $('#sidebarBackdrop')?.classList.remove('show'); window.scrollTo({top:0,behavior:'smooth'});
+    try{window.dispatchEvent(new Event('resize'));}catch(e){}
     if(name==='preview') refreshPreview();
   }
 
