@@ -219,19 +219,26 @@
     // If products not loaded yet, try to fetch them directly
     if(!state.products.length){
       listEl.innerHTML='<p class="muted" style="padding:20px;text-align:center">Loading products…</p>';
-      try{
-        const res=await fetch('/api/products',{cache:'no-store'});
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        const data=await res.json();
-        if(Array.isArray(data)&&data.length){
-          state.products=data;
-          renderBoxProducts();
-          return;
-        } else throw new Error('Empty response');
-      }catch(e){
-        listEl.innerHTML=`<p class="muted" style="padding:20px;text-align:center">Error: ${escapeHtml(e.message)}<br><button class="btn secondary compact" onclick="location.reload()" style="margin-top:8px">Reload page</button></p>`;
-        return;
+      let loaded=false;
+      for(const url of ['/api/products','/products.json']){
+        try{
+          const ctrl=new AbortController();
+          const timer=setTimeout(()=>ctrl.abort(),8000);
+          const res=await fetch(url,{cache:'no-store',signal:ctrl.signal});
+          clearTimeout(timer);
+          if(!res.ok) continue;
+          const data=await res.json();
+          const arr=Array.isArray(data)?data:(Array.isArray(data.products)?data.products:[]);
+          if(arr.length){
+            state.products=arr;
+            loaded=true;
+            break;
+          }
+        }catch(e){ continue; }
       }
+      if(loaded){ renderBoxProducts(); return; }
+      listEl.innerHTML='<p class="muted" style="padding:20px;text-align:center">Could not load products from server.<br><button class="btn secondary compact" onclick="location.reload()" style="margin-top:8px">Reload page</button></p>';
+      return;
     }
     const q=($('#boxProductSearch')?.value||'').toLowerCase().trim();
     const rows=state.products.map(mergedProduct).filter(p=>!isArchived(p.id)&&!p.bundle&&(!q||`${p.name} ${p.category} ${p.brand||''}`.toLowerCase().includes(q))).slice(0,80);
