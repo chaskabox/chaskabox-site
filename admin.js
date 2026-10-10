@@ -221,18 +221,17 @@
       listEl.innerHTML='<p class="muted" style="padding:20px;text-align:center">Loading products…</p>';
       try{
         const res=await fetch('/api/products',{cache:'no-store'});
-        if(res.ok){
-          const data=await res.json();
-          if(Array.isArray(data)&&data.length){
-            state.products=data;
-            // Re-render with loaded products
-            renderBoxProducts();
-            return;
-          }
-        }
-      }catch(e){}
-      listEl.innerHTML='<p class="muted" style="padding:20px;text-align:center">Could not load products. <button class="btn secondary compact" onclick="location.reload()">Reload page</button></p>';
-      return;
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const data=await res.json();
+        if(Array.isArray(data)&&data.length){
+          state.products=data;
+          renderBoxProducts();
+          return;
+        } else throw new Error('Empty response');
+      }catch(e){
+        listEl.innerHTML=`<p class="muted" style="padding:20px;text-align:center">Error: ${escapeHtml(e.message)}<br><button class="btn secondary compact" onclick="location.reload()" style="margin-top:8px">Reload page</button></p>`;
+        return;
+      }
     }
     const q=($('#boxProductSearch')?.value||'').toLowerCase().trim();
     const rows=state.products.map(mergedProduct).filter(p=>!isArchived(p.id)&&!p.bundle&&(!q||`${p.name} ${p.category} ${p.brand||''}`.toLowerCase().includes(q))).slice(0,80);
