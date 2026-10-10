@@ -631,7 +631,7 @@ async function renderBrandRoute(slug){
     const pr=await fetch('/api/brand-products?slug='+encodeURIComponent(slug),{headers:{'Accept':'application/json'}});
     const pd=await pr.json();
     const products=(pd&&pd.products)||[];
-    const grid=document.getElementById('brandGrid');
+    const grid=document.getElementById('brandProductGrid');
     if(grid) grid.innerHTML=products.length?products.map(cardHTML).join(''):'<p class="muted" style="grid-column:1/-1">No products yet for this brand.</p>';
     // Wire sort
     const sortSel=document.getElementById('brandSort');
@@ -665,7 +665,7 @@ async function renderBrandRoute(slug){
       faqEl.innerHTML=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">❓ Frequently Asked Questions</h2>${faqs.map(f=>`<details style="margin-bottom:8px;border:1px solid var(--line);border-radius:10px;padding:12px"><summary style="cursor:pointer;font-weight:600">${esc(f.q)}</summary><p style="margin:8px 0 0;color:var(--muted)">${esc(f.a)}</p></details>`).join('')}</section>`;
     }
     if(extraHTML){
-      const grid2=document.getElementById('brandGrid');
+      const grid2=document.getElementById('brandProductGrid');
       if(grid2) grid2.insertAdjacentHTML('afterend',extraHTML);
     }
   }catch(e){
@@ -679,7 +679,7 @@ function sortBrandProducts(products,mode){
   else if(mode==='az') arr.sort((a,b)=>a.name.localeCompare(b.name));
   else if(mode==='new') arr.sort((a,b)=>b.id-a.id);
   else if(mode==='pop') arr.sort((a,b)=>(b.badge==='Bestseller')-(a.badge==='Bestseller'));
-  const grid=document.getElementById('brandGrid');
+  const grid=document.getElementById('brandProductGrid');
   if(grid) grid.innerHTML=arr.map(cardHTML).join('');
 }
 function setMetaTag(attr,key,val){

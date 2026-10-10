@@ -202,6 +202,42 @@
 
 <div id="view-wishlist" style="display:none"></div>
 
+<div id="view-brands" style="display:none">
+  <div class="crumbs"><a href="/">Home</a> <span>›</span> <b>Brands</b></div>
+  <div class="catbanner"><h1>Pakistani Snack Brands</h1><span class="catcount" id="brandCount"></span></div>
+  <div class="section"><p style="max-width:700px;color:var(--muted)">Pakistan ke favourite snack brands — sab ek jagah. Apna pasandeeda brand choose karein aur uske saare snacks dekhein.</p>
+  <div class="toolbar" style="margin:14px 0"><input id="brandSearch" type="search" placeholder="Search brands..." aria-label="Search brands" style="padding:10px 12px;border:1px solid var(--border);border-radius:10px;min-width:min(320px,100%)"></div>
+  <div class="fchips" id="brandAZ"></div>
+  <div class="grid" id="brandGrid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))"></div>
+  </div>
+</div>
+
+<div id="view-brand" style="display:none">
+  <div class="crumbs"><a href="/">Home</a> <span>›</span> <a href="/brands/">Brands</a> <span>›</span> <b id="brandCrumb">Brand</b></div>
+  <div class="catbanner" id="brandBanner"><h1 id="brandTitle">Brand</h1><span class="catcount" id="brandProdCount"></span></div>
+  <div id="brandHero" style="margin-bottom:16px"></div>
+  <p id="brandIntro" style="max-width:720px;color:var(--muted)"></p>
+  <div class="mfilterbar" id="brandFilterBar">
+    <button class="mfbtn" onclick="openBrandFilters()">🔍 Filters <span class="mfbadge" id="brandFilterCount" style="display:none">0</span></button>
+    <select class="mfsort" id="brandSort" aria-label="Sort products">
+      <option value="feat">Recommended</option>
+      <option value="lo">Price: Low → High</option>
+      <option value="hi">Price: High → Low</option>
+      <option value="az">Name A–Z</option>
+      <option value="new">Newest</option>
+      <option value="pop">Popular</option>
+    </select>
+  </div>
+  <div class="shopl">
+    <aside class="filters" id="brandSidebar"></aside>
+    <div class="shopmain">
+      <div class="toolbar" id="brandToolbar"></div>
+      <div class="grid" id="brandProductGrid"></div>
+    </div>
+  </div>
+  <div id="brandFAQ" style="margin-top:24px"></div>
+</div>
+
 <div id="view-404" style="display:none"></div>
 </main>
 
