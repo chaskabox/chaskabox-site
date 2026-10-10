@@ -22,7 +22,13 @@ const UNTRUSTED_FIELDS = [
 const s = v => String(v ?? '').trim();
 
 function validPhoneDigits(v) {
-  const d = String(v ?? '').replace(/\D/g, '');
+  const raw = String(v ?? '').trim();
+  // International format (+XX...) - accept 7-15 digits after +
+  if(raw.startsWith('+')){
+    const d = raw.replace(/\D/g, '');
+    return (d.length >= 9 && d.length <= 15) ? raw : null;
+  }
+  const d = raw.replace(/\D/g, '');
   return d.length === 11 && d.startsWith('03') ? d : null;
 }
 

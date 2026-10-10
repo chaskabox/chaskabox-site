@@ -899,3 +899,6 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
 @media(max-width:600px){.form-two{grid-template-columns:1fr}}
 .checkbox-field label{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px}
 .checkbox-field input[type="checkbox"]{width:18px;height:18px;accent-color:var(--navy)}
+.phone-wrap{display:flex;gap:8px}
+.phone-wrap select{flex:0 0 auto;max-width:130px;border:1px solid var(--border);border-radius:10px;padding:11px;font-size:14px;background:#fff}
+.phone-wrap input{flex:1;min-width:0}

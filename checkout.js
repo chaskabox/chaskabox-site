@@ -157,33 +157,38 @@ function renderSummary() {
   }
 }
 
+function getFullPhone(){
+  const ccode = $('#f_ccode')?.value || '+92';
+  const digits = String($('#f_phone')?.value || '').replace(/\D/g, '');
+  return {ccode, digits, full: ccode + digits};
+}
 function normalizePhone(v) {
-  let d = String(v||'').replace(/\D/g,'');
-  // Handle country codes: +92XXXXXXXXXX, 92XXXXXXXXXX, 0092XXXXXXXXXX -> 03XXXXXXXXX
-  if(d.startsWith('0092')) d = '0' + d.slice(4);
-  else if(d.startsWith('92') && d.length === 12) d = '0' + d.slice(2);
-  d = d.slice(0, 11);
-  if(d.length === 11 && d.startsWith('03')) return `${d.slice(0,4)}-${d.slice(4,11)}`;
+  // v is now just digits, ccode from dropdown
+  const d = String(v||'').replace(/\D/g,'').slice(0,15);
   return d;
 }
-function phoneDigits(v){
-  let d = String(v||'').replace(/\D/g,'');
-  if(d.startsWith('0092')) d = '0' + d.slice(4);
-  else if(d.startsWith('92') && d.length === 12) d = '0' + d.slice(2);
-  return d.slice(0, 11);
-}
+function phoneDigits(v){ return String(v||'').replace(/\D/g,'').slice(0,15); }
 function validPhone(v) {
+  const ccode = $('#f_ccode')?.value || '+92';
   const d = phoneDigits(v);
-  if(d.length !== 11 || !d.startsWith('03')) return false;
-  // Validate Pakistan mobile prefixes: 030x-034x (all valid), 035x (AJK), 036x (?)
-  const prefix = d.slice(0, 4);
-  const validPrefixes = ['0300','0301','0302','0303','0304','0305','0306','0307','0308','0309',
-    '0310','0311','0312','0313','0314','0315','0316','0317','0318','0319',
-    '0320','0321','0322','0323','0324','0325','0326','0327','0328','0329',
-    '0330','0331','0332','0333','0334','0335','0336','0337','0338','0339',
-    '0340','0341','0342','0343','0344','0345','0346','0347','0348','0349',
-    '0355','0360'];
-  return validPrefixes.includes(prefix);
+  if(ccode === '+92'){
+    // Strict Pakistan validation
+    if(d.length === 11 && d.startsWith('03')) {
+      const prefix = d.slice(0, 4);
+      const validPrefixes = ['0300','0301','0302','0303','0304','0305','0306','0307','0308','0309',
+        '0310','0311','0312','0313','0314','0315','0316','0317','0318','0319',
+        '0320','0321','0322','0323','0324','0325','0326','0327','0328','0329',
+        '0330','0331','0332','0333','0334','0335','0336','0337','0338','0339',
+        '0340','0341','0342','0343','0344','0345','0346','0347','0348','0349',
+        '0355','0360'];
+      return validPrefixes.includes(prefix);
+    }
+    // Allow 10 digits starting with 3 (without leading 0)
+    if(d.length === 10 && d.startsWith('3')) return true;
+    return false;
+  }
+  // Other countries: lenient (7-15 digits)
+  return d.length >= 7 && d.length <= 15;
 }
 function validEmail(v) {
   v = String(v||'').trim();
@@ -353,7 +358,8 @@ async function placeOrder() {
   const reference = isPrepaid() ? ($('#f_reference').value.trim()) : '';
   const wantVideo = !!$('#f_video')?.checked;
   const note = ($('#f_note')?.value || '').trim();
-  const phone = phoneDigits($('#f_phone').value);
+  const _ph = getFullPhone();
+  const phone = _ph.ccode === '+92' ? phoneDigits($('#f_phone').value) : _ph.full;
   const turnstileToken = (typeof turnstile !== 'undefined' && turnstile.getResponse) ? turnstile.getResponse() : '';
 
   // Build server-authoritative API payload (contract §4).
