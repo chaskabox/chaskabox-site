@@ -8,18 +8,20 @@ import { parseRange } from './_lib/helpers.js';
 
 export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
   const { fromStr, toStr } = parseRange(new URL(context.request.url));
-  const base = `/rest/v1/search_logs?created_at=gte.${fromStr}T00:00:00&created_at=lte.${toStr}T23:59:59&select=query,results_count,created_at`;
+  const base = `/rest/v1/search_logs?created_at=gte.${fromStr}T00:00:00&created_at=lte.${toStr}T23:59:59&select=query,results_count,clicked_product_id,created_at`;
 
   const topQ = await sb(context, `${base}&order=created_at.desc&limit=1000`);
   const qmap = {};
-  let noResult = 0, total = 0;
+  let noResult = 0, total = 0, clicks = 0;
   for (const r of (Array.isArray(topQ) ? topQ : [])) {
     total++;
+    if (r.clicked_product_id) clicks++;
     const q = (r.query || '').toLowerCase().trim();
     if (!q) continue;
-    qmap[q] = qmap[q] || { query: r.query, count: 0, noResult: 0 };
+    qmap[q] = qmap[q] || { query: r.query, count: 0, noResult: 0, clicks: 0 };
     qmap[q].count++;
     if (!r.results_count) { qmap[q].noResult++; noResult++; }
+    if (r.clicked_product_id) qmap[q].clicks++;
   }
   const top = Object.values(qmap).sort((a, b) => b.count - a.count).slice(0, 25);
   const noResultQueries = Object.values(qmap).filter(q => q.noResult > 0).sort((a, b) => b.noResult - a.noResult).slice(0, 25);
@@ -30,6 +32,8 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
       total_searches: total,
       no_result_searches: noResult,
       no_result_rate: total ? +(noResult / total).toFixed(3) : 0,
+      total_clicks: clicks,
+      click_through_rate: total ? +(clicks / total).toFixed(3) : 0,
       top_queries: top,
       no_result_queries: noResultQueries,
     },

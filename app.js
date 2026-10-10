@@ -337,6 +337,7 @@ let smartSearchSeq=0, smartSearchTimer;
 function serverProductToLocal(p){return {id:Number(p.id),name:p.name||'',category:p.category||'',brand:p.brand||'',pack:p.pack||'',price:Number(p.price||0),oldPrice:p.old_price==null?null:Number(p.old_price),desc:p.description||'',badge:p.badge||'',img:p.image_url||''};}
 async function renderSmartSearchResults(query,seq){
   try{
+    try{ sessionStorage.setItem('cb_last_search',query); }catch(e){}
     const r=await fetch('/api/ai/search',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query})});
     if(!r.ok)throw new Error('smart search unavailable'); const data=await r.json();
     if(seq!==smartSearchSeq||shopState.q!==query)return;
@@ -369,6 +370,15 @@ let productModalReturnFocus=null;
 function openProduct(id){
   productModalReturnFocus=document.activeElement;
   const p=PRODUCTS.find(x=>x.id===id); if(!p)return;
+  // Search → product click tracking
+  try{
+    const lastQ=sessionStorage.getItem('cb_last_search');
+    if(lastQ){
+      let sid=null; try{ sid=localStorage.getItem('cb_sid'); }catch(e){}
+      fetch('/api/search-click',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:id,query:lastQ,session_id:sid})}).catch(()=>{});
+      sessionStorage.removeItem('cb_last_search');
+    }
+  }catch(e){}
   const img=p.img?`<img src="${esc(assetUrl(p.img))}" alt="">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
   const old=p.oldPrice?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   $('#mbody').innerHTML=`<div class="mgrid">
@@ -557,6 +567,10 @@ function renderBundlesRoute(){
   shopState.cat='Bundles';
   showView('shop');
   renderShopContent();
+  // Box view tracking
+  try{ let sid=null; try{ sid=localStorage.getItem('cb_sid'); }catch(e){}
+    fetch('/api/box-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'view',box_name:'bundles-page',session_id:sid})}).catch(()=>{});
+  }catch(e){}
 }
 
 /* ---------- Phase 2A: Brand directory + brand detail ---------- */
@@ -1082,6 +1096,18 @@ function addToCart(id,qty=1,el){
   if(el) flyToCart(el,id);
   CART[id]=(CART[id]||0)+qty; saveCart(); popBadge();
   if(typeof window.chaskaTrack==='function') window.chaskaTrack('add_to_cart',{id:p.id,name:p.name,price:p.price,qty});
+  // Wishlist → cart conversion tracking
+  try{
+    if(typeof isWished==='function'&&isWished(id)){
+      let sid=null; try{ sid=localStorage.getItem('cb_sid'); }catch(e){}
+      fetch('/api/wishlist-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:id,action:'to_cart',session_id:sid})}).catch(()=>{});
+    }
+    // Box add-to-cart tracking
+    if(p.bundle){
+      let sid=null; try{ sid=localStorage.getItem('cb_sid'); }catch(e){}
+      fetch('/api/box-log',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({box_id:id,box_name:p.name,action:'add_to_cart',session_id:sid})}).catch(()=>{});
+    }
+  }catch(e){}
   if(el && el.closest && el.closest('.card')){
     const old=el.innerHTML; el.innerHTML='Added ✓'; el.disabled=true;
     setTimeout(()=>{ if(document.body.contains(el)){el.innerHTML=old;el.disabled=false;} },850);
