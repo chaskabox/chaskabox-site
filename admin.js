@@ -213,11 +213,25 @@
     $('#boxPrice')?.addEventListener('input',renderBoxSummary); $('#previewBoxBtn')?.addEventListener('click',()=>{if(!state.box.size){toast('Choose products first');return;}toast('Box preview is reflected in the builder totals. Product-page preview will be wired to secure drafts.');});
     $('#saveBoxDraftBtn')?.addEventListener('click',()=>{toast('Sign in to save this Chaska Box through the secure backend.');});
   }
-  function renderBoxProducts(){
+  async function renderBoxProducts(){
     const listEl=$('#boxProductList');
     if(!listEl) return;
+    // If products not loaded yet, try to fetch them directly
     if(!state.products.length){
       listEl.innerHTML='<p class="muted" style="padding:20px;text-align:center">Loading products…</p>';
+      try{
+        const res=await fetch('/api/products',{cache:'no-store'});
+        if(res.ok){
+          const data=await res.json();
+          if(Array.isArray(data)&&data.length){
+            state.products=data;
+            // Re-render with loaded products
+            renderBoxProducts();
+            return;
+          }
+        }
+      }catch(e){}
+      listEl.innerHTML='<p class="muted" style="padding:20px;text-align:center">Could not load products. <button class="btn secondary compact" onclick="location.reload()">Reload page</button></p>';
       return;
     }
     const q=($('#boxProductSearch')?.value||'').toLowerCase().trim();
