@@ -776,7 +776,8 @@
           ${b.description?`<p class="muted" style="font-size:12px">${esc(b.description)}</p>`:''}
           <div class="box-actions">
             ${b.id?`<button class="btn secondary compact" data-edit-brand="${b.id}">✏️ Edit</button>
-            <button class="btn secondary compact" data-toggle-brand="${b.id}">${b.is_visible?'👁️ Hide':'👁️ Show'}</button>`:`
+            <button class="btn secondary compact" data-toggle-brand="${b.id}">${b.is_visible?'👁️ Hide':'👁️ Show'}</button>
+            <button class="btn danger compact" data-del-brand="${b.id}">🗑️ Delete</button>`:`
             <button class="btn primary compact" data-add-brand="${esc(b.name)}">+ Add brand</button>`}
           </div>
         </div>`).join('');
@@ -792,6 +793,13 @@
         toast('Brand added'); loadBrands();
       });
       listEl.querySelectorAll('[data-edit-brand]').forEach(btn=>btn.onclick=()=>openBrandEditor(btn.dataset.editBrand, brands));
+      listEl.querySelectorAll('[data-del-brand]').forEach(btn=>btn.onclick=async()=>{
+        const id=btn.dataset.delBrand;
+        const b=brands.find(x=>String(x.id)===String(id));
+        if(!confirm(`Delete brand "${b?b.name:id}"? Products will NOT be deleted, only the brand entry.`))return;
+        await api(`/api/admin/brands/${id}`,{method:'DELETE'});
+        toast('Brand deleted'); loadBrands();
+      });
     }catch(e){listEl.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
   function openBrandEditor(id, brands){
