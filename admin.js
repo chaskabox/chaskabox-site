@@ -40,7 +40,10 @@
   async function loadAdminData(){
     // Auth-gated: never fetch or render admin catalogue without a live session.
     const authed=await checkAdminSession();
-    if(!authed){ clearAdminRenders(); return false; }
+    // NOTE: bootAuthenticated() already verified auth server-side via /api/admin/me
+    // before calling this. Never wipe live KPI renders here — a stale client-side
+    // session check must not blank values the live backend just populated.
+    if(!authed){ return false; }
     try{
       let data=null; for(const url of ['/api/products','/products.json']){try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error(`HTTP ${res.status}`);const rows=await res.json();if(Array.isArray(rows)){data=rows;break;}}catch(e){}}
       if(!data)throw new Error('Could not load public product catalogue'); state.products=data;
@@ -50,7 +53,7 @@
       hydrateSelectors(); renderDashboard(); renderProducts(); renderBoxProducts();
       return true;
     }catch(err){
-      $('#metricProducts').textContent='!'; $('#productAdminGrid').innerHTML=`<div class="panel"><b>Could not load catalogue snapshot</b><p class="muted">${escapeHtml(err.message)}</p></div>`;
+      $('#productAdminGrid').innerHTML=`<div class="panel"><b>Could not load catalogue snapshot</b><p class="muted">${escapeHtml(err.message)}</p></div>`;
       return false;
     }
   }
@@ -98,9 +101,9 @@
 
   function renderDashboard(){
     const products=state.products.filter(p=>!isArchived(p.id));
-    // NOTE: metricOrders / metricRevenue are owned by admin-live.js (live backend).
-    // Never overwrite them here — the legacy snapshot must not clobber live values.
-    const mp=$('#metricProducts'); if(mp && (!mp.textContent.trim()||mp.textContent.trim()==='—')) mp.textContent=products.length;
+    // NOTE: KPI metric cards (metricProducts/metricBundles/metricOrders/metricRevenue)
+    // are owned EXCLUSIVELY by admin-live.js (live backend). This legacy renderer
+    // only paints the category bars — it must never touch the metric cards.
     const counts={}; products.forEach(p=>counts[p.category]=(counts[p.category]||0)+1); const max=Math.max(1,...Object.values(counts));
     $('#categoryBars').innerHTML=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([cat,count])=>`<div class="catbar"><span>${escapeHtml(cat)}</span><div class="catbar-track"><div class="catbar-fill" style="width:${Math.round(count/max*100)}%"></div></div><b>${count}</b></div>`).join('');
   }
