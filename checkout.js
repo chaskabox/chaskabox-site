@@ -159,7 +159,12 @@ function renderSummary() {
 
 function getFullPhone(){
   const ccode = $('#f_ccode')?.value || '+92';
-  const digits = String($('#f_phone')?.value || '').replace(/\D/g, '');
+  let digits = String($('#f_phone')?.value || '').replace(/\D/g, '');
+  // Auto-strip trunk prefix (leading 0) for international format
+  // Most countries use 0 as trunk prefix when dialing domestically
+  if(ccode !== '+92' && digits.startsWith('0') && digits.length > 1){
+    digits = digits.slice(1);
+  }
   return {ccode, digits, full: ccode + digits};
 }
 function normalizePhone(v) {
@@ -170,7 +175,7 @@ function normalizePhone(v) {
 function phoneDigits(v){ return String(v||'').replace(/\D/g,'').slice(0,15); }
 function validPhone(v) {
   const ccode = $('#f_ccode')?.value || '+92';
-  const d = phoneDigits(v);
+  let d = phoneDigits(v);
   if(ccode === '+92'){
     // Strict Pakistan validation
     if(d.length === 11 && d.startsWith('03')) {
@@ -187,7 +192,8 @@ function validPhone(v) {
     if(d.length === 10 && d.startsWith('3')) return true;
     return false;
   }
-  // Other countries: lenient (7-15 digits)
+  // Other countries: strip trunk 0, then validate 7-15 digits
+  if(d.startsWith('0') && d.length > 1) d = d.slice(1);
   return d.length >= 7 && d.length <= 15;
 }
 function validEmail(v) {
