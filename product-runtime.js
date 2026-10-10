@@ -58,3 +58,78 @@
     try{if(typeof window.renderRelated==='function')window.renderRelated();}catch{}
   }catch(e){console.warn('[product-runtime] live refresh unavailable',e?.message||e);}
 })();
+
+/* ChaskaBox product reviews (P2-13): approved reviews + submission form. */
+(function(){
+  // Inject review styles (shared across all static PDPs)
+  if(!document.querySelector('#review-styles')){
+    const st=document.createElement('style'); st.id='review-styles';
+    st.textContent='.reviews-sec{margin:34px 0 10px}.reviews-sec h2{font-size:20px;margin-bottom:12px;color:var(--navy)}'
+      +'.reviews-avg{font-size:15px;margin-bottom:14px}.reviews-avg .muted{font-size:12px}'
+      +'.review-card{border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;background:var(--card)}'
+      +'.review-stars{color:#f59e0b;font-size:16px;margin-bottom:6px}.review-card p{margin:6px 0;font-size:14px;line-height:1.5}'
+      +'.verified-badge{display:inline-block;background:#ecfdf3;color:#166534;font-size:11px;font-weight:700;padding:3px 8px;border-radius:999px;margin-top:6px}'
+      +'.admin-reply{margin-top:10px;padding:10px;background:#f8fafc;border-left:3px solid var(--navy);border-radius:0 8px 8px 0;font-size:13px}'
+      +'.review-form-wrap{margin-top:16px;border:1px solid var(--border);border-radius:12px;padding:14px}'
+      +'.review-form-wrap summary{cursor:pointer;font-weight:700;color:var(--navy);min-height:44px;display:flex;align-items:center}'
+      +'.review-form{display:grid;gap:12px;margin-top:12px}.review-form label{display:grid;gap:6px;font-size:13px;font-weight:600}'
+      +'.review-form select,.review-form textarea{padding:10px;border:1px solid var(--border);border-radius:8px;font-size:16px;max-width:100%}'
+      +'.review-note{font-size:11px}.review-thanks{padding:16px;background:#ecfdf3;border-radius:10px;color:#166534}';
+    document.head.appendChild(st);
+  }
+  function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+  function stars(n){n=Math.max(0,Math.min(5,Math.round(Number(n)||0)));return '★'.repeat(n)+'☆'.repeat(5-n);}
+  async function initReviews(){
+    if(typeof window.PID==='undefined') return;
+    const pid=window.PID;
+    // Find insertion point: after related section, before </main>
+    const rel=document.querySelector('.rel-sec');
+    if(!rel||document.querySelector('.reviews-sec')) return;
+    const sec=document.createElement('section');
+    sec.className='reviews-sec';
+    sec.innerHTML='<h2>Customer Reviews</h2><div class="reviews-list"><p class="muted">Loading reviews…</p></div>'
+      +'<details class="review-form-wrap"><summary>Write a review</summary>'
+      +'<form class="review-form"><label>Rating<select name="rating" required><option value="5">★★★★★ (5)</option><option value="4">★★★★ (4)</option><option value="3">★★★ (3)</option><option value="2">★★ (2)</option><option value="1">★ (1)</option></select></label>'
+      +'<label>Your review<textarea name="text" rows="3" minlength="3" maxlength="1000" required placeholder="What did you think of this snack?"></textarea></label>'
+      +'<button type="submit" class="btn primary">Submit review</button>'
+      +'<p class="muted review-note">Reviews are moderated before appearing.</p></form></details>';
+    rel.after(sec);
+    const list=sec.querySelector('.reviews-list');
+    // Load approved reviews
+    try{
+      const r=await fetch('/api/reviews?product_id='+encodeURIComponent(pid),{cache:'no-store'});
+      const d=r.ok?await r.json():null;
+      const reviews=(d&&d.reviews)||[];
+      if(!reviews.length){
+        list.innerHTML='<p class="muted">No reviews yet — be the first to review this snack!</p>';
+      }else{
+        const avg=(reviews.reduce((a,x)=>a+Number(x.rating||0),0)/reviews.length);
+        list.innerHTML='<p class="reviews-avg"><b>'+avg.toFixed(1)+'</b> '+stars(avg)+' <span class="muted">('+reviews.length+' review'+(reviews.length===1?'':'s')+')</span></p>'
+          +reviews.map(x=>'<article class="review-card"><div class="review-stars">'+stars(x.rating)+'</div><p>'+esc(x.review_text)+'</p>'
+          +(x.verified_purchase?'<span class="verified-badge">✓ Verified purchase</span>':'')
+          +(x.admin_reply?'<div class="admin-reply"><b>ChaskaBox:</b> '+esc(x.admin_reply)+'</div>':'')
+          +'</article>').join('');
+      }
+    }catch(e){ list.innerHTML='<p class="muted">Could not load reviews.</p>'; }
+    // Handle submission
+    const form=sec.querySelector('.review-form');
+    form.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const btn=form.querySelector('button[type="submit"]');
+      btn.disabled=true; btn.textContent='Submitting…';
+      try{
+        const fd=new FormData(form);
+        const r=await fetch('/api/reviews',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({product_id:Number(pid),rating:Number(fd.get('rating')),text:String(fd.get('text')).trim()})});
+        if(!r.ok) throw new Error('Submit failed');
+        form.innerHTML='<p class="review-thanks">Thanks! Your review was submitted and will appear after moderation. 🙏</p>';
+      }catch(err){
+        btn.disabled=false; btn.textContent='Submit review';
+        alert('Could not submit review. Please try again.');
+      }
+    });
+  }
+  // Run after main runtime (delay to avoid blocking)
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',()=>setTimeout(initReviews,800));
+  else setTimeout(initReviews,800);
+})();
