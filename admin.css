@@ -48,3 +48,97 @@
 .admin-pagination button{padding:7px 12px;border:1px solid var(--border,#e5e7eb);border-radius:8px;background:#fff;cursor:pointer;font-size:13px;font-weight:600}
 .admin-pagination button:hover{background:#f4f6fb}
 .admin-pagination button.active{background:#1a2b5c;color:#fff;border-color:#1a2b5c}
+
+/* ================= MOBILE HARDENING v2 (2026-10-10) ================= */
+/* Global: no horizontal page overflow, media never bleeds */
+html,body{overflow-x:clip}
+.admin-shell,.admin-main,.admin-content{min-width:0}
+.admin-content img,.admin-content video,.admin-content iframe{max-width:100%;height:auto}
+.admin-modal-card{overflow-x:hidden}
+
+/* ---------- Tablet: <=1023px ---------- */
+@media(max-width:1023px){
+  .admin-grid.two,.admin-grid.three{grid-template-columns:1fr}
+  .order-detail-grid{grid-template-columns:1fr}
+  .metric-grid{grid-template-columns:repeat(2,1fr)}
+  .builder-layout{grid-template-columns:1fr}
+  .builder-summary{position:static}
+  .editor-grid{grid-template-columns:1fr}
+  .product-admin-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .media-grid{grid-template-columns:repeat(3,1fr)}
+}
+
+/* ---------- Large phone / small tablet: <=767px ---------- */
+@media(max-width:767px){
+  /* Sidebar drawer: overlay + backdrop (drawer mechanics already at 900px) */
+  .admin-sidebar{z-index:40}
+  .sidebar-backdrop{position:fixed;inset:0;background:rgba(10,16,32,.5);z-index:39;opacity:0;pointer-events:none;transition:opacity .2s}
+  .sidebar-backdrop.show{opacity:1;pointer-events:auto}
+  /* 44px minimum touch targets */
+  .admin-nav-btn{min-height:44px;padding:11px 12px;font-size:13px}
+  .sidebar-toggle{min-width:44px;min-height:44px}
+  .btn{min-height:44px;padding:11px 14px;font-size:13px}
+  .btn.compact{min-height:40px}
+  .pagination-row{flex-wrap:wrap;gap:10px}
+  .pagination-row button{min-width:44px;min-height:44px}
+  .nav-row .drag{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+  .nav-move button,.nav-row button{min-width:44px;min-height:44px;font-size:15px}
+  .admin-card-actions button{min-height:44px;font-size:11px}
+  .attention-row{padding:12px}
+  /* Orders + customers + all admin tables -> stacked cards (no horizontal scroll) */
+  .live-table thead{display:none}
+  .live-table,.live-table tbody{display:block;width:100%;min-width:0}
+  .live-table tr{display:grid;gap:7px;background:#fff;border:1px solid var(--border);border-radius:14px;padding:13px;margin:0 0 10px}
+  .live-table td{display:block;border:0;padding:0;text-align:left;min-width:0}
+  .live-table td .btn,.live-table td>button{width:100%}
+  .live-table-wrap{overflow:visible}
+  /* Orders filter bar: full-width stacked */
+  .toolbar{display:grid;grid-template-columns:1fr;gap:8px}
+  .toolbar .searchbox,.toolbar select,.toolbar .btn{width:100%}
+  /* Products: 2 columns on large phones, titles already 2-line clamped */
+  .product-admin-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  /* Dashboard quick actions + AI shortcuts stack */
+  .quick-actions,.ai-shortcuts{grid-template-columns:1fr}
+  .ai-shortcuts button{min-height:48px;text-align:left}
+  /* Forms: single column, full-width, no iOS zoom */
+  .form-two,.form-three{grid-template-columns:1fr}
+  .admin-content input,.admin-content select,.admin-content textarea{font-size:16px;max-width:100%}
+  .admin-content label{display:grid;gap:6px}
+  /* Box builder: actions full-width */
+  #saveBoxDraftBtn,#previewBoxBtn,.box-builder-actions .btn{width:100%}
+  .box-product-list{grid-template-columns:1fr}
+  /* Homepage builder: never squeeze side-by-side */
+  .section-manager>div{grid-template-columns:44px 1fr auto;align-items:center}
+  .section-manager .drag{min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;font-size:16px}
+  /* Navigation rows: roomy touch layout */
+  .nav-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 4px;border-bottom:1px solid var(--border)}
+  .nav-row b{flex:1 1 100%;font-size:13px}
+  .nav-row em{flex:1 1 100%;font-style:normal;font-size:11px;color:var(--muted);word-break:break-all}
+  /* Settings / security / health panels stack (reinforce) */
+  .settings-grid,.health-grid{grid-template-columns:1fr}
+  /* Order modal: fits phone, vertical scroll only */
+  .admin-modal-card{width:calc(100% - 16px);margin:8px auto;max-height:calc(100dvh - 16px);overflow-y:auto}
+  .order-detail-grid{padding:14px;gap:14px}
+  .order-actions .btn{flex:1 1 100%}
+  /* Review rows stack */
+  .review-admin-row{flex-direction:column;gap:10px}
+  .staff-list>div{grid-template-columns:1fr;gap:6px}
+  .staff-list code{font-size:10px;word-break:break-all}
+}
+
+/* ---------- Narrow phone: <=480px ---------- */
+@media(max-width:480px){
+  /* Dashboard KPI cards: single column */
+  .metric-grid{grid-template-columns:1fr}
+  /* Products: 1 column */
+  .product-admin-grid{grid-template-columns:1fr}
+  .admin-product-image{height:170px}
+  /* Categories / media: 1 column */
+  .media-grid{grid-template-columns:1fr}
+  .catbar{grid-template-columns:1fr;gap:8px}
+  /* Tighter chrome, still thumb-friendly */
+  .admin-topbar h1{font-size:17px}
+  .admin-content{padding:10px}
+  .panel{padding:12px}
+  .live-login-card{padding:20px}
+}

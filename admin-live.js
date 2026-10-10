@@ -39,7 +39,7 @@
   async function getMe(){ return await api('/api/admin/me'); }
   function roleAllows(...roles){return me&&roles.includes(me.role)}
   function wireNav(){
-    $$('.admin-nav-btn').forEach(btn=>btn.addEventListener('click',()=>setTimeout(()=>loadView(btn.dataset.view),0),true));
+    $$('.admin-nav-btn').forEach(btn=>btn.addEventListener('click',()=>setTimeout(()=>{ $('#adminSidebar').classList.remove('open'); $('#sidebarBackdrop')?.classList.remove('show'); loadView(btn.dataset.view); },0),true));
   }
   async function loadView(name){
     try{
@@ -110,13 +110,14 @@
   }
 
   async function loadDashboard(){
-    let attention={counts:{},needs_attention:[]}, od={orders:[]}, metrics={};
+    let attention={counts:{},needs_attention:[]}, od={orders:[]}, metrics={}, boxes={boxes:[],total:0};
     try{
-      [attention,od,metrics]=await Promise.all([api('/api/admin/attention'),api('/api/admin/orders?per_page=100'),api('/api/admin/metrics?days=30')]);
+      [attention,od,metrics,boxes]=await Promise.all([api('/api/admin/attention'),api('/api/admin/orders?per_page=100'),api('/api/admin/metrics?days=30'),api('/api/admin/boxes?per_page=1')]);
     }catch(e){ console.warn('[dashboard] API error', e); }
     const dashOrders=od.orders||[];
     $('#metricOrders').textContent=attention.counts?.new_orders ?? dashOrders.filter(o=>o.fulfilment_status==='new').length ?? 0;
     $('#metricRevenue').textContent=money(metrics.recognized_sales_pkr||0);
+    const mb=$('#metricBundles'); if(mb) mb.textContent=boxes.total ?? (boxes.boxes||[]).length ?? '—';
     const revenueCard=$('#metricRevenue')?.closest('.metric-card'); if(revenueCard){const small=revenueCard.querySelector('small');if(small)small.textContent='Recognized sales · 30 days';}
     $('#orderNavCount').textContent=dashOrders.length;
     let panel=$('#needsAttentionPanel'); if(!panel){panel=document.createElement('section');panel.id='needsAttentionPanel';panel.className='panel';$('#view-dashboard').appendChild(panel);} const rows=attention.needs_attention||[];
@@ -313,7 +314,12 @@
   }
 
   async function loadSecurity(){
-    const view=$('#view-security');const [audit,staff]=await Promise.all([api('/api/admin/audit?per_page=50'),api('/api/admin/staff')]);view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Staff roles</h2><p>Least-privilege access. Owner-only changes.</p></div></div><div class="staff-list">${(staff.staff||[]).map(s=>`<div><code>${esc(s.user_id)}</code><b>${esc(s.role)}</b><span class="pill ${s.active?'on':''}">${s.active?'Active':'Disabled'}</span></div>`).join('')}</div><hr><h3>Invite staff</h3><div class="form-two"><label>Email<input id="staffEmail" type="email"></label><label>Role<select id="staffRole"><option>content</option><option>fulfilment</option><option>manager</option><option>owner</option></select></label></div><button class="btn primary" id="inviteStaff">Send invite</button></section><section class="panel"><div class="panel-head"><div><h2>Recent audit log</h2><p>Who changed what and when.</p></div></div><div class="history-list">${(audit.events||[]).map(a=>`<div><b>${esc(a.action)}</b><small>${fmtDate(a.created_at)} · ${esc(a.actor_role)} · ${esc(a.entity_type)} ${esc(a.entity_id)}</small></div>`).join('')||'<small>No audit events.</small>'}</div></section></div>
+    const view=$('#view-security');
+    const [auditR,staffR]=await Promise.allSettled([api('/api/admin/audit?per_page=50'),api('/api/admin/staff')]);
+    const audit=auditR.status==='fulfilled'?auditR.value:{events:[]};
+    const staff=staffR.status==='fulfilled'?staffR.value:{staff:[]};
+    const auditErr=auditR.status==='rejected'?String(auditR.reason?.message||auditR.reason):'';
+    const staffErr=staffR.status==='rejected'?String(staffR.reason?.message||staffR.reason):'';view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Staff roles</h2><p>Least-privilege access. Owner-only changes.</p></div></div><div class="staff-list">${staffErr?`<p class="muted">Could not load staff list: ${esc(staffErr)}</p>`:(staff.staff||[]).map(s=>`<div><code>${esc(s.user_id)}</code><b>${esc(s.role)}</b><span class="pill ${s.active?'on':''}">${s.active?'Active':'Disabled'}</span></div>`).join('')}</div><hr><h3>Invite staff</h3><div class="form-two"><label>Email<input id="staffEmail" type="email"></label><label>Role<select id="staffRole"><option>content</option><option>fulfilment</option><option>manager</option><option>owner</option></select></label></div><button class="btn primary" id="inviteStaff">Send invite</button></section><section class="panel"><div class="panel-head"><div><h2>Recent audit log</h2><p>Who changed what and when.</p></div></div>${auditErr?`<p class="muted">Could not load audit history: ${esc(auditErr)}</p>`:`<div class="history-list">${(audit.events||[]).map(a=>`<div><b>${esc(a.action)}</b><small>${fmtDate(a.created_at)} · ${esc(a.actor_role)} · ${esc(a.entity_type)} ${esc(a.entity_id)}</small></div>`).join('')||'<small>No audit events.</small>'}</div>`}</section></div>
     <section class="panel" style="margin-top:16px"><div class="panel-head"><div><h2>🔐 Two-Factor (MFA)</h2><p>Protect your admin account with an authenticator app</p></div></div><div id="mfaSection"><p class="muted">Loading…</p></div></section>
     <section class="panel" style="margin-top:16px"><div class="panel-head"><div><h2>📱 Sessions</h2><p>Manage your login sessions</p></div></div><div style="padding:8px"><button class="btn danger" id="signOutAllBtn">Sign out all devices</button><p class="muted" style="font-size:12px;margin-top:8px">This will sign you out everywhere. You'll need to sign in again.</p></div></section>`;$('#inviteStaff').onclick=async()=>{try{await api('/api/admin/staff',{method:'POST',body:{email:$('#staffEmail').value.trim(),role:$('#staffRole').value}});toast('Staff invite sent');loadSecurity()}catch(e){toast(e.message)}};
     loadMFAStatus();
@@ -613,12 +619,48 @@
       const nav=d.navigation||{header:[],footer:[],mobile:[]};
       const render=(items,elId)=>{
         const el=$(elId); if(!el) return;
-        el.innerHTML=items.length?items.map(i=>`
-          <div><span class="drag">⋮⋮</span><b>${esc(i.label)}</b><em>${esc(i.url)}</em>
-          <button data-nav-toggle="${i.id}">${i.is_enabled?'✓':'✗'}</button></div>`).join('')
+        el._navItems=items;
+        el.innerHTML=items.length?items.map((i,idx)=>`
+          <div class="nav-row" data-id="${esc(i.id)}"><span class="drag">⋮⋮</span><b>${esc(i.label)}</b><em>${esc(i.url)}</em>
+          <span class="nav-move"><button data-nav-up="${idx}" aria-label="Move up" title="Move up">↑</button><button data-nav-down="${idx}" aria-label="Move down" title="Move down">↓</button></span>
+          <button data-nav-toggle="${esc(i.id)}" aria-label="Toggle enabled">${i.is_enabled?'✓':'✗'}</button></div>`).join('')
           :'<p class="muted">No items. Click + Add.</p>';
       };
+      const persistOrder=async(el)=>{
+        const items=el._navItems||[];
+        try{
+          await api('/api/admin/navigation',{method:'PATCH',body:JSON.stringify({items:items.map((i,idx)=>({id:i.id,position:idx+1}))})});
+        }catch(e){ toast('Reorder failed: '+e.message); }
+      };
+      const move=(el,idx,dir)=>{
+        const items=el._navItems||[];
+        const j=idx+dir;
+        if(j<0||j>=items.length) return;
+        [items[idx],items[j]]=[items[j],items[idx]];
+        render(items,'#'+el.id);
+        persistOrder(el);
+      };
       render(nav.header,'#headerNavList'); render(nav.footer,'#footerNavList');
+      const navView=$('#view-navigation');
+      if(navView && !navView._navWired){
+        navView._navWired=true;
+        navView.addEventListener('click',async(e)=>{
+          const up=e.target.closest('[data-nav-up]'), down=e.target.closest('[data-nav-down]'), tog=e.target.closest('[data-nav-toggle]');
+          if(up){ const el=up.closest('.nav-row').parentElement; move(el,Number(up.dataset.navUp),-1); }
+          else if(down){ const el=down.closest('.nav-row').parentElement; move(el,Number(down.dataset.navDown),1); }
+          else if(tog){
+            const el=tog.closest('.nav-row').parentElement;
+            const items=el._navItems||[];
+            const it=items.find(x=>String(x.id)===tog.dataset.navToggle);
+            if(!it) return;
+            const next=!it.is_enabled;
+            tog.disabled=true;
+            try{ await api('/api/admin/navigation',{method:'PATCH',body:JSON.stringify({items:[{id:it.id,is_enabled:next}]})}); it.is_enabled=next; tog.textContent=next?'✓':'✗'; }
+            catch(err){ toast('Toggle failed: '+err.message); }
+            tog.disabled=false;
+          }
+        });
+      }
     }catch(e){toast(e.message);}
   }
 

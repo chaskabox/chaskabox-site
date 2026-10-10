@@ -67,13 +67,14 @@
   function bindNavigation(){
     $$('.admin-nav-btn').forEach(btn=>btn.addEventListener('click',()=>showView(btn.dataset.view)));
     $$('[data-jump]').forEach(el=>el.addEventListener('click',()=>{showView(el.dataset.jump); if(el.dataset.action==='add-product') openEditor(null);}));
-    $('#sidebarToggle')?.addEventListener('click',()=>$('#adminSidebar').classList.toggle('open'));
+    $('#sidebarToggle')?.addEventListener('click',()=>{const s=$('#adminSidebar');s.classList.toggle('open');$('#sidebarBackdrop')?.classList.toggle('show',s.classList.contains('open'));});
+    $('#sidebarBackdrop')?.addEventListener('click',()=>{$('#adminSidebar').classList.remove('open');$('#sidebarBackdrop').classList.remove('show');});
   }
   function showView(name){
     $$('.admin-view').forEach(v=>v.classList.toggle('active',v.id===`view-${name}`));
     $$('.admin-nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===name));
     const view=$(`#view-${name}`); if(view){$('#viewTitle').textContent=view.dataset.title||name;$('#viewSubtitle').textContent=view.dataset.subtitle||'';}
-    $('#adminSidebar').classList.remove('open'); window.scrollTo({top:0,behavior:'smooth'});
+    $('#adminSidebar').classList.remove('open'); $('#sidebarBackdrop')?.classList.remove('show'); window.scrollTo({top:0,behavior:'smooth'});
     if(name==='preview') refreshPreview();
   }
 
@@ -97,8 +98,9 @@
 
   function renderDashboard(){
     const products=state.products.filter(p=>!isArchived(p.id));
-    const bundles=products.filter(p=>p.bundle).length;
-    $('#metricProducts').textContent=products.length; $('#metricBundles').textContent=bundles; $('#metricOrders').textContent='—'; $('#metricRevenue').textContent='—';
+    // NOTE: metricOrders / metricRevenue are owned by admin-live.js (live backend).
+    // Never overwrite them here — the legacy snapshot must not clobber live values.
+    const mp=$('#metricProducts'); if(mp && (!mp.textContent.trim()||mp.textContent.trim()==='—')) mp.textContent=products.length;
     const counts={}; products.forEach(p=>counts[p.category]=(counts[p.category]||0)+1); const max=Math.max(1,...Object.values(counts));
     $('#categoryBars').innerHTML=Object.entries(counts).sort((a,b)=>b[1]-a[1]).map(([cat,count])=>`<div class="catbar"><span>${escapeHtml(cat)}</span><div class="catbar-track"><div class="catbar-fill" style="width:${Math.round(count/max*100)}%"></div></div><b>${count}</b></div>`).join('');
   }
