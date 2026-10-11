@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test tests/*.test.mjs",
     "check": "node tools/check-syntax.mjs && node tools/build-photo-manifest.mjs --check",
-    "build:functions": "wrangler pages functions build functions --outdir .wrangler/build --compatibility-date 2026-10-04"
+    "build:functions": "wrangler pages functions build functions --outdir .wrangler/build --compatibility-date 2026-10-04",
+    "build:notifications": "wrangler deploy --dry-run --config cloudflare/wrangler.notification-outbox.jsonc --outdir .wrangler/notification-build"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",

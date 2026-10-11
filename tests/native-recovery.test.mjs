@@ -8,6 +8,7 @@ import path from 'node:path';
 import { createServer } from 'node:net';
 import { createHash } from 'node:crypto';
 import { createDatabaseArchive, verifyDatabaseArchive } from '../tools/database-backup.mjs';
+import { notificationSQL } from './notification-fixture.mjs';
 
 const bin = process.env.PG17_BIN || '/usr/lib/postgresql/17/bin';
 const available = ['pg_dump', 'pg_restore', 'psql', 'initdb', 'postgres'].every(name => existsSync(path.join(bin, name))) && process.getuid?.() !== 0;
@@ -41,6 +42,7 @@ async function fixture(mode, directory, processes) {
   const connection = 'postgresql://postgres@127.0.0.1:' + port + '/postgres?sslmode=disable';
   query(connection, 'CREATE ROLE fixture_reader NOLOGIN;');
   if (mode === 'source') query(connection, await readFile(new URL('./fixtures/recovery-schema.sql', import.meta.url), 'utf8'));
+  if (mode === 'notifications') query(connection, await notificationSQL());
   if (mode === 'conflict') query(connection, 'CREATE TABLE products(id integer PRIMARY KEY); INSERT INTO products VALUES(9999);');
   return connection;
 }
@@ -80,6 +82,43 @@ test('native PostgreSQL 17 COPY archive restores data, links, sequences, functio
     assert.throws(() => restore(conflict, path.join(output, 'database.dump')));
     assert.equal(query(conflict, "SELECT count(*) FROM pg_tables WHERE schemaname='public' AND tablename='brands'").trim(), '0');
     assert.equal(query(conflict, 'SELECT id FROM products').trim(), '9999');
+  } finally {
+    await Promise.all(processes.map(stop));
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('native PostgreSQL 17 concurrent consumers skip locked jobs and reject an expired sender token', { skip: !available && !required && 'Native PostgreSQL 17 server/client and a non-root test user are required', timeout: 30_000 }, async () => {
+  assert.ok(available, 'CI must execute the PostgreSQL 17 concurrent notification claim test.');
+  const directory = await mkdtemp(path.join(tmpdir(), 'chaskabox-native-notifications-')), processes = [];
+  try {
+    const connection = await fixture('notifications', directory, processes);
+    query(connection, "INSERT INTO orders(order_number) VALUES('CONCURRENT-FIRST'),('CONCURRENT-SECOND'); UPDATE notification_dispatch_state SET enabled=true,activated_after=now()-interval '1 hour';");
+    const after = query(connection, 'SELECT activated_after FROM notification_dispatch_state').trim();
+    const sql = "SELECT row_to_json(j) FROM notification_claim('" + after + "',ARRAY['owner_email']) j;";
+    const holder = spawn(path.join(bin, 'psql'), ['-X', '-At', '-v', 'ON_ERROR_STOP=1', '--dbname', connection], { stdio: ['pipe', 'pipe', 'pipe'] });
+    processes.push(holder);
+    let output = '', errors = '';
+    const held = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error('Concurrent claim fixture did not acquire a lease')), 5000);
+      holder.once('error', error => { clearTimeout(timer); reject(error); });
+      holder.once('exit', code => { if (!output.includes('LEASE_HELD')) { clearTimeout(timer); reject(new Error('Claim fixture exited: ' + code + ' ' + errors)); } });
+      holder.stderr.on('data', chunk => { errors += chunk; });
+      holder.stdout.on('data', chunk => { output += chunk; if (output.includes('LEASE_HELD')) { clearTimeout(timer); resolve(); } });
+    });
+    holder.stdin.write("BEGIN;\n" + sql + "\nSELECT 'LEASE_HELD';\n");
+    await held;
+    const first = JSON.parse(output.split('\n').find(line => line.startsWith('{')));
+    const second = JSON.parse(query(connection, sql).trim());
+    assert.notEqual(first.id, second.id, 'Second consumer must acquire a different unlocked job while the first transaction remains open.');
+    assert.notEqual(first.lease_token, second.lease_token);
+    await new Promise((resolve, reject) => { holder.once('exit', code => code === 0 ? resolve() : reject(new Error(errors))); holder.stdin.end('COMMIT;\n'); });
+    query(connection, "UPDATE notification_deliveries SET lease_expires_at=now()-interval '1 minute' WHERE id=" + first.id);
+    const reclaimed = JSON.parse(query(connection, sql).trim());
+    assert.equal(reclaimed.id, first.id);
+    assert.notEqual(reclaimed.lease_token, first.lease_token);
+    assert.equal(query(connection, "SELECT notification_finish(" + first.id + ",'" + first.lease_token + "','accepted','synthetic-expired-ack')").trim(), 'f');
+    assert.equal(query(connection, 'SELECT attempts FROM notification_deliveries WHERE id=' + first.id).trim(), '0');
   } finally {
     await Promise.all(processes.map(stop));
     await rm(directory, { recursive: true, force: true });

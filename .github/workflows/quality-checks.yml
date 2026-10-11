@@ -29,3 +29,4 @@ jobs:
       - run: npm run check
       - run: npm test
       - run: npm run build:functions
+      - run: npm run build:notifications

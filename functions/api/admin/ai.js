@@ -141,9 +141,9 @@ async function attentionSnapshot(context) {
     if((!o.email_sent&&o.email_error)||(!o.whatsapp_sent&&o.whatsapp_error))notificationIssues++;
     if(o.fulfilment_status==='new' && Number.isFinite(new Date(o.created_at).getTime()) && now-new Date(o.created_at).getTime()>=30*60000)staleNew++;
   }
-  let outbox={pending:0,retry:0,dead:0}, customer_outbox={pending:0,retry:0,dead:0};
-  try{const rows=await sb(context,'/rest/v1/notification_outbox?select=status&status=in.(pending,retry,dead)&limit=500');for(const r of rows||[])if(Object.hasOwn(outbox,r.status))outbox[r.status]++;}catch{}
-  try{const rows=await sb(context,'/rest/v1/customer_notification_outbox?select=status&status=in.(pending,retry,dead)&limit=500');for(const r of rows||[])if(Object.hasOwn(customer_outbox,r.status))customer_outbox[r.status]++;}catch{}
+  const notifications=await sb(context,'/rest/v1/rpc/notification_summary',{method:'POST',body:{}});
+  const outbox=notifications.owner_outbox,customer_outbox=notifications.customer_outbox;
+  notificationIssues=Number(notifications.review_required||0);
   return {new_orders:newOrders,payment_review:paymentReview,notification_issues:notificationIssues,stale_new_orders:staleNew,outbox,customer_outbox};
 }
 

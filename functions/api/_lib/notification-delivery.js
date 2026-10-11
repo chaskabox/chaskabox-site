@@ -1,0 +1,140 @@
+/* Private transactional helpers. Only the scheduled Worker sends notifications. */
+const encoder = new TextEncoder();
+export const TARGETS = ['owner_email', 'owner_whatsapp', 'customer_whatsapp'];
+export function activationMatches(stored, expected) {
+  const fraction=String(stored || '').match(/\.(\d+)(?:Z|[+-]\d{2}:?\d{2})$/)?.[1] || '';
+  return Number.isFinite(Date.parse(expected)) && Date.parse(stored)===Date.parse(expected) && !/[1-9]/.test(fraction.slice(3));
+}
+export function notificationConfig(env) {
+  const targets = String(env.NOTIFICATION_CHANNELS || '').split(',').map(x => x.trim()).filter(Boolean), errors = [];
+  if (!targets.length || new Set(targets).size !== targets.length || targets.some(x => !TARGETS.includes(x))) errors.push('notification_channels_invalid');
+  const after = String(env.NOTIFICATION_DISPATCH_AFTER || '');
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/.test(after) || !Number.isFinite(Date.parse(after))) errors.push('activation_cutoff_invalid');
+  else if (new Date(after).toISOString() !== (after.includes('.') ? after : after.replace('Z', '.000Z'))) errors.push('activation_cutoff_invalid');
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) errors.push('database_configuration_missing');
+  if (targets.includes('owner_email') && (!env.RESEND_API_KEY || !env.OWNER_ORDER_EMAIL || !env.RESEND_FROM_EMAIL)) errors.push('resend_configuration_missing');
+  if (targets.some(t => t.endsWith('whatsapp')) && (!env.WAHA_API_URL || !env.WAHA_API_KEY || !env.WAHA_SESSION)) errors.push('waha_configuration_missing');
+  if (targets.includes('owner_whatsapp') && !chatId(env.OWNER_WHATSAPP)) errors.push('owner_whatsapp_invalid');
+  for (const value of [env.SUPABASE_URL, targets.some(t => t.endsWith('whatsapp')) && env.WAHA_API_URL].filter(Boolean)) {
+    try { const u = new URL(value); if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash) throw new Error(); }
+    catch { errors.push('private_endpoint_invalid'); }
+  }
+  return { enabled: env.NOTIFICATION_DISPATCH_ENABLED === 'true', after, targets, errors };
+}
+export async function equalSecret(actual, expected) {
+  if (!actual || !expected) return false;
+  const [a, b] = await Promise.all([actual, expected].map(s => crypto.subtle.digest('SHA-256', encoder.encode(s))));
+  const aa = new Uint8Array(a), bb = new Uint8Array(b); let diff = 0;
+  for (let i = 0; i < aa.length; i++) diff |= aa[i] ^ bb[i];
+  return diff === 0;
+}
+export async function limitedText(response, maxBytes = 32768) {
+  if (Number(response.headers.get('content-length')) > maxBytes) { await response.body?.cancel(); throw new Error('response_too_large'); }
+  const reader = response.body?.getReader(); if (!reader) return '';
+  const parts = []; let bytes = 0;
+  try {
+    for (;;) { const { done, value } = await reader.read(); if (done) break; bytes += value.length;
+      if (bytes > maxBytes) { await reader.cancel(); throw new Error('response_too_large'); } parts.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  const data = new Uint8Array(bytes); let offset = 0;
+  for (const part of parts) { data.set(part, offset); offset += part.length; }
+  return new TextDecoder().decode(data);
+}
+export async function privateRequest(env, path, body, fetcher = fetch) {
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetcher(String(env.SUPABASE_URL).replace(/\/+$/, '') + path, {
+      method: body === undefined ? 'GET' : 'POST', signal: controller.signal, redirect: 'error',
+      headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    });
+    if (!response.ok) { await response.body?.cancel(); throw new Error('queue_api_' + response.status); }
+    const text = await limitedText(response, 65536); return text ? JSON.parse(text) : null;
+  } catch (error) { if (/^queue_api_/.test(error.message)) throw error; throw new Error('queue_request_failed'); }
+  finally { clearTimeout(timer); }
+}
+export function chatId(value) {
+  let digits = String(value || '').trim().replace(/^\+/, '');
+  if (/^03\d{9}$/.test(digits)) digits = '92' + digits.slice(1);
+  return /^\d{10,15}$/.test(digits) ? digits + '@c.us' : '';
+}
+function base(value) { return String(value || 'https://chaskabox.online').replace(/\/+$/, ''); }
+export function wahaEndpoint(env) { const url = base(env.WAHA_API_URL); return url.endsWith('/api') ? url + '/sendText' : url + '/api/sendText'; }
+function variables(env, order, job) {
+  const statuses = { new: 'received', sourcing: 'being prepared', packed: 'packed', dispatched: 'on its way', delivered: 'delivered', cancelled: 'cancelled' };
+  const status = job.event_data?.new_status || '';
+  const paymentStatus = job.event_type === 'payment_status' ? status : job.event_data?.payment_status || order.payment_status;
+  return {
+    order_number: String(order.order_number || ''), customer_name: String(order.customer_name || ''), customer_phone: String(order.customer_phone || ''), total: String(order.total ?? ''),
+    payment_method: String(order.payment_method || ''), payment_status: String(paymentStatus || '').replaceAll('_', ' '),
+    tracking_url: base(env.PUBLIC_BASE_URL) + '/track-order.html?order=' + encodeURIComponent(order.order_number || ''),
+    admin_url: base(env.ADMIN_BASE_URL) + '/admin.html#order-' + encodeURIComponent(order.id),
+    status_text: job.event_type === 'payment_status' ? 'payment ' + String(status).replaceAll('_', ' ') : statuses[status] || String(status).replaceAll('_', ' '),
+  };
+}
+function interpolate(text, vars) {
+  let invalid = false;
+  const result = String(text || '').replace(/\{\{\s*([\w]+)\s*\}\}/g, (_, key) => {
+    if (!Object.hasOwn(vars, key)) { invalid = true; return ''; } return vars[key];
+  });
+  if (invalid || /\{\{|\}\}/.test(result) || !result.trim() || result.length > 8000) throw new Error('template_invalid');
+  return result;
+}
+export function buildNotificationPayload(env, order, job, templates = []) {
+  const vars = variables(env, order, job);
+  const name = job.target === 'owner_email' ? 'order_received_owner' : job.target === 'owner_whatsapp' ? 'order_received_owner_whatsapp' : job.event_type === 'order_created' ? 'order_thankyou_customer' : 'status_update';
+  const template = templates.find(t => t.name === name);
+  if (template && (!template.is_active || template.channel !== (job.target === 'owner_email' ? 'email' : 'whatsapp'))) throw new Error('template_disabled_or_wrong_channel');
+  const items = (order.items || []).map(i => `${i.product_name} (${i.pack || ''}) x${i.quantity} — Rs. ${Number(i.unit_price) * Number(i.quantity)}`).join('\n');
+  const defaults = job.target.startsWith('owner_')
+    ? `New ChaskaBox order {{order_number}}\nCustomer: {{customer_name}} ({{customer_phone}})\nTotal: Rs. {{total}}\nPayment: {{payment_method}} ({{payment_status}})\n${items}\nView: {{admin_url}}`
+    : job.event_type === 'order_created'
+      ? 'Assalam-o-Alaikum {{customer_name}}! ChaskaBox mein order ka shukriya.\nYour order {{order_number}} (Rs. {{total}}) has been received.\nPayment: {{payment_status}}\nTrack: {{tracking_url}}'
+      : 'ChaskaBox update\nHi {{customer_name}}, order {{order_number}} is {{status_text}}.\nTrack: {{tracking_url}}';
+  const text = interpolate(template ? String(template.body || '').replaceAll('\\n', '\n') : defaults, vars);
+  if (job.target === 'owner_email') return { endpoint: 'https://api.resend.com/emails', body: {
+    from: env.RESEND_FROM_EMAIL, to: [env.OWNER_ORDER_EMAIL], subject: interpolate(template?.subject || 'New ChaskaBox Order {{order_number}} — Rs. {{total}}', vars).replace(/[\r\n]/g, ' ').slice(0, 200), text,
+  } };
+  const recipient = chatId(job.target === 'owner_whatsapp' ? env.OWNER_WHATSAPP : order.customer_phone);
+  if (!recipient) throw new Error('recipient_phone_invalid');
+  return { endpoint: wahaEndpoint(env), body: { session: env.WAHA_SESSION, chatId: recipient, text, linkPreview: false } };
+}
+export async function sendNotification(env, job, fetcher = fetch) {
+  const email = job.target === 'owner_email', payload = job.request_payload;
+  if (!payload || payload.endpoint !== (email ? 'https://api.resend.com/emails' : wahaEndpoint(env))) return { status: 'blocked', error: 'provider_endpoint_changed' };
+  if (!email && payload.body?.session !== env.WAHA_SESSION) return { status: 'blocked', error: 'provider_session_changed' };
+  const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
+  try {
+    const response = await fetcher(payload.endpoint, { method: 'POST', redirect: 'error', signal: controller.signal,
+      headers: email ? { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': 'chaskabox-owner-order-' + job.order_id }
+        : { 'X-Api-Key': env.WAHA_API_KEY, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload.body),
+    });
+    let data = null; try { data = JSON.parse(await limitedText(response, 16384)); } catch { /* Never treat missing acknowledgement as success. */ }
+    if (response.ok) {
+      const id = data?.id;
+      if (typeof id !== 'string' || !id.trim() || id.length > 240) return { status: email ? 'retry' : 'uncertain', error: 'provider_ack_id_missing' };
+      return { status: 'accepted', provider_id: id, error: null };
+    }
+    const retryHeader = response.headers.get('retry-after');
+    const retrySeconds = Math.min(86400, /^\d+$/.test(retryHeader || '') ? Number(retryHeader) : Math.max(0, Math.ceil((Date.parse(retryHeader) - Date.now()) / 1000)) || 0);
+    if (response.status === 429 || (email && (response.status >= 500 || response.status === 408 || (response.status === 409 && data?.name === 'concurrent_idempotent_requests')))) return { status: 'retry', error: (email ? 'resend_' : 'waha_') + response.status, retry_seconds: retrySeconds };
+    if (email && response.status === 409 && data?.name === 'invalid_idempotent_request') return { status: 'dead', error: 'resend_idempotency_payload_conflict' };
+    if (response.status >= 500 || response.status === 408 || response.status === 409) return { status: 'uncertain', error: (email ? 'resend_' : 'waha_') + response.status };
+    return { status: 'dead', error: (email ? 'resend_' : 'waha_') + response.status };
+  } catch { return { status: email ? 'retry' : 'uncertain', error: 'provider_request_outcome_unknown' }; }
+  finally { clearTimeout(timer); }
+}
+export function notificationHealth(config, summary, now = Date.now()) {
+  const state = summary.dispatch || {}, reasons = [...config.errors];
+  if (!config.enabled || !state.enabled) reasons.push('dispatch_paused');
+  if (!activationMatches(state.activated_after,config.after)) reasons.push('activation_cutoff_mismatch');
+  if (!state.last_completed_at || now - Date.parse(state.last_completed_at) > 5 * 60000) reasons.push('consumer_heartbeat_missing_or_stale');
+  if (state.last_error) reasons.push('consumer_last_run_failed');
+  if (Number(summary.review_required)) reasons.push('jobs_require_review');
+  if (Number(summary.inactive_channel_pending)) reasons.push('channels_paused_with_pending_jobs');
+  if (Number(summary.overdue)) reasons.push('queue_backlog_overdue');
+  return { ok: reasons.length === 0, reasons, dispatch: state, provider_results: summary.provider_results,
+    eligible_due: summary.eligible_due, inactive_channel_pending: summary.inactive_channel_pending,
+    excluded_before_cutoff: summary.excluded_before_cutoff, delivery_confirmation: 'verified_webhooks_only' };
+}

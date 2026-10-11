@@ -1,33 +1,12 @@
-/**
- * /api/admin/notifications
- * GET — notification center: outbox status, Resend/WAHA health, recent deliveries.
- * Roles: owner, manager.
- */
-import { withAdmin, sb, json, env } from '../_lib/auth.js';
-
-export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
-  const e = env(context);
-
-  // Exact database aggregates; an unavailable database must not appear healthy.
-  const summary=await sb(context,'/rest/v1/rpc/analytics_notifications',{method:'POST',body:{}});
-  const stats={pending:0,sent:0,failed:0,retry:0,...summary.owner_outbox};
-  const custStats={pending:0,sent:0,failed:0,retry:0,...summary.customer_outbox};
-  const failed=await sb(context,'/rest/v1/notification_outbox?status=eq.failed&select=order_id,last_error,updated_at&order=updated_at.desc&limit=10');
-
-  return json({
-    resend: {
-      configured: !!(e.RESEND_API_KEY && e.OWNER_ORDER_EMAIL),
-      has_api_key: !!e.RESEND_API_KEY,
-      has_owner_email: !!e.OWNER_ORDER_EMAIL,
-      from_email: e.RESEND_FROM_EMAIL || null,
-    },
-    waha: {
-      // WAHA status from env/config — actual health check via separate endpoint
-      configured: !!e.WAHA_API_URL,
-      url_configured: !!e.WAHA_API_URL,
-    },
-    owner_outbox: stats,
-    customer_outbox: custStats,
-    recent_failures: failed || [],
-  });
+import { withAdmin, sb, json } from '../_lib/auth.js';
+export const onRequestGet = withAdmin(['owner', 'manager'], async context => {
+  const summary = await sb(context, '/rest/v1/rpc/notification_summary', { method: 'POST', body: {} });
+  const state = summary.dispatch || {};
+  const recent = await sb(context, '/rest/v1/notification_deliveries?or=(status.in.(blocked,uncertain,dead),delivery_status.in.(failed,complained))&select=order_id,target,status,delivery_status,last_error,updated_at&order=updated_at.desc&limit=10');
+  const stale = !state.last_completed_at || Date.now() - Date.parse(state.last_completed_at) > 5 * 60000;
+  const workerStatus = !state.enabled ? 'paused' : stale ? 'no_recent_heartbeat' : state.last_error || summary.review_required || summary.overdue || summary.inactive_channel_pending ? 'degraded' : 'active';
+  return json({ ...summary, worker_status: workerStatus, recent_failures: recent || [],
+    resend: { consumer_configured: (state.configured_targets || []).includes('owner_email'), provider_health: 'not_probed' },
+    waha: { consumer_configured: (state.configured_targets || []).some(t => t.endsWith('whatsapp')), provider_health: 'not_probed' },
+  }, 200, { 'Cache-Control': 'no-store' });
 });

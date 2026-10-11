@@ -52,21 +52,9 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'fulfilment'], async 
     }
   }
 
-  let outbox = { pending: 0, retry: 0, dead: 0 };
-  let customerOutbox = { pending: 0, retry: 0, dead: 0 };
-  try {
-    const rows = await sb(context,
-      '/rest/v1/notification_outbox?select=status&status=in.(pending,retry,dead)&limit=500');
-    for (const row of rows || []) if (Object.hasOwn(outbox, row.status)) outbox[row.status]++;
-  } catch {
-    // Migration 013 may not yet be applied. Core dashboard still works.
-  }
-  try {
-    const rows = await sb(context, '/rest/v1/customer_notification_outbox?select=status&status=in.(pending,retry,dead)&limit=500');
-    for (const row of rows || []) if (Object.hasOwn(customerOutbox, row.status)) customerOutbox[row.status]++;
-  } catch {
-    // Migration 017 may not yet be applied.
-  }
+  const notifications=await sb(context,'/rest/v1/rpc/notification_summary',{method:'POST',body:{}});
+  const outbox=notifications.owner_outbox,customerOutbox=notifications.customer_outbox;
+  notificationIssues=Number(notifications.review_required||0);
 
   // Deduplicate same order/reason combination and keep the list bounded.
   const seen = new Set();

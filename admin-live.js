@@ -159,7 +159,7 @@
     $$('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
     $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{try{const st=b.dataset.status;let body={fulfilment_status:st,expected_updated_at:o.updated_at};if(st==='cancelled'){const reason=prompt('Cancellation reason (required):');if(!reason)return;body.cancel_reason=reason;}await api(`/api/admin/orders/${id}/status`,{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
     $$('[data-pay]',modal).forEach(b=>b.onclick=async()=>{try{await api(`/api/admin/orders/${id}/payment/verify`,{method:'POST',body:{decision:b.dataset.pay,expected_updated_at:o.updated_at}});toast('Payment updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
-    $('[data-retry]',modal).onclick=async()=>{try{await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast('Notification queued for retry')}catch(e){toast(e.message)}};
+    $('[data-retry]',modal).onclick=async()=>{try{const r=await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast(r.queued?`${r.queued} safe notification job(s) queued`:'No safe retries available; check Notifications for review')}catch(e){toast(e.message)}};
     // Print invoice / packing slip
     const printBar = document.createElement('div');
     printBar.style.cssText = 'display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)';
@@ -770,39 +770,17 @@
   async function loadNotifications(){
     try{
       const d=await api('/api/admin/notifications');
-      const st=$('#notifServiceStatus');
-      if(st){
-        const r=d.resend||{}, w=d.waha||{};
-        st.innerHTML=`
-          <div style="display:grid;gap:10px">
-            <div><b>📧 Resend Email</b><br>
-              <span class="box-badge ${r.configured?'visible':'hidden'}">${r.configured?'Configured':'Not configured'}</span>
-              ${!r.has_api_key?'<br><small class="muted">RESEND_API_KEY missing</small>':''}
-              ${!r.has_owner_email?'<br><small class="muted">OWNER_ORDER_EMAIL missing</small>':''}
-            </div>
-            <div><b>📱 WhatsApp/WAHA</b><br>
-              <span class="box-badge ${w.configured?'visible':'hidden'}">${w.configured?'Configured':'Not configured'}</span>
-            </div>
-          </div>`;
-      }
-      const ob=$('#notifOutboxStats');
-      if(ob){
-        const o=d.owner_outbox||{}, c=d.customer_outbox||{};
-        ob.innerHTML=`
-          <div style="display:grid;gap:8px;font-size:12px">
-            <div><b>Owner outbox:</b> ${o.pending||0} pending · ${o.sent||0} sent · ${o.failed||0} failed</div>
-            <div><b>Customer outbox:</b> ${c.pending||0} pending · ${c.sent||0} sent · ${c.failed||0} failed</div>
-          </div>`;
+      const st=$('#notifServiceStatus'), state=d.dispatch||{};
+      if(st)st.innerHTML=`<div style="display:grid;gap:8px"><div><b>Queue consumer:</b> ${esc(d.worker_status||'unknown')}</div><div><b>Last completed:</b> ${state.last_completed_at?esc(fmtDate(state.last_completed_at)):'No heartbeat recorded'}</div><div><b>Enabled channels:</b> ${esc((state.configured_targets||[]).join(', ')||'None confirmed')}</div><small class="muted">Provider credentials are confirmed by the consumer. Provider availability is not probed here.</small></div>`;
+      const ob=$('#notifOutboxStats'), p=d.provider_results||{};
+      if(ob){const o=d.owner_outbox||{},c=d.customer_outbox||{};
+        const queue=(title,q)=>`<div><b>${title}:</b> ${q.pending||0} pending · ${q.processing||0} processing · ${q.retry||0} retry · ${q.blocked||0} blocked · ${q.uncertain||0} uncertain · ${q.dead||0} dead</div>`;
+        const legacy=q=>Object.values(q||{}).reduce((n,v)=>n+Number(v),0);
+        ob.innerHTML=`<div style="display:grid;gap:8px;font-size:12px">${queue('Owner alerts',o)}${queue('Customer updates',c)}<div><b>Provider results:</b> ${p.accepted||0} accepted · ${p.delivered||0} confirmed delivered · ${p.delivery_failed||0} delivery failed · ${p.complaints||0} complaints · ${p.unconfirmed||0} awaiting confirmation</div><div><b>Historical review:</b> ${legacy(d.legacy_owner)} old owner jobs · ${legacy(d.legacy_customer)} old customer jobs · ${d.excluded_before_cutoff||0} before activation cutoff</div><div>${d.inactive_channel_pending||0} jobs on inactive channels</div><small class="muted">${esc(d.note||'Provider acceptance does not confirm delivery.')}</small></div>`;
       }
       const fl=$('#notifFailures');
-      if(fl){
-        const fails=d.recent_failures||[];
-        fl.innerHTML=fails.length?fails.map(f=>`
-          <div class="box-product-row"><div style="flex:1">
-            <h4>Order ${esc(f.order_id||'—')}</h4>
-            <small>${esc(f.error||f.last_error||'Failed')}</small></div>
-            <button class="btn secondary compact" onclick="toast('Retry via Orders → Retry notification')">Retry</button>
-          </div>`).join(''):'<p class="muted">No failures. 🎉</p>';
+      if(fl){const fails=d.recent_failures||[];
+        fl.innerHTML=fails.length?fails.map(f=>`<div class="box-product-row"><div style="flex:1"><h4>Order ${esc(f.order_id||'—')}</h4><small>${esc(f.target)} · ${esc(f.status)} · ${esc(f.last_error||f.delivery_status)}</small></div></div>`).join(''):'<p class="muted">No recorded issues in the new queue. Check consumer status and historical jobs above.</p>';
       }
     }catch(e){toast(e.message);}
     $('#refreshNotifStatus')?.addEventListener('click',loadNotifications,{once:true});
@@ -1264,8 +1242,9 @@
   }
   function renderAnalyticsTable(type,data){
     if(type==='notifications'){
-      const rows=['owner_outbox','customer_outbox'].map(key=>`<tr><td>${key==='owner_outbox'?'Owner alerts':'Customer updates'}</td>${['pending','retry','sent','failed'].map(status=>`<td>${Number(data[key]?.[status]||0)}</td>`).join('')}</tr>`).join('');
-      return `<div class="live-table-wrap"><table class="live-table"><tr><th>Queue</th><th>Pending</th><th>Retry</th><th>Sent</th><th>Failed</th></tr>${rows}</table></div><p class="muted">${esc(data.note||'Queue counts do not confirm provider delivery.')}</p>`;
+      const rows=['owner_outbox','customer_outbox'].map(key=>`<tr><td>${key==='owner_outbox'?'Owner alerts':'Customer updates'}</td>${['pending','retry','accepted','blocked','uncertain','dead'].map(status=>`<td>${Number(data[key]?.[status]||0)}</td>`).join('')}</tr>`).join('');
+      const p=data.provider_results||{};
+      return `<div class="live-table-wrap"><table class="live-table"><tr><th>Queue</th><th>Pending</th><th>Retry</th><th>Accepted</th><th>Blocked</th><th>Uncertain</th><th>Dead</th></tr>${rows}</table></div><p>${p.delivered||0} confirmed delivered · ${p.delivery_failed||0} delivery failed · ${p.complaints||0} complaints · ${p.unconfirmed||0} awaiting confirmation</p><p class="muted">${esc(data.note||'Delivered requires a verified provider receipt.')}</p>`;
     }
     // Types with custom data shape (not rows/items)
     if(type==='search'){const d=data;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total searches</h4><div style="font-size:22px;font-weight:800">${d.total_searches||0}</div></div><div class="existing-box-card"><h4>No-result rate</h4><div style="font-size:22px;font-weight:800">${((d.no_result_rate||0)*100).toFixed(1)}%</div></div><div class="existing-box-card"><h4>Click-through</h4><div style="font-size:22px;font-weight:800">${((d.click_through_rate||0)*100).toFixed(1)}%</div><small>${d.total_clicks||0} clicks</small></div></div><h4>Top queries</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Query</th><th>Count</th><th>No-result</th><th>Clicks</th></tr>${(d.top_queries||[]).map(q=>`<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.noResult||0}</td><td>${q.clicks||0}</td></tr>`).join('')}</table></div>`;}

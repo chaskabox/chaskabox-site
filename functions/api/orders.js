@@ -28,8 +28,7 @@
  * Replay : 200 { ..., idempotent_replay: true }
  */
 
-import { selectOne, selectIn, selectMany, rpc, isUniqueViolation, insertRows, updateRows } from './_lib/db.js';
-import { notifyOwner, notifyCustomer } from './_lib/notify.js';
+import { selectOne, selectIn, rpc, isUniqueViolation } from './_lib/db.js';
 import { validateOrderPayload } from './_lib/validate.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
 import { verifyTurnstile } from './_lib/turnstile.js';
@@ -227,90 +226,7 @@ export async function onRequest(context) {
           throw rpcErr;
         }
         const status = result.replay ? 200 : 201;
-        // Queue owner notification (best-effort: never fail the order if this fails)
-        if (!result.replay && result.row?.id) {
-          try {
-            await insertRows(env, 'notification_outbox', [{ order_id: String(result.row.id) }]);
-          } catch (notifyErr) {
-            logError('orders:notify-queue', notifyErr);
-          }
-          // Direct Resend/WAHA notification (best-effort, async)
-          // This ensures owner gets notified even without outbox processor
-          try {
-            // Ensure subtotal/delivery_fee are present (RPC may omit them).
-            // Fall back to a direct DB read so the owner email never shows Rs.undefined.
-            let notifyRow = result.row;
-            if (notifyRow.subtotal == null || notifyRow.delivery_fee == null) {
-              try {
-                const fresh = await selectOne(env, 'orders', { id: result.row.id });
-                if (fresh) notifyRow = { ...notifyRow, ...fresh };
-              } catch (e) { /* keep RPC row */ }
-            }
-            const orderForNotify = {
-              id: notifyRow.id,
-              order_number: notifyRow.order_number,
-              customer_name: value.customer.name,
-              customer_phone: value.customer.phone,
-              subtotal: notifyRow.subtotal,
-              delivery_fee: notifyRow.delivery_fee,
-              total: notifyRow.total,
-              payment_method: notifyRow.payment_method,
-              payment_status: notifyRow.payment_status,
-              created_at: notifyRow.created_at,
-            };
-            // Fetch order items for concise WhatsApp summary (best-effort).
-            try {
-              const items = await selectMany(env, 'order_items', { order_id: notifyRow.id });
-              if (items && items.length) {
-                orderForNotify.items = items.map(it => ({
-                  product_name: it.product_name,
-                  pack: it.pack,
-                  qty: it.quantity,
-                  quantity: it.quantity,
-                  unit_price: it.unit_price,
-                }));
-              }
-            } catch (e) { /* items optional for notification */ }
-            const notifyResult = await notifyOwner(env, orderForNotify);
-            // Customer thank-you WhatsApp (best-effort: never fail the order if this fails)
-            try {
-              await notifyCustomer(env, orderForNotify);
-            } catch (e) { /* customer notify optional */ }
-            // Persist notification delivery status on the order row (best-effort).
-            // Idempotency: only update if not already marked sent (prevents duplicate marking).
-            try {
-              const nowIso = new Date().toISOString();
-              const patch = {
-                email_sent: notifyResult.email_sent,
-                email_error: notifyResult.email_error || null,
-                whatsapp_sent: notifyResult.whatsapp_sent,
-                whatsapp_error: notifyResult.whatsapp_error || null,
-              };
-              if (notifyResult.email_sent) patch.email_sent_at = nowIso;
-              if (notifyResult.whatsapp_sent) patch.whatsapp_sent_at = nowIso;
-              const updateRes = await updateRows(env, 'orders', { id: notifyRow.id }, patch);
-              // Verify the update actually applied (updateRows returns array of updated rows)
-              const updated = Array.isArray(updateRes) ? updateRes[0] : updateRes;
-              if (!updated || updated.email_sent !== notifyResult.email_sent) {
-                logError('orders:notify-status-mismatch', new Error(JSON.stringify({
-                  order_id: notifyRow.id,
-                  expected_email_sent: notifyResult.email_sent,
-                  actual: updated ? updated.email_sent : 'no-row-returned',
-                })));
-              }
-            } catch (statusErr) {
-              logError('orders:notify-status', statusErr);
-            }
-            logError('orders:notify-direct', new Error(JSON.stringify({
-              email_sent: notifyResult.email_sent,
-              email_error: notifyResult.email_error,
-              whatsapp_sent: notifyResult.whatsapp_sent,
-              whatsapp_error: notifyResult.whatsapp_error,
-            })));
-          } catch (directNotifyErr) {
-            logError('orders:notify-direct-fail', directNotifyErr);
-          }
-        }
+        // The order transaction enqueues channel jobs. No provider I/O in checkout.
         return ok(publicOrderShape(result.row, result.replay), status);
       } catch (err) {
         if (isUniqueViolation(err)) {
