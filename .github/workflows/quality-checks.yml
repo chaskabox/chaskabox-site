@@ -18,6 +18,13 @@ jobs:
           node-version: '24'
           cache: npm
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Validate workflow expressions and structure
+        run: |
+          set -euo pipefail
+          curl --location --fail --silent --show-error https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz -o "$RUNNER_TEMP/actionlint.tar.gz"
+          echo "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check
+          tar --no-same-owner -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" -shellcheck='' -pyflakes='' .github/workflows/*.yml
       - run: bash tools/install-pg17-client.sh server
       - run: npm run check
       - run: npm test
