@@ -251,6 +251,7 @@ function closeFilters(){
 }
 function clearAllFilters(){
   shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';shopState.badge='';
+  syncShopSearchUrl(true);
   renderShopContent();
 }
 function activeFilterCount(){
@@ -311,8 +312,16 @@ function renderShopList(){
     +'</select><span class="cnt" id="shopResultCount"></span>';
   renderShopResults();
 }
+function syncShopSearchUrl(clearBrands=false){
+  const url=new URL(location.pathname+location.search+location.hash,location.origin);
+  const q=String(shopState.q||'').trim();
+  if(q)url.searchParams.set('q',q);else url.searchParams.delete('q');
+  if(clearBrands)url.searchParams.delete('brand');
+  history.replaceState(null,'',url.pathname+url.search+url.hash);
+}
 function queueShopSearch(value){
   shopState.q=value;
+  syncShopSearchUrl();
   renderShopSearchSuggestions(value);
   clearTimeout(shopSearchTimer);
   shopSearchTimer=setTimeout(renderShopResults,140);
@@ -892,7 +901,7 @@ function submitHomeSearch(){
   const q=(input?.value||'').trim();
   if(typeof window.chaskaTrack==='function' && q) window.chaskaTrack('search',{query:q,source:'home'});
   shopState={q,cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''};
-  navigate('/shop/');
+  navigate('/shop/'+(q?'?q='+encodeURIComponent(q):''));
   setTimeout(()=>document.getElementById('fq')?.focus(),80);
 }
 function submitHeaderSearch(event){
@@ -900,7 +909,7 @@ function submitHeaderSearch(event){
   const input=document.getElementById('headerSearch'); const q=(input?.value||'').trim();
   const box=document.getElementById('headerSearchSuggestions'); if(box){box.hidden=true;}
   shopState={q,cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''};
-  navigate('/shop/');
+  navigate('/shop/'+(q?'?q='+encodeURIComponent(q):''));
   setTimeout(()=>{const el=document.getElementById('fq');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},80);
 }
 let headerSuggestIndex=-1;
