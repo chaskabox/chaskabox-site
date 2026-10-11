@@ -552,13 +552,23 @@ function setMetaRobots(noindex){
 function setPageMeta(title,path,noindex,description){
   document.title=title;
   setMetaRobots(!!noindex);
+  setMetaTag('property','og:title',title);
+  setMetaTag('name','twitter:title',title);
+  const productPath=normalizePath(path||'/').startsWith('/product/');
+  if(!productPath){
+    document.getElementById('product-schema')?.remove();
+    setMetaTag('property','og:type','website');
+    setMetaTag('property','og:image','https://chaskabox.online/images/logo-navy.png');
+    setMetaTag('name','twitter:image','https://chaskabox.online/images/logo-navy.png');
+  }
+  if(!normalizePath(path||'/').startsWith('/brand/'))document.getElementById('brandBreadcrumbSchema')?.remove();
   const canonical='https://chaskabox.online'+normalizePath(path||'/');
   let c=document.querySelector('link[rel="canonical"]');
   if(!c){ c=document.createElement('link'); c.rel='canonical'; document.head.appendChild(c); }
   c.href=canonical;
   let og=document.querySelector('meta[property="og:url"]');
   if(og) og.content=canonical;
-  if(description){ const d=document.querySelector('meta[name="description"]'); if(d)d.content=description; }
+  if(description){ const d=document.querySelector('meta[name="description"]'); if(d)d.content=description;setMetaTag('property','og:description',description); }
 }
 function renderHomeRoute(){
   setPageMeta('ChaskaBox — Pakistani Snacks Online','/',false,'Pakistani snacks and Chaska Boxes delivered across Pakistan with COD, JazzCash and Bank Transfer options.');
