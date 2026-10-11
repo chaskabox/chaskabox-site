@@ -2,6 +2,10 @@
 const NAVY='#1a2b5c';
 let PRODUCTS=[], CART={};
 const PROGRESS_STATE={drawer:0,cart:0};
+const LOCAL_PHOTOS=new Set(window.CHASKABOX_LOCAL_PHOTOS||[]);
+const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
+function reducedMotion(){return motionPreference.matches;}
+function hasPhoto(p){const src=String(p?.img||'').trim();return /^https?:\/\//i.test(src)||LOCAL_PHOTOS.has(src.replace(/^\/?(?:\.\/)?/,''));}
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const fmt=n=>'Rs. '+Number(n).toLocaleString('en-PK');
 function assetUrl(src){ if(!src) return ''; if(/^(https?:|data:|blob:|\/)/i.test(src)) return src; return '/'+String(src).replace(/^\.\//,''); }
@@ -9,8 +13,9 @@ function assetUrl(src){ if(!src) return ''; if(/^(https?:|data:|blob:|\/)/i.test
 /* ---------- data ---------- */
 async function loadProducts(){
   let lastError=null;
-  for(const url of ['/api/products','/products.json']){
-    try{const r=await fetch(url,{cache:'no-cache'});if(!r.ok)throw new Error('HTTP '+r.status);const rows=await r.json();if(!Array.isArray(rows))throw new Error('Invalid catalogue');PRODUCTS=rows;return;}catch(e){lastError=e;}
+  let seed=null;try{seed=JSON.parse(document.getElementById('current-product')?.textContent||'null');}catch{}
+  for(const url of [seed?'/api/products?fresh=1':'/api/products','/products.json']){
+    try{const r=await fetch(url,{cache:'no-cache'});if(!r.ok)throw new Error('HTTP '+r.status);let rows=await r.json();if(!Array.isArray(rows))throw new Error('Invalid catalogue');if(url==='/products.json'&&seed){rows=rows.filter(p=>Number(p.id)!==Number(seed.id));rows.push(seed);}PRODUCTS=rows;return;}catch(e){lastError=e;}
   }
   throw lastError||new Error('Could not load product catalogue');
 }
@@ -39,7 +44,7 @@ function bundleFanHTML(p){
   return `<span class="bundle-fan" aria-hidden="true">${picks.map((x,i)=>`<img src="${esc(assetUrl(x.img))}" alt="" class="bf${i+1}">`).join('')}</span>`;
 }
 function cardHTML(p){
-  const src=assetUrl(p.img||'');
+  const src=hasPhoto(p)?assetUrl(p.img):'';
   const img=src?`<img src="${esc(src)}" alt="${esc(p.name)}" loading="lazy">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'SALE':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
@@ -118,17 +123,20 @@ function renderHomeContent(){
       <b>${esc(c)}</b><small>${n} items</small></a>`;
   }).join('');
   // hero collage: 3 product images
-  const heroPicks=act.filter(p=>p.img).slice(0,3);
+  const candidates=act.filter(hasPhoto).sort((a,b)=>Number(/^https?:/i.test(a.img))-Number(/^https?:/i.test(b.img)));
+  const heroPicks=[];
+  for(const p of candidates){if(!heroPicks.some(x=>x.category===p.category))heroPicks.push(p);if(heroPicks.length===3)break;}
+  for(const p of candidates){if(heroPicks.length===3)break;if(!heroPicks.includes(p))heroPicks.push(p);}
   const hi=$('#heroCollage');
-  if(hi&&heroPicks.length) hi.innerHTML=heroPicks.map((p,i)=>`<img src="${esc(assetUrl(p.img))}" alt="" loading="lazy" class="hc${i+1}">`).join('');
+  if(hi){hi.innerHTML=heroPicks.map((p,i)=>`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}" loading="eager" decoding="async" class="hc${i+1}">`).join('');const wrap=hi.closest('.heroimg');if(wrap)wrap.hidden=!heroPicks.length;}
   // Curated homepage shelves: fast discovery without dumping the full catalogue
   shelfSeq=0;
   let html='';
   // Homepage shelves: only products WITH real photos (no "Photo coming soon" on showcase)
-  const actImg=act.filter(p=>p.img);
+  const actImg=act.filter(hasPhoto);
   const sale=actImg.filter(p=>p.oldPrice&&p.oldPrice>p.price).slice(0,10);
   const picks=curatedProducts('chaska_picks',actImg.filter(p=>p.category!=='Bundles').slice(0,10));
-  const bundles=curatedProducts('boxes',(cats['Bundles']||[]).filter(p=>p.img).slice(0,10));
+  const bundles=curatedProducts('boxes',(cats['Bundles']||[]).filter(hasPhoto).slice(0,10));
   const chatpata=curatedProducts('chatpata_picks',actImg.filter(p=>p.category==='Snacks & Nimco').slice(0,10));
   const newest=curatedProducts('new_items',actImg.sort((a,b)=>Number(b.id)-Number(a.id)).slice(0,10));
   if(sale.length) html+=shelf('🔥 Deals Worth Grabbing',sale,'#b42318','', 'Sale','deals');
@@ -163,7 +171,7 @@ function shelf(title,items,color,cat,badge,homeKey){
 }
 function shelfScroll(id,dir){
   const el=document.getElementById(id); if(!el) return;
-  el.scrollBy({left:dir*el.clientWidth*.85,behavior:'smooth'});
+  el.scrollBy({left:dir*el.clientWidth*.85,behavior:reducedMotion()?'auto':'smooth'});
 }
 
 /* ---------- shop ---------- */
@@ -359,7 +367,7 @@ function renderShopResults(){
   renderFilterChips();updateApplyBtn();
   const ms=$('#mSort'); if(ms)ms.value=shopState.sort;
   if(typeof revealObs!=='undefined'&&revealObs){
-    [...document.querySelectorAll('#shopGrid .card')].forEach((c,i)=>{c.classList.add('reveal');c.style.transitionDelay=((i%8)*45)+'ms';});
+    [...document.querySelectorAll('#shopGrid .card')].forEach(c=>c.classList.add('in'));
   }
   observeReveals();
 }
@@ -400,8 +408,8 @@ function closeModal(){$('#pmodal').classList.remove('open');$('#pmodal').setAttr
 
 /* ---------- product detail page ---------- */
 function renderProductDetail(id){
-  const p=PRODUCTS.find(x=>x.id===id); if(!p){ navigate('/'); return; }
-  const img=p.img?`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
+  const p=PRODUCTS.find(x=>x.id===id); if(!p){render404(location.pathname);return;}
+  const img=hasPhoto(p)?`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'Sale':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="pdsave">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
@@ -478,7 +486,7 @@ function curatedProducts(key,fallback){
   const ids=sectionConfig(key)?.product_ids;
   if(!Array.isArray(ids)||!ids.length) return fallback;
   const by=new Map(activeProducts().map(p=>[Number(p.id),p]));
-  const chosen=ids.map(Number).map(id=>by.get(id)).filter(Boolean);
+  const chosen=ids.map(Number).map(id=>by.get(id)).filter(p=>p&&hasPhoto(p));
   return chosen.length?chosen:fallback;
 }
 function applyHomeCms(){
@@ -559,6 +567,9 @@ function renderShopRoute(){
   setPageMeta('Shop Pakistani Snacks | ChaskaBox','/shop/',false,'Browse Pakistani snacks by category, brand and price at ChaskaBox.');
   shopState.cat='';
   const urlQ=new URLSearchParams(location.search).get('q'); if(urlQ!==null) shopState.q=urlQ;
+  const params=new URLSearchParams(location.search);
+  if(params.has('brand'))shopState.brands=params.getAll('brand').map(v=>v.trim()).filter(Boolean);
+  const category=params.get('category')??params.get('cat');if(category!==null)shopState.cat=CATEGORY_SLUGS[category]||category;
   showView('shop');
   renderShopContent();
 }
@@ -794,8 +805,9 @@ function normalizePath(p){
 }
 
 function navigate(path){
-  path = normalizePath(path);
-  if(location.pathname === path){
+  const url=new URL(path,location.origin);
+  path = normalizePath(url.pathname)+url.search+url.hash;
+  if(location.pathname+location.search+location.hash === path){
     route(); // same path, re-render
     return;
   }
@@ -824,7 +836,7 @@ function goCart(){ navigate('/cart/'); }
 function goAccount(){ navigate('/account/'); }
 function focusShopSearch(){
   if(normalizePath(location.pathname)!=='/shop/') navigate('/shop/');
-  setTimeout(()=>{const s=document.getElementById('fq'); if(s){s.focus();s.scrollIntoView({behavior:'smooth',block:'center'});}},80);
+  setTimeout(()=>{const s=document.getElementById('fq'); if(s){s.focus();s.scrollIntoView({behavior:reducedMotion()?'auto':'smooth',block:'center'});}},80);
 }
 
 let homeSuggestIndex=-1;
@@ -972,7 +984,7 @@ function route(){
   let path = normalizePath(location.pathname);
   // Normalize URL in address bar if needed (replaceState, no history entry)
   if(path !== location.pathname){
-    history.replaceState(null, '', path);
+    history.replaceState(null, '', path+location.search+location.hash);
   }
 
   // Scroll to top for new navigations (popstate handles back/forward restore)
@@ -1000,9 +1012,8 @@ function route(){
     const slug = path.replace('/category/', '').replace(/\/$/, '');
     renderCategoryRoute(slug);
   } else if(path.startsWith('/product/')){
-    // Product pages are separate static HTML files - let browser handle
-    // This should not happen via router, but if it does, don't intercept
-    return;
+    const id=Number(path.split('/')[2]);
+    if(Number.isInteger(id)&&id>0)renderProductDetail(id);else render404(path);
   } else {
     render404(path);
   }
@@ -1032,10 +1043,11 @@ document.addEventListener('click', function(e){
   let url;
   try{ url = new URL(href, location.origin); }catch(err){ return; }
   if(url.origin !== location.origin) return;
+  if(e.defaultPrevented||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button!==0||a.target==='_blank')return;
   if(url.hash && url.pathname === '/') {
     e.preventDefault();
     if(normalizePath(location.pathname)!=='/') navigate('/');
-    setTimeout(()=>{ const t=document.querySelector(url.hash); if(t)t.scrollIntoView({behavior:'smooth',block:'start'}); },80);
+    setTimeout(()=>{ const t=document.getElementById(url.hash.slice(1)); if(t)t.scrollIntoView({behavior:reducedMotion()?'auto':'smooth',block:'start'}); },80);
     return;
   }
   // Skip product pages (separate static files - let browser handle for full load)
@@ -1043,7 +1055,7 @@ document.addEventListener('click', function(e){
   // Let them do full page loads
   if(url.pathname.startsWith('/product/')) return;
   // Skip checkout and admin (separate HTML files)
-  if(url.pathname === '/checkout.html' || url.pathname === '/admin.html') return;
+  if(/\.html$/i.test(url.pathname)||/^\/admin(?:\/|$)/i.test(url.pathname))return;
   // Skip static policy/support pages (separate HTML files - let browser handle for full load)
   if(/^\/(about|contact|privacy-policy|refund-policy|shipping-policy|terms)\/?$/.test(url.pathname)) return;
   // Preserve Ctrl/Cmd-click, Shift-click, middle-click (open in new tab)
@@ -1052,7 +1064,7 @@ document.addEventListener('click', function(e){
   if(a.target === '_blank') return;
 
   e.preventDefault();
-  navigate(url.pathname);
+  navigate(url.pathname+url.search+url.hash);
 });
 
 /* ---------- cart ---------- */
@@ -1295,14 +1307,7 @@ let promoIdx=0;
 function initPromo(){
   const el=document.getElementById('promoMsg');
   if(!el) return;
-  setInterval(()=>{
-    el.classList.add('fading');
-    setTimeout(()=>{
-      const promos=promoItems();promoIdx=(promoIdx+1)%promos.length;
-      el.textContent=promos[promoIdx];
-      el.classList.remove('fading');
-    },350);
-  },7000);
+  el.textContent=promoItems()[0];
 }
 
 /* ---------- packing video (Market Fresh section) ----------
@@ -1335,32 +1340,55 @@ function renderPackingVideo(){
 /* ---------- animations: scroll reveals, hero tilt ---------- */
 let revealObs=null;
 function initReveals(){
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if(reducedMotion()||typeof IntersectionObserver==='undefined'){
+    document.documentElement.classList.remove('motion-reveals');
+    document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));return;
+  }
+  if(revealObs)return;
   revealObs=new IntersectionObserver(entries=>{
     entries.forEach(en=>{
       if(en.isIntersecting){
         en.target.classList.add('in');
-        setTimeout(()=>{en.target.style.transitionDelay='';},700);
+        setTimeout(()=>{en.target.style.transitionDelay='';},300);
         revealObs.unobserve(en.target);
       }
     });
   },{threshold:.08,rootMargin:'0px 0px -30px 0px'});
+  document.documentElement.classList.add('motion-reveals');
 }
 function observeReveals(scope){
-  if(!revealObs) return;
+  if(!revealObs||reducedMotion()){(scope||document).querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));return;}
   (scope||document).querySelectorAll('.reveal:not(.in)').forEach(el=>revealObs.observe(el));
 }
+motionPreference.addEventListener?.('change',()=>{
+  if(reducedMotion()){
+    revealObs?.disconnect();revealObs=null;
+    document.documentElement.classList.remove('motion-reveals');
+    document.querySelectorAll('.reveal').forEach(el=>{el.classList.add('in');el.style.transitionDelay='';});
+    const collage=document.getElementById('heroCollage');if(collage)collage.style.transform='';
+    document.querySelectorAll('.motion-tilt').forEach(el=>{el.classList.remove('motion-tilt');el.style.removeProperty('--tilt-x');el.style.removeProperty('--tilt-y');el.style.removeProperty('--card-lift');});
+  }else{initReveals();observeReveals();}
+});
+document.addEventListener('visibilitychange',()=>document.body.classList.toggle('motion-paused',document.hidden));
+document.addEventListener('error',event=>{
+  const img=event.target;if(img?.tagName!=='IMG')return;
+  const collage=img.closest('#heroCollage');
+  if(collage){img.remove();if(!collage.querySelector('img')){const wrap=collage.closest('.heroimg');if(wrap)wrap.hidden=true;}return;}
+  if(img.closest('.bundle-fan')){img.remove();return;}
+  const wrap=img.closest('.pimg,.pd-img,.pickimg');if(!wrap)return;
+  const placeholder=document.createElement('div');placeholder.className='noimg';placeholder.textContent='Photo coming soon';wrap.replaceChildren(placeholder);
+},true);
 function initTilt(){
   if(!matchMedia('(pointer:fine)').matches) return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const hero=$('.hero'), col=$('#heroCollage');
   if(!hero||!col) return;
   let frame=0,last=null;
   hero.addEventListener('mousemove',e=>{
+    if(reducedMotion()||document.hidden)return;
     last={x:e.clientX,y:e.clientY};
     if(frame) return;
     frame=requestAnimationFrame(()=>{
-      frame=0; if(!last) return;
+      frame=0; if(!last||reducedMotion()||document.hidden)return;
       const r=hero.getBoundingClientRect();
       const x=(last.x-r.left)/r.width-.5, y=(last.y-r.top)/r.height-.5;
       col.style.transform=`rotateY(${(x*3.2).toFixed(2)}deg) rotateX(${(-y*2.6).toFixed(2)}deg)`;
@@ -1370,15 +1398,15 @@ function initTilt(){
 }
 function initCardTilt(){
   if(!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
-  if(matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   let frame=0,pending=null;
   document.addEventListener('pointermove',e=>{
+    if(reducedMotion()||document.hidden)return;
     const card=e.target.closest?.('.card'); if(!card) return;
     if(card.classList.contains('reveal')&&!card.classList.contains('in')) return;
     pending={card,x:e.clientX,y:e.clientY};
     if(frame) return;
     frame=requestAnimationFrame(()=>{
-      frame=0; if(!pending) return;
+      frame=0; if(!pending||reducedMotion()||document.hidden)return;
       const {card,x,y}=pending; pending=null;
       if(!document.body.contains(card)) return;
       card.classList.add('motion-tilt');
@@ -1408,7 +1436,7 @@ function fixMobileHeader(){
 
 /* ---------- global keyboard escape ---------- */
 function getOpenDialog(){
-  return document.querySelector('#aimodal.open,#pmodal.open,#acctmodal.open,#filterSheet.open,#drawer.open');
+  return document.querySelector('#mnav.open,#aimodal.open,#pmodal.open,#acctmodal.open,#filterSheet.open,#drawer.open');
 }
 function trapDialogTab(event){
   const dialog=getOpenDialog(); if(!dialog||event.key!=='Tab')return;
@@ -1420,6 +1448,7 @@ function trapDialogTab(event){
 document.addEventListener('keydown',event=>{
   trapDialogTab(event);
   if(event.key!=='Escape') return;
+  if(document.getElementById('mnav')?.classList.contains('open')){closeMnav();return;}
   // Cart drawer: check both class and aria-hidden for robustness
   const drawer = document.getElementById('drawer');
   if(drawer && (drawer.classList.contains('open') || drawer.getAttribute('aria-hidden')==='false')) { closeDrawer(); return; }
@@ -1453,9 +1482,12 @@ function toggleMnav(force){
   const open=force!==undefined?force:!m.classList.contains('open');
   m.classList.toggle('open',open);
   $('#overlay').classList.toggle('open',open&&!$('#drawer').classList.contains('open'));
-  if(open) renderMnav();
+  m.setAttribute('aria-hidden',String(!open));
+  if(open){mnavReturnFocus=document.activeElement;renderMnav();m.removeAttribute('inert');document.body.style.overflow='hidden';setTimeout(()=>m.querySelector('button')?.focus(),0);}
+  else closeMnav();
 }
-function closeMnav(){const m=$('#mnav');if(m)m.classList.remove('open');if(!$('#drawer').classList.contains('open'))$('#overlay').classList.remove('open');}
+let mnavReturnFocus=null;
+function closeMnav(){const m=$('#mnav');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');m.setAttribute('inert','');}if(!$('#drawer').classList.contains('open')){$('#overlay').classList.remove('open');document.body.style.overflow='';}if(mnavReturnFocus){mnavReturnFocus.focus?.();mnavReturnFocus=null;}}
 function renderMnav(){
   const cats={}; activeProducts().forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
   const order=['',...CAT_ORDER.filter(c=>cats[c]&&cats[c].length)];
