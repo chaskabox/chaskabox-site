@@ -325,7 +325,7 @@
         const reply=replyInput?replyInput.value.trim():'';
         // Get current status to preserve it
         const review=(d.reviews||[]).find(r=>String(r.id)===String(id));
-        const action=review?.moderation_status==='approved'?'approve':(review?.moderation_status==='rejected'?'reject':'approve');
+        const action='reply';
         await api(`/api/admin/reviews/${id}`,{method:'PATCH',body:{action,reply}});
         toast('Reply saved');loadReviews();
       }catch(e){toast(e.message)}
