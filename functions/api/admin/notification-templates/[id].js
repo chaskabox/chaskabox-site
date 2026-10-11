@@ -4,7 +4,7 @@
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
 
-export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { user }) => {
+export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const id = context.params.id;
   if (!id) httpError('Template id required', 400);
 
@@ -21,6 +21,6 @@ export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { 
   const updated = await sb(context, `/rest/v1/notification_templates?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH', body: patch,
   });
-  await audit(context, user.id, 'template.updated', { id });
+  await audit(context, { actorId:user.id, actorRole:role, action:'template.updated', entityType:'template', entityId:id, after:{ id } });
   return json({ template: Array.isArray(updated) ? updated[0] : updated });
 });

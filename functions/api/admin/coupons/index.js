@@ -9,7 +9,7 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
   return json({ coupons: coupons || [] });
 });
 
-export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user }) => {
+export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const body = await readJson(context.request);
   const code = String(body.code || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
   if (!code) httpError('Coupon code required', 400, 'invalid');
@@ -28,6 +28,6 @@ export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { u
     is_active: body.is_active !== false,
   };
   const created = await sb(context, '/rest/v1/coupons', { method: 'POST', body: row });
-  await audit(context, user.id, 'coupon.created', { code });
+  await audit(context, { actorId:user.id, actorRole:role, action:'coupon.created', entityType:'coupon', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ code } });
   return json({ coupon: Array.isArray(created) ? created[0] : created }, 201);
 });

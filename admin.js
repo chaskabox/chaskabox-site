@@ -17,8 +17,8 @@
   async function checkAdminSession(){
     try{
       if(typeof initSupabase!=='function') return false;
-      const ok=await initSupabase(); if(!ok||!window.SB) return false;
-      const {data}=await window.SB.auth.getSession();
+      const ok=await initSupabase(); if(!ok||typeof SB==='undefined'||!SB) return false;
+      const {data}=await SB.auth.getSession();
       return !!(data&&data.session&&data.session.access_token);
     }catch(e){ return false; }
   }

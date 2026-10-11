@@ -17,7 +17,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
   return json({ category: cat, products: assignments || [] });
 });
 
-export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (context, { user }) => {
+export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (context, { user, role }) => {
   const id = context.params.id;
   const body = await readJson(context.request);
 
@@ -41,11 +41,11 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (
   const updated = await sb(context, `/rest/v1/categories?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH', body: patch,
   });
-  await audit(context, user.id, 'category.updated', { id });
+  await audit(context, { actorId:user.id, actorRole:role, action:'category.updated', entityType:'category', entityId:id, after:{ id } });
   return json({ category: Array.isArray(updated) ? updated[0] : updated });
 });
 
-export const onRequestDelete = withAdmin(['owner', 'manager'], async (context, { user }) => {
+export const onRequestDelete = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const id = context.params.id;
   const force = context.request.url.includes('force=true');
 
@@ -57,6 +57,6 @@ export const onRequestDelete = withAdmin(['owner', 'manager'], async (context, {
 
   await sb(context, `/rest/v1/category_products?category_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
   await sb(context, `/rest/v1/categories?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-  await audit(context, user.id, 'category.deleted', { id });
+  await audit(context, { actorId:user.id, actorRole:role, action:'category.deleted', entityType:'category', entityId:id, after:{ id } });
   return json({ deleted: true });
 });

@@ -12,7 +12,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
   return json({ theme });
 });
 
-export const onRequestPut = withAdmin(['owner', 'manager'], async (context, { user }) => {
+export const onRequestPut = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const body = await readJson(context.request);
   const settings = body.settings || body;
   if (typeof settings !== 'object') return json({ error: 'Invalid' }, 400);
@@ -25,6 +25,6 @@ export const onRequestPut = withAdmin(['owner', 'manager'], async (context, { us
       headers: { 'Prefer': 'resolution=merge-duplicates' },
     });
   }
-  await audit(context, user.id, 'theme.updated', { keys: Object.keys(settings) });
+  await audit(context, { actorId:user.id, actorRole:role, action:'theme.updated', entityType:'theme', entityId:'settings', after:{ keys: Object.keys(settings) } });
   return json({ ok: true });
 });

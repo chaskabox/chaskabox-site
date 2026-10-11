@@ -47,7 +47,7 @@ export const onRequestGet = withAdmin(['owner'], async (context) => {
   });
 });
 
-export const onRequestPost = withAdmin(['owner'], async (context, { user }) => {
+export const onRequestPost = withAdmin(['owner'], async (context, { user, role }) => {
   const body = await readJson(context.request);
   if (body.confirm !== 'RESTORE') httpError('Confirmation required: send {confirm:"RESTORE"}', 400, 'confirm');
   if (!body.backup || body.backup.version !== 1) httpError('Invalid backup format', 400, 'invalid');
@@ -74,6 +74,6 @@ export const onRequestPost = withAdmin(['owner'], async (context, { user }) => {
     }
   }
 
-  await audit(context, user.id, 'backup.restored', { tables: Object.keys(results) });
+  await audit(context, { actorId:user.id, actorRole:role, action:'backup.restored', entityType:'backup', entityId:'snapshot', after:{ tables: Object.keys(results) } });
   return json({ ok: true, results });
 });

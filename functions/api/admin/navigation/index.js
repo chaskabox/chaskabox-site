@@ -33,7 +33,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
   return json({ navigation: grouped, all: items || [], is_default: !items || !items.length });
 });
 
-export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (context, { user }) => {
+export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (context, { user, role }) => {
   const body = await readJson(context.request);
   if (!body.label || !body.location) httpError('label and location required', 400, 'invalid');
 
@@ -47,7 +47,7 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
     is_enabled: body.is_enabled !== false,
   };
   const created = await sb(context, '/rest/v1/navigation_menus', { method: 'POST', body: row });
-  await audit(context, user.id, 'navigation.created', { label: row.label });
+  await audit(context, { actorId:user.id, actorRole:role, action:'navigation.created', entityType:'navigation', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ label: row.label } });
   return json({ item: Array.isArray(created) ? created[0] : created }, 201);
 });
 

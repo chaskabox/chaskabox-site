@@ -35,7 +35,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
   return json({ categories: enriched });
 });
 
-export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (context, { user }) => {
+export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (context, { user, role }) => {
   const body = await readJson(context.request);
   const name = String(body.name || '').trim();
   if (!name) httpError('name is required', 400, 'invalid_name');
@@ -64,6 +64,6 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
     method: 'POST',
     body: row,
   });
-  await audit(context, user.id, 'category.created', { name, slug });
+  await audit(context, { actorId:user.id, actorRole:role, action:'category.created', entityType:'category', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ name, slug } });
   return json({ category: Array.isArray(created) ? created[0] : created }, 201);
 });

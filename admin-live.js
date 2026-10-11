@@ -3,7 +3,7 @@
   const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const money=n=>`Rs. ${Number(n||0).toLocaleString('en-PK')}`;
-  const fmtDate=v=>{try{return new Date(v).toLocaleString('en-PK',{dateStyle:'medium',timeStyle:'short'})}catch{return String(v||'')}};
+  const fmtDate=v=>{try{return new Date(v).toLocaleString('en-PK',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Karachi'})}catch{return String(v||'')}};
   let session=null, me=null, products=[], orders=[];
 
   async function ensureClient(){ if(typeof initSupabase!=='function') return false; return await initSupabase(); }
@@ -157,8 +157,8 @@
     const flow=['new','sourcing','packed','dispatched','delivered']; const idx=flow.indexOf(o.fulfilment_status); const next=idx>=0&&idx<flow.length-1?flow[idx+1]:null;
     modal.innerHTML=`<div class="modal-backdrop" data-close-order></div><section class="admin-modal-card live-order-card"><div class="modal-head"><div><small>ORDER</small><h2>${esc(o.order_number)}</h2></div><button class="icon-btn" data-close-order>×</button></div><div class="order-detail-grid"><section><h3>Customer</h3><p><b>${esc(o.customer_name)}</b><br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</p><h3>Items</h3><div class="order-items">${items.map(i=>`<div><span>${esc(i.product_name)} · ${esc(i.pack)} × ${i.quantity}</span><b>${money(i.line_total)}</b></div>`).join('')}</div></section><section><h3>Payment</h3><p>${esc(o.payment_method)} · <b>${esc(o.payment_status)}</b>${o.transaction_reference?`<br>Ref: ${esc(o.transaction_reference)}`:''}</p><h3>Total</h3><p>Subtotal ${money(o.subtotal)}<br>Delivery ${money(o.delivery_fee)}<br><b>${money(o.total)}</b></p><h3>Actions</h3><div class="order-actions">${next?`<button class="btn primary" data-status="${next}">Move to ${esc(next)}</button>`:''}${!['delivered','cancelled'].includes(o.fulfilment_status)?'<button class="btn danger" data-status="cancelled">Cancel</button>':''}${['payment_submitted','awaiting_payment'].includes(o.payment_status)?'<button class="btn secondary" data-pay="verified">Verify payment</button><button class="btn secondary" data-pay="rejected">Reject payment</button>':''}<button class="btn secondary" data-retry>Retry notification</button></div><h3>Status history</h3><div class="history-list">${(data.history||[]).map(h=>`<div><b>${esc(h.action)}</b><small>${fmtDate(h.created_at)} · ${esc(h.actor_role)}</small></div>`).join('')||'<small>No audit events yet.</small>'}</div></section></div></section>`;
     $$('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
-    $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{try{const st=b.dataset.status;let body={fulfilment_status:st};if(st==='cancelled'){const reason=prompt('Cancellation reason (required):');if(!reason)return;body.cancel_reason=reason;}await api(`/api/admin/orders/${id}/status`,{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
-    $$('[data-pay]',modal).forEach(b=>b.onclick=async()=>{try{await api(`/api/admin/orders/${id}/payment/verify`,{method:'POST',body:{decision:b.dataset.pay}});toast('Payment updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
+    $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{try{const st=b.dataset.status;let body={fulfilment_status:st,expected_updated_at:o.updated_at};if(st==='cancelled'){const reason=prompt('Cancellation reason (required):');if(!reason)return;body.cancel_reason=reason;}await api(`/api/admin/orders/${id}/status`,{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
+    $$('[data-pay]',modal).forEach(b=>b.onclick=async()=>{try{await api(`/api/admin/orders/${id}/payment/verify`,{method:'POST',body:{decision:b.dataset.pay,expected_updated_at:o.updated_at}});toast('Payment updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
     $('[data-retry]',modal).onclick=async()=>{try{await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast('Notification queued for retry')}catch(e){toast(e.message)}};
     // Print invoice / packing slip
     const printBar = document.createElement('div');
@@ -260,6 +260,9 @@
     }
   }
   function openLiveProduct(id){
+    const selector=$('#editCategory');
+    const categories=[...new Set(products.map(p=>String(p.category||'').trim()).filter(Boolean))];
+    for(const category of categories) if(selector && ![...selector.options].some(o=>o.value===category)) selector.add(new Option(category,category));
     const p=products.find(x=>String(x.id)===String(id)); if(!p)return; $('#editProductId').value=p.id;$('#editName').value=p.name||'';$('#editPrice').value=p.price||'';$('#editOldPrice').value=p.old_price||'';$('#editCategory').value=p.category||'';$('#editPack').value=p.pack||'';$('#editBadge').value=p.badge||'';$('#editVisibility').value=p.visibility==='visible'?'visible':'hidden';$('#editDescription').value=p.description||'';$('#editImage').value=p.image_url||'';$('#editBundle').checked=!!p.is_bundle;
     $('#editSeoTitle').value=p.seo_title||'';$('#editSeoDesc').value=p.seo_description||'';$('#editOgImage').value=p.og_image||'';$('#editCanonical').value=p.canonical_url||'';
     $('#productEditorTitle').textContent='Edit '+p.name;$('#productEditor').classList.add('open');$('#productEditor').setAttribute('aria-hidden','false');
@@ -397,9 +400,18 @@
     try{
       const {data,error}=await SB.auth.mfa.listFactors();
       if(error) throw error;
-      const factors=data?.totp||[];
+      const factors=(data?.totp||[]).filter(f=>f.status==='verified');
       if(factors.length){
-        el.innerHTML=`<p>✅ MFA is <b>enabled</b> (${factors.length} authenticator${factors.length>1?'s':''})</p><button class="btn secondary" id="disableMfaBtn">Disable MFA</button>`;
+        el.innerHTML=`<p>✅ MFA is <b>enabled</b> (${factors.length} authenticator${factors.length>1?'s':''})</p><p>For staff changes, verify this session with your 6-digit code.</p><input id="mfaStepCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="Authenticator code"><button class="btn primary" id="mfaStepVerify">Verify session</button><button class="btn secondary" id="disableMfaBtn">Disable MFA</button>`;
+        $('#mfaStepVerify').onclick=async()=>{
+          const code=$('#mfaStepCode').value.trim();
+          if(!/^\d{6}$/.test(code)){toast('Enter a 6-digit authenticator code');return;}
+          const {data:challenge,error:challengeError}=await SB.auth.mfa.challenge({factorId:factors[0].id});
+          if(challengeError){toast(challengeError.message);return;}
+          const {error:verifyError}=await SB.auth.mfa.verify({factorId:factors[0].id,challengeId:challenge.id,code});
+          if(verifyError){toast(verifyError.message);return;}
+          $('#mfaStepCode').value='';toast('Session verified. You can now change staff access.');
+        };
         $('#disableMfaBtn').onclick=async()=>{
           if(!confirm('Disable two-factor authentication?')) return;
           const {error}=await SB.auth.mfa.unenroll({factorId:factors[0].id});
@@ -541,7 +553,9 @@
   }
 
   function showResetPassword(){
-    const el=$('#liveLogin');
+    hideBoot();
+    let el=$('#liveAdminLogin');
+    if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);}
     el.innerHTML=`<form class="live-login-card" id="resetPwForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Set new password</h1><p>Enter your new password below.</p><label>New password<input id="newPw1" type="password" autocomplete="new-password" required minlength="8"></label><label>Confirm password<input id="newPw2" type="password" autocomplete="new-password" required minlength="8"></label><div id="resetPwError" class="live-error" hidden></div><div id="resetPwMsg" class="live-msg" hidden></div><button class="btn primary" type="submit">Update password</button></form>`;
     el.hidden=false;
     $('#resetPwForm').onsubmit=async e=>{
@@ -717,7 +731,7 @@
       const persistOrder=async(el)=>{
         const items=el._navItems||[];
         try{
-          await api('/api/admin/navigation',{method:'PATCH',body:JSON.stringify({items:items.map((i,idx)=>({id:i.id,position:idx+1}))})});
+          await api('/api/admin/navigation',{method:'PATCH',body:{items:items.map((i,idx)=>({id:i.id,position:idx+1}))}});
         }catch(e){ toast('Reorder failed: '+e.message); }
       };
       const move=(el,idx,dir)=>{
@@ -743,7 +757,7 @@
             if(!it) return;
             const next=!it.is_enabled;
             tog.disabled=true;
-            try{ await api('/api/admin/navigation',{method:'PATCH',body:JSON.stringify({items:[{id:it.id,is_enabled:next}]})}); it.is_enabled=next; tog.textContent=next?'✓':'✗'; }
+            try{ await api('/api/admin/navigation',{method:'PATCH',body:{items:[{id:it.id,is_enabled:next}]}}); it.is_enabled=next; tog.textContent=next?'✓':'✗'; }
             catch(err){ toast('Toggle failed: '+err.message); }
             tog.disabled=false;
           }
@@ -1249,6 +1263,10 @@
     try{ await checkSeoHealth(); }catch(e){}
   }
   function renderAnalyticsTable(type,data){
+    if(type==='notifications'){
+      const rows=['owner_outbox','customer_outbox'].map(key=>`<tr><td>${key==='owner_outbox'?'Owner alerts':'Customer updates'}</td>${['pending','retry','sent','failed'].map(status=>`<td>${Number(data[key]?.[status]||0)}</td>`).join('')}</tr>`).join('');
+      return `<div class="live-table-wrap"><table class="live-table"><tr><th>Queue</th><th>Pending</th><th>Retry</th><th>Sent</th><th>Failed</th></tr>${rows}</table></div><p class="muted">${esc(data.note||'Queue counts do not confirm provider delivery.')}</p>`;
+    }
     // Types with custom data shape (not rows/items)
     if(type==='search'){const d=data;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total searches</h4><div style="font-size:22px;font-weight:800">${d.total_searches||0}</div></div><div class="existing-box-card"><h4>No-result rate</h4><div style="font-size:22px;font-weight:800">${((d.no_result_rate||0)*100).toFixed(1)}%</div></div><div class="existing-box-card"><h4>Click-through</h4><div style="font-size:22px;font-weight:800">${((d.click_through_rate||0)*100).toFixed(1)}%</div><small>${d.total_clicks||0} clicks</small></div></div><h4>Top queries</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Query</th><th>Count</th><th>No-result</th><th>Clicks</th></tr>${(d.top_queries||[]).map(q=>`<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.noResult||0}</td><td>${q.clicks||0}</td></tr>`).join('')}</table></div>`;}
     if(type==='funnel'){const steps=data.steps||[];return `<div style="display:grid;gap:8px">${steps.map((s,i)=>{const pct=s.count&&steps[0].count?Math.round(s.count/steps[0].count*100):0;return `<div><div style="display:flex;justify-content:space-between;font-size:12px"><span><b>${i+1}. ${esc(s.label)}</b></span><span>${s.count.toLocaleString()} (${pct}%)${i>0?` · drop-off ${s.dropoff.toLocaleString()}`:''}</span></div><div style="background:#f1f5f9;border-radius:6px;height:12px;margin-top:4px"><div style="width:${pct}%;background:#3b82f6;height:12px;border-radius:6px"></div></div></div>`}).join('')}</div><p class="muted" style="font-size:11px;margin-top:8px">${esc(data.note||'')}</p>`;}
