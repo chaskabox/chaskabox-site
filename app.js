@@ -411,7 +411,7 @@ function renderProductDetail(id){
   $('#pdCrumbName').textContent=p.name;
   // Related products: same category, exclude current
   const related=activeProducts().filter(x=>x.id!==p.id&&x.category===p.category).slice(0,4);
-  const relatedHTML=related.length?`<section class="pd-related"><h2>You may also like</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${related.map(r=>productCardHTML(r)).join('')}</div></section>`:'';
+  const relatedHTML=related.length?`<section class="pd-related"><h2>You may also like</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${related.map(cardHTML).join('')}</div></section>`:'';
   $('#pdetail').innerHTML=`<div class="pdetail">
     <div class="pd-grid">
       <div class="pd-imgwrap">${badge}<div class="pd-img" onclick="openImageLightbox('${esc(assetUrl(p.img||''))}','${esc(p.name)}')" style="cursor:zoom-in" title="Click to zoom">${img}</div></div>
@@ -749,7 +749,7 @@ function renderCartPage(){
   const cartIds=new Set(items.map(([id])=>String(id)));
   const cartCats=[...new Set(items.map(([id])=>{const pr=PRODUCTS.find(x=>x.id==id);return pr&&pr.category;}).filter(Boolean))];
   const crossSell=activeProducts().filter(p=>!cartIds.has(String(p.id))&&cartCats.indexOf(p.category)>=0).slice(0,4);
-  const crossHTML=crossSell.length?`<section class="cart-cross"><h2>Complete your chaska</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">${crossSell.map(p=>productCardHTML(p)).join('')}</div></section>`:'';
+  const crossHTML=crossSell.length?`<section class="cart-cross"><h2>Complete your chaska</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">${crossSell.map(cardHTML).join('')}</div></section>`:'';
   el.innerHTML=`<div class="section cart-page"><div class="crumbs"><a href="/">Home</a> <span>›</span> Bag</div><div class="section-head"><div><span class="eyebrow">YOUR CHASKA</span><h1>Your Snack Bag</h1></div><a href="/shop/">Continue shopping →</a></div><div class="cart-page-layout"><div class="cart-page-items">${rows}</div><aside class="cart-summary"><h3>Order summary</h3><div class="drow"><span>Subtotal</span><b>${fmt(subtotal)}</b></div><div class="shipping-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div>${progress}</div><p class="cart-note">COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery · Prepaid ${fmt(threshold)}+: free delivery</p><a class="checkoutbtn cart-checkout" href="/checkout.html">Proceed to Checkout →</a></aside></div>${crossHTML}</div>`;
   animateProgressIn(el,'cart',pct);
 }

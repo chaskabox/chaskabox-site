@@ -5,17 +5,13 @@
  * Audit action 'order.exported_csv' is a PROPOSED §5 addition (see CONTRACT_AMENDMENTS.md).
  */
 import { withAdmin, sb, httpError, sanitizeSearch, audit } from '../_lib/auth.js';
+import { csvCell } from '../_lib/csv.js';
 
 const COLS = [
   'order_number', 'created_at', 'customer_name', 'customer_phone',
   'customer_address', 'customer_city', 'payment_method', 'payment_status', 'fulfilment_status',
   'subtotal', 'delivery_fee', 'total', 'transaction_reference',
 ];
-
-function csvCell(v) {
-  const s = v === null || v === undefined ? '' : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-}
 
 export const onRequestGet = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const url = new URL(context.request.url);
@@ -52,7 +48,7 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context, { us
   });
 
   const stamp = new Date().toISOString().slice(0, 10);
-  return new Response(lines.join('\n'), {
+  return new Response('\uFEFF' + lines.join('\r\n'), {
     status: 200,
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',

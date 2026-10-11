@@ -14,9 +14,44 @@ const $ = s => document.querySelector(s);
 const fmt = n => 'Rs. ' + Number(n).toLocaleString('en-PK');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
+const CHECKOUT_INTENT_KEY = 'chaskabox-checkout-intent-v1';
+let pendingCheckoutIntent = null;
+function trackCheckoutEvent(name, data) {
+  try { const result = window.chaskaTrack?.(name, data); if (result?.catch) result.catch(() => {}); }
+  catch { /* Analytics must not interrupt checkout. */ }
+}
+function checkoutAssetUrl(value) {
+  const src=String(value||'');
+  return /^(?:https?:\/\/|\/)/i.test(src)?src:'/'+src.replace(/^\.\//,'');
+}
+async function checkoutIdempotencyKey(payload) {
+  const intent={
+    items:payload.items.map(i=>({product_id:Number(i.product_id),qty:Number(i.qty)})).sort((a,b)=>a.product_id-b.product_id),
+    customer:{
+      name:String(payload.customer.name||'').trim(), phone:String(payload.customer.phone||'').replace(/\D/g,''),
+      email:String(payload.customer.email||'').trim().toLowerCase(), address:String(payload.customer.address||'').trim(),
+      city:String(payload.customer.city||'').trim(), country:String(payload.customer.country||'Pakistan').trim().toLowerCase()
+    }, payment_method:payload.payment_method,
+    transaction_reference:payload.transaction_reference||'', customer_note:payload.customer_note||''
+  };
+  const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(intent)));
+  const fingerprint=[...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
+  if(!pendingCheckoutIntent){try{pendingCheckoutIntent=JSON.parse(localStorage.getItem(CHECKOUT_INTENT_KEY)||'null');}catch{}}
+  if(!pendingCheckoutIntent || pendingCheckoutIntent.fingerprint!==fingerprint
+    || !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(pendingCheckoutIntent.key||'')){
+    pendingCheckoutIntent={fingerprint,key:uuidv4()};
+  }
+  const stored=JSON.stringify(pendingCheckoutIntent);
+  localStorage.setItem(CHECKOUT_INTENT_KEY,stored);
+  if(localStorage.getItem(CHECKOUT_INTENT_KEY)!==stored)throw new Error('Checkout attempt could not be retained');
+  return pendingCheckoutIntent.key;
+}
+function clearCheckoutIntent(){pendingCheckoutIntent=null;try{localStorage.removeItem(CHECKOUT_INTENT_KEY);}catch{}}
+function resetCheckoutBotCheck(){try{if(typeof turnstile!=='undefined')turnstile.reset();}catch{}}
+
 async function init() {
   try {
-    if(typeof window.chaskaTrack==='function') window.chaskaTrack('checkout_start',{});
+    trackCheckoutEvent('checkout_start',{});
     const cfg = await fetch('/api/storefront-config', {cache:'no-cache'}).then(r=>r.ok?r.json():null);
     const st = cfg?.settings || {};
     const settingNumber = (value, fallback) => { const n = Number(value); return Number.isFinite(n) ? n : fallback; };
@@ -131,19 +166,13 @@ function renderSummary() {
   if (!box) return;
   box.innerHTML = Object.entries(CART).map(([id, q]) => {
     const p = productById(id); if (!p) return '';
-    const img = p.img ? `<img src="/${String(p.img).replace(/^\//,'')}" alt="" class="summary-thumb">` : '🍪';
+    const img = p.img ? `<img src="${esc(checkoutAssetUrl(p.img))}" alt="${esc(p.name)}" class="summary-thumb">` : '🍪';
     return `<div class="sumrow"><span class="sum-product">${img}<span>${esc(p.name)} <small>× ${Number(q)}</small></span></span><span>${fmt(Number(p.price) * Number(q))}</span></div>`;
   }).join('');
   const sub = cartSubtotal(), del = deliveryFee(sub);
-  const loyalDisc = window._loyaltyDiscount || 0;
   $('#s_sub').textContent = fmt(sub);
   $('#s_del').innerHTML = del === 0 ? '<span class="free">FREE</span>' : fmt(del);
-  const loyalRow = $('#loyaltyRow');
-  if(loyalRow){
-    loyalRow.hidden = !loyalDisc;
-    $('#s_loyal').textContent = '-' + fmt(loyalDisc);
-  }
-  $('#s_tot').textContent = fmt(Math.max(0, sub + del - loyalDisc));
+  $('#s_tot').textContent = fmt(sub + del);
   const hint = $('#freeHint');
   if (!hint) return;
   if (isPrepaid() && sub < FREE_ABOVE) {
@@ -197,26 +226,8 @@ function validPhone(v) {
   return d.length >= 7 && d.length <= 15;
 }
 function validEmail(v) {
-  v = String(v||'').trim().toLowerCase();
-  if(!v) return false; // Email is now REQUIRED
-  // Basic format
-  if(!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v)) return false;
-  const [local, domain] = v.split('@');
-  // Reject obviously fake patterns
-  if(/^(test|fake|dummy|sample|example|abc|xyz|aaa|xxx|asdf|qwerty|123|user|demo)[0-9]*$/.test(local)) return false;
-  if(/^(test|fake|dummy|sample|example|mail|email|temp)[0-9]*\.(com|net|org|pk)$/.test(domain)) return false;
-  // Reject repeated characters (aaaa@, etc.)
-  if(/(.)\1{3,}/.test(local)) return false;
-  // Reject disposable/temporary email domains
-  const disposable = ['tempmail.com','guerrillamail.com','10minutemail.com','throwaway.email','mailinator.com',
-    'temp-mail.org','fakeinbox.com','trashmail.com','yopmail.com','dispostable.com','getnada.com',
-    'mohmal.com','sharklasers.com','grr.la','guerrillamailblock.com','pokemail.net','spam4.me',
-    'bccto.me','chacuo.net','dispostable.com','maildrop.cc','mailnesia.com','mintemail.com',
-    'mytemp.email','tempail.com','tempemail.net','throwawaymail.com','trash-mail.com','wegwerfmail.de'];
-  if(disposable.includes(domain)) return false;
-  // Local part must be reasonable length
-  if(local.length < 2 || local.length > 64) return false;
-  return true;
+  const email=String(v||'').trim();const [local]=email.split('@');
+  return email.length<=254 && local.length<=64 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
 function checkForm() {
@@ -228,13 +239,13 @@ function checkForm() {
   const nameInput = $('#f_name');
   if(nameInput) nameInput.value = fullName;
   const need = [
-    ['f_fname','e_fname',v=>v.trim().length>=2],
-    ['f_lname','e_lname',v=>v.trim().length>=2],
+    ['f_fname','e_fname',v=>v.trim().length>0 && fullName.length>=3 && fullName.length<=100],
+    ['f_lname','e_lname',v=>v.trim().length<=100],
     ['f_phone','e_phone',validPhone],
     ['f_email','e_email',validEmail],
     ['f_addr','e_addr',v=>v.trim().length>=8],
     ['f_city','e_city',v=>v.trim().length>=2],
-    ['f_country','e_country',v=>v.trim().length>=2]
+    ['f_country','e_country',v=>v.trim()==='Pakistan']
   ];
   need.forEach(([f,e,fn]) => {
     const good = fn($('#'+f)?.value || '');
@@ -274,7 +285,7 @@ function showOrderError(message, retryFn){
     el.appendChild(btn);
   }
   el.hidden = false;
-  el.scrollIntoView({behavior:'smooth',block:'center'});
+  el.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'});
 }
 function clearOrderError(){ if ($('#orderError')) { $('#orderError').hidden = true; $('#orderError').textContent=''; } }
 
@@ -302,7 +313,10 @@ async function placeOrderViaAPI(payload) {
     } catch(e){}
     const res = await fetch('/api/orders', { method: 'POST', headers, body: JSON.stringify(payload) });
     const data = await res.json().catch(() => ({}));
-    if (res.ok) return { ok: true, data };
+    if (res.ok && typeof data.order_id==='string' && data.order_id
+      && typeof data.order_number==='string' && data.order_number
+      && typeof data.total==='number' && Number.isFinite(data.total) && data.total>=0) return {ok:true,data};
+    if (res.ok) return {ok:false,error:'The order response could not be confirmed. Retry with the same bag to recover your order safely.'};
     // Surface validation errors clearly
     const msg = data?.error?.message || 'Order could not be placed. Please try again.';
     return { ok: false, error: msg, details: data?.error?.details };
@@ -360,7 +374,7 @@ async function placeOrder() {
   clearOrderError();
   if (!checkForm()) {
     document.querySelector('.err[style=""]')?.closest('.field')?.querySelector('input,textarea')?.focus();
-    window.scrollTo({top:0,behavior:'smooth'});
+    window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
     return;
   }
 
@@ -397,27 +411,31 @@ async function placeOrder() {
   // Build server-authoritative API payload (contract §4).
   // Prices/totals are IGNORED by the server — it recalculates from the DB.
   const apiPayload = {
-    idempotency_key: uuidv4(),
     items: itemRows.map(i => ({ product_id: i.id, qty: i.qty })),
     customer: {
       name: $('#f_name').value.trim(),
       phone: phone,
-      email: $('#f_email').value.trim() || undefined,
+      email: $('#f_email').value.trim().toLowerCase() || undefined,
       address: $('#f_addr').value.trim(),
-      city: $('#f_city').value.trim()
+      city: $('#f_city').value.trim(),
+      country: 'Pakistan'
     },
     payment_method: PAY === 'cod' ? 'cod' : (PAY === 'jazzcash' ? 'jazzcash' : 'bank_transfer'),
     transaction_reference: reference,
     turnstile_token: turnstileToken,
-    customer_note: (wantVideo ? (note ? note + ' ' : '') + '[Packing video requested]' : note) || undefined,
-    loyalty_phone: window._loyaltyPhone || undefined,
-    loyalty_points: window._loyaltyDiscount || 0
+    customer_note: (wantVideo ? (note ? note + ' ' : '') + '[Packing video requested]' : note) || undefined
   };
 
+  try {apiPayload.idempotency_key=await checkoutIdempotencyKey(apiPayload);}
+  catch {
+    showOrderError('We could not prepare a safe checkout. Please allow browser storage for ChaskaBox and reload. Your bag has not been submitted.');
+    placingOrder=false; btn.disabled=false; btn.textContent='Place Order →'; return;
+  }
   // Server-authoritative order creation. Cart is cleared ONLY on API success.
   const apiResult = await placeOrderViaAPI(apiPayload);
 
   if (!apiResult.ok) {
+    resetCheckoutBotCheck();
     showOrderError(apiResult.error || 'We could not safely record your order. Your bag has NOT been cleared. Please retry, or WhatsApp 0332-0005381 for help.');
     placingOrder = false; btn.disabled = false; btn.textContent = 'Place Order →';
     return;
@@ -446,7 +464,9 @@ async function placeOrder() {
     address: $('#f_addr').value.trim(),
     city: $('#f_city').value.trim()
   });
-  CART = {}; localStorage.removeItem('chaskabox-cart'); localStorage.removeItem('chaskabox-cart-ts');
+  CART = {};
+  try {localStorage.removeItem('chaskabox-cart');localStorage.removeItem('chaskabox-cart-ts');}catch{}
+  clearCheckoutIntent();
   $('#coMain').style.display = 'none'; $('#coDone').style.display = '';
   $('#doneNo').textContent = finalOrderNo;
   if ($('#doneTotal')) $('#doneTotal').textContent = fmt(finalTotal);
@@ -463,7 +483,7 @@ async function placeOrder() {
     $('#doneMsg').innerHTML = `Your bank-transfer reference <b>${esc(reference)}</b> has been submitted for verification. Amount: <b>${fmt(finalTotal)}</b>. We'll prepare the order after payment is verified.`;
   }
   if (wantVideo) $('#doneMsg').innerHTML += '<br><br>🎬 <b>Packing video requested.</b> We will try to send a short clip on WhatsApp if operations allow.';
-  if(typeof window.chaskaTrack==='function') window.chaskaTrack('order_complete',{total:finalTotal,payment:payMethod});
+  trackCheckoutEvent('order_complete',{order_id:srv.order_id,total:finalTotal,payment:PAY});
   celebrateOrder();
   // Offer account creation to guest customers (optional, never mandatory)
   if(typeof ACCOUNT_SESSION !== 'undefined' && !ACCOUNT_SESSION && typeof openAuthModal === 'function'){
@@ -478,51 +498,11 @@ async function placeOrder() {
 
 document.addEventListener('DOMContentLoaded', init);
 
-/* ---------- Loyalty points ---------- */
-window._loyaltyDiscount = 0;
-window._loyaltyPhone = '';
-document.addEventListener('DOMContentLoaded', () => {
-  const checkBtn = document.getElementById('loyalCheck');
-  const applyBtn = document.getElementById('loyalApply');
-  if(!checkBtn) return;
-  checkBtn.addEventListener('click', async () => {
-    const phone = document.getElementById('loyalPhone').value.trim();
-    const msg = document.getElementById('loyalMsg');
-    if(!phone){ msg.textContent = 'Please enter your phone number.'; return; }
-    msg.textContent = 'Checking…';
-    try{
-      const r = await fetch(`/api/loyalty?phone=${encodeURIComponent(phone)}`);
-      const d = await r.json();
-      if(!r.ok) throw new Error(d?.error?.message || 'Error');
-      if(d.points > 0){
-        msg.textContent = `You have ${d.points} points = Rs. ${d.points} off!`;
-        applyBtn.style.display = '';
-        applyBtn.dataset.points = d.points;
-        applyBtn.dataset.phone = d.phone;
-        applyBtn.textContent = `Apply ${d.points} points (Rs. ${d.points} off)`;
-      } else {
-        msg.textContent = 'No points yet. Points are earned on every order!';
-        applyBtn.style.display = 'none';
-      }
-    }catch(e){ msg.textContent = 'Could not check points. Try again.'; }
-  });
-  applyBtn.addEventListener('click', () => {
-    const pts = Number(applyBtn.dataset.points || 0);
-    if(pts <= 0) return;
-    window._loyaltyDiscount = pts;
-    window._loyaltyPhone = applyBtn.dataset.phone || '';
-    document.getElementById('loyalMsg').textContent = `✓ ${pts} points applied (Rs. ${pts} off)`;
-    applyBtn.style.display = 'none';
-    if(typeof renderSummary === 'function') renderSummary();
-    else location.reload();
-  });
-});
-
 /* ============ CUSTOMER DETAILS SAVE & AUTOFILL ============ */
 async function saveCustomerDetails(d){
   // Only save if user checked "Save this information"
-  const saveChecked = $('#f_saveinfo')?.checked !== false;
-  if(!saveChecked) return;
+  const saveChecked = $('#f_saveinfo')?.checked === true;
+  if(!saveChecked){try{localStorage.removeItem('cb_customer');}catch{}return;}
   // Save to localStorage for autofill (guests)
   try {
     localStorage.setItem('cb_customer', JSON.stringify(d));
@@ -583,58 +563,14 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(autofillCustomerDetails, 500);
 });
 
-/* ============ COUNTRY CODES ============ */
-const COUNTRY_CODES = [["AF","🇦🇫","+93"],["AL","🇦🇱","+355"],["DZ","🇩🇿","+213"],["US","🇺🇸","+1"],["AD","🇦🇩","+376"],["AO","🇦🇴","+244"],["AR","🇦🇷","+54"],["AM","🇦🇲","+374"],["AU","🇦🇺","+61"],["AT","🇦🇹","+43"],["AZ","🇦🇿","+994"],["BH","🇧🇭","+973"],["BD","🇧🇩","+880"],["BY","🇧🇾","+375"],["BE","🇧🇪","+32"],["BZ","🇧🇿","+501"],["BJ","🇧🇯","+229"],["BT","🇧🇹","+975"],["BO","🇧🇴","+591"],["BA","🇧🇦","+387"],["BW","🇧🇼","+267"],["BR","🇧🇷","+55"],["BN","🇧🇳","+673"],["BG","🇧🇬","+359"],["BF","🇧🇫","+226"],["BI","🇧🇮","+257"],["KH","🇰🇭","+855"],["CM","🇨🇲","+237"],["CA","🇨🇦","+1"],["CV","🇨🇻","+238"],["CF","🇨🇫","+236"],["TD","🇹🇩","+235"],["CL","🇨🇱","+56"],["CN","🇨🇳","+86"],["CO","🇨🇴","+57"],["KM","🇰🇲","+269"],["CG","🇨🇬","+242"],["CD","🇨🇩","+243"],["CK","🇨🇰","+682"],["CR","🇨🇷","+506"],["HR","🇭🇷","+385"],["CU","🇨🇺","+53"],["CY","🇨🇾","+357"],["CZ","🇨🇿","+420"],["DK","🇩🇰","+45"],["DJ","🇩🇯","+253"],["EC","🇪🇨","+593"],["EG","🇪🇬","+20"],["SV","🇸🇻","+503"],["GQ","🇬🇶","+240"],["ER","🇪🇷","+291"],["EE","🇪🇪","+372"],["ET","🇪🇹","+251"],["FJ","🇫🇯","+679"],["FI","🇫🇮","+358"],["FR","🇫🇷","+33"],["GA","🇬🇦","+241"],["GM","🇬🇲","+220"],["GE","🇬🇪","+995"],["DE","🇩🇪","+49"],["GH","🇬🇭","+233"],["GR","🇬🇷","+30"],["GT","🇬🇹","+502"],["GN","🇬🇳","+224"],["GW","🇬🇼","+245"],["GY","🇬🇾","+592"],["HT","🇭🇹","+509"],["HN","🇭🇳","+504"],["HU","🇭🇺","+36"],["IS","🇮🇸","+354"],["IN","🇮🇳","+91"],["ID","🇮🇩","+62"],["IR","🇮🇷","+98"],["IQ","🇮🇶","+964"],["IE","🇮🇪","+353"],["IL","🇮🇱","+972"],["IT","🇮🇹","+39"],["CI","🇨🇮","+225"],["JP","🇯🇵","+81"],["JO","🇯🇴","+962"],["KZ","🇰🇿","+7"],["KE","🇰🇪","+254"],["KI","🇰🇮","+686"],["KW","🇰🇼","+965"],["KG","🇰🇬","+996"],["LA","🇱🇦","+856"],["LV","🇱🇻","+371"],["LB","🇱🇧","+961"],["LS","🇱🇸","+266"],["LR","🇱🇷","+231"],["LY","🇱🇾","+218"],["LI","🇱🇮","+423"],["LT","🇱🇹","+370"],["LU","🇱🇺","+352"],["MK","🇲🇰","+389"],["MG","🇲🇬","+261"],["MW","🇲🇼","+265"],["MY","🇲🇾","+60"],["MV","🇲🇻","+960"],["ML","🇲🇱","+223"],["MT","🇲🇹","+356"],["MH","🇲🇭","+692"],["MR","🇲🇷","+222"],["MU","🇲🇺","+230"],["MX","🇲🇽","+52"],["MD","🇲🇩","+373"],["MC","🇲🇨","+377"],["MN","🇲🇳","+976"],["ME","🇲🇪","+382"],["MA","🇲🇦","+212"],["MZ","🇲🇿","+258"],["MM","🇲🇲","+95"],["NA","🇳🇦","+264"],["NR","🇳🇷","+674"],["NP","🇳🇵","+977"],["NL","🇳🇱","+31"],["NZ","🇳🇿","+64"],["NI","🇳🇮","+505"],["NE","🇳🇪","+227"],["NG","🇳🇬","+234"],["KP","🇰🇵","+850"],["NO","🇳🇴","+47"],["OM","🇴🇲","+968"],["PK","🇵🇰","+92"],["PS","🇵🇸","+970"],["PA","🇵🇦","+507"],["PY","🇵🇾","+595"],["PE","🇵🇪","+51"],["PH","🇵🇭","+63"],["PL","🇵🇱","+48"],["PT","🇵🇹","+351"],["QA","🇶🇦","+974"],["RO","🇷🇴","+40"],["RU","🇷🇺","+7"],["RW","🇷🇼","+250"],["SA","🇸🇦","+966"],["SN","🇸🇳","+221"],["RS","🇷🇸","+381"],["SC","🇸🇨","+248"],["SL","🇸🇱","+232"],["SG","🇸🇬","+65"],["SK","🇸🇰","+421"],["SI","🇸🇮","+386"],["SB","🇸🇧","+677"],["SO","🇸🇴","+252"],["ZA","🇿🇦","+27"],["KR","🇰🇷","+82"],["SS","🇸🇸","+211"],["ES","🇪🇸","+34"],["LK","🇱🇰","+94"],["SD","🇸🇩","+249"],["SR","🇸🇷","+597"],["SZ","🇸🇿","+268"],["SE","🇸🇪","+46"],["CH","🇨🇭","+41"],["SY","🇸🇾","+963"],["TW","🇹🇼","+886"],["TJ","🇹🇯","+992"],["TZ","🇹🇿","+255"],["TH","🇹🇭","+66"],["TG","🇹🇬","+228"],["TO","🇹🇴","+676"],["TN","🇹🇳","+216"],["TR","🇹🇷","+90"],["TM","🇹🇲","+993"],["TV","🇹🇻","+688"],["UG","🇺🇬","+256"],["UA","🇺🇦","+380"],["AE","🇦🇪","+971"],["GB","🇬🇧","+44"],["UY","🇺🇾","+598"],["UZ","🇺🇿","+998"],["VU","🇻🇺","+678"],["VE","🇻🇪","+58"],["VN","🇻🇳","+84"],["YE","🇾🇪","+967"],["ZM","🇿🇲","+260"],["ZW","🇿🇼","+263"]];
+/* Pakistan is the currently supported checkout delivery region. */
 function populateCountryCodes(){
-  const sel = document.getElementById('f_ccode');
-  if(!sel) return;
-  const seen = new Set(['+92']);
-  COUNTRY_CODES.forEach(([cc, flag, code]) => {
-    if(seen.has(code)) return;
-    seen.add(code);
-    const opt = document.createElement('option');
-    opt.value = code;
-    opt.textContent = `${flag} ${code}`;
-    sel.appendChild(opt);
-  });
+  const sel=document.getElementById('f_ccode');if(!sel)return;
+  sel.innerHTML='<option value="+92">🇵🇰 +92</option>';sel.value='+92';
 }
-document.addEventListener('DOMContentLoaded', populateCountryCodes);
-
-/* ============ COUNTRY DROPDOWN + PHONE SYNC ============ */
-const COUNTRY_LIST = [["Afghanistan","AF","+93"],["Albania","AL","+355"],["Algeria","DZ","+213"],["United States","US","+1"],["Andorra","AD","+376"],["Angola","AO","+244"],["Argentina","AR","+54"],["Armenia","AM","+374"],["Australia","AU","+61"],["Austria","AT","+43"],["Azerbaijan","AZ","+994"],["Bahrain","BH","+973"],["Bangladesh","BD","+880"],["Belarus","BY","+375"],["Belgium","BE","+32"],["Belize","BZ","+501"],["Benin","BJ","+229"],["Bhutan","BT","+975"],["Bolivia","BO","+591"],["Bosnia","BA","+387"],["Botswana","BW","+267"],["Brazil","BR","+55"],["Brunei","BN","+673"],["Bulgaria","BG","+359"],["Burkina Faso","BF","+226"],["Burundi","BI","+257"],["Cambodia","KH","+855"],["Cameroon","CM","+237"],["Canada","CA","+1"],["Cape Verde","CV","+238"],["Central African Rep.","CF","+236"],["Chad","TD","+235"],["Chile","CL","+56"],["China","CN","+86"],["Colombia","CO","+57"],["Comoros","KM","+269"],["Congo","CG","+242"],["DR Congo","CD","+243"],["Costa Rica","CR","+506"],["Croatia","HR","+385"],["Cuba","CU","+53"],["Cyprus","CY","+357"],["Czechia","CZ","+420"],["Denmark","DK","+45"],["Djibouti","DJ","+253"],["Ecuador","EC","+593"],["Egypt","EG","+20"],["El Salvador","SV","+503"],["Equatorial Guinea","GQ","+240"],["Eritrea","ER","+291"],["Estonia","EE","+372"],["Ethiopia","ET","+251"],["Fiji","FJ","+679"],["Finland","FI","+358"],["France","FR","+33"],["Gabon","GA","+241"],["Gambia","GM","+220"],["Georgia","GE","+995"],["Germany","DE","+49"],["Ghana","GH","+233"],["Greece","GR","+30"],["Guatemala","GT","+502"],["Guinea","GN","+224"],["Guinea-Bissau","GW","+245"],["Guyana","GY","+592"],["Haiti","HT","+509"],["Honduras","HN","+504"],["Hungary","HU","+36"],["Iceland","IS","+354"],["India","IN","+91"],["Indonesia","ID","+62"],["Iran","IR","+98"],["Iraq","IQ","+964"],["Ireland","IE","+353"],["Israel","IL","+972"],["Italy","IT","+39"],["Ivory Coast","CI","+225"],["Japan","JP","+81"],["Jordan","JO","+962"],["Kazakhstan","KZ","+7"],["Kenya","KE","+254"],["Kiribati","KI","+686"],["Kuwait","KW","+965"],["Kyrgyzstan","KG","+996"],["Laos","LA","+856"],["Latvia","LV","+371"],["Lebanon","LB","+961"],["Lesotho","LS","+266"],["Liberia","LR","+231"],["Libya","LY","+218"],["Liechtenstein","LI","+423"],["Lithuania","LT","+370"],["Luxembourg","LU","+352"],["North Macedonia","MK","+389"],["Madagascar","MG","+261"],["Malawi","MW","+265"],["Malaysia","MY","+60"],["Maldives","MV","+960"],["Mali","ML","+223"],["Malta","MT","+356"],["Marshall Islands","MH","+692"],["Mauritania","MR","+222"],["Mauritius","MU","+230"],["Mexico","MX","+52"],["Moldova","MD","+373"],["Monaco","MC","+377"],["Mongolia","MN","+976"],["Montenegro","ME","+382"],["Morocco","MA","+212"],["Mozambique","MZ","+258"],["Myanmar","MM","+95"],["Namibia","NA","+264"],["Nauru","NR","+674"],["Nepal","NP","+977"],["Netherlands","NL","+31"],["New Zealand","NZ","+64"],["Nicaragua","NI","+505"],["Niger","NE","+227"],["Nigeria","NG","+234"],["North Korea","KP","+850"],["Norway","NO","+47"],["Oman","OM","+968"],["Pakistan","PK","+92"],["Palestine","PS","+970"],["Panama","PA","+507"],["Paraguay","PY","+595"],["Peru","PE","+51"],["Philippines","PH","+63"],["Poland","PL","+48"],["Portugal","PT","+351"],["Qatar","QA","+974"],["Romania","RO","+40"],["Russia","RU","+7"],["Rwanda","RW","+250"],["Saudi Arabia","SA","+966"],["Senegal","SN","+221"],["Serbia","RS","+381"],["Seychelles","SC","+248"],["Sierra Leone","SL","+232"],["Singapore","SG","+65"],["Slovakia","SK","+421"],["Slovenia","SI","+386"],["Solomon Islands","SB","+677"],["Somalia","SO","+252"],["South Africa","ZA","+27"],["South Korea","KR","+82"],["South Sudan","SS","+211"],["Spain","ES","+34"],["Sri Lanka","LK","+94"],["Sudan","SD","+249"],["Suriname","SR","+597"],["Eswatini","SZ","+268"],["Sweden","SE","+46"],["Switzerland","CH","+41"],["Syria","SY","+963"],["Taiwan","TW","+886"],["Tajikistan","TJ","+992"],["Tanzania","TZ","+255"],["Thailand","TH","+66"],["Togo","TG","+228"],["Tonga","TO","+676"],["Tunisia","TN","+216"],["Turkey","TR","+90"],["Turkmenistan","TM","+993"],["Tuvalu","TV","+688"],["Uganda","UG","+256"],["Ukraine","UA","+380"],["UAE","AE","+971"],["United Kingdom","GB","+44"],["Uruguay","UY","+598"],["Uzbekistan","UZ","+998"],["Vanuatu","VU","+678"],["Venezuela","VE","+58"],["Vietnam","VN","+84"],["Yemen","YE","+967"],["Zambia","ZM","+260"],["Zimbabwe","ZW","+263"]];
 function populateCountries(){
-  const sel = document.getElementById('f_country');
-  if(!sel) return;
-  // Keep Pakistan first (already there), add rest alphabetically
-  COUNTRY_LIST.forEach(([name, cc, code]) => {
-    if(name === 'Pakistan') return;
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    opt.dataset.code = code;
-    opt.dataset.cc = cc;
-    sel.appendChild(opt);
-  });
-  // Sync phone code when country changes
-  sel.addEventListener('change', () => {
-    const selected = sel.options[sel.selectedIndex];
-    const code = selected.dataset.code || '+92';
-    const cc = selected.dataset.cc || 'PK';
-    const phoneSel = document.getElementById('f_ccode');
-    if(phoneSel){
-      // Find matching option or add it
-      let found = false;
-      for(const opt of phoneSel.options){
-        if(opt.value === code){ phoneSel.value = code; found = true; break; }
-      }
-      if(!found){
-        const opt = document.createElement('option');
-        opt.value = code;
-        opt.textContent = `${cc} ${code}`;
-        phoneSel.appendChild(opt);
-        phoneSel.value = code;
-      }
-    }
-  });
+  const sel=document.getElementById('f_country');if(!sel)return;
+  sel.innerHTML='<option value="Pakistan">Pakistan</option>';sel.value='Pakistan';
 }
-document.addEventListener('DOMContentLoaded', populateCountries);
+document.addEventListener('DOMContentLoaded',populateCountryCodes);
+document.addEventListener('DOMContentLoaded',populateCountries);
