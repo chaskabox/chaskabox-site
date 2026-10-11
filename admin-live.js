@@ -1312,34 +1312,29 @@
 
   /* ============ BACKUP ============ */
   function initBackup(){
-    $('#downloadBackupBtn')?.addEventListener('click', async ()=>{
+    const button=$('#downloadBackupBtn');
+    button?.addEventListener('click', async ()=>{
+      if(button.disabled)return;
+      const label=button.textContent;
+      button.disabled=true;button.textContent='Preparing snapshot…';
+      let objectUrl;
       try{
-        toast('Preparing backup…');
-        const bt=await token();
-        const res = await fetch('/api/admin/backup', {
-          headers: { 'Authorization': `Bearer ${bt}` },
-        });
-        if(!res.ok) throw new Error('Backup failed');
-        const blob = await res.blob();
+        const snapshot=await api('/api/admin/backup');
+        const tables=snapshot?.tables, counts=snapshot?.manifest?.row_counts;
+        if(snapshot?.version!==2 || snapshot.kind!=='catalogue_configuration' || snapshot.scope?.full_database_backup!==false || snapshot.scope?.complete_catalogue_scope!==true || snapshot.consistency?.exact_counts_verified!==true || !tables || !counts || !Object.keys(tables).length || Object.keys(counts).length!==Object.keys(tables).length || Object.entries(tables).some(([name,rows])=>!Array.isArray(rows)||!Number.isSafeInteger(counts[name])||counts[name]!==rows.length)){
+          throw new Error('Snapshot validation failed. No file downloaded.');
+        }
+        const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `chaskabox-backup-${new Date().toISOString().slice(0,10)}.json`;
+        objectUrl=URL.createObjectURL(blob);a.href=objectUrl;
+        a.download = `chaskabox-catalogue-${new Date().toISOString().slice(0,10)}.json`;
         a.click();
-        toast('Backup downloaded');
-      }catch(e){toast(e.message);}
-    });
-    $('#restoreBackupBtn')?.addEventListener('click', async ()=>{
-      const file = $('#restoreFileInput')?.files?.[0];
-      if(!file){toast('Select a backup file first');return;}
-      if(!confirm('⚠️ This will OVERWRITE catalogue data. Continue?')) return;
-      const confirm2 = prompt('Type RESTORE to confirm:');
-      if(confirm2 !== 'RESTORE'){toast('Cancelled');return;}
-      try{
-        const text = await file.text();
-        const backup = JSON.parse(text);
-        await api('/api/admin/backup', { method:'POST', body:{ confirm:'RESTORE', backup } });
-        toast('Restore complete');
-      }catch(e){toast(e.message);}
+        toast('Catalogue snapshot downloaded. Orders and photo files are excluded.');
+      }catch(e){toast(e.message || 'Snapshot failed.');}
+      finally{
+        if(objectUrl)setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+        button.disabled=false;button.textContent=label;
+      }
     });
   }
 

@@ -43,7 +43,7 @@ setTimeout(function(){
       <button class="admin-nav-btn" data-view="coupons"><span>🎟️</span> Coupons</button>
       <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
       <button class="admin-nav-btn" data-view="analytics"><span>📊</span> Analytics</button>
-      <button class="admin-nav-btn" data-view="backup"><span>💾</span> Backup</button>
+      <button class="admin-nav-btn" data-view="backup"><span>💾</span> Catalogue Snapshot</button>
       <button class="admin-nav-btn" data-view="studio"><span>🎨</span> Image Studio</button>
       <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
       <button class="admin-nav-btn" data-view="categories"><span>📁</span> Categories</button>
@@ -202,19 +202,19 @@ setTimeout(function(){
         </div>
       </section>
 
-      <section class="admin-view" id="view-backup" data-title="Backup & Restore" data-subtitle="Export settings and catalogue. Owner only.">
+      <section class="admin-view" id="view-backup" data-title="Catalogue Snapshot" data-subtitle="Export catalogue and configuration. Owner only.">
         <div class="panel">
-          <div class="panel-head"><div><h2>💾 Backup</h2><p>Download JSON snapshot of catalogue & settings</p></div></div>
+          <div class="panel-head"><div><h2>💾 Catalogue Snapshot</h2><p>Download catalogue and configuration as JSON</p></div></div>
           <div style="padding:8px;display:grid;gap:12px">
-            <p class="muted" style="font-size:13px">Includes: products, categories, brands, coupons, shipping zones, templates, theme, navigation.<br>Orders & customers are excluded (use Supabase dashboard for full DB backup).</p>
-            <div><button class="btn primary" id="downloadBackupBtn">⬇️ Download Backup (JSON)</button></div>
+            <p class="muted" style="font-size:13px">Includes products, brands, categories and their assignments, box contents, homepage sections, coupons, shipping, templates, theme, navigation, store settings and media records.<br>Orders, customer accounts and photo files are excluded. This export is for catalogue reference; a database backup is required for site recovery. Pause catalogue editing while downloading.</p>
+            <div><button class="btn primary" id="downloadBackupBtn">⬇️ Download Catalogue Snapshot</button></div>
           </div>
         </div>
         <section class="panel" style="margin-top:16px">
-          <div class="panel-head"><div><h2>♻️ Restore</h2><p style="color:#dc2626">Overwrites data — use with caution</p></div></div>
+          <div class="panel-head"><div><h2>♻️ JSON Restore Paused</h2><p>Recovery must first be verified in an isolated database.</p></div></div>
           <div style="padding:8px;display:grid;gap:12px">
-            <label>Backup file<input type="file" id="restoreFileInput" accept=".json" style="padding:8px"></label>
-            <div><button class="btn danger" id="restoreBackupBtn">Restore from file</button></div>
+            <p class="muted" style="font-size:13px" id="restoreUnavailableNote">JSON restore is unavailable while complete, safe recovery is being verified. Downloading a snapshot does not change the site.</p>
+            <div><button class="btn secondary" id="restoreBackupBtn" disabled aria-describedby="restoreUnavailableNote">Restore unavailable</button></div>
           </div>
         </section>
       </section>
@@ -631,6 +631,6 @@ setTimeout(function(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=4"></script>
 <script src="/admin.js?v=3" defer></script>
-<script src="/admin-live.js?v=2" defer></script>
+<script src="/admin-live.js?v=3" defer></script>
 </body>
 </html>

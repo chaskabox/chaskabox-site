@@ -7,3 +7,7 @@ node_modules/
 .wrangler/
 supabase/.temp/
 test-results/
+*.dump
+*.dump.sha256
+**/SHA256SUMS
+**/roles.sql
