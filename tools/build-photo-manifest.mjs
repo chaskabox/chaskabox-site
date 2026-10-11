@@ -15,9 +15,12 @@ if(process.argv.includes('--check')){
       const app=scripts.indexOf('/app.js');if(app<0)continue;
       const manifest=scripts.indexOf('/photo-manifest.js');
       if(manifest<0||manifest>app)throw Error('Photo manifest must load before app.js: '+url.pathname);
+      for(const id of ['view-home','view-shop','view-product','view-account','view-cart','view-wishlist','view-brands','view-brand','view-404','brandTitle','brandCrumb','brandProductGrid']){
+        if(!html.includes('id="'+id+'"'))throw Error('Shared route mount '+id+' missing: '+url.pathname);
+      }
       entries++;
     }
   }
   await inspect(new URL('../',import.meta.url));
-  console.log('Photo manifests and '+entries+' storefront entry points verified.');
+  console.log('Photo manifests and shared route mounts verified in '+entries+' storefront entry points.');
 }
