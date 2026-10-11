@@ -134,7 +134,7 @@
     updateBulkbar();
   }
   function productAdminCard(p){
-    const hidden=isHidden(p.id); const img=p.img?`/${String(p.img).replace(/^\//,'')}`:'';
+    const hidden=isHidden(p.id); const _ri=String(p.img||'').trim(); const img=_ri?(/^(https?:)?\/\//i.test(_ri)?_ri:`/${_ri.replace(/^\//,'')}`):'';
     return `<article class="admin-product-card ${state.selected.has(p.id)?'selected':''}" data-product-id="${p.id}">
       <input class="product-select" type="checkbox" aria-label="Select ${escapeHtml(p.name)}" ${state.selected.has(p.id)?'checked':''}>
       <span class="visibility-chip ${hidden?'hidden-product':''}">${hidden?'Hidden':'Visible'}</span>
@@ -200,7 +200,7 @@
     $('#aiImproveProduct')?.addEventListener('click',async()=>{const name=$('#editName').value.trim();if(typeof window.chaskaAdminApi!=='function'){showView('assistant');state.aiTask='product_description';$('#aiPrompt').dataset.aiTask='product_description';$('#aiPrompt').value=`Improve this ChaskaBox product listing without making unverified claims. Product: ${name}. Category: ${$('#editCategory').value}. Pack: ${$('#editPack').value}. Current description: ${$('#editDescription').value}`;closeEditor();return;}const b=$('#aiImproveProduct'),old=b.textContent;b.disabled=true;b.textContent='✦ Drafting…';try{const d=await window.chaskaAdminApi('/api/admin/ai',{method:'POST',body:{task:'product_description',context:{name,category:$('#editCategory').value,pack:$('#editPack').value,current_description:$('#editDescription').value}}});$('#editDescription').value=d.draft||$('#editDescription').value;renderEditorPreview();toast('AI draft inserted — review it, then Save');}catch(e){toast(e.message||'Free AI unavailable — AI binding not configured');}finally{b.disabled=false;b.textContent=old;}});
   }
   function editorData(){ return {name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),oldPrice:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,desc:$('#editDescription').value.trim(),img:$('#editImage').value.trim(),bundle:$('#editBundle').checked}; }
-  function renderEditorPreview(){ const p=editorData(); const img=p.img?`/${String(p.img).replace(/^\//,'')}`:''; $('#productPreviewCard').innerHTML=`<div class="preview-product-card"><div class="img">${img?`<img src="${escapeHtml(img)}" alt="">`:'<span style="font-size:44px">🍿</span>'}</div><div class="body"><small>${escapeHtml(p.category||'Category')} · ${escapeHtml(p.pack||'Pack')}</small><h3>${escapeHtml(p.name||'Product name')}</h3><strong>${money(p.price)}</strong><button class="btn primary" type="button" disabled>Add to Bag</button></div></div>`; }
+  function renderEditorPreview(){ const p=editorData(); const rawImg=String(p.img||'').trim(); const img=rawImg?(/^(https?:)?\/\//i.test(rawImg)?rawImg:`/${rawImg.replace(/^\//,'')}`):''; $('#productPreviewCard').innerHTML=`<div class="preview-product-card"><div class="img">${img?`<img src="${escapeHtml(img)}" alt="">`:'<span style="font-size:44px">🍿</span>'}</div><div class="body"><small>${escapeHtml(p.category||'Category')} · ${escapeHtml(p.pack||'Pack')}</small><h3>${escapeHtml(p.name||'Product name')}</h3><strong>${money(p.price)}</strong><button class="btn primary" type="button" disabled>Add to Bag</button></div></div>`; }
   function saveProductDraft(){
     // Production writes are intentionally handled only by admin-live.js through authenticated APIs.
     toast('Sign in to save products through the secure backend.');
@@ -247,7 +247,7 @@
       return;
     }
     listEl.innerHTML=`<p class="muted" style="font-size:12px;margin-bottom:8px">${rows.length} product${rows.length!==1?'s':''}${q?` matching "${escapeHtml(q)}"`:''}</p>`+rows.map(p=>{
-      const img=p.img?`/${String(p.img).replace(/^\//,'')}`:'';
+      const _ri2=String(p.img||'').trim(); const img=_ri2?(/^(https?:)?\/\//i.test(_ri2)?_ri2:`/${_ri2.replace(/^\//,'')}`):'';
       return `<div class="box-product-row" style="display:flex;align-items:center;gap:10px;padding:8px;border:1px solid var(--border);border-radius:8px;margin-bottom:6px">${img?`<img src="${escapeHtml(img)}" alt="" style="width:48px;height:48px;object-fit:cover;border-radius:6px">`:'<div style="width:48px;height:48px;background:#f1f5f9;border-radius:6px"></div>'}<div style="flex:1;min-width:0"><h4 style="margin:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(p.name)}</h4><small style="color:var(--muted)">${money(p.price)} · ${escapeHtml(p.pack||p.category||'')}</small></div><button data-add-box="${p.id}" aria-label="Add ${escapeHtml(p.name)}" style="padding:8px 16px;font-size:16px">+</button></div>`
     }).join('');
   }
