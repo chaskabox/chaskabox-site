@@ -6,6 +6,7 @@ import { onRequestGet } from '../functions/product/[[slug]].js';
 import { LOCAL_PHOTOS } from '../functions/api/_lib/local-photos.js';
 const source=await readFile(new URL('../app.js',import.meta.url),'utf8');
 const shell=await readFile(new URL('../index.html',import.meta.url),'utf8');
+const retention=await readFile(new URL('../retention.js',import.meta.url),'utf8');
 function browser({reduced=false,observer=false}={}){
  const nodes=new Map(),listeners={},media={matches:reduced,addEventListener(type,fn){this.changed=fn}},history=[];
  const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,style:{removeProperty(){},setProperty(){}},classList:{s:new Set(),add(x){this.s.add(x)},remove(x){this.s.delete(x)},contains(x){return this.s.has(x)},toggle(){}},querySelectorAll(){return[];},closest(){return null;},setAttribute(){},focus(){}});return nodes.get(id);};
@@ -29,6 +30,18 @@ test('SPA navigation preserves query filters and document/modified clicks stay n
  const event=(href,extra={})=>({button:0,target:{closest:()=>({getAttribute:()=>href,hasAttribute:()=>false,target:''})},preventDefault(){prevented++},...extra});
  handler(event('/track-order.html'));handler(event('/admin/'));handler(event('/#faq',{ctrlKey:true}));assert.equal(prevented,0);
  handler(event('/shop/?q=jelly'));assert.equal(prevented,1);assert.equal(b.history.at(-1),'/shop/?q=jelly');
+});
+test('submitted and edited searches survive refresh and clearing removes stale query filters',()=>{
+ const b=browser();b.run('route=()=>{};');
+ b.node('headerSearch').value='bubble & gum';b.run('submitHeaderSearch();');assert.equal(b.history.at(-1),'/shop/?q=bubble%20%26%20gum');
+ b.node('homeSearch').value='imli?';b.run('submitHomeSearch();');assert.equal(b.history.at(-1),'/shop/?q=imli%3F');
+ b.ctx.location.search='?brand=Candyland&q=old';b.ctx.location.hash='#results';b.run("queueShopSearch('Bubble');");assert.equal(b.history.at(-1),'/shop/?brand=Candyland&q=Bubble#results');
+ b.run('renderShopContent=()=>{};clearAllFilters();');assert.equal(b.history.at(-1),'/shop/#results');
+});
+test('late retention initialization preserves the photo-eligible native weekly-pick link',()=>{
+ const b=browser();b.run("PRODUCTS=[{id:5,name:'Missing photo',category:'Snacks',price:1,img:'images/p5.webp',badge:'Bestseller'},{id:27,name:'Fixture snack',category:'Snacks',price:10,img:'images/p27.webp'}];renderHomeContent();");
+ const before=b.node('weeklyPick').innerHTML;assert.match(before,/href="\/product\/27\/"/);assert.ok(!before.includes('showProductDetail'));
+ vm.runInContext(retention,b.ctx);assert.equal(b.node('weeklyPick').innerHTML,before);
 });
 const product={id:272,visibility:'visible',name:'Fixture </script><script>alert(1)</script> Snack',price:650,category:'Snacks & Nimco',pack:'Fixture pack',image_url:'https://fixture.invalid/photo.png',description:'Fixture <b>description</b>'};
 function context(slug='272'){return {params:{slug:[slug]},request:new Request('https://fixture.invalid/product/'+slug+'/'),env:{SUPABASE_URL:'https://db.fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async()=>new Response(shell)}}};}

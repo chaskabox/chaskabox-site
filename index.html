@@ -63,7 +63,7 @@
 </header>
 
 <!-- mobile nav drawer -->
-<div id="mnav" class="mnav" role="dialog" aria-label="Shop menu" aria-hidden="true" inert><div class="mnav-head"><b>Shop ChaskaBox</b><button class="mclose" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
+<div id="mnav" class="mnav" role="dialog" aria-label="Shop menu" aria-hidden="true" inert><div class="mnav-head"><b>Shop ChaskaBox</b><button class="mclose" aria-label="Close menu" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
 
 <main id="main">
 <div id="view-home"></div>
@@ -253,7 +253,7 @@
 
 <div class="overlay" id="overlay" onclick="closeDrawer()"></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Shopping bag" aria-hidden="true" inert>
-  <div class="dhead"><h3>Your snack bag</h3><button class="mclose" style="position:static" onclick="closeDrawer()">✕</button></div>
+  <div class="dhead"><h3>Your snack bag</h3><button class="mclose" aria-label="Close shopping bag" style="position:static" onclick="closeDrawer()">✕</button></div>
   <div class="ditems" id="ditems"></div>
   <div class="dfoot" id="dfoot"></div>
 </aside>
@@ -288,11 +288,11 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=3"></script>
 <script src="/photo-manifest.js?v=1"></script>
-<script src="/app.js?v=9"></script>
+<script src="/app.js?v=10"></script>
 <script src="/reviews-widget.js?v=1"></script>
 <script src="/account.js?v=5"></script>
 <script src="/analytics.js?v=1"></script>
-<script src="/retention.js?v=4"></script>
+<script src="/retention.js?v=5"></script>
 <script>
 /* Remove Netlify badge */
 (function(){function rm(){document.querySelectorAll('div[class*="netlify" i],a[href*="netlify.com"],iframe[src*="netlify"],[id*="netlify" i]').forEach(e=>e.remove());}rm();new MutationObserver(rm).observe(document.body,{childList:true,subtree:true});setInterval(rm,2000);})();

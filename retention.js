@@ -80,25 +80,8 @@ function openCartNudge(){
 }
 window.closeCartNudge = function(){ const m=document.getElementById('cartnudge'); if(m) m.remove(); };
 
-/* ============================================================
-   2. MARKET FRESH — weekly pick render
-   ============================================================ */
-var WEEKLY_PICK_ID = 0; // 0 = auto (first Bestseller, else first active product)
-function renderWeeklyPick(){
-  const box = document.getElementById('weeklyPick');
-  if(!box || typeof activeProducts !== 'function') return;
-  const prods = activeProducts();
-  if(!prods.length) return;
-  let pick = WEEKLY_PICK_ID ? prods.find(p=>p.id==WEEKLY_PICK_ID) : null;
-  if(!pick) pick = prods.find(p=>p.badge==='Bestseller');
-  if(!pick) pick = prods[0];
-  box.innerHTML = '<div class="pickcard" onclick="showProductDetail('+pick.id+')">'
-    + '<div class="pickimg"><img src="'+esc(typeof assetUrl==='function'?assetUrl(pick.img||''):(pick.img||''))+'" alt="'+esc(pick.name||'')+'" loading="lazy" onerror="this.style.display=\'none\'"></div>'
-    + '<div class="pickinfo"><div class="picktag">'+esc((pick.category||'ChaskaBox').toUpperCase())+'</div>'
-    + '<b>'+esc(pick.name||'')+'</b>'
-    + '<div class="pickprice">'+fmt(pick.price||0)+'</div>'
-    + '<span class="alink">Dekhein ›</span></div></div>';
-}
+/* Weekly pick is owned by app.js so a late retention init cannot replace
+   its photo-eligible native product link with a separate renderer. */
 
 /* ============================================================
    3. ONESIGNAL WEB PUSH — soft prompt after 2nd visit
@@ -252,7 +235,6 @@ function initRetention(){
   const visits = lsGet('cb_visits', 0);
   lsSet('cb_visits', visits + 1);
 
-  renderWeeklyPick();
   checkAbandonedCart();
   checkBirthday();
   checkReorderReminder();
