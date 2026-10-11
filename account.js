@@ -170,10 +170,10 @@ async function linkGuestOrders(){
   try {
     const {data, error} = await SB.rpc('link_guest_orders');
     if(error) throw error;
-    alert(data?.linked ? `${data.linked} past order(s) linked to your account!` : 'No past orders found for your phone number.');
+    alert(data?.linked ? `${data.linked} past order(s) linked to your account!` : 'No unlinked orders found for your confirmed account email. For older orders without an email, contact support.');
     renderAccountView();
   } catch(e) {
-    alert(e.message || 'Could not link orders. Add your phone number to your profile first.');
+    alert(e.message || 'Could not link orders. Confirm the same email you used at checkout, then try again.');
   }
   if(btn) btn.disabled = false;
 }
