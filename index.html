@@ -25,7 +25,7 @@
   });
 </script>
 -->
-<link rel="stylesheet" href="/styles.css?v=8">
+<link rel="stylesheet" href="/styles.css?v=9">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 </head>
@@ -63,7 +63,7 @@
 </header>
 
 <!-- mobile nav drawer -->
-<div id="mnav" class="mnav"><div class="mnav-head"><b>Shop ChaskaBox</b><button class="mclose" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
+<div id="mnav" class="mnav" role="dialog" aria-label="Shop menu" aria-hidden="true" inert><div class="mnav-head"><b>Shop ChaskaBox</b><button class="mclose" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
 
 <main id="main">
 <div id="view-home"></div>
@@ -287,7 +287,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=3"></script>
-<script src="/app.js?v=8"></script>
+<script src="/photo-manifest.js?v=1"></script>
+<script src="/app.js?v=9"></script>
 <script src="/reviews-widget.js?v=1"></script>
 <script src="/account.js?v=5"></script>
 <script src="/analytics.js?v=1"></script>
