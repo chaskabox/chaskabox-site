@@ -8,21 +8,11 @@ import { withAdmin, sb, json, env } from '../_lib/auth.js';
 export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
   const e = env(context);
 
-  // Outbox stats
-  const outbox = await sb(context,
-    '/rest/v1/notification_outbox?select=status&limit=1000').catch(() => []);
-  const stats = { pending: 0, sent: 0, failed: 0, retry: 0 };
-  (outbox || []).forEach(r => { if (stats[r.status] !== undefined) stats[r.status]++; });
-
-  // Recent failures
-  const failed = await sb(context,
-    '/rest/v1/notification_outbox?status=eq.failed&select=*,order_id&order=updated_at.desc&limit=10').catch(() => []);
-
-  // Customer notifications
-  const custOutbox = await sb(context,
-    '/rest/v1/customer_notification_outbox?select=status&limit=500').catch(() => []);
-  const custStats = { pending: 0, sent: 0, failed: 0 };
-  (custOutbox || []).forEach(r => { if (custStats[r.status] !== undefined) custStats[r.status]++; });
+  // Exact database aggregates; an unavailable database must not appear healthy.
+  const summary=await sb(context,'/rest/v1/rpc/analytics_notifications',{method:'POST',body:{}});
+  const stats={pending:0,sent:0,failed:0,retry:0,...summary.owner_outbox};
+  const custStats={pending:0,sent:0,failed:0,retry:0,...summary.customer_outbox};
+  const failed=await sb(context,'/rest/v1/notification_outbox?status=eq.failed&select=order_id,last_error,updated_at&order=updated_at.desc&limit=10');
 
   return json({
     resend: {

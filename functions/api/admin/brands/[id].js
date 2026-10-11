@@ -10,7 +10,7 @@ function slugify(s) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'brand';
 }
 
-export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { user }) => {
+export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const id = context.params.id;
   if (!id) httpError('Brand id required', 400);
 
@@ -34,15 +34,15 @@ export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { 
   const updated = await sb(context, `/rest/v1/brands?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH', body: patch,
   });
-  await audit(context, user.id, 'brand.updated', { id });
+  await audit(context, { actorId:user.id, actorRole:role, action:'brand.updated', entityType:'brand', entityId:id, after:{ id } });
   return json({ brand: Array.isArray(updated) ? updated[0] : updated });
 });
 
-export const onRequestDelete = withAdmin(['owner'], async (context, { user }) => {
+export const onRequestDelete = withAdmin(['owner'], async (context, { user, role }) => {
   const id = context.params.id;
   if (!id) httpError('Brand id required', 400);
 
   await sb(context, `/rest/v1/brands?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-  await audit(context, user.id, 'brand.deleted', { id });
+  await audit(context, { actorId:user.id, actorRole:role, action:'brand.deleted', entityType:'brand', entityId:id, after:{ id } });
   return json({ ok: true });
 });

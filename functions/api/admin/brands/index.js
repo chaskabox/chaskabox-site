@@ -43,7 +43,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
   return json({ brands: [...enriched, ...missing].sort((a, b) => (a.position || 0) - (b.position || 0) || a.name.localeCompare(b.name)) });
 });
 
-export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user }) => {
+export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const body = await readJson(context.request);
   const name = String(body.name || '').trim();
   if (!name) httpError('Brand name required', 400, 'invalid');
@@ -57,6 +57,6 @@ export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { u
     position: Number(body.position || 0),
   };
   const created = await sb(context, '/rest/v1/brands', { method: 'POST', body: row });
-  await audit(context, user.id, 'brand.created', { name });
+  await audit(context, { actorId:user.id, actorRole:role, action:'brand.created', entityType:'brand', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ name } });
   return json({ brand: Array.isArray(created) ? created[0] : created }, 201);
 });

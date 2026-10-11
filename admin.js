@@ -17,8 +17,8 @@
   async function checkAdminSession(){
     try{
       if(typeof initSupabase!=='function') return false;
-      const ok=await initSupabase(); if(!ok||!window.SB) return false;
-      const {data}=await window.SB.auth.getSession();
+      const ok=await initSupabase(); if(!ok||typeof SB==='undefined'||!SB) return false;
+      const {data}=await SB.auth.getSession();
       return !!(data&&data.session&&data.session.access_token);
     }catch(e){ return false; }
   }
@@ -45,12 +45,19 @@
     // session check must not blank values the live backend just populated.
     if(!authed){ return false; }
     try{
-      let data=null; for(const url of ['/api/products','/products.json']){try{const res=await fetch(url,{cache:'no-store'});if(!res.ok)throw new Error(`HTTP ${res.status}`);const rows=await res.json();if(Array.isArray(rows)){data=rows;break;}}catch(e){}}
-      if(!data)throw new Error('Could not load public product catalogue'); state.products=data;
+      if(typeof window.chaskaAdminApi!=='function') return false;
+      const data=[];
+      for(let page=1;;page++){
+        const result=await window.chaskaAdminApi(`/api/admin/products?per_page=1000&page=${page}`);
+        if(!Array.isArray(result.products))throw new Error('Could not load protected catalogue');
+        data.push(...result.products);
+        if(page>=(result.total_pages||1))break;
+      }
+      state.products=data.map(p=>({...p,oldPrice:p.old_price,img:p.image_url,desc:p.description,bundle:p.is_bundle}));
       // Rehydrate locally-created review drafts without touching the real catalogue.
       Object.values(state.drafts.products||{}).filter(p=>p&&p._new).forEach(p=>{ if(!state.products.some(x=>Number(x.id)===Number(p.id))) state.products.push(p); });
       state.categories=[...new Set(state.products.map(p=>(p.category||'').trim()).filter(Boolean))].sort();
-      hydrateSelectors(); renderDashboard(); renderProducts(); renderBoxProducts();
+      hydrateSelectors(); renderDashboard(); renderBoxProducts();
       return true;
     }catch(err){
       $('#productAdminGrid').innerHTML=`<div class="panel"><b>Could not load catalogue snapshot</b><p class="muted">${escapeHtml(err.message)}</p></div>`;
@@ -92,7 +99,7 @@
 
   function hydrateSelectors(){
     const cat=$('#productCategory'); const edit=$('#editCategory');
-    state.categories.forEach(c=>{cat?.insertAdjacentHTML('beforeend',`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`); edit?.insertAdjacentHTML('beforeend',`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`);});
+    state.categories.forEach(c=>{for(const select of [cat,edit])if(select&&![...select.options].some(o=>o.value===c))select.insertAdjacentHTML('beforeend',`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`);});
     const route=$('#previewRoute');
     if(route){
       const cg=document.createElement('optgroup'); cg.label='Categories'; state.categories.forEach(c=>{const o=document.createElement('option');o.value='/category/'+slugify(c)+'/';o.textContent=c;cg.appendChild(o)}); route.appendChild(cg);

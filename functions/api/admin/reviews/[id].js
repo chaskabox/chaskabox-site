@@ -12,31 +12,34 @@
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
 
+export function reviewPatch(body){
+ const action=String(body.action||'').toLowerCase();
+ if(!['approve','reject','reply'].includes(action)) httpError('Approve, reject or reply action required',400,'invalid_action');
+ const patch={};
+ if(action!=='reply')patch.moderation_status=action==='approve'?'approved':'rejected';
+ if(body.reply!==undefined){const reply=String(body.reply).trim();if(reply.length>1000)httpError('reply too long (max 1000)',400,'invalid_reply');patch.admin_reply=reply||null;}
+ if(action==='reply'&&body.reply===undefined)httpError('Reply is required',400,'invalid_reply');
+ return {action,patch};
+}
+
 export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (context, { user, role }) => {
   const id = context.params.id;
   if (!id) httpError('Review id required', 400);
 
   const body = await readJson(context.request);
-  const action = String(body.action || '').toLowerCase();
-  if (!['approve', 'reject'].includes(action)) httpError("action must be 'approve' or 'reject'", 400, 'invalid_action');
+  const {action,patch}=reviewPatch(body);
 
   const rows = await sb(context, `/rest/v1/reviews?id=eq.${encodeURIComponent(id)}&select=*`);
   const review = rows && rows[0];
   if (!review) httpError('Review not found', 404, 'not_found');
 
-  const patch = { moderation_status: action === 'approve' ? 'approved' : 'rejected' };
-  if (body.reply !== undefined) {
-    const reply = String(body.reply).trim();
-    if (reply.length > 1000) httpError('reply too long (max 1000)', 400, 'invalid_reply');
-    patch.admin_reply = reply || null;
-  }
 
   const before = { moderation_status: review.moderation_status, admin_reply: review.admin_reply };
   const updated = await sb(context, `/rest/v1/reviews?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', body: patch });
 
   await audit(context, {
     actorId: user.id, actorRole: role,
-    action: action === 'approve' ? 'review.approved' : 'review.rejected', // PROPOSED §5 addition
+    action: action==='reply'?'review.replied':action==='approve'?'review.approved':'review.rejected',
     entityType: 'review', entityId: review.id,
     before, after: patch,
   });

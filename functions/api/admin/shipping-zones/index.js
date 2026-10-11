@@ -10,7 +10,7 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
   return json({ zones: zones || [] });
 });
 
-export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user }) => {
+export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const body = await readJson(context.request);
   const name = String(body.name || '').trim();
   if (!name) httpError('Zone name required', 400, 'invalid');
@@ -23,6 +23,6 @@ export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { u
     position: Number(body.position) || 0,
   };
   const created = await sb(context, '/rest/v1/shipping_zones', { method: 'POST', body: row });
-  await audit(context, user.id, 'shipping_zone.created', { name });
+  await audit(context, { actorId:user.id, actorRole:role, action:'shipping_zone.created', entityType:'shipping_zone', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ name } });
   return json({ zone: Array.isArray(created) ? created[0] : created }, 201);
 });

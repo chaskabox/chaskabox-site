@@ -4,7 +4,7 @@
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
 
-export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { user }) => {
+export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const id = context.params.id;
   if (!id) httpError('Case id required', 400);
 
@@ -22,6 +22,6 @@ export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { 
   const updated = await sb(context, `/rest/v1/resolution_cases?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH', body: patch,
   });
-  await audit(context, user.id, 'resolution.updated', { id, status: patch.status });
+  await audit(context, { actorId:user.id, actorRole:role, action:'resolution.updated', entityType:'resolution', entityId:id, after:{ id, status: patch.status } });
   return json({ case: Array.isArray(updated) ? updated[0] : updated });
 });

@@ -106,7 +106,10 @@ export async function getUser(context) {
     if (!r.ok) return null;
     const u = await r.json();
     if (!u || !u.id) return null;
-    return { id: u.id, email: u.email || null };
+    // Inspect assurance claims only after Auth verifies this exact token.
+    let aal='aal1';
+    try { const claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); if(claims.sub===u.id && claims.aal==='aal2') aal='aal2'; } catch {}
+    return { id: u.id, email: u.email || null, aal };
   } catch {
     return null;
   }
@@ -134,6 +137,10 @@ export async function requireRole(context, allowedRoles) {
  * (contract §6: every POST/PATCH/DELETE has a limit), maps thrown Responses,
  * and never leaks stack traces to the client.
  */
+export function requireMfa(user) {
+  if(user?.aal!=='aal2') httpError('Verify your authenticator in Security before changing staff access.',403,'mfa_required');
+}
+
 export function withAdmin(allowedRoles, handler) {
   return async (context) => {
     try {
