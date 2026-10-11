@@ -26,7 +26,7 @@ export async function runNotifications(env, fetcher = fetch) {
         try { payload = buildNotificationPayload(env, order, job, templates); }
         catch (error) {
           const saved = await rpc('notification_finish', { p_id: job.id, p_token: job.lease_token, p_status: 'blocked', p_error: error.message });
-          if (!saved) throw new Error('notification_lease_lost'); counts.blocked++; continue;
+          if (!saved?.saved) throw new Error('notification_lease_lost'); counts[saved.status]++; continue;
         }
         payload = await rpc('notification_prepare', { p_id: job.id, p_token: job.lease_token, p_payload: payload });
         if (!payload) throw new Error('notification_lease_lost');
@@ -36,8 +36,8 @@ export async function runNotifications(env, fetcher = fetch) {
       const result = await sendNotification(env, { ...begun, request_payload: payload }, fetcher);
       const saved = await rpc('notification_finish', { p_id: job.id, p_token: job.lease_token, p_status: result.status,
         p_provider_id: result.provider_id || null, p_error: result.error || null, p_retry_seconds: result.retry_seconds || 0 });
-      if (!saved) throw new Error('notification_result_not_persisted');
-      counts[result.status]++;
+      if (!saved?.saved) throw new Error('notification_result_not_persisted');
+      counts[saved.status]++;
     }
     await rpc('notification_reconcile_receipts');
     await rpc('notification_record_run', { p_targets: config.targets, p_counts: counts });

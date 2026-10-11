@@ -9,7 +9,7 @@ import { onRequestGet as adminNotifications } from '../functions/api/admin/notif
 
 async function claim(db,after,target='owner_email'){return (await rpc(db,'notification_claim',{p_after:after,p_targets:[target]}))[0];}
 async function begin(db,job,after){await rpc(db,'notification_prepare',{p_id:job.id,p_token:job.lease_token,p_payload:{endpoint:'https://api.resend.com/emails',body:{text:'Frozen fixture'}}});return (await rpc(db,'notification_begin',{p_id:job.id,p_token:job.lease_token,p_after:after}))[0];}
-async function finish(db,job,status='accepted',id='synthetic-ack'){return rpc(db,'notification_finish',{p_id:job.id,p_token:job.lease_token,p_status:status,p_provider_id:status==='accepted'?id:null});}
+async function finish(db,job,status='accepted',id='synthetic-ack'){return (await rpc(db,'notification_finish',{p_id:job.id,p_token:job.lease_token,p_status:status,p_provider_id:status==='accepted'?id:null})).saved;}
 async function row(db,id){return (await db.query('select * from notification_deliveries where id=$1',[id])).rows[0];}
 async function hmac(hash,key,body,format){const k=await crypto.subtle.importKey('raw',key,{name:'HMAC',hash},false,['sign']);const sig=new Uint8Array(await crypto.subtle.sign('HMAC',k,new TextEncoder().encode(body)));return format==='hex'?Array.from(sig,x=>x.toString(16).padStart(2,'0')).join(''):btoa(String.fromCharCode(...sig));}
 const resendSecret='whsec_'+btoa('synthetic-webhook-signing-secret');
@@ -145,7 +145,7 @@ test('periodic reconciliation recovers a racing receipt; WhatsApp delivered cann
 });
 test('provider outcomes distinguish acceptance, rejected retries, permanent failures and unknown WAHA results',async()=>{
  const e=env(new Date().toISOString()),o={id:'fixture',order_number:'FIX',customer_phone:'+923000000000',total:500,items:[]};
- const email={id:1,target:'owner_email',event_type:'order_created'},wa={...email,target:'owner_whatsapp'};
+ const email={id:1,order_id:actor,target:'owner_email',event_type:'order_created'},wa={...email,target:'owner_whatsapp'};
  email.request_payload=buildNotificationPayload(e,o,email);wa.request_payload=buildNotificationPayload(e,o,wa);
  const response=(status,body,headers={})=>async()=>new Response(JSON.stringify(body),{status,headers});
  assert.equal((await sendNotification(e,email,response(200,{id:'provider-ack'}))).status,'accepted');
@@ -154,6 +154,7 @@ test('provider outcomes distinguish acceptance, rejected retries, permanent fail
  assert.equal((await sendNotification(e,email,response(400,{}))).status,'dead');assert.equal((await sendNotification(e,email,response(409,{name:'concurrent_idempotent_requests'}))).status,'retry');
  assert.equal((await sendNotification(e,wa,response(429,{}, {'Retry-After':'120'}))).retry_seconds,120);
  const timeout=async()=>{throw new Error('synthetic timeout')};assert.equal((await sendNotification(e,email,timeout)).status,'retry');assert.equal((await sendNotification(e,wa,timeout)).status,'uncertain');
+ assert.equal((await sendNotification(e,{...email,order_id:undefined},()=>{throw new Error('Invalid identity must never send')})).status,'blocked');
 });
 test('stored templates are rendered; disabled/invalid templates block, immutable status snapshot beats current order',()=>{
  const e=env(new Date().toISOString()),o={id:'fixture',order_number:'FIX',customer_name:'Fixture',customer_phone:'+923000000000',fulfilment_status:'delivered',total:500};
@@ -169,6 +170,11 @@ test('consumer processes at most four jobs per tick, records heartbeat and never
   await order(db,'FIRST');await order(db,'SECOND');const after=await activate(db),e=env(after),mock=router(db);
   const result=await runNotifications(e,mock.fetcher);assert.equal(result.counts.claimed,4);assert.equal(result.counts.accepted,4);assert.ok(mock.calls.length<50);
   const s=await rpc(db,'notification_summary');assert.equal(s.provider_results.accepted,4);assert.equal(s.provider_results.delivered,0);assert.ok(s.dispatch.last_completed_at);
+  const lastOrder=await order(db,'LAST-ATTEMPT'),lastJob=(await db.query("select * from notification_deliveries where order_id=$1 and target='owner_email'",[lastOrder.id])).rows[0];
+  await db.query("update notification_deliveries set attempts=5,first_attempt_at=now()-interval '5 minutes',request_payload=$1 where id=$2",[buildNotificationPayload(e,lastOrder,lastJob),lastJob.id]);
+  const failing=router(db,()=>new Response('{}',{status:503}));
+  const finalAttempt=await runNotifications({...e,NOTIFICATION_CHANNELS:'owner_email'},failing.fetcher);
+  assert.equal(finalAttempt.counts.uncertain,1);assert.equal(finalAttempt.counts.retry,0); // Count the persisted final state, not the provider's retry suggestion.
   let calls=0;assert.equal((await runNotifications({...e,NOTIFICATION_DISPATCH_ENABLED:'false'},()=>{calls++;throw new Error()})).paused,true);assert.equal(calls,0);
   await assert.rejects(runNotifications({...e,WAHA_API_KEY:''},()=>{calls++;throw new Error()}),/configuration_invalid/);assert.equal(calls,0);
  }finally{await db.close();}

@@ -65,6 +65,7 @@ alter table public.notification_deliveries enable row level security;
 alter table public.notification_receipts enable row level security;
 revoke all on public.notification_dispatch_state,public.notification_deliveries,public.notification_receipts from public,anon,authenticated;
 grant select,insert,update,delete on public.notification_dispatch_state,public.notification_deliveries,public.notification_receipts to service_role;
+revoke all on sequence public.notification_deliveries_id_seq from public,anon,authenticated;
 grant usage,select on sequence public.notification_deliveries_id_seq to service_role;
 grant select,insert on public.order_status_events to service_role;
 grant usage,select on sequence public.order_status_events_id_seq to service_role;
@@ -193,14 +194,14 @@ end;
 $$;
 
 create function public.notification_finish(p_id bigint,p_token uuid,p_status text,p_provider_id text default null,p_error text default null,p_retry_seconds integer default 0)
-returns boolean language plpgsql security invoker set search_path='' as $$
+returns jsonb language plpgsql security invoker set search_path='' as $$
 declare v public.notification_deliveries; v_receipt public.notification_receipts;
 begin
   if p_status not in ('accepted','retry','blocked','uncertain','dead') then raise exception 'Invalid notification result'; end if;
   if p_status='accepted' and (p_provider_id is null or length(p_provider_id) not between 1 and 240) then raise exception 'Acceptance requires provider ID'; end if;
   select * into v from public.notification_deliveries where id=p_id and lease_token=p_token and status='processing'
     and lease_expires_at>now() for update;
-  if not found then return false; end if;
+  if not found then return jsonb_build_object('saved',false); end if;
   if p_status='retry' and (v.attempts>=6 or v.first_attempt_at<now()-interval '23 hours') then
     p_status=case when v.target='owner_email' then 'uncertain' else 'dead' end;
   end if;
@@ -226,7 +227,7 @@ begin
       complained_at=(select min(occurred_at) from public.notification_receipts where provider_id=p_provider_id and channel=v_receipt.channel and delivery_status='complained')
       where id=p_id; end if;
   end if;
-  return true;
+  return jsonb_build_object('saved',true,'status',p_status);
 end;
 $$;
 

@@ -117,7 +117,7 @@ test('native PostgreSQL 17 concurrent consumers skip locked jobs and reject an e
     const reclaimed = JSON.parse(query(connection, sql).trim());
     assert.equal(reclaimed.id, first.id);
     assert.notEqual(reclaimed.lease_token, first.lease_token);
-    assert.equal(query(connection, "SELECT notification_finish(" + first.id + ",'" + first.lease_token + "','accepted','synthetic-expired-ack')").trim(), 'f');
+    assert.equal(query(connection, "SELECT notification_finish(" + first.id + ",'" + first.lease_token + "','accepted','synthetic-expired-ack')->>'saved'").trim(), 'false');
     assert.equal(query(connection, 'SELECT attempts FROM notification_deliveries WHERE id=' + first.id).trim(), '0');
   } finally {
     await Promise.all(processes.map(stop));

@@ -101,6 +101,7 @@ export function buildNotificationPayload(env, order, job, templates = []) {
   return { endpoint: wahaEndpoint(env), body: { session: env.WAHA_SESSION, chatId: recipient, text, linkPreview: false } };
 }
 export async function sendNotification(env, job, fetcher = fetch) {
+  if (!TARGETS.includes(job.target) || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(job.order_id || '')) return { status: 'blocked', error: 'notification_identity_invalid' };
   const email = job.target === 'owner_email', payload = job.request_payload;
   if (!payload || payload.endpoint !== (email ? 'https://api.resend.com/emails' : wahaEndpoint(env))) return { status: 'blocked', error: 'provider_endpoint_changed' };
   if (!email && payload.body?.session !== env.WAHA_SESSION) return { status: 'blocked', error: 'provider_session_changed' };
