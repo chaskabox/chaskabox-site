@@ -1,0 +1,37 @@
+name: ChaskaBox mobile performance diagnostics
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lighthouse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Production mobile Lighthouse baseline
+        run: |
+          mkdir -p perf-results
+          npx --yes lighthouse@12.8.2 https://chaskabox.online/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=perf-results/prod-home.json --quiet
+      - name: Preview mobile Lighthouse
+        continue-on-error: true
+        run: |
+          npx --yes lighthouse@12.8.2 https://perf-mobile-speed-20261012.chaskabox-site.pages.dev/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=perf-results/preview-home.json --quiet
+      - name: Report LCP, CLS shifts, blocking resources and large assets
+        if: always()
+        run: node tools/performance-audit-summary.mjs perf-results/prod-home.json perf-results/preview-home.json
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mobile-performance-diagnostics
+          path: perf-results/
+          if-no-files-found: warn
+          retention-days: 7
