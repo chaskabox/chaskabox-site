@@ -46,9 +46,10 @@
 
   function showLogin(message='Sign in with an approved staff account.'){
     hideBoot(); // bootstrap gate off — the login form is the only thing shown now
+    const mfaOverlay=$('#liveAdminMfa');if(mfaOverlay)mfaOverlay.hidden=true;
     let el=$('#liveAdminLogin'); if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);} el.hidden=false;
     el.innerHTML=`<form class="live-login-card" id="liveLoginForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Staff sign in</h1><p>${esc(message)}</p><label>Email<input id="liveEmail" type="email" autocomplete="username" required></label><label>Password<input id="livePassword" type="password" autocomplete="current-password" required></label><div id="liveLoginError" class="live-error" hidden></div><div id="liveLoginMsg" class="live-msg" hidden></div><button class="btn primary" type="submit">Sign in</button><a href="#" id="forgotPwLink" class="text-btn">Forgot password?</a><a href="/" class="text-btn">← Storefront</a></form>`;
-    $('#liveLoginForm').onsubmit=async e=>{e.preventDefault();const err=$('#liveLoginError');err.hidden=true;try{if(!(await ensureClient()))throw new Error('Supabase public configuration unavailable');const res=await SB.auth.signInWithPassword({email:$('#liveEmail').value.trim(),password:$('#livePassword').value});if(res.error)throw res.error;session=res.data.session;await bootAuthenticated();el.hidden=true;}catch(x){err.textContent=x.message||'Sign-in failed';err.hidden=false;}};
+    $('#liveLoginForm').onsubmit=async e=>{e.preventDefault();const err=$('#liveLoginError');err.hidden=true;try{if(!(await ensureClient()))throw new Error('Supabase public configuration unavailable');const res=await SB.auth.signInWithPassword({email:$('#liveEmail').value.trim(),password:$('#livePassword').value});if(res.error)throw res.error;session=res.data.session;const ready=await bootAuthenticated();if(ready)el.hidden=true;}catch(x){err.textContent=x.message||'Sign-in failed';err.hidden=false;}};
     $('#forgotPwLink').onclick=async e=>{e.preventDefault();const err=$('#liveLoginError');const msg=$('#liveLoginMsg');err.hidden=true;msg.hidden=true;const email=$('#liveEmail').value.trim();if(!email){err.textContent='Enter your email above first';err.hidden=false;return;}try{if(!(await ensureClient()))throw new Error('Supabase unavailable');const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/admin/'});if(error)throw error;msg.textContent='Reset link sent to '+email+'. Check your inbox.';msg.hidden=false;}catch(x){err.textContent=x.message||'Reset failed';err.hidden=false;}};
   }
   async function getMe(){ return await api('/api/admin/me'); }
@@ -103,15 +104,18 @@
       // Proactively refresh so a just-expired access token never fails the first check.
       try{ const {data:rd}=await SB.auth.refreshSession(); if(rd?.session?.access_token){ session=rd.session; fresh=true; } }catch(e){}
       if(!fresh){ const {data}=await SB.auth.getSession(); session=data?.session||null; }
+      if(!window.chaskaAdminMfa)throw new Error('MFA login module unavailable');
+      const passed=await window.chaskaAdminMfa.gate(SB,()=>bootAuthenticated(),()=>showLogin());
+      if(!passed)return false;
       me=await getMe();
     }catch(e){
       // A network blip must NEVER destroy a valid session — only real auth
       // failures (401/403) sign out. Anything else shows a retry state.
-      if(![401,403].includes(e?.status)){ showBootError('Account verification is unavailable. Reload to retry; your session has been kept.'); return; }
+      if(![401,403].includes(e?.status)){ showBootError('Account verification is unavailable. Reload to retry; your session has been kept.'); return false; }
       try{ await SB?.auth?.signOut(); }catch(se){}
       hideBoot();
       showLogin(e && e.status===403 ? 'This account is not authorized for the ChaskaBox admin panel.' : undefined);
-      return;
+      return false;
     }
     $('#backendState').className='backend-state'; $('#backendState').innerHTML=`<span></span><b>Live backend</b><small>${esc(me.role)} · authenticated</small>`;
     $('#securityNotice').className='security-notice live'; $('#securityNotice').innerHTML=`<strong>Live secure mode:</strong> authenticated as <b>${esc(me.role)}</b>. Every write is re-authorized server-side and audited.`;
@@ -123,6 +127,7 @@
     // Boot legacy admin.js catalogue UI now that we are authenticated.
     try{ await window.chaskaAdminDataBoot?.(); }catch(e){}
     const hash=location.hash||''; if(hash.startsWith('#order-')){ const id=hash.slice(7); document.querySelector('[data-view="orders"]')?.click(); setTimeout(()=>openOrder(id),250); }
+    return true;
   }
 
   async function loadDashboard(){
