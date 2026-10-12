@@ -1299,15 +1299,14 @@
       }catch(e){ checks.push({name,ok:false,detail:'Fetch failed'}); }
     };
     await Promise.all([
-      check('robots.txt','/robots.txt',t=>t.includes('sitemap-products.xml')),
+      check('robots.txt','/robots.txt',t=>t.includes('/api/product-sitemap')),
       check('Main sitemap','/sitemap.xml',t=>(t.match(/<url>/g)||[]).length>=10),
-      check('Product sitemap (static)','/sitemap-products.xml',t=>(t.match(/<url>/g)||[]).length>=100),
-      check('Product sitemap (dynamic)','/api/product-sitemap',t=>(t.match(/<url>/g)||[]).length>=100),
+      check('Product sitemap (dynamic)','/api/product-sitemap',t=>t.includes('<urlset')&&t.includes('chaskabox.online/product/')),
     ]);
     el.innerHTML='<div style="display:grid;gap:8px">'+checks.map(c=>
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--border);border-radius:8px">'
       +'<span>'+(c.ok?'\u2705':'\u274c')+' '+c.name+'</span><small class="muted">'+c.detail+'</small></div>'
-    ).join('')+'</div><p class="muted" style="font-size:11px;margin-top:8px">Static product pages include Product + Offer + Breadcrumb schema. Dynamic ?id= URLs redirect to static pages.</p>';
+    ).join('')+'</div><p class="muted" style="font-size:11px;margin-top:8px">Product URLs are rendered from the live catalogue with one Product schema, one Breadcrumb schema and a canonical URL. Legacy ?id= URLs redirect to these pages.</p>';
   }
 
   /* ============ BACKUP ============ */

@@ -403,4 +403,7 @@ recordView(); renderRelated();
 """
 
 if __name__ == "__main__":
+    import sys
+    if "--legacy-static-products" not in sys.argv:
+        raise SystemExit("Static product pages are retired. /product/<id>/ is server-rendered from the visible DB catalogue. To generate archival pages intentionally, pass --legacy-static-products; do not deploy the output.")
     main()

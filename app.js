@@ -572,12 +572,13 @@ function setPageMeta(title,path,noindex,description){
   const productPath=normalizePath(path||'/').startsWith('/product/');
   if(!productPath){
     document.getElementById('product-schema')?.remove();
+    document.getElementById('breadcrumb-schema')?.remove?.();
     setMetaTag('property','og:type','website');
     setMetaTag('property','og:image','https://chaskabox.online/images/logo-navy.png');
     setMetaTag('name','twitter:image','https://chaskabox.online/images/logo-navy.png');
   }
   if(!normalizePath(path||'/').startsWith('/brand/'))document.getElementById('brandBreadcrumbSchema')?.remove();
-  if(!normalizePath(path||'/').startsWith('/category/') && normalizePath(path||'/')!=='/shop/' && normalizePath(path||'/')!=='/bundles/')document.getElementById('category-breadcrumb-schema')?.remove();
+  if(!normalizePath(path||'/').startsWith('/category/') && normalizePath(path||'/')!=='/shop/' && normalizePath(path||'/')!=='/bundles/')document.getElementById('category-breadcrumb-schema')?.remove?.();
   const canonical='https://chaskabox.online'+normalizePath(path||'/');
   let c=document.querySelector('link[rel="canonical"]');
   if(!c){ c=document.createElement('link'); c.rel='canonical'; document.head.appendChild(c); }
