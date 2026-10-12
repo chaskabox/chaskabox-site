@@ -26,7 +26,7 @@ jobs:
       - name: Preview mobile Lighthouse
         continue-on-error: true
         run: |
-          npx --yes lighthouse@12.8.2 https://perf-mobile-speed-20261012.chaskabox-site.pages.dev/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=perf-results/preview-home.json --quiet
+          npx --yes lighthouse@12.8.2 https://perf-mobile-home-asap-202610.chaskabox-site.pages.dev/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=perf-results/preview-home.json --quiet
       - name: Report LCP, CLS shifts, blocking resources and large assets
         if: always()
         run: node tools/performance-audit-summary.mjs perf-results/prod-home.json perf-results/preview-home.json
