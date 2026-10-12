@@ -1525,7 +1525,14 @@ document.addEventListener('DOMContentLoaded',async()=>{
     window.addEventListener('scroll',onS,{passive:true});onS();})();
   migrateHashURL(); /* migrate old #/shop URLs to clean paths (replaceState) */
   route(); /* Phase 1: route from clean URL path */
-  if(typeof initAccount==='function')initAccount().catch(e=>console.warn('account init',e));
+  // Restore sessions immediately on the account route. On public pages, use
+  // idle time so the Auth SDK does not compete with the first content paint.
+  if(typeof initAccount==='function'){
+    const authStart=()=>initAccount().catch(e=>console.warn('account init',e));
+    if(location.pathname==='/account/' || location.hash.includes('type=recovery')) authStart();
+    else if(typeof requestIdleCallback==='function') requestIdleCallback(authStart,{timeout:3500});
+    else setTimeout(authStart,2500);
+  }
   observeReveals();
 });
 
