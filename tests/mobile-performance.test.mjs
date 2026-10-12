@@ -6,12 +6,15 @@ const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
 
 test('initial storefront scripts download without blocking HTML parsing in document order',()=>{
  const scripts=[...index.matchAll(/<script\s+defer\s+src="([^"]+)"/g)].map(x=>x[1]);
- assert.ok(scripts.some(s=>s.includes('@supabase/supabase-js@')));
+ // Auth SDK is now loaded on demand: only small local dependencies block startup.
+ assert.ok(!scripts.some(s=>s.includes('@supabase/supabase-js@')));
  assert.ok(scripts.some(s=>s.startsWith('/app.js?')));
- const sdk=scripts.findIndex(s=>s.includes('@supabase/supabase-js@'));
  const config=scripts.findIndex(s=>s.startsWith('/supabase-config.js?'));
  const appIndex=scripts.findIndex(s=>s.startsWith('/app.js?'));
- assert.ok(sdk>=0 && sdk<config && config<appIndex);
+ assert.ok(config>=0 && config<appIndex);
+ const cfg=readFileSync(new URL('../supabase-config.js',import.meta.url),'utf8');
+ assert.match(cfg,/function loadSupabaseSdk\(\)/);
+ assert.match(cfg,/script\.async=true/);
  assert.match(index,/<img src="\/images\/logo-white\.png"[^>]+loading="lazy"/);
 });
 

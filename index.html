@@ -18,7 +18,6 @@
 </script>
 
 <link rel="stylesheet" href="/styles.css?v=20261012-perf2">
-<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 </head>
 <body>
@@ -276,17 +275,13 @@
   <div class="aifoot"><input id="aiq" placeholder="Product ya sawal likhein..." onkeydown="if(event.key==='Enter')askAIFree()"><button onclick="askAIFree()">➤</button></div>
 </div>
 
-<script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
-<script defer src="/supabase-config.js?v=3"></script>
+<script defer src="/supabase-config.js?v=20261012-perf3"></script>
 <script defer src="/photo-manifest.js?v=1"></script>
-<script defer src="/app.js?v=20261012-perf2"></script>
+<script defer src="/app.js?v=20261012-perf3"></script>
 <script defer src="/reviews-widget.js?v=1"></script>
-<script defer src="/account.js?v=20261012-release?v=5"></script>
+<script defer src="/account.js?v=20261012-perf3"></script>
 <script defer src="/analytics.js?v=1"></script>
 <script defer src="/retention.js?v=5"></script>
-<script>
-/* Remove Netlify badge */
-(function(){function rm(){document.querySelectorAll('div[class*="netlify" i],a[href*="netlify.com"],iframe[src*="netlify"],[id*="netlify" i]').forEach(e=>e.remove());}rm();new MutationObserver(rm).observe(document.body,{childList:true,subtree:true});setInterval(rm,2000);})();
-</script>
+<!-- Removed global DOM MutationObserver/setInterval badge scrubber: no Netlify badge exists on Cloudflare Pages. -->
 <script src="/site-runtime.js?v=1" defer></script></body>
 </html>

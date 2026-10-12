@@ -23,8 +23,11 @@ function prepareAccountModal(m){
  if(!m.classList.contains('open'))ACCOUNT_RETURN_FOCUS=document.activeElement;
  m.setAttribute('role','dialog');m.setAttribute('aria-label','ChaskaBox account');m.setAttribute('aria-modal','true');m.classList.add('open');m.setAttribute('aria-hidden','false');document.body.style.overflow='hidden';
 }
-function toggleAccount(){
-  // If signed in, go to account page; otherwise open sign-in modal
+async function toggleAccount(){
+  // Clicking before idle Auth initialization must still detect an existing session.
+  if(!ACCOUNT_SESSION){
+    try{await initAccount();}catch(e){console.warn('account init',e);}
+  }
   if(ACCOUNT_SESSION){ location.href='/account/'; return; }
   openAuthModal('signin');
 }

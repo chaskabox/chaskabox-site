@@ -76,7 +76,9 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='htt
 const executablePath=option('--browser-executable',process.env.QA_BROWSER_EXECUTABLE);
 const browser=await chromium.launch({headless:true,...(executablePath?{executablePath}:{}),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']});
 const results={method:'Actual local source with synthetic API/Auth fixtures; not managed acceptance',cases:[],interactions:[],errors:[]};
-async function contextFor(width,role){const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});if(role)await context.addCookies([{name:'qa_role',value:role,url:base}]);await context.route('https://**/*',route=>route.fulfill({status:200,contentType:'text/plain',body:''}));const page=await context.newPage();page.on('pageerror',e=>results.errors.push(e.stack));page.on('dialog',d=>d.dismiss());return {context,page};}
+async function contextFor(width,role){const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});if(role)await context.addCookies([{name:'qa_role',value:role,url:base}]);await context.route('https://**/*',route=>route.request().url().includes('/@supabase/supabase-js@')
+ ?route.fulfill({status:200,contentType:'text/javascript',body:'('+fakeSdk.toString()+')();'})
+ :route.fulfill({status:200,contentType:'text/plain',body:''}));const page=await context.newPage();page.on('pageerror',e=>results.errors.push(e.stack));page.on('dialog',d=>d.dismiss());return {context,page};}
 async function inspect(page,route,width,role){
  const response=await page.goto(base+route,{waitUntil:'domcontentloaded'});
  if(route==='/admin/')await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
@@ -91,6 +93,24 @@ async function inspect(page,route,width,role){
 try{
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/'];
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){const {context,page}=await contextFor(width);for(const route of routes)await inspect(page,route,width);await context.close();}
+ // A first-time guest should be able to sign in even before idle Auth loads.
+ {
+  const {context,page}=await contextFor(390);
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>toggleAccount());
+  await page.locator('#acctmodal.open #authEmail').waitFor({timeout:15000});
+  results.interactions.push({case:'on-demand Auth SDK opens sign-in for a guest',pass:true});
+  await context.close();
+ }
+ // An existing session must not be mistaken for a guest on an early account click.
+ {
+  const {context,page}=await contextFor(390,'customer');
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.evaluate(()=>toggleAccount());
+  await page.waitForURL('**/account/',{timeout:15000});
+  results.interactions.push({case:'on-demand Auth SDK restores existing session on first click',pass:true});
+  await context.close();
+ }
  const {context,page}=await contextFor(390);await page.goto(base+'/account/');await page.locator('#acctForgot').click();await page.locator('#resetEmail').fill('synthetic@example.invalid');await page.locator('#resetSend').click();
  await page.waitForFunction(()=>document.getElementById('resetStatus')?.textContent.startsWith('If an account'));results.interactions.push({case:'generic reset message',pass:(await page.locator('#resetStatus').innerText()).startsWith('If an account')});await page.keyboard.press('Escape');results.interactions.push({case:'Escape closes account dialog',pass:!await page.locator('#acctmodal').evaluate(e=>e.classList.contains('open'))});
  await page.evaluate(()=>{window.qaResetFailure=true;});await page.locator('#acctForgot').click();await page.locator('#resetEmail').fill('synthetic@example.invalid');await page.locator('#resetSend').click();await page.waitForFunction(()=>document.getElementById('resetStatus')?.textContent.includes('Synthetic reset'));
