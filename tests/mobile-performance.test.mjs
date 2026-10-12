@@ -29,3 +29,9 @@ test('hero image priorities reserve square space and delay nonessential download
  assert.match(app,/loading="\$\{i===0\?'eager':'lazy'\}"/);
  assert.match(app,/fetchpriority="\$\{i===0\?'high':'low'\}"/);
 });
+
+test('primary homepage hero does not shift below dynamically ordered CMS sections',()=>{
+ const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+ assert.match(css,/#view-home\s*>\s*\.hero\s*\{\s*order:-100\s*\}/);
+ assert.match(app,/el\.style\.order=key==='hero'\?'-100':String\(row\.position\*10\)/);
+});

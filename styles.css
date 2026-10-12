@@ -911,6 +911,9 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.motion-reveals .reveal:not(.in){opacity:1;transform:none}.drawer,.mnav{transition:none}.herocollage{transform:none!important}}
 
 #view-home{display:flex;flex-direction:column}
+/* Reserve the hero's initial position before CMS data arrives; later CMS section
+   ordering must not move the first-screen primary heading. */
+#view-home>.hero{order:-100}
 [hidden]{display:none!important}
 
 /* Final acceptance: contained scrollers, readable copy, and accessible zoom. */

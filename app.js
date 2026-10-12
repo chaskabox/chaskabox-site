@@ -511,7 +511,7 @@ function applyHomeCms(){
     for(const sel of sels){
       const el=document.querySelector(sel); if(!el) continue;
       el.hidden=row.enabled===false;
-      if(key!=='announcement_bar')el.style.order=String(row.position*10);
+      if(key!=='announcement_bar')el.style.order=key==='hero'?'-100':String(row.position*10);
       const cfg=row.config||{};if(key==='hero'){const link=el.querySelector('.hero-actions a');if(link){if(cfg.button_text!==undefined)link.textContent=cfg.button_text;if(cfg.button_url&&/^(\/[^/]|https:\/\/)/.test(cfg.button_url))link.href=cfg.button_url;}}
       if(row.heading!==null&&row.heading!==undefined){const h=el.querySelector('h1,h2');if(h)h.textContent=row.heading;}
       if(row.subheading!==null&&row.subheading!==undefined){const text=el.querySelector('p,.freshdesc');if(text)text.textContent=row.subheading;}
