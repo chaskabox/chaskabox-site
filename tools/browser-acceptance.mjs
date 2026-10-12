@@ -93,6 +93,26 @@ async function inspect(page,route,width,role){
 try{
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/'];
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){const {context,page}=await contextFor(width);for(const route of routes)await inspect(page,route,width);await context.close();}
+ // Reproduce the live legacy logo setting and prove branding survives errors.
+ {
+  const {context,page}=await contextFor(390);
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>typeof window.applyStorefrontManifest==='function');
+  const loadedLogo=expected=>page.waitForFunction(src=>{const img=document.querySelector('.logo img');return img?.getAttribute('src')===src&&img.complete&&img.naturalWidth>0&&getComputedStyle(img).display!=='none';},expected);
+  await loadedLogo('/images/logo-navy.png');
+  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/logo.png'}}));
+  await loadedLogo('/images/logo-navy.png');
+  results.interactions.push({case:'missing CMS logo restores the bundled original',pass:true});
+  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/images/logo-white.png'}}));
+  await loadedLogo('/images/logo-white.png');
+  results.interactions.push({case:'valid custom logo still loads after a failed logo',pass:true});
+  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/missing-site-logo.png'}}));
+  await loadedLogo('/images/logo-navy.png');
+  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:''}}));
+  await loadedLogo('/images/logo-navy.png');
+  results.interactions.push({case:'repeat logo errors and theme reset preserve branding',pass:true});
+  await context.close();
+ }
  // A first-time guest should be able to sign in even before idle Auth loads.
  {
   const {context,page}=await contextFor(390);
