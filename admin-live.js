@@ -54,7 +54,7 @@
       if(name==='homepage' && roleAllows('owner','manager','content')) await loadHomepage();
       if(name==='media' && roleAllows('owner','manager','content')) await loadMedia();
       if(name==='settings' && roleAllows('owner')) await loadSettings();
-      if(name==='security' && roleAllows('owner')) await loadSecurity();
+      if(name==='security' && roleAllows('owner','manager','fulfilment','content')) await loadSecurity();
       if(name==='products' && roleAllows('owner','manager','content')) await loadProducts();
       if(name==='boxes' && roleAllows('owner','manager','content')) await enableBoxBuilder();
       if(name==='categories' && roleAllows('owner','manager','content')) await loadCategories();
@@ -93,7 +93,7 @@
     }catch(e){
       // A network blip must NEVER destroy a valid session — only real auth
       // failures (401/403) sign out. Anything else shows a retry state.
-      if(e && e.status===0){ showBootError('Could not reach the server. Check your connection and reload.'); return; }
+      if(![401,403].includes(e?.status)){ showBootError('Account verification is unavailable. Reload to retry; your session has been kept.'); return; }
       try{ await SB?.auth?.signOut(); }catch(se){}
       hideBoot();
       showLogin(e && e.status===403 ? 'This account is not authorized for the ChaskaBox admin panel.' : undefined);
@@ -112,19 +112,19 @@
   }
 
   async function loadDashboard(){
-    let attention={counts:{},needs_attention:[]}, od={orders:[]}, metrics={}, boxes={boxes:[],total:0};
-    try{
-      [attention,od,metrics,boxes]=await Promise.all([api('/api/admin/attention'),api('/api/admin/orders?per_page=100'),api('/api/admin/metrics?days=30'),api('/api/admin/boxes?per_page=1')]);
-    }catch(e){ console.warn('[dashboard] API error', e); }
-    const dashOrders=od.orders||[];
-    $('#metricOrders').textContent=attention.counts?.new_orders ?? dashOrders.filter(o=>o.fulfilment_status==='new').length ?? 0;
-    $('#metricRevenue').textContent=money(metrics.recognized_sales_pkr||0);
-    const mb=$('#metricBundles'); if(mb) mb.textContent=boxes.total ?? (boxes.boxes||[]).length ?? '—';
-    const revenueCard=$('#metricRevenue')?.closest('.metric-card'); if(revenueCard){const small=revenueCard.querySelector('small');if(small)small.textContent='Recognized sales · 30 days';}
-    $('#orderNavCount').textContent=dashOrders.length;
-    let panel=$('#needsAttentionPanel'); if(!panel){panel=document.createElement('section');panel.id='needsAttentionPanel';panel.className='panel';$('#view-dashboard').appendChild(panel);} const rows=attention.needs_attention||[];
-    panel.innerHTML=`<div class="panel-head"><div><h2>Needs attention</h2><p>Only exceptions that need owner/staff action.</p></div><button class="text-btn" id="refreshAttention">Refresh</button></div>${rows.length?`<div class="attention-list">${rows.slice(0,12).map(x=>`<button class="attention-row" data-open-order="${esc(x.id)}"><span class="attention-dot ${esc(x.reason)}"></span><div><b>${esc(x.order_number)} · ${esc(x.customer_name)}</b><small>${esc(x.reason.replaceAll('_',' '))} · ${x.age_minutes} min · ${money(x.total)}</small></div><span>Open →</span></button>`).join('')}</div>`:'<div class="empty-mini">Nothing urgent right now.</div>'}`;
-    $('#refreshAttention')?.addEventListener('click',loadDashboard); $$('[data-open-order]',panel).forEach(b=>b.onclick=()=>openOrder(b.dataset.openOrder));
+    const results=await Promise.allSettled([api('/api/admin/attention'),api('/api/admin/orders?per_page=100'),roleAllows('owner','manager')?api('/api/admin/metrics?days=30'):Promise.reject(new Error('Revenue unavailable for this role')),api('/api/admin/boxes?per_page=1')]);
+    const value=i=>results[i].status==='fulfilled'?results[i].value:null;
+    const attention=value(0),od=value(1),metrics=value(2),boxes=value(3);
+    $('#metricOrders').textContent=attention?.counts?.new_orders??'Unavailable';
+    $('#metricRevenue').textContent=metrics?money(metrics.recognized_sales_pkr):'Unavailable';
+    const mb=$('#metricBundles');if(mb)mb.textContent=boxes?.total??'Unavailable';
+    const revenueCard=$('#metricRevenue')?.closest('.metric-card');if(revenueCard){const small=revenueCard.querySelector('small');if(small)small.textContent='Recognized sales · 30 days';}
+    $('#orderNavCount').textContent=od?.total??'—';
+    let panel=$('#needsAttentionPanel');if(!panel){panel=document.createElement('section');panel.id='needsAttentionPanel';panel.className='panel';$('#view-dashboard').appendChild(panel);}
+    const rows=attention?.needs_attention||[];
+    const heading='<div class="panel-head"><div><h2>Needs attention</h2><p>Showing '+Math.min(12,rows.length)+' of '+esc(attention?.needs_attention_total??rows.length)+' matching issues.</p></div><button class="text-btn" id="refreshAttention">Refresh</button></div>';
+    panel.innerHTML=heading+(!attention?'<p role="alert">Attention status unavailable. Refresh to retry.</p>':rows.length?'<div class="attention-list">'+rows.slice(0,12).map(x=>'<button class="attention-row" data-open-order="'+esc(x.id)+'"><div><b>'+esc(x.order_number)+' · '+esc(x.customer_name)+'</b><small>'+esc(x.reason.replaceAll('_',' '))+' · '+x.age_minutes+' min · '+money(x.total)+'</small></div><span>Open →</span></button>').join('')+'</div>':'<div class="empty-mini">Nothing urgent right now.</div>');
+    $('#refreshAttention')?.addEventListener('click',loadDashboard);$$('[data-open-order]',panel).forEach(b=>b.onclick=()=>openOrder(b.dataset.openOrder));
     // Phase 2C: KPI cards open relevant detail
     const cardNav=[
       ['#metricOrders','orders','Open Orders'],
@@ -143,12 +143,13 @@
     const exportBtn=$('#view-orders .toolbar .btn.secondary'); if(exportBtn){exportBtn.disabled=false;exportBtn.onclick=async()=>{try{const t=await token();const r=await fetch('/api/admin/orders/export.csv',{headers:{Authorization:`Bearer ${t}`}});if(!r.ok)throw new Error('Export failed');const blob=await r.blob();const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='chaskabox-orders.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}catch(e){toast(e.message)}}}
   }
   function debounce(fn,ms){let t;return()=>{clearTimeout(t);t=setTimeout(fn,ms)}}
-  async function loadOrders(){
-    const q=$('#orderSearch')?.value?.trim()||'', status=$('#orderStatusFilter')?.value||''; const sp=new URLSearchParams({per_page:'50'}); if(q)sp.set('q',q);if(status)sp.set('fulfilment_status',status);
+  async function loadOrders(page=1){
+    const q=$('#orderSearch')?.value?.trim()||'', status=$('#orderStatusFilter')?.value||''; const sp=new URLSearchParams({per_page:'50',page:String(page)}); if(q)sp.set('q',q);if(status)sp.set('fulfilment_status',status);
     const data=await api('/api/admin/orders?'+sp);orders=data.orders||[];
     const target=$('#view-orders .empty-backend')||$('#view-orders .live-table-wrap')?.parentElement||$('#orderListWrap');
     if(!target) return;
     target.classList.remove('empty-backend'); target.innerHTML=orders.length?`<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Order</th><th>Customer</th><th>Payment</th><th>Fulfilment</th><th>Total</th><th></th></tr></thead><tbody>${orders.map(o=>`<tr><td><b>${esc(o.order_number)}</b><small>${fmtDate(o.created_at)}</small></td><td>${esc(o.customer_name)}<small>${esc(o.customer_phone)}</small></td><td><span class="status-pill">${esc(o.payment_status)}</span><small>${esc(o.payment_method)}</small></td><td><span class="status-pill ${esc(o.fulfilment_status)}">${esc(o.fulfilment_status)}</span></td><td><b>${money(o.total)}</b></td><td><button class="btn secondary compact" data-order="${esc(o.id)}">Manage</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-mini">No matching orders.</div>';
+    wirePager(target,data,loadOrders);
     $$('[data-order]',target).forEach(b=>b.onclick=()=>openOrder(b.dataset.order));
   }
   async function openOrder(id){
@@ -159,7 +160,7 @@
     $$('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
     $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{try{const st=b.dataset.status;let body={fulfilment_status:st,expected_updated_at:o.updated_at};if(st==='cancelled'){const reason=prompt('Cancellation reason (required):');if(!reason)return;body.cancel_reason=reason;}await api(`/api/admin/orders/${id}/status`,{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
     $$('[data-pay]',modal).forEach(b=>b.onclick=async()=>{try{await api(`/api/admin/orders/${id}/payment/verify`,{method:'POST',body:{decision:b.dataset.pay,expected_updated_at:o.updated_at}});toast('Payment updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
-    $('[data-retry]',modal).onclick=async()=>{try{await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast('Notification queued for retry')}catch(e){toast(e.message)}};
+    $('[data-retry]',modal).onclick=async()=>{try{const r=await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast(r.queued?`${r.queued} safe notification job(s) queued`:'No safe retries available; check Notifications for review')}catch(e){toast(e.message)}};
     // Print invoice / packing slip
     const printBar = document.createElement('div');
     printBar.style.cssText = 'display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)';
@@ -264,13 +265,14 @@
     const categories=[...new Set(products.map(p=>String(p.category||'').trim()).filter(Boolean))];
     for(const category of categories) if(selector && ![...selector.options].some(o=>o.value===category)) selector.add(new Option(category,category));
     const p=products.find(x=>String(x.id)===String(id)); if(!p)return; $('#editProductId').value=p.id;$('#editName').value=p.name||'';$('#editPrice').value=p.price||'';$('#editOldPrice').value=p.old_price||'';$('#editCategory').value=p.category||'';$('#editPack').value=p.pack||'';$('#editBadge').value=p.badge||'';$('#editVisibility').value=p.visibility==='visible'?'visible':'hidden';$('#editDescription').value=p.description||'';$('#editImage').value=p.image_url||'';$('#editBundle').checked=!!p.is_bundle;
+    $('#editBrand').value=p.brand||'';$('#editStock').value=p.stock_state||'sourced_after_order';$('#editTags').value=(p.tags||[]).join(', ');
     $('#editSeoTitle').value=p.seo_title||'';$('#editSeoDesc').value=p.seo_description||'';$('#editOgImage').value=p.og_image||'';$('#editCanonical').value=p.canonical_url||'';
     $('#productEditorTitle').textContent='Edit '+p.name;$('#productEditor').classList.add('open');$('#productEditor').setAttribute('aria-hidden','false');
     // Refresh preview (admin.js listens for input events on the form)
     try{ $('#editImage').dispatchEvent(new Event('input',{bubbles:true})); }catch{}
   }
   function wireLiveProductEditor(){
-    const form=$('#productForm'); if(!form)return; form.addEventListener('submit',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();const id=$('#editProductId').value;const body={name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),old_price:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,description:$('#editDescription').value.trim(),image_url:$('#editImage').value.trim(),visibility:$('#editVisibility').value,seo_title:$('#editSeoTitle').value.trim()||null,seo_description:$('#editSeoDesc').value.trim()||null,og_image:$('#editOgImage').value.trim()||null,canonical_url:$('#editCanonical').value.trim()||null};try{const saved=id?await api(`/api/admin/products/${id}`,{method:'PATCH',body}):await api('/api/admin/products',{method:'POST',body});const savedId=saved?.product?.id||id;toast('Product saved');$('#productEditor').classList.remove('open');await loadProducts();if(savedId){api('/api/admin/ai-reindex',{method:'POST',body:{product_ids:[Number(savedId)],stale_only:false,limit:1}}).catch(()=>{});}}catch(x){toast(x.message)}},true);
+    const form=$('#productForm'); if(!form)return; form.addEventListener('submit',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();const id=$('#editProductId').value;const body={name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),old_price:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,description:$('#editDescription').value.trim(),image_url:$('#editImage').value.trim(),visibility:$('#editVisibility').value,brand:$('#editBrand').value.trim(),stock_state:$('#editStock').value,tags:$('#editTags').value.split(',').map(t=>t.trim()).filter(Boolean),seo_title:$('#editSeoTitle').value.trim()||null,seo_description:$('#editSeoDesc').value.trim()||null,og_image:$('#editOgImage').value.trim()||null,canonical_url:$('#editCanonical').value.trim()||null};try{const saved=id?await api(`/api/admin/products/${id}`,{method:'PATCH',body}):await api('/api/admin/products',{method:'POST',body});const savedId=saved?.product?.id||id;toast('Product saved');$('#productEditor').classList.remove('open');await loadProducts();}catch(x){toast(x.message)}},true);
     // Inline AI: improve description
     $('#aiImproveProduct')?.addEventListener('click',async()=>{
       const name=$('#editName').value.trim();
@@ -296,11 +298,24 @@
     $('#archiveProduct')?.addEventListener('click',async e=>{const id=$('#editProductId').value;if(!id||!me)return;e.preventDefault();e.stopImmediatePropagation();if(!confirm('Archive this product?'))return;try{await api(`/api/admin/products/${id}/archive`,{method:'POST',body:{}});toast('Product archived');$('#productEditor').classList.remove('open');loadProducts()}catch(x){toast(x.message)}},true);
   }
 
-  async function loadCustomers(){
-    const d=await api('/api/admin/customers?per_page=100'), view=$('#view-customers');view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Customers</h2><p>Order history and recognized customer value.</p></div></div><div class="live-table-wrap"><table class="live-table"><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Recognized spend</th><th>Last order</th></tr></thead><tbody>${(d.customers||[]).map(c=>`<tr><td><b>${esc(c.name||'—')}</b></td><td>${esc(c.phone||'—')}</td><td>${c.order_count||0}</td><td>${money(c.lifetime_spend)}</td><td>${esc(c.last_order_number||'—')}<small>${c.last_order_at?fmtDate(c.last_order_at):''}</small></td></tr>`).join('')}</tbody></table></div></div>`;
+  function wirePager(view,d,load){
+    view.querySelector('[data-page-controls]')?.remove();
+    const pages=d.total_pages||0,page=d.page||1;
+    const p=document.createElement('div');p.dataset.pageControls='';p.style.cssText='display:flex;gap:12px;align-items:center;padding:16px';
+    p.innerHTML=`<button class="btn secondary" data-prev ${page<=1?'disabled':''}>Previous</button><span>Page ${page} of ${Math.max(1,pages)} · ${d.total??0} records</span><button class="btn secondary" data-next ${page>=pages?'disabled':''}>Next</button>`;
+    p.querySelector('[data-prev]').onclick=()=>load(page-1).catch(e=>toast(e.message));p.querySelector('[data-next]').onclick=()=>load(page+1).catch(e=>toast(e.message));view.append(p);
   }
-  async function loadReviews(){
-    const d=await api('/api/admin/reviews?per_page=100'),view=$('#view-reviews');
+  async function loadCustomerDetail(id,page=1){
+    const d=await api('/api/admin/customers/'+encodeURIComponent(id)+'?page='+page),view=$('#view-customers');
+    view.innerHTML=`<div class="panel"><button class="btn secondary" data-customer-back>Back to customers</button><h2>${esc(d.customer.name||'Customer')}</h2><p>${esc(d.customer.phone||'')} · ${esc(d.customer.email||'')}</p><p>${d.customer.order_count} orders · Recognized spend ${money(d.customer.lifetime_spend)}</p><div class="live-table-wrap"><table class="live-table"><tr><th>Order</th><th>Total</th><th>Status</th></tr>${d.orders.map(o=>`<tr><td>${esc(o.order_number)}</td><td>${money(o.total)}</td><td>${esc(o.fulfilment_status)}</td></tr>`).join('')}</table></div></div>`;
+    view.querySelector('[data-customer-back]').onclick=()=>loadCustomers().catch(e=>toast(e.message));wirePager(view,d,p=>loadCustomerDetail(id,p));
+  }
+  async function loadCustomers(page=1){
+    const d=await api('/api/admin/customers?per_page=100&page='+page), view=$('#view-customers');view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Customers</h2><p>Order history and recognized customer value.</p></div></div><div class="live-table-wrap"><table class="live-table"><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Recognized spend</th><th>Last order</th></tr></thead><tbody>${(d.customers||[]).map(c=>`<tr><td><button class="btn secondary compact" data-customer="${esc(c.id)}">${esc(c.name||'—')}</button></td><td>${esc(c.phone||'—')}</td><td>${c.order_count||0}</td><td>${money(c.lifetime_spend)}</td><td>${esc(c.last_order_number||'—')}<small>${c.last_order_at?fmtDate(c.last_order_at):''}</small></td></tr>`).join('')}</tbody></table></div></div>`;
+    wirePager(view,d,loadCustomers);$$('[data-customer]',view).forEach(b=>b.onclick=()=>loadCustomerDetail(b.dataset.customer).catch(e=>toast(e.message)));
+  }
+  async function loadReviews(page=1){
+    const d=await api('/api/admin/reviews?per_page=100&page='+page),view=$('#view-reviews');
     view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Review moderation</h2><p>Only real customer submissions; no fabricated ratings.</p></div></div><div class="review-list">${(d.reviews||[]).map(r=>{
       const pname=r.products?.name||('Product #'+r.product_id);
       const reviewer=r.user_id?('User: '+String(r.user_id).slice(0,8)+'…'):'Guest (no account)';
@@ -309,6 +324,7 @@
       return `<article class="review-admin-row" style="border-bottom:1px solid #eee;padding:12px 0"><div><b>${'★'.repeat(Number(r.rating||0))}${'☆'.repeat(5-Number(r.rating||0))}</b> <span style="font-weight:600">${esc(pname)}</span><p style="margin:6px 0">${esc(r.review_text)}</p><small style="color:#666">${esc(r.moderation_status)}${r.verified_purchase?' · ✓ verified purchase':''} · ${esc(reviewer)} · ${new Date(r.created_at).toLocaleDateString('en-PK')}</small>${replyHtml}${replyForm}</div><div style="margin-top:8px">${r.moderation_status==='pending'?`<button class="btn primary compact" data-review="${r.id}" data-review-action="approve">Approve</button> <button class="btn secondary compact" data-review="${r.id}" data-review-action="reject">Reject</button>`:''}</div></article>`;
     }).join('')||'<div class="empty-mini">No reviews.</div>'}</div></div>`;
     // Approve/reject
+    wirePager(view,d,loadReviews);
     $$('[data-review]',view).forEach(b=>b.onclick=async()=>{
       try{
         const replyInput=view.querySelector(`[data-reply-input="${b.dataset.review}"]`);
@@ -338,21 +354,33 @@
     $$('[data-home-toggle]',view).forEach(b=>b.onclick=async()=>{const row=rows.find(r=>r.section_key===b.dataset.homeToggle);try{await api('/api/admin/homepage',{method:'PATCH',body:{sections:[{section_key:row.section_key,enabled:!row.enabled}]}});toast('Homepage visibility saved');loadHomepage()}catch(e){toast(e.message)}});
     $('#homeSave').onclick=async()=>{try{const ids=$('#homeProductIds').value.split(',').map(x=>Number(x.trim())).filter(x=>Number.isInteger(x)&&x>0);const current=rows.find(r=>r.section_key===$('#homeKey').value)||{};const draft={...(current.draft_config||current.config||{}),product_ids:ids};await api('/api/admin/homepage',{method:'PATCH',body:{sections:[{section_key:$('#homeKey').value,heading:$('#homeHeading').value.trim(),subheading:$('#homeSub').value.trim(),draft_config:draft}]}});toast('Homepage changes saved; publish curated products when ready');await loadHomepage()}catch(e){toast(e.message)}};
     if($('#homePublish'))$('#homePublish').onclick=async()=>{try{await api('/api/admin/homepage/publish',{method:'POST',body:{keys:[$('#homeKey').value]}});toast('Homepage section published');loadHomepage()}catch(e){toast(e.message)}};
+    const preview=document.createElement('button');preview.className='btn secondary';preview.textContent='Preview saved drafts';view.append(preview);
+    preview.onclick=()=>{view.querySelector('[data-home-preview]')?.remove();const frame=document.createElement('iframe');frame.dataset.homePreview='';frame.title='Homepage draft preview';frame.style.cssText='width:100%;height:650px;border:1px solid #ddd;margin-top:12px';frame.src='/?cms_preview=1';frame.onload=()=>frame.contentWindow.postMessage({type:'CHASKABOX_HOME_PREVIEW',sections:d.sections.map(s=>({...s,config:s.draft_config??s.config}))},location.origin);view.append(frame);};
+
   }
 
   function wireMedia(){}
-  async function loadMedia(){
-    const d=await api('/api/admin/media?per_page=100'),view=$('#view-media'); view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Media library</h2><p>JPEG, PNG, WebP, AVIF · max 5MB · server-sniffed. Upload URLs can be copied straight into a product.</p></div><label class="btn primary media-upload-btn">Upload image<input id="mediaUpload" type="file" accept="image/jpeg,image/png,image/webp,image/avif" hidden></label></div><div class="media-grid">${(d.media||[]).map(m=>`<article>${m.url?`<img src="${esc(m.url)}" alt="" loading="lazy">`:'<div class="media-placeholder">▣</div>'}<small>${esc(m.object_path)}</small><b>${Math.round(Number(m.size_bytes||0)/1024)} KB</b>${m.url?`<button class="btn secondary compact" data-copy-media="${esc(m.url)}">Copy URL</button>`:''}</article>`).join('')||'<div class="empty-mini">No uploaded media yet.</div>'}</div></div>`;
+  async function loadMedia(page=1,operationPage=1){
+    const d=await api('/api/admin/media?per_page=100&page='+page),view=$('#view-media'); view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Media library</h2><p>JPEG, PNG, WebP, AVIF · max 5MB / 4 million pixels. Verified images are resized to 1024px WebP. Use authentic pack photos.</p></div><label class="btn primary media-upload-btn">Upload image<input id="mediaUpload" type="file" ${d.processor_available?'':'disabled'} accept="image/jpeg,image/png,image/webp,image/avif" hidden></label></div><p class="safe-note">${d.processor_available?'Secure image processor ready.':'Uploads paused: the owner must enable the configured secure processor.'} Monthly app admission limit: ${esc(d.monthly_app_limit)} attempts.</p><div class="media-grid">${(d.media||[]).map(m=>`<article>${m.url?`<img src="${esc(m.url)}" alt="" loading="lazy">`:'<div class="media-placeholder">▣</div>'}<small>${esc(m.object_path)}</small><b>${Math.round(Number(m.size_bytes||0)/1024)} KB</b>${m.url?`<button class="btn secondary compact" data-copy-media="${esc(m.url)}">Copy URL</button>`:''}<small>${esc(m.state)}</small><button class="btn secondary compact" data-delete-media="${esc(m.id)}">${m.state==='deleting'?'Resume deletion':'Delete unused image'}</button></article>`).join('')||'<div class="empty-mini">No uploaded media yet.</div>'}</div></div>`;
+    wirePager(view,d,loadMedia);
     $$('[data-copy-media]',view).forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copyMedia);toast('Image URL copied')}catch{toast('Could not copy URL')}});
+    $$('[data-delete-media]',view).forEach(b=>b.onclick=async()=>{if(!confirm('Delete this unused image permanently? Product, CMS and version references are checked first.'))return;b.disabled=true;try{await api('/api/admin/media/'+b.dataset.deleteMedia,{method:'DELETE'});toast('Image deleted');await loadMedia(page)}catch(e){toast(e.message);b.disabled=false}});
+    if(roleAllows('owner','manager')){try{const review=await api('/api/admin/media/operations?page='+operationPage);if(review.total){const panel=document.createElement('section');panel.className='panel';panel.innerHTML='<h3>Pending media operations ('+esc(review.total)+')</h3><p>Upload cleanup can be resumed after 15 minutes. Review each operation before retrying.</p>'+review.operations.map(op=>'<p>'+esc(op.object_path)+' · '+esc(op.state)+' <button class="btn secondary compact" data-recover-media="'+esc(op.id)+'">Review and resume</button></p>').join('');view.append(panel);wirePager(panel,review,p=>loadMedia(page,p));$$('[data-recover-media]',panel).forEach(b=>b.onclick=async()=>{if(!confirm('Resume this reviewed storage cleanup or pending deletion?'))return;try{await api('/api/admin/media/operations',{method:'POST',body:{operation_id:b.dataset.recoverMedia,confirm:true}});toast('Media operation recovered');await loadMedia(page)}catch(e){toast(e.message)}});}}catch(e){toast('Media operation status unavailable: '+e.message)}}
     $('#mediaUpload').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;const fd=new FormData();fd.append('file',file);try{const saved=await api('/api/admin/media',{method:'POST',body:fd});if(saved?.url)try{await navigator.clipboard.writeText(saved.url);toast('Image uploaded — URL copied')}catch{toast('Image uploaded')}else toast('Image uploaded');loadMedia()}catch(x){toast(x.message)}};
   }
   function wireSettings(){}
   async function loadSettings(){
-    const d=await api('/api/admin/settings'), map=Object.fromEntries((d.settings||[]).map(x=>[x.key,x.value])),view=$('#view-settings');view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Commerce settings</h2><p>Validated public-safe values. Secrets stay in Cloudflare.</p></div></div><label>COD delivery fee (PKR)<input id="setCodFee" type="number" min="0" max="100000" value="${esc(map.cod_delivery_fee_pkr??300)}"></label><label>Prepaid delivery fee (PKR)<input id="setPreFee" type="number" min="0" max="100000" value="${esc(map.prepaid_delivery_fee_pkr??300)}"></label><label>Free prepaid threshold (PKR)<input id="setThreshold" type="number" min="0" max="1000000" value="${esc(map.prepaid_free_delivery_threshold_pkr??5000)}"></label><label>Delivery estimate<input id="setEstimate" maxlength="80" value="${esc(map.delivery_estimate??'4-7 days')}"></label><hr><h3>Storefront contact & promo</h3><label>Support WhatsApp<input id="setSupportWhatsApp" maxlength="25" value="${esc(map.support_whatsapp??'0332-0005381')}"></label><label>Support email<input id="setSupportEmail" type="email" maxlength="254" value="${esc(map.support_email??'Chaskabox.mzg@gmail.com')}"></label><label>Store address<textarea id="setStoreAddress" rows="3" maxlength="300">${esc(map.store_address??'Near Ahmad Drink Corner, Railway Road, Bhatti Hussainabad, Muzaffargarh, Pakistan')}</textarea></label><label>Announcement / promo bar<input id="setPromo" maxlength="180" value="${esc(map.promo_text??'Original sealed packs · Pakistan-wide delivery · COD + prepaid')}"></label><button class="btn primary" id="saveSettings">Save settings</button></section><section class="panel"><div class="panel-head"><div><h2>Payment availability</h2></div></div><label class="checkline"><input id="setCod" type="checkbox" ${map.cod_enabled!==false?'checked':''}> Cash on Delivery</label><label class="checkline"><input id="setJazz" type="checkbox" ${map.jazzcash_enabled!==false?'checked':''}> JazzCash</label><label class="checkline"><input id="setBank" type="checkbox" ${map.bank_transfer_enabled!==false?'checked':''}> Bank Transfer</label><hr><h3>Prepaid receiving details</h3><label>JazzCash Till ID <small style="color:#666">(click Reveal to edit)</small><input id="setJazzTill" maxlength="40" value="${esc(map.jazzcash_till_id??'981716438')}"></label><label>JazzCash QR Image<div style="display:flex;gap:8px;align-items:center;margin-top:4px"><img id="qrPreview" src="${esc(map.jazzcash_qr_url??'/images/jazzcash-qr.webp')}" alt="QR preview" style="width:80px;height:80px;object-fit:contain;border:1px solid #ddd;border-radius:8px;background:#fff"><div><input type="file" id="qrUploadInput" accept="image/png,image/jpeg,image/webp" style="display:none"><button type="button" class="btn secondary compact" id="qrUploadBtn">📤 Upload new QR</button><div style="margin-top:4px"><input id="setJazzQr" maxlength="500" value="${esc(map.jazzcash_qr_url??'/images/jazzcash-qr.webp')}" style="width:100%;font-size:11px" placeholder="or paste image URL"></div></div></div></label><label>Bank<input id="setBankName" maxlength="100" value="${esc(map.bank_transfer_details?.bank??'Punjab Bank')}"></label><label>Account title<input id="setBankTitle" maxlength="120" value="${esc(map.bank_transfer_details?.account_title??'RAMEEZ ASLAM')}"></label><label>Account number<input id="setBankAccount" maxlength="80" value="${esc(map.bank_transfer_details?.account_number??'6050435151500017')}"></label><hr><h3>Free AI features</h3><label class="checkline"><input id="setAiHelp" type="checkbox" ${map.ai_customer_assistant_enabled!==false?'checked':''}> Customer Chaska Help AI</label><label class="checkline"><input id="setAiSearch" type="checkbox" ${map.ai_semantic_search_enabled!==false?'checked':''}> Semantic product search</label><p class="safe-note">AI uses the Cloudflare Workers AI free allocation. Checkout/orders never depend on AI.</p><p class="safe-note">All values are validated again by the API and database. Test checkout after meaningful pricing changes.</p></section></div>`;
+    const d=await api('/api/admin/settings'), map=Object.fromEntries((d.settings||[]).map(x=>[x.key,x.value])),view=$('#view-settings');view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Commerce settings</h2><p>Validated public-safe values. Secrets stay in Cloudflare.</p></div></div><label>COD delivery fee (PKR)<input id="setCodFee" type="number" min="0" max="100000" value="${esc(map.cod_delivery_fee_pkr??300)}"></label><label>Prepaid delivery fee (PKR)<input id="setPreFee" type="number" min="0" max="100000" value="${esc(map.prepaid_delivery_fee_pkr??300)}"></label><label>Free prepaid threshold (PKR)<input id="setThreshold" type="number" min="0" max="1000000" value="${esc(map.prepaid_free_delivery_threshold_pkr??5000)}"></label><label>Delivery estimate<input id="setEstimate" maxlength="80" value="${esc(map.delivery_estimate??'4-7 days')}"></label><hr><h3>Storefront contact & promo</h3><label>Support WhatsApp<input id="setSupportWhatsApp" maxlength="25" value="${esc(map.support_whatsapp??'0332-0005381')}"></label><label>Support email<input id="setSupportEmail" type="email" maxlength="254" value="${esc(map.support_email??'Chaskabox.mzg@gmail.com')}"></label><label>Store address<textarea id="setStoreAddress" rows="3" maxlength="300">${esc(map.store_address??'Near Ahmad Drink Corner, Railway Road, Bhatti Hussainabad, Muzaffargarh, Pakistan')}</textarea></label><label>Announcement / promo bar<input id="setPromo" maxlength="180" value="${esc(map.promo_text??'Original sealed packs · Pakistan-wide delivery · COD + prepaid')}"></label><button class="btn primary" id="saveSettings">Save settings</button></section><section class="panel"><div class="panel-head"><div><h2>Payment availability</h2></div></div><label class="checkline"><input id="setCod" type="checkbox" ${map.cod_enabled!==false?'checked':''}> Cash on Delivery</label><label class="checkline"><input id="setJazz" type="checkbox" ${map.jazzcash_enabled!==false?'checked':''}> JazzCash</label><label class="checkline"><input id="setBank" type="checkbox" ${map.bank_transfer_enabled!==false?'checked':''}> Bank Transfer</label><hr><h3>Prepaid receiving details</h3><label>JazzCash Till ID <small style="color:#666">(click Reveal to edit)</small><input id="setJazzTill" maxlength="40" value="${esc(map.jazzcash_till_id??'981716438')}"></label><label>JazzCash QR Image<div style="display:flex;gap:8px;align-items:center;margin-top:4px"><img id="qrPreview" src="${esc(map.jazzcash_qr_url??'/images/jazzcash-qr.webp')}" alt="QR preview" style="width:80px;height:80px;object-fit:contain;border:1px solid #ddd;border-radius:8px;background:#fff"><div><input type="file" id="qrUploadInput" accept="image/png,image/jpeg,image/webp" style="display:none"><button type="button" class="btn secondary compact" id="qrUploadBtn">📤 Upload new QR</button><div style="margin-top:4px"><input id="setJazzQr" maxlength="500" value="${esc(map.jazzcash_qr_url??'/images/jazzcash-qr.webp')}" style="width:100%;font-size:11px" placeholder="or paste image URL"></div></div></div></label><label>Bank<input id="setBankName" maxlength="100" value="${esc(map.bank_transfer_details?.bank??'Punjab Bank')}"></label><label>Account title<input id="setBankTitle" maxlength="120" value="${esc(map.bank_transfer_details?.account_title??'RAMEEZ ASLAM')}"></label><label>Account number<input id="setBankAccount" maxlength="80" value="${esc(map.bank_transfer_details?.account_number??'6050435151500017')}"></label><hr><h3>Media upload controls</h3><label class="checkline"><input id="setMediaEnabled" type="checkbox"> Enable secure image uploads</label><label>Monthly app transform limit<input id="setMediaLimit" type="number" min="1" max="1000"></label><p class="safe-note">Uploads require the private image processor and server switch. This limit counts attempts and does not measure total Cloudflare account usage.</p><hr><h3>AI controls</h3><label class="checkline"><input id="setAiEnabled" type="checkbox"> Enable AI globally</label><label class="checkline"><input id="setAiText" type="checkbox"> Text drafts</label><label class="checkline"><input id="setAiImages" type="checkbox"> Decorative image drafts</label><label class="checkline"><input id="setAiEmbeddings" type="checkbox"> Embeddings</label><label>Daily app budget (estimated neurons)<input id="setAiBudget" type="number" min="1" max="8000"></label><p id="aiBudgetState" class="safe-note">Checking AI state…</p><label class="checkline"><input id="setAiHelp" type="checkbox" ${map.ai_customer_assistant_enabled!==false?'checked':''}> Customer Chaska Help AI</label><label class="checkline"><input id="setAiSearch" type="checkbox" ${map.ai_semantic_search_enabled!==false?'checked':''}> Semantic product search</label><p class="safe-note">AI requires the server switch and these controls. Estimates do not measure account billing. Checkout does not depend on AI.</p><p class="safe-note">All values are validated again by the API and database. Test checkout after meaningful pricing changes.</p></section></div>`;
+    for(const [id,key]of [['setAiEnabled','ai_enabled'],['setAiText','ai_text_enabled'],['setAiImages','ai_images_enabled'],['setAiEmbeddings','ai_embeddings_enabled']])document.getElementById(id).checked=map[key]===true;
+    document.getElementById('setMediaEnabled').checked=map.media_upload_enabled===true;document.getElementById('setMediaLimit').value=map.media_monthly_transform_limit??1000;
+    document.getElementById('setAiBudget').value=map.ai_daily_budget_neurons??8000;
+    try{const state=await api('/api/admin/ai-status');document.getElementById('aiBudgetState').textContent=(state.enabled?'AI enabled. ':'AI paused. ')+'App estimate: '+state.budget.accounted_neuron_estimate+' / '+state.budget.policy_budget+' neurons. Index remaining: '+state.index.remaining+'.';}
+    catch{document.getElementById('aiBudgetState').textContent='AI state unavailable; do not assume quota or index completion.';}
+
     $('#saveSettings').onclick=async()=>{try{
       // Get real values from masked fields
       const getVal=id=>{const el=document.getElementById(id);return el.getRealValue?el.getRealValue():el.value;};
-      await api('/api/admin/settings',{method:'PATCH',body:{settings:{cod_delivery_fee_pkr:Number($('#setCodFee').value),prepaid_delivery_fee_pkr:Number($('#setPreFee').value),prepaid_free_delivery_threshold_pkr:Number($('#setThreshold').value),delivery_estimate:$('#setEstimate').value.trim(),support_whatsapp:getVal('setSupportWhatsApp'),support_email:$('#setSupportEmail').value.trim(),store_address:$('#setStoreAddress').value.trim(),promo_text:$('#setPromo').value.trim(),jazzcash_till_id:getVal('setJazzTill'),jazzcash_qr_url:$('#setJazzQr').value.trim(),bank_transfer_details:{bank:$('#setBankName').value.trim(),account_title:getVal('setBankTitle'),account_number:getVal('setBankAccount')},cod_enabled:$('#setCod').checked,jazzcash_enabled:$('#setJazz').checked,bank_transfer_enabled:$('#setBank').checked,ai_customer_assistant_enabled:$('#setAiHelp').checked,ai_semantic_search_enabled:$('#setAiSearch').checked}}});toast('Settings saved and storefront will refresh automatically')}catch(e){toast(e.message)}};
+      await api('/api/admin/settings',{method:'PATCH',body:{settings:{cod_delivery_fee_pkr:Number($('#setCodFee').value),prepaid_delivery_fee_pkr:Number($('#setPreFee').value),prepaid_free_delivery_threshold_pkr:Number($('#setThreshold').value),delivery_estimate:$('#setEstimate').value.trim(),support_whatsapp:getVal('setSupportWhatsApp'),support_email:$('#setSupportEmail').value.trim(),store_address:$('#setStoreAddress').value.trim(),promo_text:$('#setPromo').value.trim(),jazzcash_till_id:getVal('setJazzTill'),jazzcash_qr_url:$('#setJazzQr').value.trim(),bank_transfer_details:{bank:$('#setBankName').value.trim(),account_title:getVal('setBankTitle'),account_number:getVal('setBankAccount')},cod_enabled:$('#setCod').checked,jazzcash_enabled:$('#setJazz').checked,bank_transfer_enabled:$('#setBank').checked,media_upload_enabled:$('#setMediaEnabled').checked,media_monthly_transform_limit:Number($('#setMediaLimit').value),ai_enabled:$('#setAiEnabled').checked,ai_text_enabled:$('#setAiText').checked,ai_images_enabled:$('#setAiImages').checked,ai_embeddings_enabled:$('#setAiEmbeddings').checked,ai_daily_budget_neurons:Number($('#setAiBudget').value),ai_customer_assistant_enabled:$('#setAiHelp').checked,ai_semantic_search_enabled:$('#setAiSearch').checked}}});toast('Settings saved and storefront will refresh automatically')}catch(e){toast(e.message)}};
     // Mask sensitive fields by default
     wireSensitiveField('setJazzTill', map.jazzcash_till_id);
     wireSensitiveField('setBankTitle', map.bank_transfer_details?.account_title);
@@ -380,62 +408,65 @@
   }
 
   async function loadSecurity(){
-    const view=$('#view-security');
-    const [auditR,staffR]=await Promise.allSettled([api('/api/admin/audit?per_page=50'),api('/api/admin/staff')]);
-    const audit=auditR.status==='fulfilled'?auditR.value:{events:[]};
-    const staff=staffR.status==='fulfilled'?staffR.value:{staff:[]};
-    const auditErr=auditR.status==='rejected'?String(auditR.reason?.message||auditR.reason):'';
-    const staffErr=staffR.status==='rejected'?String(staffR.reason?.message||staffR.reason):'';view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Staff roles</h2><p>Least-privilege access. Owner-only changes.</p></div></div><div class="staff-list">${staffErr?`<p class="muted">Could not load staff list: ${esc(staffErr)}</p>`:(staff.staff||[]).map(s=>`<div><code>${esc(s.user_id)}</code><b>${esc(s.role)}</b><span class="pill ${s.active?'on':''}">${s.active?'Active':'Disabled'}</span></div>`).join('')}</div><hr><h3>Invite staff</h3><div class="form-two"><label>Email<input id="staffEmail" type="email"></label><label>Role<select id="staffRole"><option>content</option><option>fulfilment</option><option>manager</option><option>owner</option></select></label></div><button class="btn primary" id="inviteStaff">Send invite</button></section><section class="panel"><div class="panel-head"><div><h2>Recent audit log</h2><p>Who changed what and when.</p></div></div>${auditErr?`<p class="muted">Could not load audit history: ${esc(auditErr)}</p>`:`<div class="history-list">${(audit.events||[]).map(a=>`<div><b>${esc(a.action)}</b><small>${fmtDate(a.created_at)} · ${esc(a.actor_role)} · ${esc(a.entity_type)} ${esc(a.entity_id)}</small></div>`).join('')||'<small>No audit events.</small>'}</div>`}</section></div>
-    <section class="panel" style="margin-top:16px"><div class="panel-head"><div><h2>🔐 Two-Factor (MFA)</h2><p>Protect your admin account with an authenticator app</p></div></div><div id="mfaSection"><p class="muted">Loading…</p></div></section>
-    <section class="panel" style="margin-top:16px"><div class="panel-head"><div><h2>📱 Sessions</h2><p>Manage your login sessions</p></div></div><div style="padding:8px"><button class="btn danger" id="signOutAllBtn">Sign out all devices</button><p class="muted" style="font-size:12px;margin-top:8px">This will sign you out everywhere. You'll need to sign in again.</p></div></section>`;$('#inviteStaff').onclick=async()=>{try{await api('/api/admin/staff',{method:'POST',body:{email:$('#staffEmail').value.trim(),role:$('#staffRole').value}});toast('Staff invite sent');loadSecurity()}catch(e){toast(e.message)}};
-    loadMFAStatus();
-    $('#signOutAllBtn').onclick=async()=>{
-      if(!confirm('Sign out from all devices?')) return;
-      try{await SB.auth.signOut({scope:'global'});toast('Signed out everywhere');location.reload();}catch(e){toast(e.message);}
-    };
+    const view=$('#view-security');if(!view)return;
+    let ownerPanel='';
+    if(roleAllows('owner')){
+      try{
+        const data=await api('/api/admin/staff');
+        ownerPanel=`<section class="panel"><h2>Staff access</h2><p>Owner-only changes require a verified authenticator session. The last active owner is protected.</p><div class="staff-list">${(data.staff||[]).map(u=>`<div><code>${esc(u.user_id)}</code><select data-staff-role="${esc(u.user_id)}" aria-label="Staff role">${['owner','manager','fulfilment','content'].map(role=>`<option ${role===u.role?'selected':''}>${role}</option>`).join('')}</select><label>Active <input type="checkbox" data-staff-active="${esc(u.user_id)}" ${u.active?'checked':''}></label><button class="btn secondary" data-staff-save="${esc(u.user_id)}">Save access</button></div>`).join('')}</div><h3>Invite staff</h3><div class="form-two"><label>Email<input id="staffEmail" type="email"></label><label>Role<select id="staffRole"><option>content</option><option>fulfilment</option><option>manager</option><option>owner</option></select></label></div><button class="btn primary" id="inviteStaff">Send invite</button></section>`;
+      }catch(e){ownerPanel=`<section class="panel"><p>Staff list unavailable: ${esc(e.message)}</p></section>`;}
+    }
+    if(roleAllows('owner','manager')){
+      try{const data=await api('/api/admin/audit?per_page=50');ownerPanel+=`<section class="panel"><h2>Recent audit history</h2><div class="history-list">${(data.events||[]).map(a=>`<div><b>${esc(a.action)}</b><small>${fmtDate(a.created_at)} · ${esc(a.actor_role)}</small></div>`).join('')||'<p>No audit events.</p>'}</div></section>`;}catch(e){ownerPanel+=`<section class="panel"><p>Audit history unavailable: ${esc(e.message)}</p></section>`;}
+    }
+    view.innerHTML=ownerPanel+`<section class="panel" style="margin-top:16px"><h2>Authenticator and recovery</h2><p>Verify your session before saving changes, exporting orders or downloading a backup.</p><div id="mfaSection">Loading…</div><p>Keep a second verified authenticator on a separate device. If all factors are lost, contact another active owner and follow the documented identity verification process. A password reset does not remove MFA.</p></section><section class="panel" style="margin-top:16px"><h2>Sessions</h2><button class="btn danger" id="signOutAllBtn">Sign out all devices</button></section>`;
+    $('#inviteStaff')?.addEventListener('click',async()=>{try{await api('/api/admin/staff',{method:'POST',body:{email:$('#staffEmail').value.trim(),role:$('#staffRole').value}});toast('Staff invite sent and access saved');await loadSecurity();}catch(e){toast(e.message);}});
+    $$('[data-staff-save]',view).forEach(button=>button.onclick=async()=>{
+      const id=button.dataset.staffSave;
+      const role=$$('[data-staff-role]',view).find(x=>x.dataset.staffRole===id).value;
+      const active=$$('[data-staff-active]',view).find(x=>x.dataset.staffActive===id).checked;
+      if(!confirm('Save this staff access change?'))return;
+      button.disabled=true;
+      try{await api('/api/admin/staff',{method:'PATCH',body:{user_id:id,role,active}});toast('Staff access updated');await loadSecurity();}catch(e){toast(e.message);button.disabled=false;}
+    });
+    $('#signOutAllBtn').onclick=async()=>{if(!confirm('Sign out from all devices?'))return;const {error}=await SB.auth.signOut({scope:'global'});if(error){toast(error.message);return;}location.reload();};
+    await loadMFAStatus();
   }
 
   async function loadMFAStatus(){
-    const el=$('#mfaSection'); if(!el||!SB) return;
+    const el=$('#mfaSection');if(!el||!SB)return;
     try{
-      const {data,error}=await SB.auth.mfa.listFactors();
-      if(error) throw error;
+      const {data,error}=await SB.auth.mfa.listFactors();if(error)throw error;
       const factors=(data?.totp||[]).filter(f=>f.status==='verified');
-      if(factors.length){
-        el.innerHTML=`<p>✅ MFA is <b>enabled</b> (${factors.length} authenticator${factors.length>1?'s':''})</p><p>For staff changes, verify this session with your 6-digit code.</p><input id="mfaStepCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" aria-label="Authenticator code"><button class="btn primary" id="mfaStepVerify">Verify session</button><button class="btn secondary" id="disableMfaBtn">Disable MFA</button>`;
-        $('#mfaStepVerify').onclick=async()=>{
-          const code=$('#mfaStepCode').value.trim();
-          if(!/^\d{6}$/.test(code)){toast('Enter a 6-digit authenticator code');return;}
-          const {data:challenge,error:challengeError}=await SB.auth.mfa.challenge({factorId:factors[0].id});
-          if(challengeError){toast(challengeError.message);return;}
-          const {error:verifyError}=await SB.auth.mfa.verify({factorId:factors[0].id,challengeId:challenge.id,code});
-          if(verifyError){toast(verifyError.message);return;}
-          $('#mfaStepCode').value='';toast('Session verified. You can now change staff access.');
-        };
-        $('#disableMfaBtn').onclick=async()=>{
-          if(!confirm('Disable two-factor authentication?')) return;
-          const {error}=await SB.auth.mfa.unenroll({factorId:factors[0].id});
-          if(error) toast(error.message); else {toast('MFA disabled');loadMFAStatus();}
-        };
-      }else{
-        el.innerHTML=`<p class="muted">MFA is not enabled. Add an extra layer of security.</p><button class="btn primary" id="enableMfaBtn">Enable MFA</button><div id="mfaEnroll" style="display:none;margin-top:12px"></div>`;
-        $('#enableMfaBtn').onclick=startMFAEnroll;
-      }
-    }catch(e){el.innerHTML=`<p class="muted">MFA unavailable: ${esc(e.message)}</p>`;}
+      const {data:assurance,error:aalError}=await SB.auth.mfa.getAuthenticatorAssuranceLevel();if(aalError)throw aalError;
+      el.innerHTML=`<p>${factors.length} verified authenticator(s). Session: <b>${esc(assurance?.currentLevel||'unknown')}</b>.</p>${factors.length?`<label>Authenticator<select id="mfaFactor">${factors.map(f=>`<option value="${esc(f.id)}">${esc(f.friendly_name||'Authenticator')}</option>`).join('')}</select></label><label>Code<input id="mfaStepCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6"></label><button class="btn primary" id="mfaStepVerify">Verify session</button><button class="btn secondary" id="removeMfaBtn" ${factors.length<2?'disabled':''}>Remove selected authenticator</button><p>Verify a replacement authenticator before removing an existing one.</p>`:'<p>Add an authenticator to enable protected actions.</p>'}<button class="btn secondary" id="enableMfaBtn">${factors.length?'Add backup authenticator':'Enable MFA'}</button><div id="mfaEnroll" hidden></div>`;
+      $('#enableMfaBtn').onclick=startMFAEnroll;
+      $('#mfaStepVerify')?.addEventListener('click',async()=>{
+        const code=$('#mfaStepCode').value.trim(),factorId=$('#mfaFactor').value;
+        if(!/^\d{6}$/.test(code)){toast('Enter a 6-digit authenticator code');return;}
+        const button=$('#mfaStepVerify');button.disabled=true;
+        try{const {error}=await SB.auth.mfa.challengeAndVerify({factorId,code});if(error)throw error;$('#mfaStepCode').value='';me=await getMe();toast('Session verified. Retry your action.');await loadMFAStatus();}catch(e){toast(e.message);button.disabled=false;}
+      });
+      $('#removeMfaBtn')?.addEventListener('click',async()=>{
+        if(factors.length<2||!confirm('Remove this authenticator? Keep your replacement device available.'))return;
+        const {error}=await SB.auth.mfa.unenroll({factorId:$('#mfaFactor').value});if(error)toast(error.message);else{toast('Authenticator removed. Verify your current session again if requested.');await loadMFAStatus();}
+      });
+    }catch(e){el.textContent='MFA unavailable: '+e.message;}
   }
 
   async function startMFAEnroll(){
-    const box=$('#mfaEnroll'); box.style.display='block'; box.innerHTML='<p class="muted">Setting up…</p>';
+    const box=$('#mfaEnroll'); box.hidden=false; box.innerHTML='<p class="muted">Setting up…</p>';
     try{
-      const {data,error}=await SB.auth.mfa.enroll({factorType:'totp',friendlyName:'Admin phone'});
+      const {data,error}=await SB.auth.mfa.enroll({factorType:'totp',friendlyName:'Authenticator '+new Date().toISOString().slice(0,19)});
       if(error) throw error;
       box.innerHTML=`
         <p><b>Step 1:</b> Scan this QR with Google Authenticator / Authy:</p>
-        <div style="background:#fff;padding:12px;display:inline-block;border-radius:8px"><img src="${data.totp.qr_code}" alt="MFA QR" style="width:180px;height:180px"></div>
+        <div style="background:#fff;padding:12px;display:inline-block;border-radius:8px"><img src="${esc(data.totp.qr_code)}" alt="MFA QR" style="width:180px;height:180px"></div>
         <p style="margin-top:8px"><b>Step 2:</b> Enter the 6-digit code:</p>
         <div style="display:flex;gap:8px"><input id="mfaCode" placeholder="000000" maxlength="6" style="padding:8px;border:1px solid var(--border);border-radius:8px;width:120px"><button class="btn primary" id="verifyMfaBtn">Verify</button></div>`;
       $('#verifyMfaBtn').onclick=async()=>{
         const code=$('#mfaCode').value.trim();
+        if(!/^\d{6}$/.test(code)){toast('Enter a 6-digit authenticator code');return;}
         const {data:ch,error:chErr}=await SB.auth.mfa.challenge({factorId:data.id});
         if(chErr){toast(chErr.message);return;}
         const {error:vErr}=await SB.auth.mfa.verify({factorId:data.id,challengeId:ch.id,code});
@@ -444,7 +475,7 @@
     }catch(e){box.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
 
-  let editingBoxId = null;
+  let editingBoxId = null,editingBoxUpdatedAt=null;
 
   function wireBoxLive(){
     $('#saveBoxDraftBtn')?.addEventListener('click',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();
@@ -454,6 +485,7 @@
       try{
         const body={title,description:$('#boxDescription')?.value.trim()||'',selling_price,items,visibility:'draft'};
         if(editingBoxId){
+          body.expected_updated_at=editingBoxUpdatedAt;
           await api(`/api/admin/boxes/${encodeURIComponent(editingBoxId)}`,{method:'PATCH',body});
           toast('Chaska Box updated'); editingBoxId=null;
           $('#saveBoxDraftBtn').textContent='Save Chaska Box';
@@ -501,9 +533,10 @@
             <span class="box-badge ${visClass}">${esc(b.visibility||'draft')}</span>
           </div>
           <div class="box-actions">
-            <button class="btn secondary compact" data-edit-box="${esc(b.id)}">✏️ Edit</button>
+            <button class="btn secondary compact" data-edit-box="${esc(b.id)}">✏️ Edit</button>${roleAllows('owner','manager')?`<button class="btn secondary compact" data-publish-box="${esc(b.id)}">${b.visibility==='visible'?'Hide':'Publish'}</button>`:''}
           </div>
         </div>`;}).join('');
+      listEl.querySelectorAll('[data-publish-box]').forEach(b=>b.onclick=async()=>{try{const box=boxes.find(x=>String(x.id)===b.dataset.publishBox);await api('/api/admin/boxes/'+box.id,{method:'PATCH',body:{visibility:box.visibility==='visible'?'hidden':'visible',expected_updated_at:box.updated_at}});toast('Box visibility saved');await loadExistingBoxes();}catch(e){toast(e.message)}});
       listEl.querySelectorAll('[data-edit-box]').forEach(btn=>{
         btn.onclick=async()=>{
           const boxId=btn.dataset.editBox;
@@ -514,7 +547,7 @@
             const box=d.box||d;
             const items=d.items||box.items||box.products||[];
             // Track editing state
-            editingBoxId=boxId;
+            editingBoxId=boxId;editingBoxUpdatedAt=box.updated_at;
             $('#saveBoxDraftBtn').textContent='Update Chaska Box';
             // Load box into builder form for editing
             $('#boxName').value=box.title||box.name||'';
@@ -540,12 +573,13 @@
     }catch(e){listEl.innerHTML=`<p class="muted">Failed to load: ${esc(e.message)}</p>`;}
   }
 
+  const recoveryHint=location.hash.includes('type=recovery');
   async function init(){
     // Safety net: never leave the console stuck on "Verifying admin session…".
     setTimeout(()=>{ if(!bootDone) showBootError('Session check is taking too long. Please reload and try again.'); }, 25000);
     if(!(await ensureClient())){showLogin('Public Supabase configuration could not be loaded.');return;}
     // Password recovery: user clicked reset link in email
-    if(location.hash.includes('type=recovery')){
+    if(recoveryHint){
       showResetPassword();
       return;
     }
@@ -683,7 +717,7 @@
     $('#resetThemeBtn')?.addEventListener('click',async()=>{
       if(!confirm('Reset theme to defaults?')) return;
       const defaults={primary_color:'#1a2b5c',accent_color:'#f59e0b',background_color:'#ffffff',text_color:'#1f2937',font_family:'system-ui',border_radius:'12',logo_url:'/logo.png',favicon_url:'/favicon.ico',announcement_enabled:'false',announcement_text:''};
-      try{await api('/api/admin/theme',{method:'PUT',body:{settings:defaults}});toast('Theme reset');loadTheme();}catch(e){toast(e.message);}
+      try{await api('/api/admin/theme',{method:'PUT',body:{action:'reset'}});$('#themePreviewStyle')?.remove();toast('Theme reset');loadTheme();}catch(e){toast(e.message);}
     });
     $('#categoryForm')?.addEventListener('submit',async e=>{
       e.preventDefault();
@@ -770,39 +804,17 @@
   async function loadNotifications(){
     try{
       const d=await api('/api/admin/notifications');
-      const st=$('#notifServiceStatus');
-      if(st){
-        const r=d.resend||{}, w=d.waha||{};
-        st.innerHTML=`
-          <div style="display:grid;gap:10px">
-            <div><b>📧 Resend Email</b><br>
-              <span class="box-badge ${r.configured?'visible':'hidden'}">${r.configured?'Configured':'Not configured'}</span>
-              ${!r.has_api_key?'<br><small class="muted">RESEND_API_KEY missing</small>':''}
-              ${!r.has_owner_email?'<br><small class="muted">OWNER_ORDER_EMAIL missing</small>':''}
-            </div>
-            <div><b>📱 WhatsApp/WAHA</b><br>
-              <span class="box-badge ${w.configured?'visible':'hidden'}">${w.configured?'Configured':'Not configured'}</span>
-            </div>
-          </div>`;
-      }
-      const ob=$('#notifOutboxStats');
-      if(ob){
-        const o=d.owner_outbox||{}, c=d.customer_outbox||{};
-        ob.innerHTML=`
-          <div style="display:grid;gap:8px;font-size:12px">
-            <div><b>Owner outbox:</b> ${o.pending||0} pending · ${o.sent||0} sent · ${o.failed||0} failed</div>
-            <div><b>Customer outbox:</b> ${c.pending||0} pending · ${c.sent||0} sent · ${c.failed||0} failed</div>
-          </div>`;
+      const st=$('#notifServiceStatus'), state=d.dispatch||{};
+      if(st)st.innerHTML=`<div style="display:grid;gap:8px"><div><b>Queue consumer:</b> ${esc(d.worker_status||'unknown')}</div><div><b>Last completed:</b> ${state.last_completed_at?esc(fmtDate(state.last_completed_at)):'No heartbeat recorded'}</div><div><b>Enabled channels:</b> ${esc((state.configured_targets||[]).join(', ')||'None confirmed')}</div><small class="muted">Channel configuration comes from the consumer heartbeat. Provider availability is not probed here.</small></div>`;
+      const ob=$('#notifOutboxStats'), p=d.provider_results||{};
+      if(ob){const o=d.owner_outbox||{},c=d.customer_outbox||{};
+        const queue=(title,q)=>`<div><b>${title}:</b> ${q.pending||0} pending · ${q.processing||0} processing · ${q.retry||0} retry · ${q.blocked||0} blocked · ${q.uncertain||0} uncertain · ${q.dead||0} dead</div>`;
+        const legacy=q=>Object.values(q||{}).reduce((n,v)=>n+Number(v),0);
+        ob.innerHTML=`<div style="display:grid;gap:8px;font-size:12px">${queue('Owner alerts',o)}${queue('Customer updates',c)}<div><b>Provider results:</b> ${p.accepted||0} accepted · ${p.delivered||0} confirmed delivered · ${p.delivery_failed||0} delivery failed · ${p.complaints||0} complaints · ${p.unconfirmed||0} awaiting confirmation</div><div><b>Historical review:</b> ${legacy(d.legacy_owner)} old owner jobs · ${legacy(d.legacy_customer)} old customer jobs · ${d.excluded_before_cutoff||0} before activation cutoff</div><div>${d.inactive_channel_pending||0} jobs on inactive channels</div><small class="muted">${esc(d.note||'Provider acceptance does not confirm delivery.')}</small></div>`;
       }
       const fl=$('#notifFailures');
-      if(fl){
-        const fails=d.recent_failures||[];
-        fl.innerHTML=fails.length?fails.map(f=>`
-          <div class="box-product-row"><div style="flex:1">
-            <h4>Order ${esc(f.order_id||'—')}</h4>
-            <small>${esc(f.error||f.last_error||'Failed')}</small></div>
-            <button class="btn secondary compact" onclick="toast('Retry via Orders → Retry notification')">Retry</button>
-          </div>`).join(''):'<p class="muted">No failures. 🎉</p>';
+      if(fl){const fails=d.recent_failures||[];
+        fl.innerHTML=fails.length?fails.map(f=>`<div class="box-product-row"><div style="flex:1"><h4>Order ${esc(f.order_id||'—')}</h4><small>${esc(f.target)} · ${esc(f.status)} · ${esc(f.last_error||f.delivery_status)}</small></div></div>`).join(''):'<p class="muted">No recorded issues in the new queue. Check consumer status and historical jobs above.</p>';
       }
     }catch(e){toast(e.message);}
     $('#refreshNotifStatus')?.addEventListener('click',loadNotifications,{once:true});
@@ -957,19 +969,19 @@
     modal.querySelector('#beLogoFile').onchange=e=>uploadFile(e.target.files[0],'logo');
     modal.querySelector('#beHeroFile').onchange=e=>uploadFile(e.target.files[0],'hero');
     modal.querySelector('#beAiDesc').onclick=async()=>{
-      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_description',brand:b.name}});
-      const t=r.text||r.result||'';if(t){modal.querySelector('#beLong').value=t;toast('Description generated — review before saving');}}catch(e){toast(e.message)}};
+      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_description',context:{brand:b.name}}});
+      const t=r.draft||'';if(t){modal.querySelector('#beLong').value=t;toast('Description generated — review before saving');}}catch(e){toast(e.message)}};
     modal.querySelector('#beAiSeo').onclick=async()=>{
-      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_seo',brand:b.name}});
-      if(r.seo_title)modal.querySelector('#beSeoTitle').value=r.seo_title;
-      if(r.seo_description)modal.querySelector('#beSeoDesc').value=r.seo_description;
+      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_seo',context:{brand:b.name}}});
+      if(r.structured?.seo_title)modal.querySelector('#beSeoTitle').value=r.structured.seo_title;
+      if(r.structured?.seo_description)modal.querySelector('#beSeoDesc').value=r.structured.seo_description;
       toast('SEO generated — review before saving');}catch(e){toast(e.message)}};
     modal.querySelector('#beAiFeat').onclick=async()=>{
-      try{toast('Suggesting…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_featured',brand:b.name,slug:b.slug}});
-      const ids=r.featured_ids||r.ids||[];if(ids.length){modal.querySelector('#beFeat').value=ids.join(', ');toast('Featured suggestions applied — review before saving');}else toast('No suggestions');}catch(e){toast(e.message)}};
+      try{toast('Suggesting…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_featured',context:{brand:b.name}}});
+      const ids=r.structured?.featured_ids||[];if(ids.length){modal.querySelector('#beFeat').value=ids.join(', ');toast('Featured suggestions applied — review before saving');}else toast('No suggestions');}catch(e){toast(e.message)}};
     modal.querySelector('#beAiFaq').onclick=async()=>{
-      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_faq',brand:b.name}});
-      const out=modal.querySelector('#beAiFaqOut');const faqs=r.faqs||r.items||[];
+      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_faq',context:{brand:b.name}}});
+      const out=modal.querySelector('#beAiFaqOut');const faqs=r.structured?.faqs||[];
       if(faqs.length){out.style.display='block';out.innerHTML='<b>FAQ suggestions (copy what you like):</b><br>'+faqs.map(f=>`• <b>${esc(f.q||f)}</b>${f.a?`<br><span style="color:var(--muted)">${esc(f.a)}</span>`:''}`).join('<br><br>');}
       else toast('No suggestions');}catch(e){toast(e.message)}};
     const collectBrandBody=(forceVisible)=>{
@@ -1004,26 +1016,37 @@
       if(!templates.length){el.innerHTML='<p class="muted">No templates found. Run migration 024.</p>';return;}
       el.innerHTML=templates.map(t=>`
         <div class="existing-box-card" style="margin-bottom:12px">
-          <h4>${esc(t.name)} <span class="box-badge">${esc(t.channel)}</span> ${t.is_active?'':'<span class="box-badge hidden">Disabled</span>'}</h4>
+          <h4>${esc(t.name)} <span class="box-badge">${esc(t.channel)}</span> <small>Version ${Number(t.version||1)}</small> ${t.is_active?'':'<span class="box-badge hidden">Disabled</span>'}</h4>
           ${t.subject?`<div style="margin:6px 0"><label style="font-size:12px">Subject:</label><input data-tpl-subject="${t.id}" value="${esc(t.subject)}" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px"></div>`:''}
           <div style="margin:6px 0"><label style="font-size:12px">Body:</label><textarea data-tpl-body="${t.id}" rows="4" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-family:inherit">${esc(t.body)}</textarea></div>
           <div style="font-size:11px;color:var(--muted)">Variables: ${(t.variables||[]).map(v=>`{{${v}}}`).join(', ')}</div>
           <div class="box-actions" style="margin-top:8px">
-            <button class="btn primary compact" data-save-tpl="${t.id}">💾 Save</button>
+            <button class="btn secondary compact" data-preview-tpl="${t.id}">Preview</button><button class="btn primary compact" data-save-tpl="${t.id}">💾 Save</button>
             <button class="btn secondary compact" data-toggle-tpl="${t.id}">${t.is_active?'Disable':'Enable'}</button>
           </div>
         </div>`).join('');
+      el.querySelectorAll('[data-preview-tpl]').forEach(b=>b.onclick=async()=>{
+        const id=Number(b.dataset.previewTpl);
+        try{
+          const subject=el.querySelector('[data-tpl-subject="'+id+'"]')?.value;
+          const body=el.querySelector('[data-tpl-body="'+id+'"]').value;
+          const result=await api('/api/admin/notification-templates/preview',{method:'POST',body:{id,subject,body}});
+          let preview=b.closest('.existing-box-card').querySelector('.template-preview');
+          if(!preview){preview=document.createElement('pre');preview.className='template-preview';preview.style.whiteSpace='pre-wrap';b.closest('.existing-box-card').appendChild(preview);}
+          preview.textContent=(result.preview.subject||'')+'\n'+result.preview.text+'\nPreview only; nothing sent.';
+        }catch(e){toast(e.message);}
+      });
       el.querySelectorAll('[data-save-tpl]').forEach(b=>b.onclick=async()=>{
         const id=b.dataset.saveTpl;
         const subject=document.querySelector(`[data-tpl-subject="${id}"]`)?.value;
         const body=document.querySelector(`[data-tpl-body="${id}"]`).value;
-        await api(`/api/admin/notification-templates/${id}`,{method:'PATCH',body:{subject,body}});
+        await api(`/api/admin/notification-templates/${id}`,{method:'PATCH',body:{subject,body,expected_updated_at:templates.find(t=>String(t.id)===String(id)).updated_at}});
         toast('Template saved'); loadTemplates();
       });
       el.querySelectorAll('[data-toggle-tpl]').forEach(b=>b.onclick=async()=>{
         const id=b.dataset.toggleTpl;
         const t=templates.find(x=>String(x.id)===String(id));
-        await api(`/api/admin/notification-templates/${id}`,{method:'PATCH',body:{is_active:!t.is_active}});
+        await api(`/api/admin/notification-templates/${id}`,{method:'PATCH',body:{is_active:!t.is_active,expected_updated_at:t.updated_at}});
         toast(t.is_active?'Template disabled':'Template enabled'); loadTemplates();
       });
     }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
@@ -1098,11 +1121,11 @@
       announcement_text: $('#themeAnnText').value,
     };
   }
-  function previewTheme(){
-    const t=collectTheme();
+  async function previewTheme(){
+    let t;try{t=(await import('/theme-contract.js?v=6')).validateTheme(collectTheme());}catch(e){toast(e.message);return;}
     const style=document.getElementById('themePreviewStyle')||document.createElement('style');
     style.id='themePreviewStyle';
-    style.textContent=`:root{--primary:${t.primary_color};--accent:${t.accent_color};--bg:${t.background_color};--text:${t.text_color};--radius:${t.border_radius}px} body{font-family:${t.font_family}}`;
+    style.textContent=`:root{--primary:${t.primary_color};--navy:${t.primary_color};--gold:${t.accent_color};--accent:${t.accent_color};--bg:${t.background_color};--text:${t.text_color};--ink:${t.text_color};--radius:${t.border_radius}px} body{font-family:${t.font_family}}`;
     document.head.appendChild(style);
     toast('Preview applied (not saved)');
   }
@@ -1158,8 +1181,11 @@
             <span>Fee: Rs.${z.fee}</span><span>·</span>
             ${z.free_above?`<span>Free above Rs.${z.free_above}</span><span>·</span>`:''}
             <span>${(z.cities||[]).length?esc(z.cities.join(', ')):'All cities'}</span>
-          </div>
+          </div><div class="box-actions"><button class="btn secondary compact" data-edit-zone="${z.id}">Edit</button><button class="btn secondary compact" data-toggle-zone="${z.id}">${z.is_active?'Disable':'Enable'}</button><button class="btn danger compact" data-delete-zone="${z.id}">Delete</button></div>
         </div>`).join('');
+      el.querySelectorAll('[data-toggle-zone]').forEach(b=>b.onclick=async()=>{try{const z=zones.find(x=>String(x.id)===b.dataset.toggleZone);await api('/api/admin/shipping-zones/'+z.id,{method:'PATCH',body:{is_active:!z.is_active}});await loadShipping();}catch(e){toast(e.message)}});
+      el.querySelectorAll('[data-delete-zone]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this shipping zone?'))return;try{await api('/api/admin/shipping-zones/'+b.dataset.deleteZone,{method:'DELETE'});await loadShipping();}catch(e){toast(e.message)}});
+      el.querySelectorAll('[data-edit-zone]').forEach(b=>b.onclick=async()=>{const z=zones.find(x=>String(x.id)===b.dataset.editZone);const fee=prompt('Delivery fee in PKR:',z.fee);if(fee===null)return;const cities=prompt('Cities separated by commas (empty = all cities):',z.cities.join(', '));if(cities===null)return;const threshold=prompt('Prepaid free-delivery threshold (empty = none):',z.free_above??'');if(threshold===null)return;try{await api('/api/admin/shipping-zones/'+z.id,{method:'PATCH',body:{fee:Number(fee),cities:cities.split(',').map(x=>x.trim()).filter(Boolean),free_above:threshold===''?null:Number(threshold)}});await loadShipping();}catch(e){toast(e.message)}});
     }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
 
@@ -1196,7 +1222,7 @@
       const tip=t=>`<span title="${esc(t)}" style="cursor:help;border-bottom:1px dotted">ⓘ</span>`;
       const card=(label,val,def)=>`<div class="existing-box-card"><h4>${label} ${def?tip(def):''}</h4><div style="font-size:22px;font-weight:800;color:var(--navy)">${val}</div></div>`;
       const R=(rev.ok&&rev.data)||{};
-      const O=(over.ok&&over.data)||{};
+      const O=(over.ok&&over.data?.cards)||{};
       const defs=(R.definitions)||{};
       el.innerHTML=`
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
@@ -1214,9 +1240,9 @@
         ${!over.ok?`<p class="muted">Overview: ${esc(over.error||'unavailable')}</p>`:`
         <h3>Overview</h3>
         <div class="metric-grid" style="margin-bottom:16px">
-          ${card('Orders',O.orders||0)}${card('Avg Order Value',money(O.aov||0))}
+          ${card('Orders',O.orders||0)}${card('Avg Order Value',money(O.average_order_value||0))}
           ${card('New Customers',O.new_customers||0)}${card('Repeat Customers',O.repeat_customers||0)}
-          ${card('Cancellation Rate',((O.cancellation_rate||0)*100).toFixed(1)+'%')}
+          ${card('Cancellation Rate',Number(O.cancellation_rate||0).toFixed(1)+'%')}
           ${card('Delivered COD',money(O.delivered_cod||0),defs.delivered_cod)}
         </div>`}
         <div class="admin-grid two" style="margin-bottom:16px">
@@ -1240,14 +1266,14 @@
       const ap=el.querySelector('#aApply'); if(ap) ap.onclick=()=>{analyticsCustomFrom=el.querySelector('#aFrom').value;analyticsCustomTo=el.querySelector('#aTo').value;loadAnalytics();};
       // Attention
       const attnEl=el.querySelector('#attnList');
-      if(attn.ok&&attn.data&&attn.data.items&&attn.data.items.length){
+      if(!attn.ok||!Array.isArray(attn.data?.items)){attnEl.innerHTML='<p role="alert">Attention status unavailable. Refresh to retry.</p>';}else if(attn.data.items.length){
         attnEl.innerHTML=attn.data.items.slice(0,8).map(i=>`<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:12px"><b>${esc(i.title)}</b><br><span class="muted">${esc(i.detail||'')}</span></div>`).join('');
       } else attnEl.innerHTML='<p class="muted">All clear — no issues detected. ✅</p>';
       // AI insights
       const askAI=async(q)=>{
         const out=el.querySelector('#aiInsightOut'); out.innerHTML='<span class="muted">Thinking…</span>';
-        try{const r=await api('/api/admin/ai',{method:'POST',body:{task:'analytics_insight',question:q,range:{from,to},revenue:R,overview:O}});
-          out.textContent=r.text||r.result||'No insight returned.';}catch(e){out.textContent='Error: '+e.message}};
+        try{const r=await api('/api/admin/ai',{method:'POST',body:{task:'analytics_insight',context:{question:q,range:{from,to}}}});
+          out.textContent=r.draft||'No insight returned.';}catch(e){out.textContent='Error: '+e.message}};
       el.querySelectorAll('[data-aiq]').forEach(b=>b.onclick=()=>askAI(b.dataset.aiq));
       el.querySelector('#aiInsightAsk').onclick=()=>{const q=el.querySelector('#aiInsightQ').value.trim();if(q)askAI(q);};
       // Tabs
@@ -1264,26 +1290,27 @@
   }
   function renderAnalyticsTable(type,data){
     if(type==='notifications'){
-      const rows=['owner_outbox','customer_outbox'].map(key=>`<tr><td>${key==='owner_outbox'?'Owner alerts':'Customer updates'}</td>${['pending','retry','sent','failed'].map(status=>`<td>${Number(data[key]?.[status]||0)}</td>`).join('')}</tr>`).join('');
-      return `<div class="live-table-wrap"><table class="live-table"><tr><th>Queue</th><th>Pending</th><th>Retry</th><th>Sent</th><th>Failed</th></tr>${rows}</table></div><p class="muted">${esc(data.note||'Queue counts do not confirm provider delivery.')}</p>`;
+      const rows=['owner_outbox','customer_outbox'].map(key=>`<tr><td>${key==='owner_outbox'?'Owner alerts':'Customer updates'}</td>${['pending','retry','accepted','blocked','uncertain','dead'].map(status=>`<td>${Number(data[key]?.[status]||0)}</td>`).join('')}</tr>`).join('');
+      const p=data.provider_results||{};
+      return `<div class="live-table-wrap"><table class="live-table"><tr><th>Queue</th><th>Pending</th><th>Retry</th><th>Accepted</th><th>Blocked</th><th>Uncertain</th><th>Dead</th></tr>${rows}</table></div><p>${p.delivered||0} confirmed delivered · ${p.delivery_failed||0} delivery failed · ${p.complaints||0} complaints · ${p.unconfirmed||0} awaiting confirmation</p><p class="muted">${esc(data.note||'Delivered requires a verified provider receipt.')}</p>`;
     }
     // Types with custom data shape (not rows/items)
     if(type==='search'){const d=data;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total searches</h4><div style="font-size:22px;font-weight:800">${d.total_searches||0}</div></div><div class="existing-box-card"><h4>No-result rate</h4><div style="font-size:22px;font-weight:800">${((d.no_result_rate||0)*100).toFixed(1)}%</div></div><div class="existing-box-card"><h4>Click-through</h4><div style="font-size:22px;font-weight:800">${((d.click_through_rate||0)*100).toFixed(1)}%</div><small>${d.total_clicks||0} clicks</small></div></div><h4>Top queries</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Query</th><th>Count</th><th>No-result</th><th>Clicks</th></tr>${(d.top_queries||[]).map(q=>`<tr><td>${esc(q.query)}</td><td>${q.count}</td><td>${q.noResult||0}</td><td>${q.clicks||0}</td></tr>`).join('')}</table></div>`;}
-    if(type==='funnel'){const steps=data.steps||[];return `<div style="display:grid;gap:8px">${steps.map((s,i)=>{const pct=s.count&&steps[0].count?Math.round(s.count/steps[0].count*100):0;return `<div><div style="display:flex;justify-content:space-between;font-size:12px"><span><b>${i+1}. ${esc(s.label)}</b></span><span>${s.count.toLocaleString()} (${pct}%)${i>0?` · drop-off ${s.dropoff.toLocaleString()}`:''}</span></div><div style="background:#f1f5f9;border-radius:6px;height:12px;margin-top:4px"><div style="width:${pct}%;background:#3b82f6;height:12px;border-radius:6px"></div></div></div>`}).join('')}</div><p class="muted" style="font-size:11px;margin-top:8px">${esc(data.note||'')}</p>`;}
+    if(type==='funnel'){const steps=data.steps||[];return `<div style="display:grid;gap:8px">${steps.map((s,i)=>{const pct=s.count&&steps[0].count?Math.round(s.count/steps[0].count*100):0;return `<div><div style="display:flex;justify-content:space-between;font-size:12px"><span><b>${i+1}. ${esc(s.label)}</b></span><span>${s.count.toLocaleString()} (${pct}%)${i>0?` · drop-off ${Number(s.dropoff??Math.max(0,steps[i-1].count-s.count)).toLocaleString()}`:''}</span></div><div style="background:#f1f5f9;border-radius:6px;height:12px;margin-top:4px"><div style="width:${pct}%;background:#3b82f6;height:12px;border-radius:6px"></div></div></div>`}).join('')}</div><p class="muted" style="font-size:11px;margin-top:8px">${esc(data.note||'')}</p>`;}
     if(type==='filters'){if(!data.total_uses)return '<p class="muted">No filter usage tracked yet. Tracking starts from now — data will appear as customers use filters.</p>';return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total filter uses</h4><div style="font-size:22px;font-weight:800">${data.total_uses||0}</div></div></div><h4>By type</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Filter</th><th>Uses</th></tr>${(data.by_type||[]).map(f=>`<tr><td><b>${esc(f.type)}</b></td><td>${f.uses}</td></tr>`).join('')}</table></div><h4 style="margin-top:12px">Top values</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Type</th><th>Value</th><th>Uses</th></tr>${(data.by_value||[]).slice(0,15).map(f=>`<tr><td>${esc(f.type)}</td><td>${esc(f.value||'—')}</td><td>${f.uses}</td></tr>`).join('')}</table></div>`;}
     if(type==='wishlist'){if(!data.total_adds&&!data.to_cart)return '<p class="muted">No wishlist activity tracked yet. Tracking starts from now — data will appear as customers use wishlist.</p>';const conv=data.total_adds?Math.round((data.to_cart||0)/data.total_adds*100):0;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total adds</h4><div style="font-size:22px;font-weight:800">${data.total_adds||0}</div></div><div class="existing-box-card"><h4>Removes</h4><div style="font-size:22px;font-weight:800">${data.total_removes||0}</div></div><div class="existing-box-card"><h4>Wishlist → Cart</h4><div style="font-size:22px;font-weight:800">${data.to_cart||0}</div><small>${conv}% conversion</small></div></div><h4>Most wishlisted</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Product ID</th><th>Adds</th></tr>${(data.top_products||[]).map(p=>`<tr><td><b>${p.product_id}</b></td><td>${p.adds}</td></tr>`).join('')}</table></div>`;}
     if(type==='boxevents'){const d=data;if(!d.total_views&&!d.total_adds)return '<p class="muted">No box view/add-to-cart tracked yet. Tracking starts from now.</p>';const conv2=d.total_views?Math.round((d.total_adds||0)/d.total_views*100):0;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Box page views</h4><div style="font-size:22px;font-weight:800">${d.total_views||0}</div></div><div class="existing-box-card"><h4>Box add-to-cart</h4><div style="font-size:22px;font-weight:800">${d.total_adds||0}</div><small>${conv2}% conversion</small></div></div><h4>Per box</h4><div class="live-table-wrap"><table class="live-table"><tr><th>Box</th><th>Views</th><th>Adds</th></tr>${(d.by_box||[]).map(b=>`<tr><td><b>${esc(b.box_name||'—')}</b></td><td>${b.views||0}</td><td>${b.adds||0}</td></tr>`).join('')}</table></div>`;}
     if(type==='shipping'){const d=data;if(!d.orders_in_range)return `<p class="muted">${esc(d.note||'No fulfillment data for this range.')}</p>`;const h=v=>v==null?'—':Number(v).toFixed(1)+'h';return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Order → Packed</h4><div style="font-size:22px;font-weight:800">${h(d.avg_hours_order_to_packed)}</div><small>${d.orders_reaching_packed||0} orders</small></div><div class="existing-box-card"><h4>Packed → Dispatched</h4><div style="font-size:22px;font-weight:800">${h(d.avg_hours_packed_to_dispatched)}</div><small>${d.orders_reaching_dispatched||0} orders</small></div><div class="existing-box-card"><h4>Dispatched → Delivered</h4><div style="font-size:22px;font-weight:800">${h(d.avg_hours_dispatched_to_delivered)}</div><small>${d.orders_reaching_delivered||0} orders</small></div><div class="existing-box-card"><h4>Total fulfillment</h4><div style="font-size:22px;font-weight:800">${h(d.avg_hours_total_fulfillment)}</div><small>${d.orders_in_range||0} orders in range</small></div></div><p class="muted" style="font-size:11px">${esc(d.note||'')}</p>`;}
-    const rows=data.rows||data.items||[];
-    if(!rows.length) return '<p class="muted">No data for this range.</p>';
-    if(type==='products') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Product</th><th>Units</th><th>Orders</th><th>Gross</th><th>Recognized</th><th>Trend</th></tr>${rows.slice(0,25).map(p=>{const pid=p.id||p.product_id;return `<tr><td><a href="/product/${pid}/" target="_blank" style="color:inherit;text-decoration:underline">${esc(p.name||p.product_name)}</a><small>${esc(pid||'')}</small></td><td>${p.units||0}</td><td>${p.orders||p.order_count||0}</td><td>${money2(p.gross||p.gross_value)}</td><td>${money2(p.recognized||p.recognized_revenue)}</td><td>${p.trend>0?'📈':p.trend<0?'📉':'➖'}</td></tr>`}).join('')}</table></div>`;
-    if(type==='categories') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Name</th><th>Orders</th><th>Units</th><th>Revenue</th><th>AOV</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name)}</td><td>${r.orders||0}</td><td>${r.units||0}</td><td>${money2(r.revenue||r.gross_value)}</td><td>${money2(r.aov)}</td></tr>`).join('')}</table></div>`;
-    if(type==='brands') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Brand</th><th>Orders</th><th>Units</th><th>Revenue</th><th>AOV</th><th>Links</th></tr>${rows.slice(0,25).map(r=>{const slug=(r.slug||r.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');return `<tr><td><b>${esc(r.name)}</b></td><td>${r.orders||0}</td><td>${r.units||0}</td><td>${money2(r.revenue||r.gross_value)}</td><td>${money2(r.aov)}</td><td style="white-space:nowrap"><a href="/brand/${encodeURIComponent(slug)}/" target="_blank" title="View storefront page" style="text-decoration:none">🔗 Store</a> · <a href="#" onclick="document.querySelector('[data-view=brands]')?.click();return false;" title="Open brand editor" style="text-decoration:none">✏️ Edit</a></td></tr>`}).join('')}</table></div>`;
-    if(type==='customers') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Customer</th><th>Orders</th><th>Recognized Spend</th><th>Last Order</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name||'—')}<small>${esc(r.phone||'')}</small></td><td>${r.orders||0}</td><td>${money2(r.spend||r.recognized_spend)}</td><td>${esc(r.last_order||r.last_purchase||'—')}</td></tr>`).join('')}</table></div>`;
-    if(type==='geography'){const cities=Array.isArray(data)?data:(data.rows||[]);if(!cities.length)return '<p class="muted">No city data for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>City</th><th>Orders</th><th>Revenue</th><th>Cancelled</th><th>Cancel Rate</th></tr>${cities.slice(0,25).map(c=>`<tr><td><b>${esc(c.city)}</b></td><td>${c.orders||0}</td><td>${money2(c.revenue)}</td><td>${c.cancelled||0}</td><td>${c.cancellation_rate||0}%</td></tr>`).join('')}</table></div>`;}
-    if(type==='coupons'){if(data.available===false)return `<p class="muted">${esc(data.reason||'No coupon data.')}</p>`;const cs=data.coupons||[];if(!cs.length)return '<p class="muted">No coupon usage for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>Code</th><th>Uses</th><th>Discount</th></tr>${cs.map(c=>`<tr><td><b>${esc(c.code)}</b></td><td>${c.uses||0}</td><td>${money2(c.discount)}</td></tr>`).join('')}</table></div>`;}
-    if(type==='refunds'){if(data.available===false)return `<p class="muted">${esc(data.reason||'No refund data.')}</p>`;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total cases</h4><div style="font-size:22px;font-weight:800">${data.total_cases||0}</div></div><div class="existing-box-card"><h4>Open</h4><div style="font-size:22px;font-weight:800">${data.open_cases||0}</div></div><div class="existing-box-card"><h4>Total refund</h4><div style="font-size:22px;font-weight:800">${money2(data.total_refund)}</div></div></div>`;}
-    if(type==='boxes'){const bx=Array.isArray(data)?data:(data.rows||[]);if(!bx.length)return '<p class="muted">No box data for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>Box</th><th>Orders</th><th>Units</th><th>Revenue</th></tr>${bx.map(b=>`<tr><td><b>${esc(b.box_name)}</b></td><td>${b.orders||0}</td><td>${b.units||0}</td><td>${money2(b.revenue)}</td></tr>`).join('')}</table></div>`;}
+    const rows=Array.isArray(data)?data:(data.rows||data.items||data[type]||data.top_customers||[]);
+    if(['products','categories','brands','customers'].includes(type)&&!rows.length)return '<p class="muted">No data for this range.</p>';
+    if(type==='products') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Product</th><th>Units</th><th>Orders</th><th>Gross</th><th>Recognized</th><th>Trend</th></tr>${rows.slice(0,25).map(p=>{const pid=p.id||p.product_id;return `<tr><td><a href="/product/${pid}/" target="_blank" style="color:inherit;text-decoration:underline">${esc(p.name||p.product_name)}</a><small>${esc(pid||'')}</small></td><td>${p.units||0}</td><td>${p.orders||p.order_count||0}</td><td>${money(p.gross||p.gross_value)}</td><td>${money(p.recognized||p.recognized_revenue)}</td><td>${p.trend>0?'📈':p.trend<0?'📉':'➖'}</td></tr>`}).join('')}</table></div>`;
+    if(type==='categories') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Name</th><th>Orders</th><th>Units</th><th>Revenue</th><th>AOV</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name||r.category||r.brand)}</td><td>${r.orders||0}</td><td>${r.units||0}</td><td>${money(r.revenue||r.gross_value)}</td><td>${money(r.aov)}</td></tr>`).join('')}</table></div>`;
+    if(type==='brands') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Brand</th><th>Orders</th><th>Units</th><th>Revenue</th><th>AOV</th><th>Links</th></tr>${rows.slice(0,25).map(r=>{const slug=(r.slug||r.name||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');return `<tr><td><b>${esc(r.name||r.brand||r.category)}</b></td><td>${r.orders||0}</td><td>${r.units||0}</td><td>${money(r.revenue||r.gross_value)}</td><td>${money(r.aov)}</td><td style="white-space:nowrap"><a href="/brand/${encodeURIComponent(slug)}/" target="_blank" title="View storefront page" style="text-decoration:none">🔗 Store</a> · <a href="#" onclick="document.querySelector('[data-view=brands]')?.click();return false;" title="Open brand editor" style="text-decoration:none">✏️ Edit</a></td></tr>`}).join('')}</table></div>`;
+    if(type==='customers') return `<div class="live-table-wrap"><table class="live-table"><tr><th>Customer</th><th>Orders</th><th>Recognized Spend</th><th>Last Order</th></tr>${rows.slice(0,25).map(r=>`<tr><td>${esc(r.name||'—')}<small>${esc(r.phone||'')}</small></td><td>${r.orders||0}</td><td>${money(r.spend||r.recognized_spend)}</td><td>${esc(r.last_order||r.last_purchase||'—')}</td></tr>`).join('')}</table></div>`;
+    if(type==='geography'){const cities=Array.isArray(data)?data:(data.rows||[]);if(!cities.length)return '<p class="muted">No city data for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>City</th><th>Orders</th><th>Revenue</th><th>Cancelled</th><th>Cancel Rate</th></tr>${cities.slice(0,25).map(c=>`<tr><td><b>${esc(c.city)}</b></td><td>${c.orders||0}</td><td>${money(c.revenue)}</td><td>${c.cancelled||0}</td><td>${c.cancellation_rate||0}%</td></tr>`).join('')}</table></div>`;}
+    if(type==='coupons'){if(data.available===false)return `<p class="muted">${esc(data.reason||'No coupon data.')}</p>`;const cs=data.coupons||[];if(!cs.length)return '<p class="muted">No coupon usage for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>Code</th><th>Uses</th><th>Discount</th></tr>${cs.map(c=>`<tr><td><b>${esc(c.code)}</b></td><td>${c.uses||0}</td><td>${money(c.discount)}</td></tr>`).join('')}</table></div>`;}
+    if(type==='refunds'){if(data.available===false)return `<p class="muted">${esc(data.reason||'No refund data.')}</p>`;return `<div class="metric-grid" style="margin-bottom:12px"><div class="existing-box-card"><h4>Total cases</h4><div style="font-size:22px;font-weight:800">${data.total_cases||0}</div></div><div class="existing-box-card"><h4>Open</h4><div style="font-size:22px;font-weight:800">${data.open_cases||0}</div></div><div class="existing-box-card"><h4>Total refund</h4><div style="font-size:22px;font-weight:800">${money(data.total_refund)}</div></div></div>`;}
+    if(type==='boxes'){const bx=Array.isArray(data)?data:(data.rows||[]);if(!bx.length)return '<p class="muted">No box data for this range.</p>';return `<div class="live-table-wrap"><table class="live-table"><tr><th>Box</th><th>Orders</th><th>Units</th><th>Revenue</th></tr>${bx.map(b=>`<tr><td><b>${esc(b.box_name)}</b></td><td>${b.orders||0}</td><td>${b.units||0}</td><td>${money(b.revenue)}</td></tr>`).join('')}</table></div>`;}
     return `<pre class="muted" style="font-size:11px;max-height:300px;overflow:auto">${esc(JSON.stringify(rows.slice(0,10),null,1))}</pre>`;
   }
 
@@ -1299,47 +1326,41 @@
       }catch(e){ checks.push({name,ok:false,detail:'Fetch failed'}); }
     };
     await Promise.all([
-      check('robots.txt','/robots.txt',t=>t.includes('sitemap-products.xml')),
+      check('robots.txt','/robots.txt',t=>t.includes('/api/product-sitemap')),
       check('Main sitemap','/sitemap.xml',t=>(t.match(/<url>/g)||[]).length>=10),
-      check('Product sitemap (static)','/sitemap-products.xml',t=>(t.match(/<url>/g)||[]).length>=100),
-      check('Product sitemap (dynamic)','/api/product-sitemap',t=>(t.match(/<url>/g)||[]).length>=100),
+      check('Product sitemap (dynamic)','/api/product-sitemap',t=>t.includes('<urlset')&&t.includes('chaskabox.online/product/')),
     ]);
     el.innerHTML='<div style="display:grid;gap:8px">'+checks.map(c=>
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border:1px solid var(--border);border-radius:8px">'
       +'<span>'+(c.ok?'\u2705':'\u274c')+' '+c.name+'</span><small class="muted">'+c.detail+'</small></div>'
-    ).join('')+'</div><p class="muted" style="font-size:11px;margin-top:8px">Static product pages include Product + Offer + Breadcrumb schema. Dynamic ?id= URLs redirect to static pages.</p>';
+    ).join('')+'</div><p class="muted" style="font-size:11px;margin-top:8px">Product URLs are rendered from the live catalogue with one Product schema, one Breadcrumb schema and a canonical URL. Legacy ?id= URLs redirect to these pages.</p>';
   }
 
   /* ============ BACKUP ============ */
   function initBackup(){
-    $('#downloadBackupBtn')?.addEventListener('click', async ()=>{
+    const button=$('#downloadBackupBtn');
+    button?.addEventListener('click', async ()=>{
+      if(button.disabled)return;
+      const label=button.textContent;
+      button.disabled=true;button.textContent='Preparing snapshot…';
+      let objectUrl;
       try{
-        toast('Preparing backup…');
-        const bt=await token();
-        const res = await fetch('/api/admin/backup', {
-          headers: { 'Authorization': `Bearer ${bt}` },
-        });
-        if(!res.ok) throw new Error('Backup failed');
-        const blob = await res.blob();
+        const snapshot=await api('/api/admin/backup');
+        const tables=snapshot?.tables, counts=snapshot?.manifest?.row_counts;
+        if(snapshot?.version!==2 || snapshot.kind!=='catalogue_configuration' || snapshot.scope?.full_database_backup!==false || snapshot.scope?.complete_catalogue_scope!==true || snapshot.consistency?.exact_counts_verified!==true || !tables || !counts || !Object.keys(tables).length || Object.keys(counts).length!==Object.keys(tables).length || Object.entries(tables).some(([name,rows])=>!Array.isArray(rows)||!Number.isSafeInteger(counts[name])||counts[name]!==rows.length)){
+          throw new Error('Snapshot validation failed. No file downloaded.');
+        }
+        const blob=new Blob([JSON.stringify(snapshot,null,2)],{type:'application/json'});
         const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `chaskabox-backup-${new Date().toISOString().slice(0,10)}.json`;
+        objectUrl=URL.createObjectURL(blob);a.href=objectUrl;
+        a.download = `chaskabox-catalogue-${new Date().toISOString().slice(0,10)}.json`;
         a.click();
-        toast('Backup downloaded');
-      }catch(e){toast(e.message);}
-    });
-    $('#restoreBackupBtn')?.addEventListener('click', async ()=>{
-      const file = $('#restoreFileInput')?.files?.[0];
-      if(!file){toast('Select a backup file first');return;}
-      if(!confirm('⚠️ This will OVERWRITE catalogue data. Continue?')) return;
-      const confirm2 = prompt('Type RESTORE to confirm:');
-      if(confirm2 !== 'RESTORE'){toast('Cancelled');return;}
-      try{
-        const text = await file.text();
-        const backup = JSON.parse(text);
-        await api('/api/admin/backup', { method:'POST', body:{ confirm:'RESTORE', backup } });
-        toast('Restore complete');
-      }catch(e){toast(e.message);}
+        toast('Catalogue snapshot downloaded. Orders and photo files are excluded.');
+      }catch(e){toast(e.message || 'Snapshot failed.');}
+      finally{
+        if(objectUrl)setTimeout(()=>URL.revokeObjectURL(objectUrl),1000);
+        button.disabled=false;button.textContent=label;
+      }
     });
   }
 
@@ -1358,11 +1379,11 @@
           <span>${new Date(v.created_at).toLocaleString()} · ${esc(v.changed_by||'')} · ${esc(v.change_type)}</span>
           <button class="btn secondary compact" data-revert-version="${v.id}">↩️ Revert</button>
         </div>`).join('');
-      list.querySelectorAll('[data-revert-version]').forEach(b=>b.onclick=async()=>{
+      list.querySelectorAll('[data-revert-version]').forEach(b=>{b.disabled=!roleAllows('owner','manager')||!!versions.find(v=>String(v.id)===b.dataset.revertVersion)?.reverted_at;b.onclick=async()=>{
         if(!confirm('Revert to this version? Current state will be saved as a new version.')) return;
-        await api(`/api/admin/product-versions`,{method:'POST',body:{product_id:productId,version_id:b.dataset.revertVersion}});
-        toast('Reverted'); loadProducts(); panel.style.display='none';
-      });
+        try{await api(`/api/admin/product-versions`,{method:'POST',body:{product_id:Number(productId),version_id:Number(b.dataset.revertVersion),confirm:true,expected_updated_at:d.expected_updated_at}});
+        toast('Reverted'); loadProducts(); panel.style.display='none';}catch(e){toast(e.message);}
+      };});
     }catch(e){list.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
 
@@ -1411,107 +1432,28 @@
   }
 
   /* ============ AI IMAGE STUDIO ============ */
-  let lastGeneratedImage = null;
-  let studioRefImageData = null;
-  // ChaskaBox product photo style presets (match site standards)
-  const STUDIO_PRESETS = {
-    chaskabox: 'Professional product photography, Pakistani snack packaging, clean white background, studio lighting, sharp focus, centered, e-commerce product shot, high detail',
-    boxitem: 'Product box with single item pack beside it, clean white background, professional studio lighting, clear and close, e-commerce style, sharp focus',
-    single: 'Single snack pack product shot, clean white background, professional studio lighting, centered, sharp focus, e-commerce product photography',
-  };
+  let lastGeneratedImage=null,lastGeneratedMime='image/jpeg';
+  const STUDIO_PRESETS={chaskabox:'Colorful snack-inspired abstract shapes, studio lighting, decorative background, no logos or readable packaging',boxitem:'Festive abstract gift shapes, clean backdrop, decorative art, no brand labels',single:'Minimal colorful geometric snack-inspired illustration, no product packaging or logos'};
   function initImageStudio(){
-    // Style presets
-    document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click', ()=>{
-      const p=STUDIO_PRESETS[b.dataset.preset];
-      if(p){
-        const cur=$('#studioPrompt').value.trim();
-        $('#studioPrompt').value = cur ? cur + ', ' + p : p;
-        toast('Style preset added');
-      }
-    }));
-    // Reference image upload
-    $('#studioRefImage')?.addEventListener('change', e=>{
-      const file=e.target.files?.[0];
-      if(!file) return;
-      if(file.size>4*1024*1024){toast('Image 4MB se choti honi chahiye');return;}
-      const reader=new FileReader();
-      reader.onload=ev=>{
-        studioRefImageData=ev.target.result;
-        $('#studioRefImg').src=studioRefImageData;
-        $('#studioRefPreview').style.display='block';
-      };
-      reader.readAsDataURL(file);
-    });
-    $('#clearRefBtn')?.addEventListener('click', ()=>{
-      studioRefImageData=null;
-      $('#studioRefImage').value='';
-      $('#studioRefPreview').style.display='none';
-    });
-    $('#generateImageBtn')?.addEventListener('click', async ()=>{
-      const prompt=$('#studioPrompt').value.trim();
-      if(!prompt||prompt.length<10){toast('Prompt likhen (min 10 chars)');return;}
-      const btn=$('#generateImageBtn'); const old=btn.textContent;
-      btn.disabled=true; btn.textContent='✨ Generating…';
-      $('#studioPreview').innerHTML='<div class="admin-loading"><div class="spinner"></div><p>AI image bana raha hai…</p></div>';
-      $('#studioActions').style.display='none';
+    document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{$('#studioPrompt').value=STUDIO_PRESETS[b.dataset.preset]||'';}));
+    $('#generateImageBtn')?.addEventListener('click',async()=>{
+      const prompt=$('#studioPrompt').value.trim(),button=$('#generateImageBtn'),label=button.textContent;
+      if(prompt.length<10||prompt.length>500){toast('Prompt 10–500 characters ka hona chahiye');return;}
+      button.disabled=true;button.textContent='Generating…';$('#studioActions').style.display='none';$('#studioPreview').textContent='Decorative draft ban raha hai…';lastGeneratedImage=null;
       try{
-        const data=await api('/api/admin/ai-image',{method:'POST',body:{
-          prompt, type:$('#studioType').value, style:$('#studioStyle').value,
-          reference_image: studioRefImageData,
-        }});
-        lastGeneratedImage=data.image_url;
-        $('#studioPreview').innerHTML=`<img src="${data.image_url}" alt="Generated" style="max-width:100%;border-radius:8px"><p class="muted" style="font-size:11px;margin-top:8px">Via ${esc(data.source)}</p>`;
-        $('#studioActions').style.display='flex';
-        if(data.warnings) toast(data.warnings[0]);
-      }catch(e){toast(e.message||'Generation failed');$('#studioPreview').innerHTML='<p class="muted">Failed. Try again.</p>';}
-      finally{btn.disabled=false;btn.textContent=old;}
+        const result=await api('/api/admin/ai-image',{method:'POST',body:{prompt,type:$('#studioType').value,style:$('#studioStyle').value}});
+        lastGeneratedImage=result.image_url;lastGeneratedMime=result.mime;
+        const img=document.createElement('img');img.src=result.image_url;img.alt='AI decorative draft';img.style.maxWidth='100%';img.style.borderRadius='8px';
+        const note=document.createElement('p');note.className='muted';note.textContent=result.width+' × '+result.height+' · '+result.source+' · Draft only';
+        $('#studioPreview').replaceChildren(img,note);$('#studioActions').style.display='flex';toast(result.warnings[0]);
+      }catch(e){$('#studioPreview').textContent=e.message||'AI draft unavailable.';}
+      finally{button.disabled=false;button.textContent=label;}
     });
-    $('#downloadImageBtn')?.addEventListener('click', ()=>{
-      if(!lastGeneratedImage) return;
-      const a=document.createElement('a');
-      a.href=lastGeneratedImage;
-      a.download=`chaskabox-ai-${Date.now()}.png`;
-      a.click();
-      toast('Downloaded');
+    $('#downloadImageBtn')?.addEventListener('click',()=>{
+      if(!lastGeneratedImage)return;
+      const a=document.createElement('a');a.href=lastGeneratedImage;a.download='chaskabox-decoration-'+Date.now()+'.'+(lastGeneratedMime==='image/png'?'png':lastGeneratedMime==='image/webp'?'webp':'jpg');a.click();
     });
-    $('#newVariationBtn')?.addEventListener('click', ()=>$('#generateImageBtn').click());
-    // Use generated image for a product: upload to media library + set as product image
-    $('#useForProductBtn')?.addEventListener('click', async ()=>{
-      if(!lastGeneratedImage){toast('Pehle image generate karen');return;}
-      const q=prompt('Kis product ke liye? (naam ya ID likhen):');
-      if(!q?.trim()) return;
-      try{
-        toast('Upload ho raha hai…');
-        // Find product
-        const sData=await api(`/api/admin/products?per_page=5&q=${encodeURIComponent(q.trim())}`);
-        const prods=sData.products||[];
-        if(!prods.length){toast('Product nahi mila');return;}
-        let p=prods[0];
-        if(prods.length>1){
-          const ch=prods.map((x,i)=>`${i+1}. ${x.name}`).join('\n');
-          const sel=prompt(`Kaunsa?\n${ch}\n\nNumber likhen:`,'1');
-          p=prods[Number(sel)-1]||prods[0];
-        }
-        // Convert data URL → Blob → upload to media library
-        let imageBlob;
-        if(lastGeneratedImage.startsWith('data:')){
-          const res=await fetch(lastGeneratedImage);
-          imageBlob=await res.blob();
-        }else{
-          // Remote URL (Pollinations) — fetch and upload
-          const res=await fetch(lastGeneratedImage);
-          imageBlob=await res.blob();
-        }
-        const fd=new FormData();
-        fd.append('file', imageBlob, `ai-product-${p.id}-${Date.now()}.png`);
-        const up=await api('/api/admin/media',{method:'POST',body:fd});
-        const imageUrl=up?.url;
-        if(!imageUrl){toast('Upload fail');return;}
-        // Confirm and apply
-        if(!confirm(`"${p.name}" ki image update karen?\n\nNayi: ${imageUrl}\n\n(Purani version history mein save ho jayegi)`)) return;
-        await api(`/api/admin/products/${p.id}`,{method:'PATCH',body:{image_url:imageUrl}});
-        toast(`✅ ${p.name} ki image update ho gayi!`);
-      }catch(e){toast(e.message||'Failed');}
-    });
+    $('#newVariationBtn')?.addEventListener('click',()=>$('#generateImageBtn').click());
   }
+
 })();

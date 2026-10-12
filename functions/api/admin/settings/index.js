@@ -1,6 +1,7 @@
 import { withAdmin, sb, json, readJson, httpError, audit } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
-const BOOL_KEYS = new Set(['cod_enabled','jazzcash_enabled','bank_transfer_enabled','ai_customer_assistant_enabled','ai_semantic_search_enabled']);
+const BOOL_KEYS = new Set(['cod_enabled','jazzcash_enabled','bank_transfer_enabled','ai_customer_assistant_enabled','ai_semantic_search_enabled','ai_enabled','ai_text_enabled','ai_images_enabled','ai_embeddings_enabled','media_upload_enabled']);
 const MONEY_KEYS = new Set(['cod_delivery_fee_pkr','prepaid_delivery_fee_pkr']);
 const THRESHOLD_KEYS = new Set(['prepaid_free_delivery_threshold_pkr']);
 const TEXT_LIMITS = {
@@ -12,7 +13,7 @@ const TEXT_LIMITS = {
   jazzcash_till_id: 40,
   jazzcash_qr_url: 500,
 };
-const ALLOWED = new Set([...BOOL_KEYS, ...MONEY_KEYS, ...THRESHOLD_KEYS, ...Object.keys(TEXT_LIMITS), 'bank_transfer_details']);
+const ALLOWED = new Set([...BOOL_KEYS, ...MONEY_KEYS, ...THRESHOLD_KEYS, ...Object.keys(TEXT_LIMITS), 'bank_transfer_details','ai_daily_budget_neurons','media_monthly_transform_limit']);
 
 function validate(key, value) {
   if (!ALLOWED.has(key)) httpError(`unsupported setting: ${key}`, 400, 'invalid_setting');
@@ -20,6 +21,8 @@ function validate(key, value) {
     if (typeof value !== 'boolean') httpError(`${key} must be boolean`, 400, 'invalid_setting');
     return value;
   }
+  if(key==='media_monthly_transform_limit'){if(!Number.isInteger(value)||value<1||value>1000)httpError('Media app limit must be 1..1000',400,'invalid_setting');return value;}
+  if(key==='ai_daily_budget_neurons'){if(!Number.isInteger(value)||value<1||value>8000)httpError('AI app budget must be 1..8000',400,'invalid_setting');return value;}
   if (MONEY_KEYS.has(key) || THRESHOLD_KEYS.has(key)) {
     const n = Number(value);
     const max = THRESHOLD_KEYS.has(key) ? 1_000_000 : 100_000;
@@ -60,16 +63,8 @@ export const onRequestPatch = withAdmin(['owner'], async (context, { user, role 
   if (!updates || typeof updates !== 'object' || Array.isArray(updates)) httpError('settings object required', 400, 'invalid_settings');
   const keys = Object.keys(updates);
   if (!keys.length || keys.length > 30) httpError('settings must contain 1..30 values', 400, 'invalid_settings');
-  const out = [];
-  for (const [key, raw] of Object.entries(updates)) {
-    const value = validate(key, raw);
-    const before = await sb(context, `/rest/v1/site_settings?key=eq.${encodeURIComponent(key)}&select=key,value`);
-    const rows = await sb(context, `/rest/v1/site_settings?key=eq.${encodeURIComponent(key)}`, { method: 'PATCH', body: { value, updated_by: user.id } });
-    if (!rows?.length) {
-      await sb(context, '/rest/v1/site_settings', { method: 'POST', body: { key, value, updated_by: user.id } });
-    }
-    await audit(context, { actorId: user.id, actorRole: role, action: 'settings.updated', entityType: 'settings', entityId: key, before: before?.[0] || null, after: { value } });
-    out.push({ key, value });
-  }
+  const operations=Object.entries(updates).map(([key,raw])=>({table:'site_settings',op:'upsert',id:key,data:{key,value:validate(key,raw),updated_by:user.id}}));
+  const saved=await cmsMutate(context,user,operations);
+  const out=saved.map(({key,value})=>({key,value}));
   return json({ settings: out });
 });

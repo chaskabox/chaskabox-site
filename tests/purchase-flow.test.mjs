@@ -64,6 +64,7 @@ test('failed request keeps cart/key and resets consumed bot verification; retry 
   const b=browser(checkout);checkoutForm(b);let resets=0;const requests=[];let attempt=0;
   b.context.turnstile={getResponse:()=>attempt?'fresh-token':'first-token',reset:()=>resets++};
   b.context.fetch=async(path,options)=>{
+    if(path==='/api/checkout-quote')return new Response(JSON.stringify({quote:{subtotal:400,discount:0,delivery_fee:300,total:700}}));
     assert.equal(path,'/api/orders');requests.push(JSON.parse(options.body));attempt++;
     if(attempt===1)throw new Error('Response lost after commit');
     return new Response(JSON.stringify({order_id:'fixture-order',order_number:'CB-FIXTURE',total:777,idempotent_replay:true}),{status:200});

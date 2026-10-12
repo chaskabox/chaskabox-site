@@ -1,0 +1,109 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {PGlite} from '@electric-sql/pglite';
+import {vector} from '@electric-sql/pglite-pgvector';
+import {pgcrypto} from '@electric-sql/pglite/contrib/pgcrypto';
+import {readFile} from 'node:fs/promises';
+import {replayPlan} from '../tools/schema-replay.mjs';
+import {businessInput} from '../functions/api/admin/_lib/business-input.js';
+import {parseRange} from '../functions/api/admin/analytics/_lib/helpers.js';
+import {validateTheme} from '../theme-contract.js';
+import {analyticsEvent} from '../functions/api/_lib/analytics-ingest.js';
+import vm from 'node:vm';
+const actor='00000000-0000-4000-8000-000000000001';
+async function fixture(){
+ const db=new PGlite({extensions:{vector,pgcrypto}});
+ try{
+  await db.exec(await readFile(new URL('fixtures/platform-schema.sql',import.meta.url),'utf8'));
+  for(const f of (await replayPlan()).files)await db.exec(await readFile(f,'utf8'));
+  await db.query("INSERT INTO auth.users(id,email) VALUES($1,'synthetic@example.invalid');",[actor]);
+  await db.query("INSERT INTO admin_roles(user_id,role) VALUES($1,'owner')",[actor]);
+  await db.exec("INSERT INTO products(id,name,slug,price,category,pack,visibility) VALUES(1,'Synthetic A','synthetic-a',1000,'Test','One','visible'),(2,'Synthetic B','synthetic-b',500,'Test','One','visible'); SELECT setval('products_id_seq',100); SET ROLE service_role; SELECT set_config('request.jwt.claim.role','service_role',false);");
+  return db;
+ }catch(e){await db.close();throw e;}
+}
+const input={title:'Synthetic box',selling_price:1200,items:[{product_id:1,quantity:1},{product_id:2,quantity:1}]};
+test('box replacement and audit failures rollback all component and product changes',async()=>{
+ const db=await fixture();try{
+  const save=async(id,i)=>(await db.query('SELECT admin_box_save($1,$2,$3) box',[actor,id,i])).rows[0].box;
+  const box=await save(null,input);assert.equal(box.old_price,1500);assert.equal(box.bundle_kind,'curated');
+  await db.exec("RESET ROLE; CREATE FUNCTION synthetic_component_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.component_product_id=2 THEN RAISE EXCEPTION 'synthetic component failure'; END IF; RETURN NEW; END $$; CREATE TRIGGER synthetic_failure BEFORE INSERT ON bundle_items FOR EACH ROW EXECUTE FUNCTION synthetic_component_failure(); SET ROLE service_role;");
+  await assert.rejects(save(box.id,{...input,title:'Changed',expected_updated_at:box.updated_at}),/synthetic component failure/);
+  assert.equal((await db.query('SELECT name FROM products WHERE id=$1',[box.id])).rows[0].name,'Synthetic box');
+  assert.equal((await db.query('SELECT count(*) n FROM bundle_items WHERE bundle_product_id=$1',[box.id])).rows[0].n,2);
+  await db.exec("RESET ROLE; DROP TRIGGER synthetic_failure ON bundle_items; CREATE FUNCTION synthetic_audit_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic audit failure'; END $$; CREATE TRIGGER synthetic_audit_failure BEFORE INSERT ON audit_log FOR EACH ROW EXECUTE FUNCTION synthetic_audit_failure(); SET ROLE service_role;");
+  await assert.rejects(save(box.id,{title:'Changed',expected_updated_at:box.updated_at}),/synthetic audit failure/);
+  assert.equal((await db.query('SELECT name FROM products WHERE id=$1',[box.id])).rows[0].name,'Synthetic box');
+ }finally{await db.close();}
+});
+test('quote and order share exact coupon/zone pricing, atomic usage and stable customer IDs',async()=>{
+ const db=await fixture();try{
+  await db.exec("INSERT INTO coupons(code,discount_type,discount_value,max_uses) VALUES('LAST','percent',10,1); INSERT INTO shipping_zones(name,cities,fee,free_above) VALUES('Synthetic city',ARRAY['karachi'],200,2000);");
+  const order={order_number:'CB-SYNTHETIC-1',idempotency_key:'00000000-0000-4000-8000-000000000011',items:[{product_id:1,qty:2}],payment_method:'cod',coupon_code:'LAST',customer:{name:'Synthetic',phone:'03000000000',email:'buyer@example.invalid',city:'Karachi',country:'Pakistan',address:'Synthetic address'}};
+  const q=(await db.query('SELECT checkout_quote($1) q',[order])).rows[0].q;
+  assert.equal(q.total,2000);assert.equal(q.discount,200);assert.equal(q.delivery_fee,200);
+  const o=(await db.query('SELECT create_order_atomic($1) o',[order])).rows[0].o;
+  assert.equal(o.order.total,q.total);assert.equal(o.order.discount,200);assert.ok(o.order.customer_id);
+  const replay=(await db.query('SELECT create_order_atomic($1) o',[order])).rows[0].o;assert.equal(replay.replay,true);
+  assert.equal((await db.query("SELECT used_count FROM coupons WHERE code='LAST'")).rows[0].used_count,1);
+  await assert.rejects(db.query('SELECT create_order_atomic($1)',[{...order,idempotency_key:'00000000-0000-4000-8000-000000000012',order_number:'CB-SYNTHETIC-2'}]),/COUPON_UNAVAILABLE/);
+  assert.equal((await db.query('SELECT count(*) n FROM orders')).rows[0].n,1);
+  const dir=(await db.query('SELECT customer_directory() d')).rows[0].d;assert.equal(dir.total,1);assert.equal(dir.customers[0].order_count,1);
+  await assert.rejects(db.query('SELECT checkout_quote($1)',[{...order,coupon_code:null,customer:{...order.customer,country:'USA'}}]),/UNSUPPORTED_COUNTRY/);
+ }finally{await db.close();}
+});
+test('review summaries count all approved rows and only delivered nonrefunded purchasers qualify',async()=>{
+ const db=await fixture();try{
+  await db.exec("INSERT INTO reviews(product_id,rating,review_text,moderation_status) SELECT 1,5,'Synthetic review','approved' FROM generate_series(1,125); INSERT INTO reviews(product_id,rating,review_text,moderation_status) VALUES(1,1,'Hidden synthetic','pending');");
+  assert.deepEqual((await db.query('SELECT review_summary(1) s')).rows[0].s,{count:125,avg_rating:5});
+  assert.equal((await db.query('SELECT review_purchase($1,1) id',[actor])).rows[0].id,null);
+ }finally{await db.close();}
+});
+test('commercial controls reject coercive booleans, prices and unsupported fields',()=>{
+ for(const b of [{is_active:'false'},{discount_value:'10'},{max_uses:-1},{used_count:0}])assert.throws(()=>businessInput(b,'coupon'),e=>e.status===400);
+ assert.deepEqual(businessInput({cities:[' Karachi ','karachi'],fee:200},'zone'),{cities:['karachi'],fee:200});
+});
+test('all reporting RPCs execute against the full schema; refunds cannot count as delivered COD revenue',async()=>{
+ const db=await fixture();try{
+  const customer={name:'Synthetic',phone:'03000000000',email:'analytics@example.invalid',city:'Lahore',country:'Pakistan',address:'Synthetic address'};
+  for(const [n,method] of [[1,'cod'],[2,'bank_transfer']]){
+   await db.query('SELECT create_order_atomic($1)',[{customer,items:[{product_id:1,qty:1}],payment_method:method,transaction_reference:'SYNTHETIC',order_number:'CB-ANALYTICS-'+n,idempotency_key:'00000000-0000-4000-8000-00000000000'+n}]);
+  }
+  await db.exec("UPDATE orders SET fulfilment_status='delivered',payment_status='refunded' WHERE payment_method='cod'; UPDATE orders SET payment_status='payment_verified' WHERE payment_method='bank_transfer';");
+  const from='2026-01-01T00:00:00Z',to='2030-01-01T00:00:00Z';
+  const revenue=(await db.query('SELECT analytics_revenue($1,$2) r',[from,to])).rows[0].r;
+  assert.equal(revenue.recognized_revenue,1300);assert.equal(revenue.delivered_cod,0);assert.equal(revenue.gross_order_value,2600);
+  const functions=(await db.query("SELECT proname,pronargs FROM pg_proc JOIN pg_namespace n ON n.oid=pronamespace WHERE n.nspname='public' AND proname LIKE 'analytics_%'")).rows;
+  assert.ok(functions.length>=20);
+  for(const f of functions){
+   const args=f.pronargs===0?[]:f.pronargs===4?[from,to,'revenue',25]:[from,to];
+   try{await db.query('SELECT '+f.proname+'('+args.map((_,i)=>'$'+(i+1)).join(',')+')',args);}catch(e){assert.fail(f.proname+': '+e.message);}
+  }
+ }finally{await db.close();}
+});
+test('Pakistan reporting dates, accessible themes and bounded anonymous event contracts',()=>{
+ const {from,to}=parseRange(new URL('https://fixture.invalid/?from=2026-10-11&to=2026-10-11'));
+ assert.equal(from.toISOString(),'2026-10-10T19:00:00.000Z');assert.equal(to.toISOString(),'2026-10-11T19:00:00.000Z');
+ assert.throws(()=>validateTheme({primary_color:'#ffffff'}),/contrast/);
+ assert.throws(()=>validateTheme({font_family:'url(evil)'}),/font/);
+ assert.throws(()=>analyticsEvent('funnel_events',{event:'order_created'}),e=>e.status===400);
+ assert.throws(()=>analyticsEvent('filter_events',{filter_type:'category',filter_value:'a'.repeat(161)}),e=>e.status===400);
+ assert.equal(analyticsEvent('search_logs',{query:'contact alice@example.invalid',clicked_product_id:1}).query,'contact [email]');
+});
+test('public manifest reflects an explicitly empty category, disabled menus and published configuration only',async()=>{
+ const db=await fixture();try{
+  await db.exec("INSERT INTO categories(name,slug,hide_if_empty,assignments_managed) VALUES('Test','test',false,true); INSERT INTO homepage_sections(section_key,enabled,config,draft_config) VALUES('hero',false,'{\"button_text\":\"Published\"}','{\"button_text\":\"Draft\"}'); UPDATE navigation_menus SET is_enabled=false;");
+  const d=(await db.query('SELECT storefront_manifest() d')).rows[0].d;
+  assert.equal(d.categories.length,1);assert.deepEqual(d.categories[0].product_ids,[]);
+  assert.equal(d.sections[0].enabled,false);assert.equal(d.sections[0].config.button_text,'Published');assert.equal(d.sections[0].draft_config,undefined);
+  assert.ok(d.navigation.length>0);assert.ok(d.navigation.every(n=>n.is_enabled===false));
+ }finally{await db.close();}
+});
+test('admin analytics renders the actual array/object contracts without undefined money or dropoff helpers',async()=>{
+ const source=await readFile(new URL('../admin-live.js',import.meta.url),'utf8');
+ const fn=source.slice(source.indexOf('  function renderAnalyticsTable('),source.indexOf('  async function checkSeoHealth('));
+ const ctx={esc:v=>String(v??''),money:v=>'Rs. '+Number(v||0)};vm.createContext(ctx);vm.runInContext(fn,ctx);
+ const cases=[['products',{products:[{name:'Synthetic product',product_id:1,gross_value:100}]}],['categories',{categories:[{name:'Synthetic category',orders:1}]}],['geography',[{city:'Synthetic city',orders:1}]],['boxes',[{box_name:'Synthetic box',orders:1}]],['coupons',{coupons:[{code:'SYNTHETIC',uses:1}]}]];
+ for(const [type,data] of cases)assert.match(ctx.renderAnalyticsTable(type,data),/Synthetic|SYNTHETIC/);
+ assert.doesNotThrow(()=>ctx.renderAnalyticsTable('funnel',{steps:[{step:'product_view',label:'Views',count:2},{step:'order_created',label:'Orders',count:1}]}));
+});

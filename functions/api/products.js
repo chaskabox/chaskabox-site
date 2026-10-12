@@ -6,7 +6,7 @@
  * The static products.json remains a browser fallback for temporary backend
  * outages; checkout/order pricing stays authoritative on the server.
  */
-import { sbRequest } from './_lib/db.js';
+import { publicCatalogue } from './_lib/catalogue-search.js';
 
 function localShape(p) {
   return {
@@ -21,16 +21,16 @@ function localShape(p) {
     desc: p.description || '',
     badge: p.badge || '',
     img: p.image_url || null,
+    photoNote: p.image_warning || '',
     bundle: !!p.is_bundle,
+    stockState: p.stock_state || 'sourced_after_order',
   };
 }
 
 export async function onRequestGet(context) {
   try {
     const fresh = new URL(context.request.url).searchParams.get('fresh') === '1';
-    const rows = await sbRequest(context.env, '/public_products', {
-      query: '?select=id,slug,name,brand,category,pack,price,old_price,description,badge,image_url,is_bundle&order=id.asc&limit=1000',
-    });
+    const rows = await publicCatalogue(context.env);
     return new Response(JSON.stringify((rows || []).map(localShape)), {
       status: 200,
       headers: {

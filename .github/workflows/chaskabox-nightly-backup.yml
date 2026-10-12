@@ -9,103 +9,40 @@ permissions:
   contents: read
 
 concurrency:
-  group: chaskabox-nightly-db-backup
+  group: chaskabox-nightly-database-backup
   cancel-in-progress: false
 
 jobs:
   backup:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      CLOUDFLARE_BACKUP_READ_TOKEN: ${{ secrets.CLOUDFLARE_BACKUP_READ_TOKEN }}
     steps:
-      - name: Validate required backup secrets
-        shell: bash
-        env:
-          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      - name: Set private backup directory
+        run: echo "BACKUP_DIR=$RUNNER_TEMP/chaskabox-database-backup" >> "$GITHUB_ENV"
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+      - name: Validate backup configuration before installing or exporting
+        run: node tools/database-backup.mjs preflight
+      - name: Install PostgreSQL 17 client from signed PostgreSQL repository
+        run: bash tools/install-pg17-client.sh
+      - name: Create database archive with schema, data, grants and role metadata
+        run: node tools/database-backup.mjs dump
+      - name: Upload to private R2 and verify checksum readback
+        run: node tools/database-backup.mjs upload
+      - name: Record failure visibly
+        if: failure()
         run: |
-          set -euo pipefail
-          missing=0
-          for name in SUPABASE_DB_URL R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_ENDPOINT R2_BUCKET; do
-            if [[ -z "${!name:-}" ]]; then
-              echo "::error title=Missing GitHub Actions secret::${name} is missing or empty. Set it under repository Settings > Secrets and variables > Actions."
-              missing=1
-            fi
-          done
-          if (( missing )); then
-            exit 1
-          fi
-          if [[ "$SUPABASE_DB_URL" != postgres://* && "$SUPABASE_DB_URL" != postgresql://* ]]; then
-            echo "::error::SUPABASE_DB_URL must be a PostgreSQL connection URI."
-            exit 1
-          fi
-          if [[ "$R2_ENDPOINT" != https://* ]]; then
-            echo "::error::R2_ENDPOINT must be a full HTTPS S3-compatible endpoint URL."
-            exit 1
-          fi
-          echo "Required configuration is present (connectivity is not yet verified)."
-
-      - name: Create and validate compressed PostgreSQL 17 dump
-        shell: bash
-        env:
-          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: |
-          set -euo pipefail
-          mkdir -p backup
-          stamp="$(date -u +'%Y%m%dT%H%M%SZ')"
-          filename="chaskabox-${stamp}.dump"
-          # The GitHub Ubuntu image defaults to pg_dump 16, but Supabase runs Postgres 17.
-          # The official PostgreSQL 17 image provides the compatible client.
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --env DATABASE_URL \
-            --env PGCONNECT_TIMEOUT=30 \
-            --volume "$PWD/backup:/backup" \
-            postgres:17-bookworm \
-            bash -ec 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file="$1"' backup-dump "/backup/${filename}"
-
-          test -s "backup/${filename}" || { echo "::error::Database dump is empty."; exit 1; }
-          docker run --rm \
-            --user "$(id -u):$(id -g)" \
-            --volume "$PWD/backup:/backup:ro" \
-            postgres:17-bookworm \
-            pg_restore --list "/backup/${filename}" >/dev/null
-
-          (
-            cd backup
-            sha256sum "$filename" > "$filename.sha256"
-            sha256sum --check "$filename.sha256"
-          )
-          echo "BACKUP_FILE=$filename" >> "$GITHUB_ENV"
-
-      - name: Upload backup and checksum to private Cloudflare R2 bucket
-        shell: bash
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: auto
-          AWS_EC2_METADATA_DISABLED: 'true'
-          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: |
-          set -euo pipefail
-          aws --version
-          for filename in "$BACKUP_FILE" "$BACKUP_FILE.sha256"; do
-            local_file="backup/$filename"
-            key="chaskabox-db/$filename"
-            aws s3 cp "$local_file" "s3://$R2_BUCKET/$key" \
-              --endpoint-url "$R2_ENDPOINT" --only-show-errors
-            local_size="$(wc -c < "$local_file" | tr -d ' ')"
-            remote_size="$(aws s3api head-object \
-              --bucket "$R2_BUCKET" \
-              --key "$key" \
-              --endpoint-url "$R2_ENDPOINT" \
-              --query ContentLength --output text)"
-            if [[ "$remote_size" != "$local_size" ]]; then
-              echo "::error::R2 upload size verification failed for $filename."
-              exit 1
-            fi
-          done
-          echo "Backup dump and SHA256 checksum uploaded and size-verified in R2."
+          echo '::error::Database backup failed. No successful recovery is certified. Check the failed step and secure backup configuration.'
+          echo 'Database backup failed. Check the failed step; a fresh usable backup is not confirmed.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove plaintext backup files from runner
+        if: always()
+        run: node tools/database-backup.mjs cleanup

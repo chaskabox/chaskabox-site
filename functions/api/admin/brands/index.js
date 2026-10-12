@@ -6,6 +6,7 @@
  * DELETE — delete brand. Roles: owner.
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
 function slugify(s) {
   return String(s || '').toLowerCase().trim()
@@ -45,6 +46,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
 
 export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const body = await readJson(context.request);
+  for(const key of ['is_visible','show_on_homepage','hide_if_empty','is_enabled','is_external','is_active'])if(body[key]!==undefined&&typeof body[key]!=='boolean')httpError(`${key} must be boolean`,400,'invalid_field');
   const name = String(body.name || '').trim();
   if (!name) httpError('Brand name required', 400, 'invalid');
 
@@ -56,7 +58,6 @@ export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { u
     is_visible: body.is_visible !== false,
     position: Number(body.position || 0),
   };
-  const created = await sb(context, '/rest/v1/brands', { method: 'POST', body: row });
-  await audit(context, { actorId:user.id, actorRole:role, action:'brand.created', entityType:'brand', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ name } });
+  const created=await cmsMutate(context,user,[{table:'brands',op:'insert',data:row}]);
   return json({ brand: Array.isArray(created) ? created[0] : created }, 201);
 });

@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>ChaskaBox Admin Console</title>
-<link rel="stylesheet" href="/admin.css?v=2">
+<link rel="stylesheet" href="/admin.css?v=20261012-release?v=2">
 </head>
 <body>
 <!-- Auth bootstrap gate: visible until admin-live.js verifies the staff session.
@@ -43,7 +43,7 @@ setTimeout(function(){
       <button class="admin-nav-btn" data-view="coupons"><span>🎟️</span> Coupons</button>
       <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
       <button class="admin-nav-btn" data-view="analytics"><span>📊</span> Analytics</button>
-      <button class="admin-nav-btn" data-view="backup"><span>💾</span> Backup</button>
+      <button class="admin-nav-btn" data-view="backup"><span>💾</span> Catalogue Snapshot</button>
       <button class="admin-nav-btn" data-view="studio"><span>🎨</span> Image Studio</button>
       <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
       <button class="admin-nav-btn" data-view="categories"><span>📁</span> Categories</button>
@@ -93,7 +93,7 @@ setTimeout(function(){
           <article class="metric-card"><span class="metric-icon">◫</span><div><small>Products</small><strong id="metricProducts">—</strong><em id="metricProductsNote">catalogue items</em></div></article>
           <article class="metric-card"><span class="metric-icon">📦</span><div><small>Chaska Boxes</small><strong id="metricBundles">—</strong><em>bundle products</em></div></article>
           <article class="metric-card"><span class="metric-icon">▤</span><div><small>Open Orders</small><strong id="metricOrders">—</strong><em>live after sign-in</em></div></article>
-          <article class="metric-card"><span class="metric-icon">₹</span><div><small>Recognized sales</small><strong id="metricRevenue">—</strong><em>verified prepaid + delivered COD</em></div></article>
+          <article class="metric-card"><span class="metric-icon">Rs.</span><div><small>Recognized sales</small><strong id="metricRevenue">—</strong><em>verified prepaid + delivered COD</em></div></article>
         </div>
 
         <div class="admin-grid two">
@@ -202,49 +202,47 @@ setTimeout(function(){
         </div>
       </section>
 
-      <section class="admin-view" id="view-backup" data-title="Backup & Restore" data-subtitle="Export settings and catalogue. Owner only.">
+      <section class="admin-view" id="view-backup" data-title="Catalogue Snapshot" data-subtitle="Export catalogue and configuration. Owner only.">
         <div class="panel">
-          <div class="panel-head"><div><h2>💾 Backup</h2><p>Download JSON snapshot of catalogue & settings</p></div></div>
+          <div class="panel-head"><div><h2>💾 Catalogue Snapshot</h2><p>Download catalogue and configuration as JSON</p></div></div>
           <div style="padding:8px;display:grid;gap:12px">
-            <p class="muted" style="font-size:13px">Includes: products, categories, brands, coupons, shipping zones, templates, theme, navigation.<br>Orders & customers are excluded (use Supabase dashboard for full DB backup).</p>
-            <div><button class="btn primary" id="downloadBackupBtn">⬇️ Download Backup (JSON)</button></div>
+            <p class="muted" style="font-size:13px">Includes products, brands, categories and their assignments, box contents, homepage sections, coupons, shipping, templates, theme, navigation, store settings and media records.<br>Orders, customer accounts and photo files are excluded. This export is for catalogue reference; a database backup is required for site recovery. Pause catalogue editing while downloading.</p>
+            <div><button class="btn primary" id="downloadBackupBtn">⬇️ Download Catalogue Snapshot</button></div>
           </div>
         </div>
         <section class="panel" style="margin-top:16px">
-          <div class="panel-head"><div><h2>♻️ Restore</h2><p style="color:#dc2626">Overwrites data — use with caution</p></div></div>
+          <div class="panel-head"><div><h2>♻️ JSON Restore Paused</h2><p>Recovery must first be verified in an isolated database.</p></div></div>
           <div style="padding:8px;display:grid;gap:12px">
-            <label>Backup file<input type="file" id="restoreFileInput" accept=".json" style="padding:8px"></label>
-            <div><button class="btn danger" id="restoreBackupBtn">Restore from file</button></div>
+            <p class="muted" style="font-size:13px" id="restoreUnavailableNote">JSON restore is unavailable while complete, safe recovery is being verified. Downloading a snapshot does not change the site.</p>
+            <div><button class="btn secondary" id="restoreBackupBtn" disabled aria-describedby="restoreUnavailableNote">Restore unavailable</button></div>
           </div>
         </section>
       </section>
 
-      <section class="admin-view" id="view-studio" data-title="AI Image Studio" data-subtitle="Generate product images & banners with free AI.">
+      <section class="admin-view" id="view-studio" data-title="AI Image Studio" data-subtitle="Create decorative drafts when AI is enabled.">
         <div class="admin-grid two">
           <section class="panel">
-            <div class="panel-head"><div><h2>🎨 Generate Image</h2><p>Free via Pollinations.ai — no API key needed</p></div></div>
+            <div class="panel-head"><div><h2>🎨 Generate Image</h2><p>Cloudflare Workers AI · app budget controls · drafts only</p></div></div>
             <div style="display:grid;gap:12px;padding:4px">
               <div>
                 <label style="font-size:13px;font-weight:600">📸 ChaskaBox Style Presets</label>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">
-                  <button type="button" class="btn secondary compact" data-preset="chaskabox">📦 ChaskaBox Product Style</button>
-                  <button type="button" class="btn secondary compact" data-preset="boxitem">🎁 Box + Single Item</button>
-                  <button type="button" class="btn secondary compact" data-preset="single">🍬 Single Pack Shot</button>
+                  <button type="button" class="btn secondary compact" data-preset="chaskabox">📦 Abstract snack art</button>
+                  <button type="button" class="btn secondary compact" data-preset="boxitem">🎁 Gift-inspired background</button>
+                  <button type="button" class="btn secondary compact" data-preset="single">🍬 Minimal shapes</button>
                 </div>
               </div>
-              <label>Prompt<textarea id="studioPrompt" rows="3" placeholder="e.g. Colorful Pakistani candy box on white background, product photography" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px"></textarea></label>
-              <label>📷 Reference product photo (optional)<input type="file" id="studioRefImage" accept="image/*" style="padding:8px">
-              <small class="muted">AI is photo ko base bana kar naya image banayega (banner ke liye behtreen)</small></label>
-              <div id="studioRefPreview" style="display:none"><img id="studioRefImg" style="max-width:150px;border-radius:8px"><button type="button" class="btn secondary compact" id="clearRefBtn">✖️ Hatayen</button></div>
+              <label>Prompt<textarea id="studioPrompt" maxlength="500" rows="3" placeholder="e.g. Colorful abstract snack-inspired shapes with a clean background" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px"></textarea></label>
+              <p class="muted">Reference editing is unavailable for this model. Product listings use uploaded authentic photos.</p>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
                 <label>Type<select id="studioType" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
-                  <option value="product">Product image (square)</option>
-                  <option value="banner">Banner (wide)</option>
-                  <option value="social">Social post (square)</option>
+
+                  <option value="banner">Banner decoration draft</option>
+                  <option value="social">Social decoration draft</option>
                 </select></label>
                 <label>Style<select id="studioStyle" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:8px">
                   <option value="">Default</option>
-                  <option value="product photography, studio lighting">Product photo</option>
+
                   <option value="digital art, vibrant">Digital art</option>
                   <option value="minimalist, clean">Minimalist</option>
                   <option value="watercolor">Watercolor</option>
@@ -260,7 +258,7 @@ setTimeout(function(){
             <div id="studioActions" style="display:none;margin-top:12px;gap:8px">
               <button class="btn secondary" id="downloadImageBtn">⬇️ Download</button>
               <button class="btn secondary" id="newVariationBtn">🔄 New variation</button>
-              <button class="btn primary" id="useForProductBtn">📦 Use for Product…</button>
+
             </div>
           </section>
         </div>
@@ -379,7 +377,7 @@ setTimeout(function(){
           </section>
           <section class="panel ai-output-panel">
             <div class="panel-head"><div><h2>Draft output</h2><p>AI output is never auto-published.</p></div><button class="text-btn" id="copyAiOutput">Copy</button></div>
-            <div class="ai-output" id="aiOutput"><p class="muted">Choose a shortcut or write an instruction. Free AI is optional; store operations never depend on it.</p></div>
+            <div class="ai-output" id="aiOutput"><p class="muted">Choose a shortcut or write an instruction. AI is optional; store operations never depend on it.</p></div>
           </section>
         </div>
         <section class="panel" style="margin-top:16px">
@@ -387,11 +385,11 @@ setTimeout(function(){
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:8px;padding:8px;font-size:13px">
             <div>✅ <b>Never auto-publish</b> — all output is draft only</div>
             <div>✅ <b>Generate → Preview → Approve → Undo</b> workflow</div>
-            <div>✅ <b>No AI writes</b> to price/payment/refund/orders without owner approval</div>
+            <div>✅ <b>Product drafts only</b> — owner approval for price fields; payments and orders excluded</div>
             <div>✅ <b>Originals preserved</b> — AI never overwrites source files</div>
             <div>✅ <b>Every AI change audited</b> — see Security → Audit log</div>
-            <div>✅ <b>Quota visible</b> — daily usage shown with each result</div>
-            <div>✅ <b>Free AI only</b> — never auto-switches to paid</div>
+            <div>✅ <b>App estimate visible</b> — account billing must be checked separately</div>
+            <div>✅ <b>Controlled AI</b> — fixed model allowlist; app usage is estimated</div>
             <div>✅ <b>You can edit</b> every AI output before applying</div>
             <div>✅ <b>No customer PII</b> sent to AI unnecessarily</div>
           </div>
@@ -569,7 +567,7 @@ setTimeout(function(){
         <div class="form-two"><label>Price (Rs.)<input id="editPrice" type="number" min="0" required></label><label>Old price (Rs.)<input id="editOldPrice" type="number" min="0"></label></div>
         <div class="form-two"><label>Category<select id="editCategory"></select></label><label>Pack / size<input id="editPack"></label></div>
         <div class="form-two"><label>Badge<select id="editBadge"><option value="">None</option><option>Sale</option><option>New</option><option>Chaska Pick</option><option>Limited</option></select></label><label>Visibility<select id="editVisibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></label></div>
-        <label>Description<textarea id="editDescription" rows="5"></textarea></label>
+        <div class="form-two"><label>Brand<input id="editBrand" maxlength="80"></label><label>Stock status<select id="editStock"><option value="sourced_after_order">Sourced after order</option><option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option></select></label></div><label>Tags (comma separated, max 20)<input id="editTags" maxlength="800"></label><label>Description<textarea id="editDescription" rows="5"></textarea></label>
         <details class="seo-details" style="margin:12px 0;border:1px solid var(--border);border-radius:10px;padding:10px">
           <summary style="cursor:pointer;font-weight:700">🔍 SEO Settings</summary>
           <div style="margin-top:10px;display:grid;gap:10px">
@@ -580,7 +578,7 @@ setTimeout(function(){
           </div>
         </details>
         <label>Image path<div style="display:flex;gap:8px"><input id="editImage" placeholder="/images/p123.webp" style="flex:1"><button type="button" class="btn secondary" id="uploadImageBtn" style="white-space:nowrap">📤 Upload</button></div><input type="file" id="imageFileInput" accept="image/jpeg,image/png,image/webp,image/avif" style="display:none"></label>
-        <label class="checkline"><input type="checkbox" id="editBundle"> This product is a Chaska Box / bundle</label>
+        <label class="checkline"><input type="checkbox" id="editBundle" disabled> Bundle classification (managed in Box Builder)</label>
         <div class="action-row sticky-actions"><button type="button" class="btn secondary" id="aiImproveProduct">✦ Improve with Copilot</button><button type="button" class="btn secondary" id="productHistoryBtn">🕐 History</button><button type="button" class="btn danger" id="archiveProduct">Archive</button><button class="btn primary" type="submit">Save product</button></div>
         <div id="productHistoryPanel" style="display:none;margin-top:12px;border:1px solid var(--border);border-radius:10px;padding:12px"><h4>Version History</h4><div id="productHistoryList"><p class="muted">Loading…</p></div></div>
         <p class="safe-note">Product changes are saved only through the authenticated server API and remain subject to staff permissions.</p>
@@ -631,6 +629,6 @@ setTimeout(function(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=4"></script>
 <script src="/admin.js?v=3" defer></script>
-<script src="/admin-live.js?v=2" defer></script>
+<script src="/admin-live.js?v=20261012-release?v=5" defer></script>
 </body>
 </html>

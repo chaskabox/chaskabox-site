@@ -25,8 +25,13 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
   // Turnstile: check secret configured
   health.turnstile.status = e.TURNSTILE_SECRET_KEY ? 'configured' : 'missing';
 
-  // Resend
-  health.resend.status = (e.RESEND_API_KEY && e.OWNER_ORDER_EMAIL) ? 'configured' : 'missing';
+  // Notification credentials live on the separate consumer, not Pages.
+  // Report its recorded activity rather than treating Pages env as delivery health.
+  try {
+    const n=await sb(context,'/rest/v1/rpc/notification_summary',{method:'POST',body:{}}),s=n.dispatch||{};
+    health.notifications={status:!s.enabled?'paused':!s.last_completed_at||Date.now()-Date.parse(s.last_completed_at)>5*60000?'no_recent_heartbeat':s.last_error||n.review_required||n.overdue||n.inactive_channel_pending?'degraded':'active',last_completed_at:s.last_completed_at||null,provider_results:n.provider_results};
+    health.resend.status=(s.configured_targets||[]).includes('owner_email')?'consumer_configured':'not_confirmed';
+  } catch { health.notifications={status:'unavailable'};health.resend.status='unknown'; }
 
   // AI: check binding
   try {

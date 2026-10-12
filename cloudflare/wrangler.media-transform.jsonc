@@ -1,0 +1,12 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "chaskabox-media-transform",
+  "main": "../workers/media-transform.js",
+  "compatibility_date": "2026-10-11",
+  "workers_dev": false,
+  "preview_urls": false,
+  "images": {"binding": "IMAGES"},
+  "vars": {"MEDIA_TRANSFORM_ENABLED": "false"}
+  // Private Pages service binding: MEDIA_TRANSFORM -> this Worker.
+  // Both server switches and the DB switch must be enabled deliberately at release.
+}

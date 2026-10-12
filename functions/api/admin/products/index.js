@@ -4,6 +4,7 @@
  * POST — create product (visibility defaults to 'draft'). Roles: owner, manager, content.
  */
 import { withAdmin, sb, json, httpError, readJson, pagination, sanitizeSearch, audit, uuid } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
 const VISIBILITIES = new Set(['draft', 'visible', 'hidden', 'archived']);
 const STOCK_STATES = new Set(['available', 'limited', 'unavailable', 'sourced_after_order']);
@@ -57,7 +58,7 @@ function validateProductInput(body, isCreate) {
   if (body.is_bundle !== undefined) out.is_bundle = !!body.is_bundle;
   if (body.tags !== undefined) {
     if (!Array.isArray(body.tags)) httpError('tags must be an array', 400, 'invalid_field');
-    out.tags = body.tags.map((t) => String(t).slice(0, 40)).slice(0, 20);
+    if(body.tags.length>20||body.tags.some(t=>typeof t!=='string'||t.length>40))httpError('Invalid tags',400,'invalid_field');out.tags=body.tags;
   }
   return out;
 }
@@ -106,13 +107,6 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
     created_by: user.id,
     updated_by: user.id,
   };
-  const created = await sb(context, '/rest/v1/products', { method: 'POST', body: row });
-
-  await audit(context, {
-    actorId: user.id, actorRole: role, action: 'product.created', // PROPOSED §5 addition — see CONTRACT_AMENDMENTS.md
-    entityType: 'product', entityId: created && created[0] && created[0].id,
-    before: null, after: created && created[0],
-  });
-
+  const created=await cmsMutate(context,user,[{table:'products',op:'insert',data:row}]);
   return json({ product: created && created[0] }, 201);
 });

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "captured_at_utc": "2026-10-11",
+  "source_project": "jtvswuvnasqqzrjysgfd",
+  "scope": "public application DDL; no rows, sequence current values, platform auth/storage schema, secrets or media bytes",
+  "baseline": {
+    "path": "database/baseline/20261011_public.sql",
+    "sha256": "e397c7af8264d26289e92227fd05439688cade405ecc4b6c7078321bc464ab2b",
+    "public_tables": 34,
+    "public_functions": 36,
+    "public_views": 4,
+    "public_policies": 59,
+    "public_sequences": 18
+  },
+  "replay_migrations": [
+    "database/migrations/20261011142641_notification_delivery_pipeline.sql",
+    "database/migrations/20261011171049_remaining_security_cms.sql",
+    "database/migrations/20261011184327_admin_business_controls.sql",
+    "database/migrations/20261011191351_content_ai_contracts.sql",
+    "database/migrations/20261011195527_secure_media_lifecycle.sql",
+    "database/migrations/20261012013700_final_acceptance_fixes.sql"
+  ],
+  "managed_history_observed": [
+    {
+      "version": "20261011064649",
+      "name": "production_access_containment",
+      "mapping": "Captured current state in baseline; no identically versioned repository file"
+    },
+    {
+      "version": "20261011064849",
+      "name": "production_access_hardening",
+      "related_repository_file": "database/migrations/20261011060142_production_access_hardening.sql",
+      "mapping": "Related scope; version differs, byte identity not asserted"
+    },
+    {
+      "version": "20261011074301",
+      "name": "production_admin_transactions",
+      "related_repository_file": "database/migrations/20261011073605_production_admin_transactions.sql",
+      "mapping": "Related scope; version differs, byte identity not asserted"
+    }
+  ],
+  "legacy_sql_policy": "001..039 and existing timestamped production fixes remain historical references. Do not blindly replay all legacy/combined/split SQL over the canonical baseline. No managed migration-history repair was performed."
+}

@@ -19,7 +19,7 @@ async function loadProducts(){
   }
   throw lastError||new Error('Could not load product catalogue');
 }
-function activeProducts(){ return PRODUCTS.filter(p=>p.active!==false); }
+function activeProducts(){return PRODUCTS.filter(p=>p.active!==false&&p.stockState!=='unavailable');}
 
 /* ---------- delivery date estimate (4-7 days) ---------- */
 function deliveryRange(){
@@ -45,7 +45,7 @@ function bundleFanHTML(p){
 }
 function cardHTML(p){
   const src=hasPhoto(p)?assetUrl(p.img):'';
-  const img=src?`<img src="${esc(src)}" alt="${esc(p.name)}" loading="lazy">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
+  const img=src?`<img src="${esc(src)}" alt="${esc(p.name)}" loading="lazy">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'SALE':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="savepill">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
@@ -57,9 +57,9 @@ function cardHTML(p){
     <div class="pbody">
       ${catlabel}
       <a class="pname" href="${href}">${esc(p.name)}</a>
-      <div class="ppack">${esc(p.pack||'')}</div>
+      <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Individual product photos shown · see contents</small>':''}
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
-      <button class="addcart" aria-label="Add ${esc(p.name)} to bag" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">Add to Bag</span><span class="addcart-price">${fmt(p.price)}</span></button>
+      <button class="addcart" ${p.stockState==='unavailable'?'disabled':''} aria-label="Add ${esc(p.name)} to bag" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">Add to Bag</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -109,13 +109,15 @@ function renderHomeContent(){
   act.forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
   // category tiles: clean SVG illustrations (match original custom art)
   const allCount=act.length;
-  const tileOrder=['All',...CAT_ORDER.filter(c=>cats[c]&&cats[c].length)];
+  const cmsCats=STORE_CONFIG?.categories;
+  if(Array.isArray(cmsCats))for(const c of cmsCats)cats[c.name]=act.filter(p=>c.product_ids.includes(Number(p.id)));
+  const tileOrder=['All',...(Array.isArray(cmsCats)?cmsCats.filter(c=>c.show_on_homepage).map(c=>c.name):CAT_ORDER.filter(c=>cats[c]&&cats[c].length))];
   // ensure 'All' pseudo-category first, then fixed original order
   $('#catTiles').innerHTML=tileOrder.map(c=>{
     const st=CAT_STYLE[c]||{bg:'#8a94a6'};
     const list=c==='All'?act:(cats[c]||[]);
     const n=c==='All'?allCount:list.length;
-    if(c!=='All'&&!n) return '';
+    if(c!=='All'&&!n&&!Array.isArray(cmsCats)) return '';
     const inner=TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
     const href=c==='All'?'/shop/':categoryPath(c);
     return `<a class="cat reveal" href="${href}">
@@ -123,7 +125,7 @@ function renderHomeContent(){
       <b>${esc(c)}</b><small>${n} items</small></a>`;
   }).join('');
   // hero collage: 3 product images
-  const candidates=act.filter(hasPhoto).sort((a,b)=>Number(/^https?:/i.test(a.img))-Number(/^https?:/i.test(b.img)));
+  const candidates=curatedProducts('hero',act.filter(hasPhoto)).sort((a,b)=>Number(/^https?:/i.test(a.img))-Number(/^https?:/i.test(b.img)));
   const heroPicks=[];
   for(const p of candidates){if(!heroPicks.some(x=>x.category===p.category))heroPicks.push(p);if(heroPicks.length===3)break;}
   for(const p of candidates){if(heroPicks.length===3)break;if(!heroPicks.includes(p))heroPicks.push(p);}
@@ -141,8 +143,8 @@ function renderHomeContent(){
   const newest=curatedProducts('new_items',actImg.sort((a,b)=>Number(b.id)-Number(a.id)).slice(0,10));
   if(sale.length) html+=shelf('🔥 Deals Worth Grabbing',sale,'#b42318','', 'Sale','deals');
   if(picks.length) html+=shelf('⭐ Chaska Picks',picks,'#1a2b5c','','','chaska_picks');
-  if(bundles.length) html+=shelf('📦 Chaska Boxes',bundles,'#d49a17','Bundles','','boxes');
-  if(chatpata.length) html+=shelf('🌶️ Chatpata Picks',chatpata,'#3d8b5f','Snacks & Nimco','','chatpata_picks');
+  if(bundles.length) html+=shelf('📦 Chaska Boxes',bundles,'#896000','Bundles','','boxes');
+  if(chatpata.length) html+=shelf('🌶️ Chatpata Picks',chatpata,'#276a45','Snacks & Nimco','','chatpata_picks');
   if(newest.length) html+=shelf('✨ New & Recently Added',newest,'#6b4f9d','','','new_items');
   $('#shelves').innerHTML=html;
   const wp=$('#weeklyPick');
@@ -188,15 +190,16 @@ function renderHeaderDropdowns(){
     }
     const db=$('#ddBrands');
     if(db){
-      const bc={}; activeProducts().forEach(p=>{const b=getBrand(p.name);bc[b]=(bc[b]||0)+1;});
+      const bc={}; activeProducts().forEach(p=>{const b=getBrand(p);bc[b]=(bc[b]||0)+1;});
       const top=Object.entries(bc).sort((a,b)=>b[1]-a[1]).slice(0,9);
       db.innerHTML='<a href="/brands/">🏷️ All Brands</a>'
         +top.map(([b,n])=>'<a href="/brand/'+brandSlug(b)+'/">'+esc(b)+'<span class="cnt">'+n+'</span></a>').join('');
     }
   }catch(e){ console.warn('header dropdowns', e); }
 }
-function getBrand(name){
-  const m=String(name||'').split('|')[0].trim();
+function getBrand(p){
+  if(p&&typeof p==='object'){if(String(p.brand||'').trim())return String(p.brand).trim();p=p.name;}
+  const m=String(p||'').split('|')[0].trim();
   return m||'ChaskaBox';
 }
 function brandSlug(name){
@@ -204,10 +207,10 @@ function brandSlug(name){
 }
 function filterPanelHTML(){
   const all=activeProducts();
-  const brands=[...new Set(all.map(p=>getBrand(p.name)))].sort();
+  const brands=[...new Set(all.map(p=>getBrand(p)))].sort();
   const packs=[...new Set(all.map(p=>p.pack).filter(Boolean))].sort();
   const maxP=Math.max(...all.map(p=>p.price),1000);
-  const catLinks=['',...CAT_ORDER.filter(c=>c!=='Bundles')].map(c=>{
+  const catLinks=['',...(Array.isArray(STORE_CONFIG?.categories)?STORE_CONFIG.categories.map(c=>c.name):CAT_ORDER.filter(c=>c!=='Bundles'))].map(c=>{
     const label=c||'All Snacks', href=c?categoryPath(c):'/shop/', active=shopState.cat===c;
     return `<a class="filter-link${active?' active':''}" href="${href}">${esc(label)}${active?'<span>✓</span>':''}</a>`;
   }).join('');
@@ -284,10 +287,10 @@ function toggleBrand(el){
 }
 function filteredShop(){
   let list=activeProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
-  if(cat)list=list.filter(p=>p.category===cat);
+  if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>category?category.product_ids.includes(Number(p.id)):(cat==='Bundles'?p.bundle:p.category===cat));}
   if(badge)list=list.filter(p=>p.badge===badge);
   if(q){const n=q.toLowerCase();list=list.filter(p=>(p.name+' '+(p.pack||'')).toLowerCase().includes(n));}
-  if(brands.length)list=list.filter(p=>brands.includes(getBrand(p.name)));
+  if(brands.length)list=list.filter(p=>brands.includes(getBrand(p)));
   if(maxPrice)list=list.filter(p=>p.price<=maxPrice);
   if(pack)list=list.filter(p=>p.pack===pack);
   if(sort==='lo')list=[...list].sort((a,b)=>a.price-b.price);
@@ -331,7 +334,7 @@ function renderShopSearchSuggestions(value){
   const box=document.getElementById('shopSearchSuggestions');if(!box)return;
   const q=String(value||'').trim().toLowerCase(); shopSuggestIndex=-1;
   if(q.length<2){box.hidden=true;box.innerHTML='';return;}
-  const matches=activeProducts().filter(p=>(p.name+' '+(p.category||'')+' '+getBrand(p.name)).toLowerCase().includes(q)).slice(0,5);
+  const matches=activeProducts().filter(p=>(p.name+' '+(p.category||'')+' '+getBrand(p)).toLowerCase().includes(q)).slice(0,5);
   if(!matches.length){box.hidden=true;box.innerHTML='';return;}
   box.hidden=false;
   box.innerHTML=matches.map((p,i)=>`<a role="option" data-sidx="${i}" href="${productHref(p.id)}"><img src="${esc(assetUrl(p.img||''))}" alt=""><span><b>${esc(p.name)}</b><small>${esc(p.pack||p.category||'')}</small></span><strong>${fmt(p.price)}</strong></a>`).join('');
@@ -351,7 +354,7 @@ function shopSearchKey(event){
   else if(event.key==='Escape'&&box){box.hidden=true;shopSuggestIndex=-1;}
 }
 let smartSearchSeq=0, smartSearchTimer;
-function serverProductToLocal(p){return {id:Number(p.id),name:p.name||'',category:p.category||'',brand:p.brand||'',pack:p.pack||'',price:Number(p.price||0),oldPrice:p.old_price==null?null:Number(p.old_price),desc:p.description||'',badge:p.badge||'',img:p.image_url||''};}
+function serverProductToLocal(p){return {id:Number(p.id),name:p.name||'',category:p.category||'',brand:p.brand||'',pack:p.pack||'',price:Number(p.price||0),oldPrice:(p.old_price??p.oldPrice)==null?null:Number(p.old_price??p.oldPrice),desc:p.description??p.desc??'',badge:p.badge||'',img:p.image_url??p.img??'',photoNote:p.image_warning??p.photoNote??'',stockState:p.stock_state??p.stockState??'sourced_after_order',bundle:!!(p.is_bundle??p.bundle)};}
 async function renderSmartSearchResults(query,seq){
   try{
     try{ sessionStorage.setItem('cb_last_search',query); }catch(e){}
@@ -386,7 +389,7 @@ function renderShopResults(){
 let productModalReturnFocus=null;
 function openProduct(id){
   productModalReturnFocus=document.activeElement;
-  const p=PRODUCTS.find(x=>x.id===id); if(!p)return;
+  const p=PRODUCTS.find(x=>x.id===id);if(!p)return;if(p.stockState==='unavailable'){toast('This snack is unavailable right now.');return;}
   // Search → product click tracking
   try{
     const lastQ=sessionStorage.getItem('cb_last_search');
@@ -396,7 +399,7 @@ function openProduct(id){
       sessionStorage.removeItem('cb_last_search');
     }
   }catch(e){}
-  const img=p.img?`<img src="${esc(assetUrl(p.img))}" alt="">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
+  const img=p.img?`<img src="${esc(assetUrl(p.img))}" alt="">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
   const old=p.oldPrice?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   $('#mbody').innerHTML=`<div class="mgrid">
     <div class="pimg">${img}</div>
@@ -418,85 +421,80 @@ function closeModal(){$('#pmodal').classList.remove('open');$('#pmodal').setAttr
 /* ---------- product detail page ---------- */
 function renderProductDetail(id){
   const p=PRODUCTS.find(x=>x.id===id); if(!p){render404(location.pathname);return;}
-  const img=hasPhoto(p)?`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}">`:`<div class="noimg"><b>CHASKABOX</b><span>Photo<br>coming soon</span><small>${esc(p.category||'')}</small></div>`;
+  const img=hasPhoto(p)?`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'Sale':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="pdsave">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
   const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BUNDLE':''}</div>`:'';
   $('#pdCrumbCat').textContent=p.category||'All Snacks';
-  $('#pdCrumbCat').setAttribute('onclick',`goShop('${esc(p.category||'')}');return false`);
+  $('#pdCrumbCat').removeAttribute('onclick');$('#pdCrumbCat').href=categoryPath(p.category||'');
   $('#pdCrumbName').textContent=p.name;
   // Related products: same category, exclude current
   const related=activeProducts().filter(x=>x.id!==p.id&&x.category===p.category).slice(0,4);
   const relatedHTML=related.length?`<section class="pd-related"><h2>You may also like</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${related.map(cardHTML).join('')}</div></section>`:'';
   $('#pdetail').innerHTML=`<div class="pdetail">
     <div class="pd-grid">
-      <div class="pd-imgwrap">${badge}<div class="pd-img" onclick="openImageLightbox('${esc(assetUrl(p.img||''))}','${esc(p.name)}')" style="cursor:zoom-in" title="Click to zoom">${img}</div></div>
+      <div class="pd-imgwrap">${badge}<button type="button" class="pd-img pd-image-button" ${hasPhoto(p)?`data-zoom-src="${esc(assetUrl(p.img))}" data-zoom-alt="${esc(p.name)}"`:'disabled'} aria-label="Enlarge product photo">${img}</button></div>
       <div class="pd-info">
         ${catlabel}
         <h1>${esc(p.name)}</h1>
-        <div class="pd-brand">${esc(getBrand(p.name))}</div>
+        <div class="pd-brand">${esc(getBrand(p))}</div>
         <div class="pd-price"><span class="price" style="font-size:26px">${fmt(p.price)}</span>${old}${save}</div>
         <div class="ppack" style="margin-bottom:10px">${esc(p.pack||'')}</div>
         <p class="pd-desc">${esc(p.desc||'Product details are being updated. Contact ChaskaBox if you need ingredient or allergen information before ordering.')}</p>
         <div class="pd-buyrow">
           <div class="qty"><button onclick="pdQty(-1)" aria-label="Decrease quantity">−</button><b id="pdqty">1</b><button onclick="pdQty(1)" aria-label="Increase quantity">+</button></div>
-          <button class="pdbtn" onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">Add to Bag</button>
+          <button class="pdbtn" ${p.stockState==='unavailable'?'disabled':''} onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">${p.stockState==='unavailable'?'Currently unavailable':'Add to Bag'}</button>
           <button class="pdwish${typeof isWished==='function'&&isWished(p.id)?' on':''}" aria-label="Add ${esc(p.name)} to wishlist" onclick="toggleWishlist(${p.id},this)">♥</button>
         </div>
         <div class="dbox"><b>Estimated delivery</b><small>Pakistan-wide delivery window<br><span class="ddates">${deliveryRange()}</span></small></div>
-        <div class="pd-meta"><span>🚚 COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery</span><span>⚡ Prepaid ${fmt(settingNum('prepaid_free_delivery_threshold_pkr',5000))}+: FREE delivery</span><span>✅ Original sealed packs</span></div>
+        <div class="pd-meta"><span>🚚 COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery</span><span>Delivery fees confirmed at checkout for your city</span><span>✅ Original sealed packs</span></div>
         <div class="product-help"><b>Need ingredients or allergen details?</b><span>Message ChaskaBox on WhatsApp before ordering. If an item becomes unavailable, we will contact you before any substitution.</span></div>
       </div>
     </div>
   </div>${relatedHTML}<div id="reviewsMount"></div>`;
+  $('#pdetail').querySelector('[data-zoom-src]')?.addEventListener('click',event=>{const el=event.currentTarget;openImageLightbox(el.dataset.zoomSrc,el.dataset.zoomAlt);});
   showView('product');
   window.scrollTo(0,0);
   if(typeof window.chaskaTrack==='function') window.chaskaTrack('product_view',{id:p.id,name:p.name,price:p.price,category:p.category});
   if(window.ReviewsWidget) ReviewsWidget.mount('#reviewsMount', p.id);
 }
 // Image lightbox for product zoom
-function openImageLightbox(src, alt){
-  if(!src) return;
-  let lb=document.getElementById('imgLightbox');
-  if(!lb){
-    lb=document.createElement('div');
-    lb.id='imgLightbox';
-    lb.setAttribute('role','dialog');
-    lb.setAttribute('aria-modal','true');
-    lb.setAttribute('aria-label','Product image enlarged. Press Escape to close.');
-    lb.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:grid;place-items:center;padding:20px;cursor:zoom-out';
-    lb.innerHTML='<img style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:12px" alt="">';
-    lb.onclick=()=>lb.style.display='none';
-    lb.tabIndex=-1;
-    document.body.appendChild(lb);
-    document.addEventListener('keydown',function escHandler(e){
-      if(e.key==='Escape'&&lb.style.display!=='none'){lb.style.display='none';}
-    });
-  }
-  const img=lb.querySelector('img');
-  img.src=src; img.alt=alt||'Product image';
-  lb.style.display='grid';
-  lb.focus();
+let lightboxReturnFocus=null;
+function closeImageLightbox(){const lb=document.getElementById('imgLightbox');if(lb){lb.classList.remove('open');lb.style.display='none';}lightboxReturnFocus?.focus();}
+function openImageLightbox(src,alt){
+ if(!src)return;
+ let lb=document.getElementById('imgLightbox');
+ if(!lb){
+  lb=document.createElement('div');lb.id='imgLightbox';lb.setAttribute('role','dialog');lb.setAttribute('aria-modal','true');lb.setAttribute('aria-label','Product image enlarged');
+  lb.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.85);display:grid;place-items:center;padding:20px';
+  lb.innerHTML='<button class="lightbox-close" type="button" aria-label="Close enlarged photo">×</button><img style="max-width:90vw;max-height:90vh;object-fit:contain;border-radius:12px" alt="">';
+  lb.querySelector('button').onclick=closeImageLightbox;lb.onclick=e=>{if(e.target===lb)closeImageLightbox();};
+  lb.onkeydown=e=>{if(e.key==='Escape'){e.stopPropagation();closeImageLightbox();}else if(e.key==='Tab'){e.preventDefault();lb.querySelector('button').focus();}};
+  document.body.appendChild(lb);
+ }
+ lightboxReturnFocus=document.activeElement;lb.querySelector('img').src=src;lb.querySelector('img').alt=alt||'Product image';
+ lb.classList.add('open');lb.style.display='grid';lb.querySelector('button').focus();
 }
 function pdBack(){ history.back(); }
 function pdQty(d){const e=$('#pdqty');e.textContent=Math.max(1,+e.textContent+d);}
 
 
 /* ---------- public CMS/settings (admin-controlled, public-safe) ---------- */
-let STORE_CONFIG={settings:{},sections:[]};
+let STORE_CONFIG={settings:{},sections:[]},HOME_PREVIEW_ROWS=null;
+window.addEventListener('message',event=>{if(event.source!==window.parent||window.parent===window||event.origin!==location.origin||!new URLSearchParams(location.search).has('cms_preview')||event.data?.type!=='CHASKABOX_HOME_PREVIEW'||!Array.isArray(event.data.sections)||event.data.sections.length>20)return;HOME_PREVIEW_ROWS=event.data.sections;STORE_CONFIG.sections=HOME_PREVIEW_ROWS;if(document.getElementById('catTiles')){renderHomeContent();applyHomeCms();}});
 async function loadStorefrontConfig(){
-  try{const r=await fetch('/api/storefront-config',{cache:'no-cache'});if(r.ok)STORE_CONFIG=await r.json();}catch(e){}
+  try{const r=await fetch('/api/storefront-config',{cache:'no-cache'});if(r.ok){STORE_CONFIG=await r.json();if(HOME_PREVIEW_ROWS)STORE_CONFIG.sections=HOME_PREVIEW_ROWS;window.applyStorefrontManifest?.(STORE_CONFIG);}}catch(e){}
   return STORE_CONFIG;
 }
 function settingNum(key,fallback){const v=STORE_CONFIG?.settings?.[key];const n=Number(v);return Number.isFinite(n)?n:fallback;}
 function sectionConfig(key){return (STORE_CONFIG?.sections||[]).find(r=>r.section_key===key)?.config||{};}
 function curatedProducts(key,fallback){
   const ids=sectionConfig(key)?.product_ids;
-  if(!Array.isArray(ids)||!ids.length) return fallback;
+  if(!Array.isArray(ids)) return fallback;
   const by=new Map(activeProducts().map(p=>[Number(p.id),p]));
   const chosen=ids.map(Number).map(id=>by.get(id)).filter(p=>p&&hasPhoto(p));
-  return chosen.length?chosen:fallback;
+  return chosen;
 }
 function applyHomeCms(){
   const rows=STORE_CONFIG?.sections||[]; const by=Object.fromEntries(rows.map(r=>[r.section_key,r]));
@@ -506,15 +504,21 @@ function applyHomeCms(){
     chatpata_picks:['#view-home [data-home-section="chatpata_picks"]'], new_items:['#view-home [data-home-section="new_items"]'],
     how_it_works:['#view-home .fresh'], faq:['#view-home .faq-section']
   };
+  const positions={hero:0,categories:1,chaska_picks:2,boxes:3,chatpata_picks:4,new_items:5,how_it_works:6,faq:7};
+  const home=document.getElementById('view-home');if(home){home.style.flexDirection='column';const shelves=home.querySelector('#shelves');if(shelves)shelves.style.display='contents';home.querySelector('.why-section')?.style.setProperty('order',String((by.faq?.position??7)*10-1));}
   for(const [key,sels] of Object.entries(selectors)){
-    const row=by[key]; if(!row) continue;
+    const row=by[key]||{enabled:true,position:positions[key],config:{}};
     for(const sel of sels){
       const el=document.querySelector(sel); if(!el) continue;
       el.hidden=row.enabled===false;
-      if(row.heading){const h=el.querySelector('h1,h2');if(h)h.textContent=row.heading;}
-      if(row.subheading){const text=el.querySelector('p,.freshdesc');if(text)text.textContent=row.subheading;}
+      if(key!=='announcement_bar')el.style.order=String(row.position*10);
+      const cfg=row.config||{};if(key==='hero'){const link=el.querySelector('.hero-actions a');if(link){if(cfg.button_text!==undefined)link.textContent=cfg.button_text;if(cfg.button_url&&/^(\/[^/]|https:\/\/)/.test(cfg.button_url))link.href=cfg.button_url;}}
+      if(row.heading!==null&&row.heading!==undefined){const h=el.querySelector('h1,h2');if(h)h.textContent=row.heading;}
+      if(row.subheading!==null&&row.subheading!==undefined){const text=el.querySelector('p,.freshdesc');if(text)text.textContent=row.subheading;}
     }
   }
+
+  window.applyStorefrontManifest?.(STORE_CONFIG);
 }
 /* ---------- views ---------- */
 function showView(v){
@@ -523,11 +527,10 @@ function showView(v){
     const el=document.getElementById('view-'+name);
     if(!el) return;
     const active = (v===name);
-    // Only active route content is in DOM; inactive views are cleared
-    // (SEO: prevents multiple H1s; a11y: screen readers skip cleared content)
+    // Show the active route; hide and make inactive route content inert.
     if(!active){
-      // Preserve shop/account/cart shells (JS re-renders them), clear home static content
-      if(name==='home') el.innerHTML='';
+      // Hide inactive views without destroying the homepage's server-rendered hero.
+      // The same DOM must work when navigating Home -> Shop -> Home.
       el.style.display='none';
       el.setAttribute('hidden','');
       el.setAttribute('aria-hidden','true');
@@ -544,6 +547,21 @@ function showView(v){
 }
 
 /* ---------- Route renderers ---------- */
+const SEO_CATEGORY_DATA = {"biscuits-and-wafers":{"name":"Biscuits & Wafers","title":"Biscuits & Wafers Online | ChaskaBox Pakistan","description":"Buy biscuits & wafers online in Pakistan from ChaskaBox. Explore original snack brands and compare pack sizes before ordering.","intro":"Browse biscuits, wafer packs and tea-time treats, including Mayfair varieties. Check the listed pack size and current price for each product; ChaskaBox confirms availability when sourcing your order."},"bunties-and-cakes":{"name":"Bunties & Cakes","title":"Bunties & Cakes Online | ChaskaBox Pakistan","description":"Shop bunties, cakes and sweet snacks online in Pakistan. Explore pack sizes and delivery details at ChaskaBox.","intro":"Explore cakes, bunties and individually packed sweet treats for school, guests or tea breaks. Compare the pack counts and prices shown on each ChaskaBox product page."},"chews-and-gums":{"name":"Chews & Gums","title":"Chews & Gums Online | ChaskaBox Pakistan","description":"Explore chews, chewing gums and chewy sweets in Pakistan at ChaskaBox with clear pack sizes and prices.","intro":"Browse chewing gum, fruity chews and other chewy snacks from the ChaskaBox catalogue. Product pages show pack sizes, prices and how to order."},"chocolates-and-candies":{"name":"Chocolates & Candies","title":"Chocolates & Candies Online | ChaskaBox Pakistan","description":"Buy chocolates and candies online in Pakistan at ChaskaBox. Browse candy packs and chocolate treats by brand and pack size.","intro":"Explore chocolate treats, candies and assorted sweet packs from Pakistani snack brands. Use product pages to check what is included and compare prices before placing your order."},"imli-and-ice-lollies":{"name":"Imli & Ice Lollies","title":"Imli & Ice Lollies Online | ChaskaBox Pakistan","description":"Browse imli, sour sweets and ice lollies online in Pakistan at ChaskaBox. Find your preferred flavors and pack sizes.","intro":"Discover tangy imli snacks, sour treats and ice-lolly style sweets in the ChaskaBox catalogue. Check individual listings for packaging, format and current order details."},"jellies-and-marshmallow":{"name":"Jellies & Marshmallow","title":"Jellies & Marshmallow Online | ChaskaBox Pakistan","description":"Shop jellies and marshmallow snacks online in Pakistan. Compare sweet varieties and packs at ChaskaBox.","intro":"Explore colorful jellies, chewy sweets and marshmallow packs, including popular Pakistani snack brands. Browse individual product listings for the pack quantity and current price."},"snacks-and-nimco":{"name":"Snacks & Nimco","title":"Snacks & Nimco Online | ChaskaBox Pakistan","description":"Buy nimco and savory Pakistani snacks online at ChaskaBox. Browse spicy, salty and crunchy snack packs.","intro":"Find salty, spicy and crunchy Pakistani snacks, including nimco-style mixes and packaged savory treats. Compare pack sizes and prices, then order your favorites for delivery in Pakistan."},"betel-nuts-and-pan-masala":{"name":"Betel Nuts & Pan Masala","title":"Betel Nuts & Pan Masala | ChaskaBox Pakistan","description":"Explore listed betel nut and pan masala products at ChaskaBox. Review packaging and product information before ordering.","intro":"Browse ChaskaBox's betel-nut and pan-masala catalogue listings. Read individual product information and packaging details before placing an order."},"shop":{"name":"All Snacks","title":"Pakistani Snacks Online | ChaskaBox","description":"Browse Pakistani snacks online at ChaskaBox: biscuits, nimco, candies, jellies, cakes and snack boxes with delivery across Pakistan.","intro":"Explore the ChaskaBox catalogue of Pakistani sweets and savory snacks. Filter by category, pack size and price; each product page has its current order information."},"bundles":{"name":"Chaska Boxes","title":"Chaska Boxes — Snack Bundles | ChaskaBox","description":"Explore ChaskaBox snack bundles online in Pakistan. Compare box contents, pack sizes and prices before ordering.","intro":"Browse Chaska Boxes for gifting, family snack tables and everyday cravings. Check the contents and current price of each bundle before ordering."}};
+function setCategorySeoCopy(data){
+  const target=document.getElementById('categorySeoIntro');
+  if(!target) return;
+  target.textContent=data?.intro||'';
+  target.hidden=!data?.intro;
+}
+function setCategoryBreadcrumb(name, path){
+  let script=document.getElementById('category-breadcrumb-schema');
+  if(!script){script=document.createElement('script');script.id='category-breadcrumb-schema';script.type='application/ld+json';document.head.appendChild(script);}
+  script.textContent=JSON.stringify({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[
+    {'@type':'ListItem',position:1,name:'Home',item:'https://chaskabox.online/'},
+    {'@type':'ListItem',position:2,name:name,item:'https://chaskabox.online'+path},
+  ]});
+}
 function setMetaRobots(noindex){
   let m=document.querySelector('meta[name="robots"]');
   if(!m){ m=document.createElement('meta'); m.name='robots'; document.head.appendChild(m); }
@@ -557,11 +575,13 @@ function setPageMeta(title,path,noindex,description){
   const productPath=normalizePath(path||'/').startsWith('/product/');
   if(!productPath){
     document.getElementById('product-schema')?.remove();
+    document.getElementById('breadcrumb-schema')?.remove?.();
     setMetaTag('property','og:type','website');
     setMetaTag('property','og:image','https://chaskabox.online/images/logo-navy.png');
     setMetaTag('name','twitter:image','https://chaskabox.online/images/logo-navy.png');
   }
   if(!normalizePath(path||'/').startsWith('/brand/'))document.getElementById('brandBreadcrumbSchema')?.remove();
+  if(!normalizePath(path||'/').startsWith('/category/') && normalizePath(path||'/')!=='/shop/' && normalizePath(path||'/')!=='/bundles/')document.getElementById('category-breadcrumb-schema')?.remove?.();
   const canonical='https://chaskabox.online'+normalizePath(path||'/');
   let c=document.querySelector('link[rel="canonical"]');
   if(!c){ c=document.createElement('link'); c.rel='canonical'; document.head.appendChild(c); }
@@ -580,20 +600,25 @@ function renderHomeRoute(){
   }
   showView('home');
   renderHomeContent();
-  loadStorefrontConfig().then(applyHomeCms);
+  applyHomeCms();
+  loadStorefrontConfig().then(()=>{renderHomeContent();applyHomeCms();});
 }
 function renderShopRoute(){
-  setPageMeta('Shop Pakistani Snacks | ChaskaBox','/shop/',false,'Browse Pakistani snacks by category, brand and price at ChaskaBox.');
+  setPageMeta(SEO_CATEGORY_DATA.shop.title,'/shop/',false,SEO_CATEGORY_DATA.shop.description);
+  setCategorySeoCopy(SEO_CATEGORY_DATA.shop);
+  setCategoryBreadcrumb('All Snacks','/shop/');
   shopState.cat='';
   const urlQ=new URLSearchParams(location.search).get('q'); if(urlQ!==null) shopState.q=urlQ;
   const params=new URLSearchParams(location.search);
   if(params.has('brand'))shopState.brands=params.getAll('brand').map(v=>v.trim()).filter(Boolean);
-  const category=params.get('category')??params.get('cat');if(category!==null)shopState.cat=CATEGORY_SLUGS[category]||category;
+  const category=params.get('category')??params.get('cat');if(category!==null)shopState.cat=(STORE_CONFIG?.categories||[]).find(c=>c.slug===category)?.name||CATEGORY_SLUGS[category]||category;
   showView('shop');
   renderShopContent();
 }
 function renderBundlesRoute(){
-  setPageMeta('Chaska Boxes — Snack Bundles | ChaskaBox','/bundles/',false,'Curated Chaska Boxes for gifting, cravings and easy snack shopping.');
+  setPageMeta(SEO_CATEGORY_DATA.bundles.title,'/bundles/',false,SEO_CATEGORY_DATA.bundles.description);
+  setCategorySeoCopy(SEO_CATEGORY_DATA.bundles);
+  setCategoryBreadcrumb('Chaska Boxes','/bundles/');
   shopState.cat='Bundles';
   showView('shop');
   renderShopContent();
@@ -748,9 +773,12 @@ function setBrandBreadcrumbSchema(brand){
   ]});
 }
 function renderCategoryRoute(slug){
-  const catName=CATEGORY_SLUGS[slug];
+  const catName=(STORE_CONFIG?.categories||[]).find(c=>c.slug===slug)?.name||(!Array.isArray(STORE_CONFIG?.categories)?CATEGORY_SLUGS[slug]:null);
   if(!catName){ render404('/category/'+slug+'/'); return; }
-  setPageMeta(catName+' | ChaskaBox','/category/'+slug+'/',false,'Shop '+catName+' from ChaskaBox.');
+  const seo=SEO_CATEGORY_DATA[slug];
+  setPageMeta(seo?.title||catName+' | ChaskaBox','/category/'+slug+'/',false,seo?.description||'Shop '+catName+' from ChaskaBox.');
+  setCategorySeoCopy(seo);
+  setCategoryBreadcrumb(catName,'/category/'+slug+'/');
   shopState.cat=catName;
   showView('shop');
   renderShopContent();
@@ -811,7 +839,7 @@ const CATEGORY_SLUGS = {
 };
 const CATEGORY_NAMES_TO_SLUG=Object.fromEntries(Object.entries(CATEGORY_SLUGS).map(([slug,name])=>[name,slug]));
 CATEGORY_NAMES_TO_SLUG['Bundles']='bundles';
-function categoryPath(cat){ if(!cat)return '/shop/'; if(cat==='Bundles')return '/bundles/'; const slug=CATEGORY_NAMES_TO_SLUG[cat]||cat; return CATEGORY_SLUGS[slug]?'/category/'+slug+'/':'/shop/'; }
+function categoryPath(cat){const managed=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);if(managed)return '/shop/?category='+encodeURIComponent(managed.slug); if(!cat)return '/shop/'; if(cat==='Bundles')return '/bundles/'; const slug=CATEGORY_NAMES_TO_SLUG[cat]||cat; return CATEGORY_SLUGS[slug]?'/category/'+slug+'/':'/shop/'; }
 
 function normalizePath(p){
   if(!p) return '/';
@@ -849,7 +877,7 @@ function goShopBadge(cat,badge){
   navigate(cat==='Bundles'?'/bundles/':categoryPath(cat));
 }
 function goFlavor(q){ closeMnav(); shopState={q:q||'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''}; navigate('/shop/'); }
-function goBrand(b){ closeMnav(); shopState={q:'',cat:'',sort:'feat',brands:b?[b]:[],maxPrice:0,pack:'',badge:''}; navigate('/shop/'); }
+function goBrand(b){closeMnav();navigate('/shop/'+(b?'?brand='+encodeURIComponent(b):''));}
 function goBundles(){ closeMnav(); shopState={q:'',cat:'Bundles',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''}; navigate('/bundles/'); }
 function goCart(){ navigate('/cart/'); }
 function goAccount(){ navigate('/account/'); }
@@ -872,7 +900,7 @@ function fuzzyMatch(query, text){
   return false;
 }
 function getMatchingBrands(q){
-  const brands=[...new Set(activeProducts().map(p=>getBrand(p.name)))];
+  const brands=[...new Set(activeProducts().map(p=>getBrand(p)))];
   return brands.filter(b=>fuzzyMatch(q,b)).slice(0,3);
 }
 function getMatchingCategories(q){
@@ -884,7 +912,7 @@ function renderHomeSearchSuggestions(value){
   const raw=String(value||'').trim(), q=raw.toLowerCase(); homeSuggestIndex=-1;
   if(q.length<2){box.hidden=true;box.innerHTML='';return;}
   const allMatches=activeProducts().filter(p=>{
-    const hay=[p.name,p.category,p.brand,getBrand(p.name)].filter(Boolean).join(' ').toLowerCase();
+    const hay=[p.name,p.category,p.brand,getBrand(p)].filter(Boolean).join(' ').toLowerCase();
     return fuzzyMatch(q, hay);
   });
   const matches=allMatches.slice(0,6);
@@ -928,7 +956,7 @@ function renderHeaderSearchSuggestions(value){
   const raw=String(value||'').trim(), q=raw.toLowerCase(); headerSuggestIndex=-1;
   if(q.length<2){box.hidden=true;box.innerHTML='';return;}
   const allMatches=activeProducts().filter(p=>{
-    const hay=[p.name,p.category,p.brand,getBrand(p.name)].filter(Boolean).join(' ').toLowerCase();
+    const hay=[p.name,p.category,p.brand,getBrand(p)].filter(Boolean).join(' ').toLowerCase();
     return fuzzyMatch(q, hay);
   });
   const matches=allMatches.slice(0,6);
@@ -1122,7 +1150,7 @@ function showCartToast(p,qty){
   t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
 }
 function addToCart(id,qty=1,el){
-  const p=PRODUCTS.find(x=>x.id===id); if(!p)return;
+  const p=PRODUCTS.find(x=>x.id===id);if(!p)return;if(p.stockState==='unavailable'){toast('This snack is unavailable right now.');return;}
   qty=Math.max(1,Number(qty)||1);
   if(el) flyToCart(el,id);
   CART[id]=(CART[id]||0)+qty; saveCart(); popBadge();
@@ -1480,7 +1508,10 @@ document.addEventListener('keydown',event=>{
 /* ---------- init ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
   fixMobileHeader();
-  loadCart(); await loadProducts(); updateBadge(); updateWishCount();
+  loadCart();
+  try{await Promise.all([loadProducts(),loadStorefrontConfig().catch(()=>{})]);}
+  catch{const view=document.getElementById('view-home');if(view){view.hidden=false;view.style.display='block';view.innerHTML='<section class="section"><h1>Catalogue unavailable</h1><p>Please try again in a moment.</p><button class="cta" id="catalogueRetry">Retry</button></section>';document.getElementById('catalogueRetry').onclick=()=>location.reload();}return;}
+  updateBadge();updateWishCount();
   checkAbandonedCart();
   initReveals(); initTilt(); initCardTilt(); initPromo(); renderPackingVideo();
   renderHeaderDropdowns();
@@ -1488,10 +1519,9 @@ document.addEventListener('DOMContentLoaded',async()=>{
   (function(){const h=document.querySelector('header');if(!h)return;
     const onS=()=>h.classList.toggle('scrolled',window.scrollY>60);
     window.addEventListener('scroll',onS,{passive:true});onS();})();
-  try{ await loadStorefrontConfig(); }catch(e){}
-  if(typeof initAccount==='function') try{ await initAccount(); }catch(e){ console.warn('account init', e); }
   migrateHashURL(); /* migrate old #/shop URLs to clean paths (replaceState) */
   route(); /* Phase 1: route from clean URL path */
+  if(typeof initAccount==='function')initAccount().catch(e=>console.warn('account init',e));
   observeReveals();
 });
 
@@ -1508,12 +1538,13 @@ function toggleMnav(force){
 let mnavReturnFocus=null;
 function closeMnav(){const m=$('#mnav');if(m){m.classList.remove('open');m.setAttribute('aria-hidden','true');m.setAttribute('inert','');}if(!$('#drawer').classList.contains('open')){$('#overlay').classList.remove('open');document.body.style.overflow='';}if(mnavReturnFocus){mnavReturnFocus.focus?.();mnavReturnFocus=null;}}
 function renderMnav(){
+  if(Array.isArray(STORE_CONFIG?.navigation)&&window.applyStorefrontManifest){window.applyStorefrontManifest(STORE_CONFIG);return;}
   const cats={}; activeProducts().forEach(p=>{cats[p.category]=cats[p.category]||[];cats[p.category].push(p);});
   const order=['',...CAT_ORDER.filter(c=>cats[c]&&cats[c].length)];
   const catsHtml=order.map(c=>`<a href="${c===''?'/shop/':categoryPath(c)}">${c===''?'🛍️ All Snacks':esc(c)}</a>`).join('');
-  const bc={}; activeProducts().forEach(p=>{const b=getBrand(p.name);bc[b]=(bc[b]||0)+1;});
+  const bc={}; activeProducts().forEach(p=>{const b=getBrand(p);bc[b]=(bc[b]||0)+1;});
   const topBrands=Object.entries(bc).sort((a,b)=>b[1]-a[1]).slice(0,8);
-  const brandsHtml=topBrands.length?`<div style="border-top:1px solid var(--border);margin:8px 0"></div><div style="padding:8px 16px 4px;font-size:11px;font-weight:800;color:var(--muted)">🏷️ BRANDS</div>`+topBrands.map(([b,n])=>`<a href="#" onclick="goBrand(&quot;${esc(b)}&quot;);return false">${esc(b)} <span style="opacity:.5">(${n})</span></a>`).join(''):'';
+  const brandsHtml=topBrands.length?`<div style="border-top:1px solid var(--border);margin:8px 0"></div><div style="padding:8px 16px 4px;font-size:11px;font-weight:800;color:var(--muted)">🏷️ BRANDS</div>`+topBrands.map(([b,n])=>`<a href="/shop/?brand=${esc(encodeURIComponent(b))}">${esc(b)} <span style="opacity:.5">(${n})</span></a>`).join(''):'';
   $('#mnavList').innerHTML=catsHtml+brandsHtml+`
     <div style="border-top:1px solid var(--border);margin:8px 0"></div>
     <a href="/bundles/">📦 Chaska Boxes</a>

@@ -1,7 +1,7 @@
 /**
  * Shared helpers for /api/admin/analytics/* endpoints.
  * - parseRange: validates ?from=YYYY-MM-DD&to=YYYY-MM-DD (default: last 30 days,
- *   max 366 days). Returns UTC-midnight Date boundaries (to is exclusive).
+ *   max 366 days). Returns Pakistan-midnight Date boundaries (to is exclusive).
  * - callRpc: POSTs to a Supabase RPC via the service-role REST client and
  *   converts a "function does not exist" DB error into a clear 503 telling
  *   the owner to apply database/migrations/031_analytics_rpc.sql.
@@ -16,15 +16,9 @@ function isoDate(d) {
 
 export function parseRange(url) {
   const sp = url.searchParams;
-  const toDefault = new Date();
-  toDefault.setUTCHours(0, 0, 0, 0);
-  toDefault.setUTCDate(toDefault.getUTCDate() + 1); // exclusive upper bound
-  const fromDefault = new Date(toDefault);
-  fromDefault.setUTCDate(fromDefault.getUTCDate() - 30);
-
-  const fromStr = sp.get('from') || isoDate(fromDefault);
-  const toStr = sp.get('to') || isoDate(toDefault);
-
+  const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Karachi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const last30=new Date(today+'T00:00:00Z');last30.setUTCDate(last30.getUTCDate()-29);
+  const fromStr=sp.get('from')||isoDate(last30),toStr=sp.get('to')||today;
   if (!DATE_RE.test(fromStr) || !DATE_RE.test(toStr)) {
     httpError('Invalid date format. Use YYYY-MM-DD.', 400, 'invalid_date');
   }
@@ -40,13 +34,14 @@ export function parseRange(url) {
   }
   // UI sends `to` as an inclusive date (e.g. today). Make it exclusive by adding 1 day,
   // unless it was the default (which already adds 1 day above).
-  if (sp.get('to')) {
+  if (true) {
     to.setUTCDate(to.getUTCDate() + 1);
   }
   if (from >= to) httpError('"from" must be before "to".', 400, 'invalid_range');
   if (to - from > 366 * 86400000) {
     httpError('Date range too large (max 366 days).', 400, 'range_too_large');
   }
+  from.setTime(from.getTime()-5*3600000);to.setTime(to.getTime()-5*3600000);
   return { from, to, fromStr, toStr };
 }
 

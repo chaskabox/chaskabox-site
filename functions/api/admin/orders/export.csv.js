@@ -5,6 +5,7 @@
  * Audit action 'order.exported_csv' is a PROPOSED §5 addition (see CONTRACT_AMENDMENTS.md).
  */
 import { withAdmin, sb, httpError, sanitizeSearch, audit } from '../_lib/auth.js';
+import { parseRange } from '../analytics/_lib/helpers.js';
 import { csvCell } from '../_lib/csv.js';
 
 const COLS = [
@@ -23,16 +24,23 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context, { us
     const v = sp.get(param);
     if (v) filters.push(`${col}=eq.${encodeURIComponent(v)}`);
   }
-  const dateFrom = sp.get('date_from');
-  if (dateFrom) filters.push(`created_at=gte.${encodeURIComponent(dateFrom)}T00:00:00`);
-  const dateTo = sp.get('date_to');
-  if (dateTo) filters.push(`created_at=lte.${encodeURIComponent(dateTo)}T23:59:59`);
-
-  const query = [`select=${COLS.join(',')}`, 'order=created_at.desc', ...filters].join('&');
-  const data = await sb(context, `/rest/v1/orders?${query}`, {
-    headers: { Range: '0-4999' },
-  });
-  if (!Array.isArray(data)) httpError('Export failed', 502, 'export_failed');
+  if(sp.has('date_from')||sp.has('date_to')){
+    const dates=new URL('https://fixture.invalid');if(sp.get('date_from'))dates.searchParams.set('from',sp.get('date_from'));if(sp.get('date_to'))dates.searchParams.set('to',sp.get('date_to'));
+    const {from,to}=parseRange(dates);filters.push('created_at=gte.'+encodeURIComponent(from.toISOString()),'created_at=lt.'+encodeURIComponent(to.toISOString()));
+  }
+  const cutoff=new Date().toISOString();filters.push('created_at=lte.'+encodeURIComponent(cutoff));
+  const query=[`select=${COLS.join(',')}`,'order=created_at.desc,id.desc',...filters].join('&');
+  const data=[];let expected=null;
+  for(let offset=0;offset<5000;offset+=500){
+    const result=await sb(context,'/rest/v1/orders?'+query,{headers:{Range:offset+'-'+(offset+499)},count:true});
+    if(!Array.isArray(result.data)||!Number.isSafeInteger(result.total))httpError('Export count unavailable',503,'export_failed');
+    if(expected===null)expected=result.total;
+    if(expected>5000)httpError('More than 5,000 orders match. Narrow the date range before exporting.',413,'export_too_large');
+    if(result.total!==expected)httpError('Orders changed during export. Retry.',409,'export_changed');
+    data.push(...result.data);if(data.length===expected)break;
+    if(result.data.length!==500)httpError('Incomplete export page. Retry.',503,'export_incomplete');
+  }
+  if(data.length!==expected)httpError('Incomplete export',503,'export_incomplete');
 
   const lines = [COLS.join(',')];
   for (const row of data) lines.push(COLS.map((c) => csvCell(row[c])).join(','));
@@ -44,7 +52,7 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context, { us
     entityType: 'order',
     entityId: 'bulk',
     before: null,
-    after: { rows: data.length, filters: Object.fromEntries(sp.entries()) },
+    after: { rows: data.length, cutoff, filters: Object.fromEntries(sp.entries()) },
   });
 
   const stamp = new Date().toISOString().slice(0, 10);

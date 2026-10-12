@@ -1,3 +1,4 @@
+import {cataloguePhoto,photoUnderReview} from './_lib/catalogue-photos.js';
 /* GET /api/brand-products?slug=X
  * Public: visible products for one brand (by brand slug).
  * Resolves the brand via /api/brands logic, then matches products by
@@ -20,7 +21,9 @@ function localShape(p) {
     pack: p.pack || '',
     desc: p.description || '',
     badge: p.badge || '',
-    img: p.image_url || null,
+    img: cataloguePhoto(p)||null,
+    photoNote:photoUnderReview(p)?'Photo under review':'',
+    stockState:p.stock_state||'sourced_after_order',
     bundle: !!p.is_bundle,
   };
 }
@@ -39,17 +42,17 @@ export async function onRequestGet(context) {
     if (!brand) return apiError('NOT_FOUND', 'Brand not found.', 404);
 
     // 1) products linked by brand_id (service-role: filter visibility manually)
-    const cols = 'id,slug,name,brand,category,pack,price,old_price,description,badge,image_url,is_bundle';
+    const cols = 'id,slug,name,brand,category,pack,price,old_price,description,badge,image_url,is_bundle,stock_state';
     let rows = await sbRequest(context.env, '/products', {
       query: `?select=${cols}&brand_id=eq.${Number(brand.id)}&visibility=eq.visible&order=id.asc&limit=${limit}`,
-    }).catch(() => []);
+    });
 
     // 2) fallback: brand text match (case-insensitive)
     if (!rows || !rows.length) {
       const bname = String(brand.normalized_name || brand.name || '');
       rows = await sbRequest(context.env, '/public_products', {
-        query: `?select=id,slug,name,brand,category,pack,price,old_price,description,badge,image_url,is_bundle&order=id.asc&limit=1000`,
-      }).catch(() => []);
+        query: `?select=id,slug,name,brand,category,pack,price,old_price,description,badge,image_url,is_bundle,stock_state&order=id.asc&limit=1000`,
+      });
       const key = bname.toLowerCase().trim();
       rows = (rows || []).filter((r) => String(r.brand || '').toLowerCase().trim() === key).slice(0, limit);
     }

@@ -182,7 +182,7 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 .fwrap{max-width:1400px;margin:0 auto;padding:34px 10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
 .fwrap h3{font-size:16px;margin-bottom:10px;color:var(--gold)}
 .fwrap p,.fwrap li{font-size:13px;opacity:.85;list-style:none;margin-bottom:6px}
-.fbottom{text-align:center;padding:14px;font-size:12px;opacity:.7;border-top:1px solid rgba(255,255,255,.15)}
+.fbottom{text-align:center;padding:14px;font-size:12px;color:#babfce;border-top:1px solid rgba(255,255,255,.15)}
 
 /* cart drawer */
 .overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:90;display:none}
@@ -316,7 +316,7 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 @keyframes cpop{0%{transform:scale(1)}40%{transform:scale(1.55)}100%{transform:scale(1)}}
 
 /* ---------- promo rotation ---------- */
-#promoMsg{display:inline-block;transition:opacity .35s ease}
+#promoMsg{transition:opacity .35s ease}
 #promoMsg.fading{opacity:0}
 
 /* ---------- scroll reveals ---------- */
@@ -909,3 +909,18 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
 .pdbtn{background:var(--navy)}
 .motion-paused .herocollage img{animation-play-state:paused}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.motion-reveals .reveal:not(.in){opacity:1;transform:none}.drawer,.mnav{transition:none}.herocollage{transform:none!important}}
+
+#view-home{display:flex;flex-direction:column}
+[hidden]{display:none!important}
+
+/* Final acceptance: contained scrollers, readable copy, and accessible zoom. */
+#view-home,#view-home>.section{min-width:0;max-width:100%}
+#view-home>.discover{width:100%}.cats{min-width:0;max-width:100%;overflow-x:auto;scroll-snap-type:x proximity}
+.pd-grid>*,.pd-imgwrap,.pd-info{min-width:0}.pd-info h1,.crumbs{overflow-wrap:anywhere}
+.picktag{color:#805214}.alink{color:#ab4900}.dbox small{color:#396339}.dbox .ddates{color:#295829}
+#filterSheet[aria-hidden="true"],#drawer[aria-hidden="true"],#mnav[aria-hidden="true"],#aimodal[aria-hidden="true"]{visibility:hidden;pointer-events:none}
+.pd-image-button{display:block;width:100%;border:0;padding:0;cursor:zoom-in;background:var(--card);font:inherit}
+.lightbox-close{position:absolute;right:16px;top:16px;width:44px;height:44px;border:0;border-radius:50%;background:#fff;color:#1a2b5c;font-size:30px;cursor:pointer}
+.bundle-photo-note{display:block;color:var(--muted);font-size:11px;line-height:1.45;margin:5px 0 9px}
+
+.footer-admin{color:#fff;text-decoration:underline;text-underline-offset:2px}

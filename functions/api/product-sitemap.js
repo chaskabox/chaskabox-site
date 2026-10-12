@@ -1,4 +1,6 @@
 import { sbRequest } from './_lib/db.js';
+import { productImage } from './_lib/seo.js';
+import { LOCAL_PHOTOS } from './_lib/local-photos.js';
 // Dynamic product sitemap: ALL visible products (not just new IDs).
 // Static sitemap-products.xml covers the same URLs as a fallback;
 // this endpoint is always fresh (new/updated products appear immediately).
@@ -12,17 +14,18 @@ export async function onRequestGet({ env }) {
     );
     const urls = (rows || []).map(p => {
       const lastmod = p.updated_at ? `<lastmod>${x(String(p.updated_at).slice(0, 10))}</lastmod>` : '';
-      const img = p.image_url ? `<image:image><image:loc>${x(p.image_url)}</image:loc></image:image>` : '';
-      return `  <url><loc>https://chaskabox.online/product/${x(p.id)}/</loc>${lastmod}<changefreq>weekly</changefreq><priority>0.8</priority>${img}</url>`;
+      const validImage = productImage(p.image_url, LOCAL_PHOTOS);
+      const img = validImage ? `<image:image><image:loc>${x(validImage)}</image:loc></image:image>` : '';
+      return `  <url><loc>https://chaskabox.online/product/${x(p.id)}/</loc>${lastmod}${img}</url>`;
     }).join('\n');
     // Phase 2A: brand directory + brand detail URLs
-    let brandUrls = '  <url><loc>https://chaskabox.online/brands/</loc><changefreq>daily</changefreq><priority>0.7</priority></url>';
+    let brandUrls = '  <url><loc>https://chaskabox.online/brands/</loc></url>';
     try {
       const brands = await sbRequest(env, '/brands', {
         query: '?select=slug,updated_at&is_visible=eq.true&order=slug.asc&limit=200',
       });
       brandUrls += '\n' + (brands || []).map(b =>
-        `  <url><loc>https://chaskabox.online/brand/${x(b.slug)}/</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>`
+        `  <url><loc>https://chaskabox.online/brand/${x(b.slug)}/</loc></url>`
       ).join('\n');
     } catch { /* brands table may not have new columns yet; directory URL still listed */ }
     const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n${brandUrls}\n</urlset>`;

@@ -1,79 +1,35 @@
-/**
- * /api/admin/backup
- * GET ?format=json — export key tables as JSON download. Roles: owner only.
- * POST — import/restore from JSON (with confirmation). Roles: owner only.
- */
-import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+/** Owner-only catalogue/configuration export. Database recovery is separate. */
+import { withAdmin, json, httpError, distributedRateLimit } from '../_lib/auth.js';
+import { catalogueSnapshot, selectSnapshotTables } from '../_lib/catalogue-snapshot.js';
 
-const BACKUP_TABLES = [
-  'products',
-  'categories',
-  'brands',
-  'coupons',
-  'shipping_zones',
-  'notification_templates',
-  'theme_settings',
-  'navigation_menus',
-  // Note: orders/customers NOT included in auto-backup (large + sensitive).
-  // Use Supabase dashboard for full DB backup.
-];
-
-export const onRequestGet = withAdmin(['owner'], async (context) => {
+export const onRequestGet = withAdmin(['owner'], async (context, { user }) => {
   const url = new URL(context.request.url);
-  const tables = (url.searchParams.get('tables') || '').split(',').filter(Boolean);
-  const toBackup = tables.length ? tables.filter(t => BACKUP_TABLES.includes(t)) : BACKUP_TABLES;
-
-  const backup = {
-    version: 1,
-    exported_at: new Date().toISOString(),
-    tables: {},
-  };
-
-  for (const table of toBackup) {
-    try {
-      const rows = await sb(context, `/rest/v1/${table}?select=*&limit=5000`);
-      backup.tables[table] = rows || [];
-    } catch (e) {
-      backup.tables[table] = { error: e.message };
-    }
+  if (url.searchParams.has('format') && url.searchParams.get('format') !== 'json') {
+    httpError('Only JSON catalogue snapshots are supported.', 400, 'invalid_format');
   }
-
-  const filename = `chaskabox-backup-${new Date().toISOString().slice(0, 10)}.json`;
-  return new Response(JSON.stringify(backup, null, 2), {
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-    },
+  const tables = selectSnapshotTables(url.searchParams.get('tables'));
+  const limit = await distributedRateLimit(context, `catalogue-export:${user.id}`, 2, 1);
+  if (!limit.allowed) return json({ error: { code: 'RATE_LIMITED', message: 'Wait before downloading another snapshot.' } }, 429, {
+    'Retry-After': String(limit.retryAfterSec), 'Cache-Control': 'no-store',
   });
-});
 
-export const onRequestPost = withAdmin(['owner'], async (context, { user, role }) => {
-  const body = await readJson(context.request);
-  if (body.confirm !== 'RESTORE') httpError('Confirmation required: send {confirm:"RESTORE"}', 400, 'confirm');
-  if (!body.backup || body.backup.version !== 1) httpError('Invalid backup format', 400, 'invalid');
-
-  const results = {};
-  for (const [table, rows] of Object.entries(body.backup.tables || {})) {
-    if (!BACKUP_TABLES.includes(table) || !Array.isArray(rows)) continue;
-    if (!body.tables || body.tables.includes(table)) {
-      try {
-        // Upsert by id where possible
-        const cleaned = rows.map(r => {
-          const { created_at, updated_at, ...rest } = r;
-          return rest;
-        });
-        await sb(context, `/rest/v1/${table}`, {
-          method: 'POST',
-          body: cleaned,
-          headers: { 'Prefer': 'resolution=merge-duplicates' },
-        });
-        results[table] = `restored ${cleaned.length} rows`;
-      } catch (e) {
-        results[table] = `error: ${e.message}`;
-      }
-    }
+  try {
+    const snapshot = await catalogueSnapshot(context, tables);
+    const filename = `chaskabox-catalogue-${snapshot.exported_at.slice(0, 10)}.json`;
+    return new Response(JSON.stringify(snapshot, null, 2), {
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Cache-Control': 'no-store',
+        'X-Content-Type-Options': 'nosniff',
+      },
+    });
+  } catch (error) {
+    if (error instanceof Response) throw error;
+    return json({ error: { code: 'SNAPSHOT_FAILED', message: 'The snapshot could not be completed. Try again when catalogue editing has stopped.' } }, 503, { 'Cache-Control': 'no-store' });
   }
-
-  await audit(context, { actorId:user.id, actorRole:role, action:'backup.restored', entityType:'backup', entityId:'snapshot', after:{ tables: Object.keys(results) } });
-  return json({ ok: true, results });
 });
+
+export const onRequestPost = withAdmin(['owner'], async () => json({
+  error: { code: 'RESTORE_UNAVAILABLE', message: 'JSON restore is paused. Use a verified database backup and an isolated recovery target.' },
+}, 503, { 'Cache-Control': 'no-store' }));

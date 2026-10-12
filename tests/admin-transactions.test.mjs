@@ -66,8 +66,8 @@ test('staff update protects the remaining owner and writes its audit atomically'
 test('sensitive RPCs reject public callers and customer analytics executes with zero/real fixtures',async()=>{
  const db=await fixture();try{
   for(const role of ['anon','authenticated']){await db.exec('SET ROLE '+role);await assert.rejects(db.query('select admin_staff_update($1,$2,$3)',[owner,other,{}]),/permission denied/);await assert.rejects(mutate(db,'note','','denied'),/permission denied/);await db.exec('RESET ROLE');}
-  const empty=(await db.query("select analytics_customers('2099-01-01','2099-02-01') as result")).rows[0].result;assert.equal(empty.summary.distinct_customers,0);
-  const filled=(await db.query("select analytics_customers('2026-10-01','2026-11-01') as result")).rows[0].result;assert.equal(filled.summary.distinct_customers,1);assert.equal(filled.summary.repeat_rate_pct,0);
+  const empty=(await db.query("select analytics_customers('2099-01-01T00:00:00Z','2099-02-01T00:00:00Z') as result")).rows[0].result;assert.equal(empty.summary.distinct_customers,0);
+  const filled=(await db.query("select analytics_customers('2026-10-01T00:00:00Z','2026-11-01T00:00:00Z') as result")).rows[0].result;assert.equal(filled.summary.distinct_customers,1);assert.equal(filled.summary.repeat_rate_pct,0);
  }finally{await db.close();}
 });
 test('AAL2 claims are accepted only for the identity verified by Auth',async()=>{
@@ -76,7 +76,7 @@ test('AAL2 claims are accepted only for the identity verified by Auth',async()=>
  try{
   globalThis.fetch=async()=>new Response(JSON.stringify({id:owner}),{status:200});
   assert.equal((await getUser(ctx(token(owner,'aal2')))).aal,'aal2');
-  assert.equal((await getUser(ctx(token(other,'aal2')))).aal,'aal1');
+  assert.equal(await getUser(ctx(token(other,'aal2'))),null);
   let denied;try{requireMfa(await getUser(ctx(token(owner,'aal1'))));}catch(e){denied=e;}
   assert.equal(denied.status,403);assert.equal((await denied.json()).error.code,'MFA_REQUIRED');
   globalThis.fetch=async()=>new Response('{}',{status:401});assert.equal(await getUser(ctx(token(owner,'aal2'))),null);

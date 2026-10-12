@@ -99,6 +99,8 @@ export function validateOrderPayload(body) {
   if (address.length < 8 || address.length > 500) need('customer.address', 'Address must be 8–500 characters.');
   if (city.length < 2 || city.length > 100) need('customer.city', 'City must be 2–100 characters.');
 
+  const coupon_code=s(body.coupon_code).toUpperCase();
+  if(coupon_code&&!/^[A-Z0-9]{1,32}$/.test(coupon_code))need('coupon_code','Invalid coupon code.');
   // ---- payment ----
   const payment_method = s(body.payment_method).toLowerCase();
   if (!PAYMENT_METHODS.includes(payment_method)) {
@@ -140,7 +142,8 @@ export function validateOrderPayload(body) {
     value: {
       idempotency_key,
       items,
-      customer: { name, phone, email: email || null, address, city },
+      customer: { name, phone, email: email || null, address, city, country: 'Pakistan' },
+      coupon_code: coupon_code || null,
       payment_method,
       transaction_reference: PREPAID_METHODS.includes(payment_method) ? transaction_reference : null,
       customer_note,

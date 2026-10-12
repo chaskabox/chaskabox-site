@@ -1,256 +1,73 @@
-/* ChaskaBox notification-outbox scheduled Worker.
- *
- * Bind secrets/vars server-side:
- *   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- *   RESEND_API_KEY, OWNER_ORDER_EMAIL, RESEND_FROM_EMAIL (optional email)
- *   WAHA_API_URL, WAHA_API_KEY, WAHA_SESSION, OWNER_WHATSAPP (optional WAHA)
- *   ADMIN_BASE_URL
- *
- * Schedule: every minute is adequate for a small store.
- */
-import { notifyOwner, sendCustomerWhatsApp } from '../functions/api/_lib/notify.js';
+import { notificationConfig, notificationHealth, privateRequest, buildNotificationPayload, sendNotification, equalSecret, activationMatches } from '../functions/api/_lib/notification-delivery.js';
+import { handleNotificationReceipt } from '../functions/api/_lib/notification-receipts.js';
 
-function sbBase(env) {
-  return String(env.SUPABASE_URL || '').replace(/\/+$/, '');
-}
-
-function sbHeaders(env, extra = {}) {
-  return {
-    'apikey': env.SUPABASE_SERVICE_ROLE_KEY,
-    'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-    'Content-Type': 'application/json',
-    ...extra,
-  };
-}
-
-async function sb(env, path, init = {}) {
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) throw new Error('Supabase service configuration missing');
-  const resp = await fetch(`${sbBase(env)}${path}`, {
-    ...init,
-    headers: sbHeaders(env, init.headers || {}),
-  });
-  if (!resp.ok) throw new Error(`Supabase ${resp.status}: ${(await resp.text()).slice(0, 500)}`);
-  const text = await resp.text();
-  return text ? JSON.parse(text) : null;
-}
-
-function emailConfigured(env) {
-  return !!(env.OWNER_ORDER_EMAIL && env.RESEND_API_KEY);
-}
-function whatsappConfigured(env) {
-  return !!(env.WAHA_API_URL && env.WAHA_API_KEY && env.OWNER_WHATSAPP);
-}
-
-async function unlockStale(env) {
-  const stale = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const q = `/rest/v1/notification_outbox?status=eq.processing&locked_at=lt.${encodeURIComponent(stale)}`;
+export async function runNotifications(env, fetcher = fetch) {
+  const config = notificationConfig(env), counts = { claimed: 0, accepted: 0, retry: 0, blocked: 0, uncertain: 0, dead: 0 };
+  if (!config.enabled) return { paused: true, counts };
+  if (config.errors.length) throw new Error('notification_configuration_invalid');
+  const rpc = (name, body = {}) => privateRequest(env, '/rest/v1/rpc/' + name, body, fetcher);
+  const summary = await rpc('notification_summary');
+  if (!summary.dispatch?.enabled || !activationMatches(summary.dispatch.activated_after,config.after)) throw new Error('notification_activation_not_confirmed');
+  await rpc('notification_record_run', { p_targets: config.targets, p_counts: counts, p_started: true });
   try {
-    await sb(env, q, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ status: 'retry', locked_at: null, next_attempt_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
-    });
-  } catch (err) {
-    console.error('[outbox] stale unlock failed', err.message);
+    await rpc('notification_reconcile_receipts');
+    const started = Date.now();
+    // Four jobs bound I/O to fewer than 50 external subrequests per invocation.
+    for (let i = 0; i < 4 && Date.now() - started < 45000; i++) {
+      const job = (await rpc('notification_claim', { p_after: config.after, p_targets: config.targets }))?.[0];
+      if (!job) break;
+      counts.claimed++;
+      let payload = job.request_payload;
+      if (!payload) {
+        const order = (await privateRequest(env, '/rest/v1/orders?id=eq.' + encodeURIComponent(job.order_id) + '&select=id,order_number,customer_name,customer_phone,total,payment_method,payment_status&limit=1', undefined, fetcher))?.[0];
+        if (!order) throw new Error('notification_order_missing');
+        order.items = await privateRequest(env, '/rest/v1/order_items?order_id=eq.' + encodeURIComponent(job.order_id) + '&select=product_name,pack,quantity,unit_price&limit=100', undefined, fetcher);
+        const templates = await privateRequest(env, '/rest/v1/notification_templates?name=in.(order_received_owner,order_received_owner_whatsapp,order_thankyou_customer,status_update)&select=name,channel,subject,body,is_active,version&limit=4', undefined, fetcher);
+        const policyRows=await privateRequest(env,'/rest/v1/public_site_settings?key=in.(delivery_estimate,support_email,support_whatsapp)&select=key,value&limit=3',undefined,fetcher);
+        const policy=Object.fromEntries((policyRows||[]).map(r=>[r.key,r.value]));
+        try { payload = buildNotificationPayload({...env,NOTIFICATION_PUBLIC_POLICY:policy}, order, job, templates); }
+        catch (error) {
+          const saved = await rpc('notification_finish', { p_id: job.id, p_token: job.lease_token, p_status: 'blocked', p_error: error.message });
+          if (!saved?.saved) throw new Error('notification_lease_lost'); counts[saved.status]++; continue;
+        }
+        payload = await rpc('notification_prepare', { p_id: job.id, p_token: job.lease_token, p_payload: payload });
+        if (!payload) throw new Error('notification_lease_lost');
+      }
+      const begun = (await rpc('notification_begin', { p_id: job.id, p_token: job.lease_token, p_after: config.after }))?.[0];
+      if (!begun) throw new Error('notification_begin_denied');
+      const result = await sendNotification(env, { ...begun, request_payload: payload }, fetcher);
+      const saved = await rpc('notification_finish', { p_id: job.id, p_token: job.lease_token, p_status: result.status,
+        p_provider_id: result.provider_id || null, p_error: result.error || null, p_retry_seconds: result.retry_seconds || 0 });
+      if (!saved?.saved) throw new Error('notification_result_not_persisted');
+      counts[saved.status]++;
+    }
+    await rpc('notification_reconcile_receipts');
+    await rpc('notification_record_run', { p_targets: config.targets, p_counts: counts });
+    return { paused: false, counts };
+  } catch (error) {
+    await rpc('notification_record_run', { p_targets: config.targets, p_counts: counts, p_error: 'notification_run_failed' }).catch(() => {});
+    throw error;
   }
 }
-
-async function claim(env, row) {
-  const q = `/rest/v1/notification_outbox?id=eq.${encodeURIComponent(row.id)}&status=in.(pending,retry)&select=*`;
-  const result = await sb(env, q, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({
-      status: 'processing',
-      attempts: Number(row.attempts || 0) + 1,
-      locked_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    }),
-  });
-  return result?.[0] || null;
-}
-
-async function loadOrder(env, orderId) {
-  const orders = await sb(env, `/rest/v1/orders?id=eq.${encodeURIComponent(orderId)}&select=*`);
-  const order = orders?.[0];
-  if (!order) return null;
-  const items = await sb(env, `/rest/v1/order_items?order_id=eq.${encodeURIComponent(orderId)}&select=product_name,pack,unit_price,quantity,line_total`);
-  return {
-    ...order,
-    items: (items || []).map((it) => ({
-      product_name: it.product_name,
-      product_pack: it.pack,
-      qty: Number(it.quantity),
-      unit_price: Number(it.unit_price),
-    })),
-  };
-}
-
-async function patchOrderNotification(env, order, notif) {
-  const emailSent = !!order.email_sent || !!notif.email_sent;
-  const waSent = !!order.whatsapp_sent || !!notif.whatsapp_sent;
-  const patch = {
-    email_sent: emailSent,
-    email_error: emailSent ? null : notif.email_error,
-    email_sent_at: order.email_sent_at || (notif.email_sent ? new Date().toISOString() : null),
-    whatsapp_sent: waSent,
-    whatsapp_error: waSent ? null : notif.whatsapp_error,
-    whatsapp_sent_at: order.whatsapp_sent_at || (notif.whatsapp_sent ? new Date().toISOString() : null),
-    updated_at: new Date().toISOString(),
-  };
-  await sb(env, `/rest/v1/orders?id=eq.${encodeURIComponent(order.id)}`, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify(patch),
-  });
-  return patch;
-}
-
-async function finishOutbox(env, id, patch) {
-  await sb(env, `/rest/v1/notification_outbox?id=eq.${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({ ...patch, locked_at: null, updated_at: new Date().toISOString() }),
-  });
-}
-
-async function processRow(env, row) {
-  const claimed = await claim(env, row);
-  if (!claimed) return;
-
-  try {
-    const order = await loadOrder(env, claimed.order_id);
-    if (!order) {
-      await finishOutbox(env, claimed.id, { status: 'dead', last_error: 'Order not found' });
-      return;
-    }
-
-    const needEmail = emailConfigured(env) && !order.email_sent;
-    const needWhatsApp = whatsappConfigured(env) && !order.whatsapp_sent;
-
-    // If direct checkout/admin notification already completed all configured channels,
-    // the outbox is simply acknowledged without sending duplicates.
-    if (!needEmail && !needWhatsApp) {
-      await finishOutbox(env, claimed.id, { status: 'done', last_error: null });
-      return;
-    }
-
-    const notif = await notifyOwner(env, order, {
-      skipEmail: !needEmail,
-      skipWhatsApp: !needWhatsApp,
-    });
-    const state = await patchOrderNotification(env, order, notif);
-
-    const emailOk = !emailConfigured(env) || state.email_sent;
-    const waOk = !whatsappConfigured(env) || state.whatsapp_sent;
-    if (emailOk && waOk) {
-      await finishOutbox(env, claimed.id, { status: 'done', last_error: null });
-      return;
-    }
-
-    const attempts = Number(claimed.attempts || 1);
-    if (attempts >= 10) {
-      await finishOutbox(env, claimed.id, {
-        status: 'dead',
-        last_error: [notif.email_error, notif.whatsapp_error].filter(Boolean).join(' | ').slice(0, 1000),
-      });
-      return;
-    }
-
-    const delayMin = Math.min(60, 2 ** Math.min(attempts, 6));
-    await finishOutbox(env, claimed.id, {
-      status: 'retry',
-      last_error: [notif.email_error, notif.whatsapp_error].filter(Boolean).join(' | ').slice(0, 1000),
-      next_attempt_at: new Date(Date.now() + delayMin * 60 * 1000).toISOString(),
-    });
-  } catch (err) {
-    console.error('[outbox] row failed', claimed.id, err.message);
-    const attempts = Number(claimed.attempts || 1);
-    const status = attempts >= 10 ? 'dead' : 'retry';
-    const delayMin = Math.min(60, 2 ** Math.min(attempts, 6));
-    await finishOutbox(env, claimed.id, {
-      status,
-      last_error: String(err.message || err).slice(0, 1000),
-      next_attempt_at: new Date(Date.now() + delayMin * 60 * 1000).toISOString(),
-    }).catch((finishErr) => console.error('[outbox] finish failed', finishErr.message));
-  }
-}
-
-
-async function unlockStaleCustomer(env) {
-  const stale = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const q = `/rest/v1/customer_notification_outbox?status=eq.processing&locked_at=lt.${encodeURIComponent(stale)}`;
-  try {
-    await sb(env, q, { method: 'PATCH', headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ status: 'retry', locked_at: null, next_attempt_at: new Date().toISOString(), updated_at: new Date().toISOString() }) });
-  } catch (err) { console.error('[outbox] customer stale unlock failed', err.message); }
-}
-
-async function claimCustomer(env, row) {
-  const q = `/rest/v1/customer_notification_outbox?id=eq.${encodeURIComponent(row.id)}&status=in.(pending,retry)&select=*`;
-  const result = await sb(env, q, {
-    method: 'PATCH', headers: { Prefer: 'return=representation' },
-    body: JSON.stringify({ status: 'processing', attempts: Number(row.attempts || 0) + 1, locked_at: new Date().toISOString(), updated_at: new Date().toISOString() }),
-  });
-  return result?.[0] || null;
-}
-
-async function finishCustomerOutbox(env, id, patch) {
-  await sb(env, `/rest/v1/customer_notification_outbox?id=eq.${encodeURIComponent(id)}`, {
-    method: 'PATCH', headers: { Prefer: 'return=minimal' },
-    body: JSON.stringify({ ...patch, locked_at: null, updated_at: new Date().toISOString() }),
-  });
-}
-
-async function processCustomerRow(env, row) {
-  const claimed = await claimCustomer(env, row);
-  if (!claimed) return;
-  try {
-    const order = await loadOrder(env, claimed.order_id);
-    if (!order) { await finishCustomerOutbox(env, claimed.id, { status: 'dead', last_error: 'Order not found' }); return; }
-    const result = await sendCustomerWhatsApp(env, order, claimed.message);
-    if (result.sent) { await finishCustomerOutbox(env, claimed.id, { status: 'done', last_error: null }); return; }
-    const attempts = Number(claimed.attempts || 1);
-    const configured = !!(env.WAHA_API_URL && env.WAHA_API_KEY);
-    if (attempts >= 10) { await finishCustomerOutbox(env, claimed.id, { status: 'dead', last_error: String(result.error || (configured ? 'Send failed' : 'WAHA not configured')).slice(0,1000) }); return; }
-    const delayMin = Math.min(60, 2 ** Math.min(attempts, 6));
-    await finishCustomerOutbox(env, claimed.id, { status: 'retry', last_error: String(result.error || 'Send failed').slice(0,1000), next_attempt_at: new Date(Date.now()+delayMin*60000).toISOString() });
-  } catch (err) {
-    const attempts = Number(claimed.attempts || 1);
-    const status = attempts >= 10 ? 'dead' : 'retry';
-    const delayMin = Math.min(60, 2 ** Math.min(attempts, 6));
-    await finishCustomerOutbox(env, claimed.id, { status, last_error: String(err.message || err).slice(0,1000), next_attempt_at: new Date(Date.now()+delayMin*60000).toISOString() }).catch(()=>{});
-  }
-}
-
-async function runCustomer(env) {
-  await unlockStaleCustomer(env);
-  const now = new Date().toISOString();
-  const rows = await sb(env, `/rest/v1/customer_notification_outbox?status=in.(pending,retry)&next_attempt_at=lte.${encodeURIComponent(now)}&order=created_at.asc&limit=25&select=*`);
-  for (const row of rows || []) await processCustomerRow(env, row);
-}
-
-async function run(env) {
-  await unlockStale(env);
-  const now = new Date().toISOString();
-  const rows = await sb(env,
-    `/rest/v1/notification_outbox?status=in.(pending,retry)&next_attempt_at=lte.${encodeURIComponent(now)}&order=created_at.asc&limit=25&select=*`);
-  for (const row of rows || []) await processRow(env, row);
-  await runCustomer(env);
-}
-
+function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }); }
 export default {
   async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(run(env));
+    if(String(env.ANALYTICS_RETENTION_ENABLED)==='true'&&new Date(_controller.scheduledTime).getUTCMinutes()===0){
+      ctx.waitUntil(privateRequest(env,'/rest/v1/rpc/analytics_retention_run',{}).then(async result=>{console.log(JSON.stringify({event:'analytics_retention',...result}));const ai=await privateRequest(env,'/rest/v1/rpc/ai_maintenance_run',{});console.log(JSON.stringify({event:'ai_retention',...ai}));}));
+    }
+    ctx.waitUntil(runNotifications(env).then(result => { console.log(JSON.stringify({ event: 'notification_run', ...result })); }));
   },
   async fetch(request, env) {
-    // Optional authenticated health/run endpoint for staging checks.
-    const url = new URL(request.url);
-    if (url.pathname === '/health') return new Response('ok');
-    if (url.pathname === '/run' && env.OUTBOX_RUN_SECRET) {
-      if (request.headers.get('Authorization') !== `Bearer ${env.OUTBOX_RUN_SECRET}`) return new Response('Unauthorized', { status: 401 });
-      await run(env);
-      return new Response('processed');
-    }
-    return new Response('Not found', { status: 404 });
+    const path = new URL(request.url).pathname;
+    if (path === '/webhooks/resend' || path === '/webhooks/waha') return handleNotificationReceipt(request, env, path.endsWith('resend') ? 'email' : 'whatsapp');
+    if (!['/health', '/run'].includes(path)) return json({ error: 'not_found' }, 404);
+    if (!await equalSecret(request.headers.get('Authorization'), env.OUTBOX_RUN_SECRET && 'Bearer ' + env.OUTBOX_RUN_SECRET)) return json({ error: 'unauthorized' }, 401);
+    if (request.method !== (path === '/run' ? 'POST' : 'GET')) return json({ error: 'method_not_allowed' }, 405);
+    try {
+      if (path === '/run') { const result = await runNotifications(env); return json(result, result.paused ? 503 : 200); }
+      const summary = await privateRequest(env, '/rest/v1/rpc/notification_summary', {});
+      const health = notificationHealth(notificationConfig(env), summary);
+      return json(health, health.ok ? 200 : 503);
+    } catch { return json({ ok: false, reasons: ['notification_health_or_run_unavailable'] }, 503); }
   },
 };

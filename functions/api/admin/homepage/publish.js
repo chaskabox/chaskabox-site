@@ -6,6 +6,7 @@
  * Audit event: homepage.published (§5).
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
 export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const body = await readJson(context.request);
@@ -21,22 +22,8 @@ export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { u
   const sections = await sb(context, `/rest/v1/homepage_sections?select=section_key,draft_config,config${filter}`);
   if (!sections || sections.length === 0) httpError('No matching sections', 404, 'not_found');
 
-  const published = [];
-  for (const s of sections) {
-    if (s.draft_config === null || s.draft_config === undefined) {
-      httpError(`Section '${s.section_key}' has no draft to publish`, 422, 'no_draft');
-    }
-    const updated = await sb(context, `/rest/v1/homepage_sections?section_key=eq.${encodeURIComponent(s.section_key)}`, {
-      method: 'PATCH',
-      body: { config: s.draft_config, updated_at: new Date().toISOString() },
-    });
-    await audit(context, {
-      actorId: user.id, actorRole: role, action: 'homepage.published', // contract §5
-      entityType: 'homepage', entityId: s.section_key,
-      before: { config: s.config }, after: { config: s.draft_config },
-    });
-    published.push(s.section_key);
-  }
-
+  const operations=sections.map(s=>({table:'homepage_sections',op:'publish',id:s.section_key}));
+  const saved=await cmsMutate(context,user,operations);
+  const published=saved.map(s=>s.section_key);
   return json({ published, count: published.length });
 });

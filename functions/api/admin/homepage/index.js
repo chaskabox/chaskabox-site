@@ -12,6 +12,7 @@
  *             new_items, how_it_works, faq, announcement_bar
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
 const KNOWN_KEYS = new Set([
   'hero', 'categories', 'chaska_picks', 'boxes', 'chatpata_picks',
@@ -32,41 +33,16 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (
     httpError('sections must be a non-empty array (max 20)', 400, 'invalid_sections');
   }
 
-  const results = [];
-  for (const s of sections) {
-    const key = String(s.section_key || '');
-    if (!KNOWN_KEYS.has(key)) httpError(`unknown section_key: ${key}`, 400, 'unknown_section');
-
-    const patch = { updated_at: new Date().toISOString() };
-    if (s.draft_config !== undefined) {
-      if (typeof s.draft_config !== 'object' || s.draft_config === null || Array.isArray(s.draft_config)) {
-        httpError(`draft_config for '${key}' must be an object`, 400, 'invalid_draft');
-      }
-      patch.draft_config = s.draft_config;
-    }
-    if (s.enabled !== undefined) patch.enabled = !!s.enabled;
-    if (s.position !== undefined) {
-      const pos = Number(s.position);
-      if (!Number.isInteger(pos) || pos < 0 || pos > 100) httpError('position must be 0..100', 400, 'invalid_position');
-      patch.position = pos;
-    }
-    if (s.heading !== undefined) patch.heading = String(s.heading).slice(0, 160) || null;
-    if (s.subheading !== undefined) patch.subheading = String(s.subheading).slice(0, 300) || null;
-
-    const before = await sb(context, `/rest/v1/homepage_sections?section_key=eq.${encodeURIComponent(key)}&select=${SELECT}`);
-    if (!before || !before.length) httpError(`section not found: ${key}`, 404, 'not_found');
-    const updated = await sb(context, `/rest/v1/homepage_sections?section_key=eq.${encodeURIComponent(key)}`, {
-      method: 'PATCH',
-      body: patch,
-    });
-
-    await audit(context, {
-      actorId: user.id, actorRole: role, action: 'homepage.draft_saved', // PROPOSED §5 addition — see CONTRACT_AMENDMENTS.md
-      entityType: 'homepage', entityId: key,
-      before: before[0], after: patch,
-    });
-    results.push(updated && updated[0]);
-  }
-
+  const operations=sections.map(s=>{
+    const key=String(s?.section_key||'');
+    if(!KNOWN_KEYS.has(key))httpError('Unknown section',400,'unknown_section');
+    const data={updated_by:user.id,updated_at:new Date().toISOString()};
+    if(s.draft_config!==undefined){if(!s.draft_config||typeof s.draft_config!=='object'||Array.isArray(s.draft_config))httpError('Draft must be an object',400,'invalid_draft');data.draft_config=s.draft_config;}
+    if(s.enabled!==undefined){if(typeof s.enabled!=='boolean')httpError('enabled must be boolean',400,'invalid');data.enabled=s.enabled;}
+    if(s.position!==undefined){if(!Number.isInteger(s.position)||Math.abs(s.position)>100000)httpError('Invalid position',400,'invalid');data.position=s.position;}
+    for(const f of ['heading','subheading'])if(s[f]!==undefined){if(typeof s[f]!=='string'||s[f].length>500)httpError('Invalid heading',400,'invalid');data[f]=s[f];}
+    return {table:'homepage_sections',op:'update',id:key,data};
+  });
+  const results=await cmsMutate(context,user,operations);
   return json({ sections: results, note: 'Visibility/headings are saved immediately. draft_config becomes live only after POST /api/admin/homepage/publish.' });
 });

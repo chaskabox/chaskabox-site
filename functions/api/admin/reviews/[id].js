@@ -10,6 +10,7 @@
  * Audit actions 'review.approved' / 'review.rejected' are PROPOSED §5 additions
  * (see CONTRACT_AMENDMENTS.md).
  */
+import { cmsMutate } from '../_lib/cms-mutate.js';
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
 
 export function reviewPatch(body){
@@ -34,15 +35,7 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (
   if (!review) httpError('Review not found', 404, 'not_found');
 
 
-  const before = { moderation_status: review.moderation_status, admin_reply: review.admin_reply };
-  const updated = await sb(context, `/rest/v1/reviews?id=eq.${encodeURIComponent(id)}`, { method: 'PATCH', body: patch });
-
-  await audit(context, {
-    actorId: user.id, actorRole: role,
-    action: action==='reply'?'review.replied':action==='approve'?'review.approved':'review.rejected',
-    entityType: 'review', entityId: review.id,
-    before, after: patch,
-  });
+  const updated=await cmsMutate(context,user,[{table:'reviews',op:'update',id:String(review.id),data:patch}]);
 
   return json({ review: updated && updated[0] });
 });

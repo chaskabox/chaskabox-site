@@ -103,15 +103,25 @@ export async function getUser(context) {
         Authorization: `Bearer ${token}`,
       },
     });
-    if (!r.ok) return null;
+    if(!r.ok){
+      if(r.status===401||r.status===403)return null;
+      httpError('Account verification service is unavailable. Please retry.',503,'auth_unavailable');
+    }
     const u = await r.json();
     if (!u || !u.id) return null;
     // Inspect assurance claims only after Auth verifies this exact token.
-    let aal='aal1';
-    try { const claims=JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); if(claims.sub===u.id && claims.aal==='aal2') aal='aal2'; } catch {}
-    return { id: u.id, email: u.email || null, aal };
-  } catch {
-    return null;
+    let aal='aal1', sessionId=null;
+    try {
+      const part=token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+      const claims=JSON.parse(atob(part.padEnd(Math.ceil(part.length/4)*4,'=')));
+      if(claims.sub!==u.id) return null;
+      if(claims.aal==='aal2') aal='aal2';
+      if(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(claims.session_id||'')) sessionId=claims.session_id;
+    } catch { return null; }
+    return { id: u.id, email: u.email || null, aal, session_id:sessionId };
+  } catch(error) {
+    if(error instanceof Response)throw error;
+    httpError('Account verification service is unavailable. Please retry.',503,'auth_unavailable');
   }
 }
 
@@ -138,7 +148,23 @@ export async function requireRole(context, allowedRoles) {
  * and never leaks stack traces to the client.
  */
 export function requireMfa(user) {
-  if(user?.aal!=='aal2') httpError('Verify your authenticator in Security before changing staff access.',403,'mfa_required');
+  if(user?.aal!=='aal2') httpError('Verify your authenticator in Security before this action.',403,'mfa_required');
+}
+
+export function needsAdminMfa(request) {
+  const method=request.method.toUpperCase();
+  const path=new URL(request.url).pathname.replace(/\/+$/,'');
+  return !['GET','HEAD','OPTIONS'].includes(method) ||
+    path==='/api/admin/backup' || path==='/api/admin/orders/export.csv';
+}
+
+export async function requireLiveMfa(context,user) {
+  requireMfa(user);
+  if(!user.session_id) httpError('Sign in again, then verify your authenticator.',403,'mfa_required');
+  const result=await sb(context,'/rest/v1/rpc/admin_session_check',{
+    method:'POST',body:{p_actor:user.id,p_session:user.session_id},
+  });
+  if(result!==true) httpError('Session or authenticator is no longer valid. Sign in and verify again.',403,'mfa_required');
 }
 
 export function withAdmin(allowedRoles, handler) {
@@ -146,6 +172,7 @@ export function withAdmin(allowedRoles, handler) {
     try {
       const auth = await requireRole(context, allowedRoles);
       const method = (context.request.method || 'GET').toUpperCase();
+      if(needsAdminMfa(context.request)) await requireLiveMfa(context,auth.user);
       if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
         const rl = await distributedRateLimit(context, `admin:${auth.user.id}`, 120, 120);
         if (!rl.allowed) {
@@ -222,8 +249,10 @@ export async function audit(context, { actorId, actorRole, action, entityType, e
       },
     });
   } catch (e) {
-    // Audit must never break the primary operation; log server-side only.
-    console.error('[admin-api] audit write failed', e);
+    // Non-transactional external actions must report missing audit evidence.
+    // Database CMS writes use admin_cms_transaction instead of this helper.
+    console.error('[admin-api] audit write failed');
+    httpError('Audit could not be recorded. The action may already have completed; check its current state before retrying.',503,'audit_unavailable');
   }
 }
 
@@ -231,11 +260,21 @@ export async function audit(context, { actorId, actorRole, action, entityType, e
 // Request helpers
 // ---------------------------------------------------------------------------
 export async function readJson(request, maxBytes = 256 * 1024) {
-  const text = await request.text();
-  if (text.length > maxBytes) httpError('Request body too large', 413, 'payload_too_large');
+  const length=Number(request.headers.get('Content-Length'));
+  if(length>maxBytes) httpError('Request body too large',413,'payload_too_large');
+  const reader=request.body?.getReader();
+  const chunks=[];let size=0;
+  if(reader) {
+    try { while(true) { const {done,value}=await reader.read();if(done)break;size+=value.byteLength;if(size>maxBytes){await reader.cancel();httpError('Request body too large',413,'payload_too_large');}chunks.push(value); } }
+    finally { reader.releaseLock(); }
+  }
+  const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.length;}
+  const text = new TextDecoder().decode(bytes);
   if (!text) return {};
   try {
-    return JSON.parse(text);
+    const body=JSON.parse(text);
+    if(!body||typeof body!=='object'||Array.isArray(body)) httpError('JSON object required',400,'invalid_json');
+    return body;
   } catch {
     httpError('Invalid JSON body', 400, 'invalid_json');
   }
