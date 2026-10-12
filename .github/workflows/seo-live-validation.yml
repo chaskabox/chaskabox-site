@@ -20,7 +20,7 @@ jobs:
           node-version: '24'
       - name: Audit production and SEO preview without deploying
         env:
-          PREVIEW_BASE_URL: https://c0bc801a.chaskabox-site.pages.dev
+          PREVIEW_BASE_URL: https://seo-organic-search-foundatio.chaskabox-site.pages.dev
           CHECK_PAGESPEED: '1'
         run: node tools/seo-live-audit.mjs
       - name: Lighthouse mobile homepage (lab)
@@ -30,7 +30,7 @@ jobs:
       - name: Lighthouse mobile SEO preview homepage (lab)
         continue-on-error: true
         run: |
-          npx --yes lighthouse@12.8.2 https://c0bc801a.chaskabox-site.pages.dev/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=seo-audit/lighthouse-preview-home-mobile.json --quiet
+          npx --yes lighthouse@12.8.2 https://seo-organic-search-foundatio.chaskabox-site.pages.dev/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=seo-audit/lighthouse-preview-home-mobile.json --quiet
       - name: Lighthouse mobile live product (lab)
         continue-on-error: true
         run: |

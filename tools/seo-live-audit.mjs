@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Public, unauthenticated production/preview SEO baseline; never mutates the website.
 import fs from 'node:fs';
-const preview=process.env.PREVIEW_BASE_URL||'https://c0bc801a.chaskabox-site.pages.dev';
+const preview=process.env.PREVIEW_BASE_URL||'https://seo-organic-search-foundatio.chaskabox-site.pages.dev';
 const production='https://chaskabox.online';
 const paths=['/','/shop/','/product/5/','/product/27/','/product/999999999/','/robots.txt','/api/product-sitemap'];
 const escaped=s=>String(s||'').replace(/[\n\r]/g,' ').slice(0,190);
