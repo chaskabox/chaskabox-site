@@ -9,6 +9,7 @@
   "triggers": { "crons": ["* * * * *"] },
   "vars": {
     "NOTIFICATION_DISPATCH_ENABLED": "false",
+    "ANALYTICS_RETENTION_ENABLED": "false",
     "NOTIFICATION_DISPATCH_AFTER": "",
     "NOTIFICATION_CHANNELS": "owner_email,owner_whatsapp,customer_whatsapp",
     "WAHA_SESSION": "default",

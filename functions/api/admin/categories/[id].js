@@ -5,6 +5,7 @@
  * DELETE — delete category (safe: only if empty or force). Roles: owner, manager.
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
 export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (context) => {
   const id = context.params.id;
@@ -20,6 +21,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
 export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (context, { user, role }) => {
   const id = context.params.id;
   const body = await readJson(context.request);
+  for(const key of ['is_visible','show_on_homepage','hide_if_empty','is_enabled','is_external','is_active'])if(body[key]!==undefined&&typeof body[key]!=='boolean')httpError(`${key} must be boolean`,400,'invalid_field');
 
   const patch = { updated_at: new Date().toISOString() };
   const fields = ['name', 'slug', 'description', 'image_url', 'mobile_image_url', 'icon',
@@ -27,36 +29,21 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (
     'is_visible', 'show_on_homepage', 'hide_if_empty', 'product_assignment', 'assignment_rule'];
   fields.forEach(f => { if (body[f] !== undefined) patch[f] = body[f]; });
 
-  // Handle product assignments
-  if (Array.isArray(body.product_ids)) {
-    await sb(context, `/rest/v1/category_products?category_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (body.product_ids.length) {
-      const rows = body.product_ids.map((pid, i) => ({
-        category_id: id, product_id: Number(pid), position: i,
-      }));
-      await sb(context, '/rest/v1/category_products', { method: 'POST', body: rows });
-    }
+  const operations=[{table:'categories',op:'update',id,data:patch}];
+  if(body.product_ids!==undefined){
+    if(!Array.isArray(body.product_ids)||body.product_ids.length>200||body.product_ids.some(v=>!Number.isSafeInteger(v)||v<1)||new Set(body.product_ids).size!==body.product_ids.length)httpError('Invalid product assignments',400,'invalid_assignments');
+    patch.assignments_managed=true;
+    operations.push({table:'category_products',op:'delete_assignments',id});
+    body.product_ids.forEach((product_id,position)=>operations.push({table:'category_products',op:'insert',data:{category_id:id,product_id,position}}));
   }
-
-  const updated = await sb(context, `/rest/v1/categories?id=eq.${encodeURIComponent(id)}`, {
-    method: 'PATCH', body: patch,
-  });
-  await audit(context, { actorId:user.id, actorRole:role, action:'category.updated', entityType:'category', entityId:id, after:{ id } });
+  const saved=await cmsMutate(context,user,operations);
+  const updated=saved[0];
   return json({ category: Array.isArray(updated) ? updated[0] : updated });
 });
 
 export const onRequestDelete = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const id = context.params.id;
-  const force = context.request.url.includes('force=true');
-
-  if (!force) {
-    const assignments = await sb(context,
-      `/rest/v1/category_products?category_id=eq.${encodeURIComponent(id)}&select=product_id&limit=1`);
-    if (assignments?.length) httpError('Category has products. Use force=true to delete anyway.', 400, 'not_empty');
-  }
-
-  await sb(context, `/rest/v1/category_products?category_id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-  await sb(context, `/rest/v1/categories?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-  await audit(context, { actorId:user.id, actorRole:role, action:'category.deleted', entityType:'category', entityId:id, after:{ id } });
+  const force=new URL(context.request.url).searchParams.get('force')==='true';
+  await cmsMutate(context,user,[{table:'categories',op:'delete',id,force}]);
   return json({ deleted: true });
 });

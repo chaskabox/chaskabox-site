@@ -66,6 +66,9 @@ function variables(env, order, job) {
   const status = job.event_data?.new_status || '';
   const paymentStatus = job.event_type === 'payment_status' ? status : job.event_data?.payment_status || order.payment_status;
   return {
+    delivery_estimate: String(env.NOTIFICATION_PUBLIC_POLICY?.delivery_estimate || 'Check the current estimate at checkout'),
+    support_email: String(env.NOTIFICATION_PUBLIC_POLICY?.support_email || 'Use official support'),
+    support_whatsapp: String(env.NOTIFICATION_PUBLIC_POLICY?.support_whatsapp || 'Use official support'),
     order_number: String(order.order_number || ''), customer_name: String(order.customer_name || ''), customer_phone: String(order.customer_phone || ''), total: String(order.total ?? ''),
     payment_method: String(order.payment_method || ''), payment_status: String(paymentStatus || '').replaceAll('_', ' '),
     tracking_url: base(env.PUBLIC_BASE_URL) + '/track-order.html?order=' + encodeURIComponent(order.order_number || ''),
@@ -85,20 +88,25 @@ export function buildNotificationPayload(env, order, job, templates = []) {
   const vars = variables(env, order, job);
   const name = job.target === 'owner_email' ? 'order_received_owner' : job.target === 'owner_whatsapp' ? 'order_received_owner_whatsapp' : job.event_type === 'order_created' ? 'order_thankyou_customer' : 'status_update';
   const template = templates.find(t => t.name === name);
+  if(!template)throw new Error('template_missing');
+  const templateRevision = { name, version:Number(template.version || 1), source:'stored_template' };
   if (template && (!template.is_active || template.channel !== (job.target === 'owner_email' ? 'email' : 'whatsapp'))) throw new Error('template_disabled_or_wrong_channel');
-  const items = (order.items || []).map(i => `${i.product_name} (${i.pack || ''}) x${i.quantity} — Rs. ${Number(i.unit_price) * Number(i.quantity)}`).join('\n');
-  const defaults = job.target.startsWith('owner_')
-    ? `New ChaskaBox order {{order_number}}\nCustomer: {{customer_name}} ({{customer_phone}})\nTotal: Rs. {{total}}\nPayment: {{payment_method}} ({{payment_status}})\n${items}\nView: {{admin_url}}`
-    : job.event_type === 'order_created'
-      ? 'Assalam-o-Alaikum {{customer_name}}! ChaskaBox mein order ka shukriya.\nYour order {{order_number}} (Rs. {{total}}) has been received.\nPayment: {{payment_status}}\nTrack: {{tracking_url}}'
-      : 'ChaskaBox update\nHi {{customer_name}}, order {{order_number}} is {{status_text}}.\nTrack: {{tracking_url}}';
-  const text = interpolate(template ? String(template.body || '').replaceAll('\\n', '\n') : defaults, vars);
-  if (job.target === 'owner_email') return { endpoint: 'https://api.resend.com/emails', body: {
-    from: env.RESEND_FROM_EMAIL, to: [env.OWNER_ORDER_EMAIL], subject: interpolate(template?.subject || 'New ChaskaBox Order {{order_number}} — Rs. {{total}}', vars).replace(/[\r\n]/g, ' ').slice(0, 200), text,
+  const text = interpolate(String(template.body || '').replaceAll('\\n', '\n'), vars);
+  if (job.target === 'owner_email') return { template: templateRevision, endpoint: 'https://api.resend.com/emails', body: {
+    from: env.RESEND_FROM_EMAIL, to: [env.OWNER_ORDER_EMAIL], subject: interpolate(template.subject, vars).replace(/[\r\n]/g, ' ').slice(0, 200), text,
   } };
   const recipient = chatId(job.target === 'owner_whatsapp' ? env.OWNER_WHATSAPP : order.customer_phone);
   if (!recipient) throw new Error('recipient_phone_invalid');
-  return { endpoint: wahaEndpoint(env), body: { session: env.WAHA_SESSION, chatId: recipient, text, linkPreview: false } };
+  return { template: templateRevision, endpoint: wahaEndpoint(env), body: { session: env.WAHA_SESSION, chatId: recipient, text, linkPreview: false } };
+}
+export function previewNotificationTemplate(template, policy = {}) {
+  const names={order_received_owner:'owner_email',order_received_owner_whatsapp:'owner_whatsapp',order_thankyou_customer:'customer_whatsapp',status_update:'customer_whatsapp'};
+  if(!Object.hasOwn(names,template.name))throw new Error('template_name_invalid');
+  const env={RESEND_FROM_EMAIL:'preview@example.invalid',OWNER_ORDER_EMAIL:'preview@example.invalid',WAHA_API_URL:'https://preview.example.invalid',WAHA_SESSION:'preview',OWNER_WHATSAPP:'03000000000',NOTIFICATION_PUBLIC_POLICY:policy};
+  const order={id:'00000000-0000-4000-8000-000000000001',order_number:'CB-PREVIEW',customer_name:'Preview customer',customer_phone:'03000000000',total:1500,payment_method:'cod',payment_status:'cod_due',items:[]};
+  const job={target:names[template.name],event_type:template.name==='status_update'?'fulfilment_status':'order_created',event_data:{new_status:'dispatched'}};
+  const payload=buildNotificationPayload(env,order,job,[{...template,is_active:true}]);
+  return {template:payload.template,subject:payload.body.subject||null,text:payload.body.text};
 }
 export async function sendNotification(env, job, fetcher = fetch) {
   if (!TARGETS.includes(job.target) || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(job.order_id || '')) return { status: 'blocked', error: 'notification_identity_invalid' };

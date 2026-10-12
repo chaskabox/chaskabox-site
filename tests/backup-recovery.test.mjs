@@ -87,12 +87,13 @@ async function apiFixture({ method = 'GET', role = 'owner', signedIn = true, all
   globalThis.fetch = async (url, options = {}) => {
     const u = new URL(url); calls.push({ path: u.pathname, method: options.method || 'GET' });
     if (u.pathname === '/auth/v1/user') return new Response(JSON.stringify(signedIn ? { id: 'fixture-owner' } : {}), { status: signedIn ? 200 : 401 });
+    if (u.pathname === '/rest/v1/rpc/admin_session_check') return Response.json(true);
     if (u.pathname === '/rest/v1/admin_roles') return Response.json([{ role }]);
     if (u.pathname === '/rest/v1/rpc/take_rate_limit_token') return Response.json([{ allowed, retry_after_sec: 30 }]);
     return db.fetcher(url, options);
   };
   try {
-    const context = { env, request: new Request('https://shop.fixture.invalid/api/admin/backup', { method, headers: { Authorization: 'Bearer fixture-token' }, ...(method === 'POST' ? { body: JSON.stringify({ confirm: 'RESTORE', backup: { version: 1, tables: { products: [{ id: 1 }] } } }) } : {}) }) };
+    const context = { env, request: new Request('https://shop.fixture.invalid/api/admin/backup', { method, headers: { Authorization: 'Bearer fixture.'+Buffer.from(JSON.stringify({sub:'fixture-owner',aal:'aal2',session_id:'00000000-0000-4000-8000-000000000010'})).toString('base64url')+'.verified' }, ...(method === 'POST' ? { body: JSON.stringify({ confirm: 'RESTORE', backup: { version: 1, tables: { products: [{ id: 1 }] } } }) } : {}) }) };
     const response = await (method === 'POST' ? onRequestPost : onRequestGet)(context);
     return { response, calls };
   } finally { globalThis.fetch = original; }
@@ -121,7 +122,7 @@ test('database failure returns an error response without a downloadable partial 
 test('legacy JSON restore stays unavailable and performs no catalogue or audit mutations', async () => {
   const { response, calls } = await apiFixture({ method: 'POST' });
   assert.equal(response.status, 503); assert.equal((await response.json()).error.code, 'RESTORE_UNAVAILABLE');
-  assert.equal(calls.filter(c => c.method !== 'GET' && c.path !== '/rest/v1/rpc/take_rate_limit_token').length, 0);
+  assert.equal(calls.filter(c => c.method !== 'GET' && !['/rest/v1/rpc/take_rate_limit_token','/rest/v1/rpc/admin_session_check'].includes(c.path)).length, 0);
   for (const role of ['manager', 'content', 'fulfilment']) assert.equal((await apiFixture({ method: 'POST', role })).response.status, 403);
 });
 

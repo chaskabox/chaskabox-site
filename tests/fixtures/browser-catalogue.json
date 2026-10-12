@@ -1,0 +1,39 @@
+[
+  {
+    "id": 27,
+    "name": "Mayfair | Synthetic snack",
+    "brand": "Mayfair",
+    "category": "Biscuits & Wafers",
+    "pack": "One",
+    "price": 100,
+    "img": "images/p27.webp"
+  },
+  {
+    "id": 39,
+    "name": "Candyland | Synthetic chocolate gum",
+    "brand": "Candyland",
+    "category": "Chews & Gums",
+    "pack": "Pack of 100",
+    "price": 100,
+    "img": "images/uploaded-p39-94eb65dba4.webp"
+  },
+  {
+    "id": 186,
+    "name": "Nsf | Synthetic review item",
+    "brand": "Nsf",
+    "category": "Snacks & Nimco",
+    "pack": "Pack of 12",
+    "price": 100,
+    "img": "https://jtvswuvnasqqzrjysgfd.supabase.co/storage/v1/object/public/product-media/products/2026/10/7ad390ca-1b87-4ef2-8086-34576726c0d7.png"
+  },
+  {
+    "id": 999,
+    "name": "Synthetic unavailable item",
+    "brand": "Mayfair",
+    "category": "Biscuits & Wafers",
+    "pack": "One",
+    "price": 100,
+    "img": "images/p27.webp",
+    "stockState": "unavailable"
+  }
+]

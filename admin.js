@@ -204,7 +204,7 @@
       }catch(err){toast('Upload failed: '+(err.message||err));}
       finally{btn.disabled=false;btn.textContent=old;e.target.value='';}
     });
-    $('#aiImproveProduct')?.addEventListener('click',async()=>{const name=$('#editName').value.trim();if(typeof window.chaskaAdminApi!=='function'){showView('assistant');state.aiTask='product_description';$('#aiPrompt').dataset.aiTask='product_description';$('#aiPrompt').value=`Improve this ChaskaBox product listing without making unverified claims. Product: ${name}. Category: ${$('#editCategory').value}. Pack: ${$('#editPack').value}. Current description: ${$('#editDescription').value}`;closeEditor();return;}const b=$('#aiImproveProduct'),old=b.textContent;b.disabled=true;b.textContent='✦ Drafting…';try{const d=await window.chaskaAdminApi('/api/admin/ai',{method:'POST',body:{task:'product_description',context:{name,category:$('#editCategory').value,pack:$('#editPack').value,current_description:$('#editDescription').value}}});$('#editDescription').value=d.draft||$('#editDescription').value;renderEditorPreview();toast('AI draft inserted — review it, then Save');}catch(e){toast(e.message||'Free AI unavailable — AI binding not configured');}finally{b.disabled=false;b.textContent=old;}});
+    $('#aiImproveProduct')?.addEventListener('click',async()=>{const name=$('#editName').value.trim();if(typeof window.chaskaAdminApi!=='function'){showView('assistant');state.aiTask='product_description';$('#aiPrompt').dataset.aiTask='product_description';$('#aiPrompt').value=`Improve this ChaskaBox product listing without making unverified claims. Product: ${name}. Category: ${$('#editCategory').value}. Pack: ${$('#editPack').value}. Current description: ${$('#editDescription').value}`;closeEditor();return;}const b=$('#aiImproveProduct'),old=b.textContent;b.disabled=true;b.textContent='✦ Drafting…';try{const d=await window.chaskaAdminApi('/api/admin/ai',{method:'POST',body:{task:'product_description',context:{name,category:$('#editCategory').value,pack:$('#editPack').value,description:$('#editDescription').value}}});$('#editDescription').value=d.draft||$('#editDescription').value;renderEditorPreview();toast('AI draft inserted — review it, then Save');}catch(e){toast(e.message||'AI paused or unavailable — AI binding not configured');}finally{b.disabled=false;b.textContent=old;}});
   }
   function editorData(){ return {name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),oldPrice:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,desc:$('#editDescription').value.trim(),img:$('#editImage').value.trim(),bundle:$('#editBundle').checked}; }
   function renderEditorPreview(){ const p=editorData(); const rawImg=String(p.img||'').trim(); const img=rawImg?(/^(https?:)?\/\//i.test(rawImg)?rawImg:`/${rawImg.replace(/^\//,'')}`):''; $('#productPreviewCard').innerHTML=`<div class="preview-product-card"><div class="img">${img?`<img src="${escapeHtml(img)}" alt="">`:'<span style="font-size:44px">🍿</span>'}</div><div class="body"><small>${escapeHtml(p.category||'Category')} · ${escapeHtml(p.pack||'Pack')}</small><h3>${escapeHtml(p.name||'Product name')}</h3><strong>${money(p.price)}</strong><button class="btn primary" type="button" disabled>Add to Bag</button></div></div>`; }
@@ -303,7 +303,7 @@
       attention:{task:'attention_summary',text:'Summarize what needs my attention right now, in priority order.'},
       catalogue:{task:'catalogue_summary',text:'Summarize catalogue health and tell me which safe content/stock-state areas need attention.'},
       translate:{task:'translate',text:'Translate the following text between English and Roman Urdu:'},
-      pricing:{task:'pricing_suggest',text:'Suggest a competitive price range for this product (suggestion only, will not change price):'},
+      pricing:{task:'pricing_suggest',text:'Review the supplied current price and identify evidence needed before any owner changes it:'},
       review:{task:'review_reply',text:'Draft a polite reply to this customer review:'}
     };
     $$('.ai-shortcuts button').forEach(b=>b.addEventListener('click',()=>{const x=templates[b.dataset.ai];if(!x)return;state.aiTask=x.task;$('#aiPrompt').dataset.aiTask=x.task;$('#aiPrompt').value=x.text;}));
@@ -312,28 +312,30 @@
       if(!prompt){toast('Enter instructions first');return;}
       if(typeof window.chaskaAdminApi!=='function'){toast('Secure admin session is not ready');return;}
       const btn=$('#runAiBtn'); const old=btn.textContent; btn.disabled=true; btn.textContent='✦ Thinking…';
-      $('#aiOutput').innerHTML='<p class="muted">Free Workers AI is preparing a draft…</p>';
+      $('#aiOutput').innerHTML='<p class="muted">Workers AI is preparing a draft…</p>';
       try{
         const task=$('#aiPrompt').dataset.aiTask||state.aiTask||'general_draft';
         const data=await window.chaskaAdminApi('/api/admin/ai',{method:'POST',body:{task,context:{instructions:prompt}}});
         const safe=escapeHtml(data.draft||'').replace(/\n/g,'<br>');
         // Store draft for potential apply
-        window._lastAiDraft={task,draft:data.draft||'',model:data.model||'Workers AI'};
-        const canApply=['product_description','seo_meta'].includes(task);
-        const usage=data.usage_today!=null?`<small class="muted"> · ${data.usage_today} AI calls today</small>`:'';
+        window._lastAiDraft={task,draft:data.draft||'',structured:data.structured,model:data.model||'Workers AI'};
+        const canApply=['product_description','seo_meta','category_tags'].includes(task);
+        const usage=data.budget?'<small class="muted"> · App estimate '+Number(data.budget.accounted_neuron_estimate)+' / '+Number(data.budget.policy_budget)+' neurons; account billing is separate</small>':'';
+
         $('#aiOutput').innerHTML=`<p>${safe}</p><hr><small class="muted">${escapeHtml(data.model||'Workers AI')} · Draft/insight only — nothing was changed.${usage}</small>${canApply?'<div style="margin-top:12px"><button class="btn primary" id="applyAiDraftBtn">✨ Apply to product…</button></div>':''}`;
         $('#applyAiDraftBtn')?.addEventListener('click',showAiApplyDialog);
-      }catch(e){$('#aiOutput').innerHTML=`<p class="muted">${escapeHtml(e.message||'Free AI is unavailable right now. Store operations are unaffected.')}</p>`;}
+      }catch(e){$('#aiOutput').innerHTML=`<p class="muted">${escapeHtml(e.message||'AI is unavailable right now. Store operations are unaffected.')}</p>`;}
       finally{btn.disabled=false;btn.textContent=old;}
     });
     $('#reindexAiSearch')?.addEventListener('click',async()=>{
       if(typeof window.chaskaAdminApi!=='function'){toast('Secure admin session is not ready');return;}
-      const b=$('#reindexAiSearch');const old=b.textContent;b.disabled=true;b.textContent='Refreshing…';let total=0;
+      const b=$('#reindexAiSearch');const old=b.textContent;b.disabled=true;b.textContent='Refreshing…';let total=0,last=null;
       try{
         for(let i=0;i<10;i++){
-          const d=await window.chaskaAdminApi('/api/admin/ai-reindex',{method:'POST',body:{stale_only:true,limit:40}}); total+=Number(d.indexed||0); if(!d.remaining)break;
+          const d=await window.chaskaAdminApi('/api/admin/ai-reindex',{method:'POST',body:{stale_only:true,limit:12}}); last=d;total+=Number(d.indexed||0);if(d.complete)break;if(!d.indexed)break;
         }
-        toast(total?`AI search refreshed for ${total} product(s)`:'AI search index already current');
+        toast(last?.complete?'AI index current: '+total+' products refreshed.':'Refreshed '+total+' products; '+(last?.remaining??'unknown')+' still need indexing. Run another batch when budget allows.');
+
       }catch(e){toast(e.message||'AI search refresh failed');}
       finally{b.disabled=false;b.textContent=old;}
     });
@@ -374,16 +376,18 @@ async function showAiApplyDialog(){
       p=products[Number(sel)-1]||products[0];
     }
     // Determine field
-    const field=draft.task==='seo_meta'?'seo_description':'description';
+    const field=draft.task==='seo_meta'?'seo_description':draft.task==='category_tags'?'tags':'description';
+    const draftValue=field==='seo_description'?draft.structured?.seo_description:field==='tags'?draft.structured?.tags:draft.draft;
+    if(draftValue==null)throw new Error('A valid typed draft is required');
     // Get preview
     const preview=await window.chaskaAdminApi('/api/admin/ai-apply',{method:'POST',body:{
-      product_id:p.id, field, value:draft.draft, ai_task:draft.task,
+      product_id:p.id, field, value:draftValue, ai_task:draft.task,
     }});
     const pv=preview.preview;
-    const ok=confirm(`Apply AI ${field} to "${p.name}"?\n\nOLD:\n${(pv.old_value||'(empty)').slice(0,200)}\n\nNEW:\n${pv.new_value.slice(0,300)}\n\nClick OK to apply (will be audited).`);
+    const ok=confirm(`Apply AI ${field} to "${p.name}"?\n\nOLD:\n${String(Array.isArray(pv.old_value)?pv.old_value.join(', '):pv.old_value||'(empty)').slice(0,200)}\n\nNEW:\n${String(Array.isArray(pv.new_value)?pv.new_value.join(', '):pv.new_value).slice(0,300)}\n\nClick OK to apply (will be audited).`);
     if(!ok) return;
     const result=await window.chaskaAdminApi('/api/admin/ai-apply',{method:'POST',body:{
-      product_id:p.id, field, value:draft.draft, confirm:true, ai_task:draft.task,
+      product_id:p.id, field, value:draftValue, confirm:true, expected_updated_at:pv.expected_updated_at, ai_task:draft.task,
     }});
     if(result.applied){
       toast(`Applied to ${p.name}`);

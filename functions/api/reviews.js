@@ -20,7 +20,7 @@ export const onRequestGet = async (context) => {
   try {
     const url = new URL(context.request.url);
     const productId = url.searchParams.get('product_id');
-    if (!productId) httpError('product_id is required', 400, 'missing_field');
+    if (!/^[1-9][0-9]*$/.test(productId)) httpError('product_id is required', 400, 'missing_field');
 
     // public_reviews view: approved only, no PII
     const reviews = await sb(
@@ -29,8 +29,8 @@ export const onRequestGet = async (context) => {
     );
 
     const list = Array.isArray(reviews) ? reviews : [];
-    const count = list.length;
-    const avg = count ? Math.round((list.reduce((s, r) => s + Number(r.rating || 0), 0) / count) * 10) / 10 : 0;
+    const summary=await sb(context,'/rest/v1/rpc/review_summary',{method:'POST',body:{p_product:Number(productId)}});
+    const count=summary.count,avg=summary.avg_rating;
 
     return json({ ok: true, product_id: Number(productId), count, avg_rating: avg, reviews: list });
   } catch (e) {
@@ -55,7 +55,7 @@ export const onRequestPost = async (context) => {
     const rating = Number(body.rating);
     const text = String(body.text || '').trim();
 
-    if (!productId) httpError('product_id is required', 400, 'missing_field');
+    if (!/^[1-9][0-9]*$/.test(productId)) httpError('product_id is required', 400, 'missing_field');
     if (!Number.isInteger(rating) || rating < 1 || rating > 5) httpError('rating must be an integer 1..5', 400, 'invalid_rating');
     if (text.length < 3 || text.length > 1000) httpError('text must be 3..1000 characters', 400, 'invalid_text');
     if (text === text.toUpperCase() && text.length > 40) httpError('Review looks like spam', 400, 'spam_shape');
@@ -74,21 +74,8 @@ export const onRequestPost = async (context) => {
     let verifiedPurchase = false;
     let orderId = null;
     if (userId) {
-      try {
-        const orders = await sb(context,
-          `/rest/v1/orders?user_id=eq.${encodeURIComponent(userId)}&fulfilment_status=eq.delivered&select=id&limit=50`
-        );
-        if (Array.isArray(orders) && orders.length) {
-          const orderIds = orders.map(o => o.id).join(',');
-          const items = await sb(context,
-            `/rest/v1/order_items?order_id=in.(${orderIds})&product_id=eq.${p.id}&select=order_id&limit=1`
-          );
-          if (Array.isArray(items) && items.length) {
-            verifiedPurchase = true;
-            orderId = items[0].order_id;
-          }
-        }
-      } catch { /* verified check is best-effort */ }
+      orderId=await sb(context,'/rest/v1/rpc/review_purchase',{method:'POST',body:{p_user:userId,p_product:Number(p.id)}});
+      verifiedPurchase=!!orderId;
     }
 
     const created = await sb(context, '/rest/v1/reviews', {

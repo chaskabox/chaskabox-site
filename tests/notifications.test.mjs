@@ -1,3 +1,4 @@
+import {syntheticTemplates} from './notification-fixture.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
@@ -146,7 +147,7 @@ test('periodic reconciliation recovers a racing receipt; WhatsApp delivered cann
 test('provider outcomes distinguish acceptance, rejected retries, permanent failures and unknown WAHA results',async()=>{
  const e=env(new Date().toISOString()),o={id:'fixture',order_number:'FIX',customer_phone:'+923000000000',total:500,items:[]};
  const email={id:1,order_id:actor,target:'owner_email',event_type:'order_created'},wa={...email,target:'owner_whatsapp'};
- email.request_payload=buildNotificationPayload(e,o,email);wa.request_payload=buildNotificationPayload(e,o,wa);
+ email.request_payload=buildNotificationPayload(e,o,email,syntheticTemplates);wa.request_payload=buildNotificationPayload(e,o,wa,syntheticTemplates);
  const response=(status,body,headers={})=>async()=>new Response(JSON.stringify(body),{status,headers});
  assert.equal((await sendNotification(e,email,response(200,{id:'provider-ack'}))).status,'accepted');
  assert.equal((await sendNotification(e,email,response(200,{}))).status,'retry');assert.equal((await sendNotification(e,wa,response(200,{}))).status,'uncertain');
@@ -163,7 +164,7 @@ test('stored templates are rendered; disabled/invalid templates block, immutable
  assert.match(buildNotificationPayload(e,o,job,[tpl]).body.text,/on its way/);assert.throws(()=>buildNotificationPayload(e,o,job,[{...tpl,is_active:false}]),/disabled/);
  assert.throws(()=>buildNotificationPayload(e,o,job,[{...tpl,body:'{{unsupported}}'}]),/template_invalid/);
  assert.throws(()=>buildNotificationPayload(e,o,job,[{...tpl,body:''}]),/template_invalid/);
- assert.match(buildNotificationPayload(e,o,{...job,event_type:'order_created'},[]).body.text,/has been received/);
+ assert.throws(()=>buildNotificationPayload(e,o,{...job,event_type:'order_created'},[]),/template_missing/);
 });
 test('consumer processes at most four jobs per tick, records heartbeat and never marks API acceptance delivered',async()=>{
  const db=await fixture();try{
@@ -171,7 +172,7 @@ test('consumer processes at most four jobs per tick, records heartbeat and never
   const result=await runNotifications(e,mock.fetcher);assert.equal(result.counts.claimed,4);assert.equal(result.counts.accepted,4);assert.ok(mock.calls.length<50);
   const s=await rpc(db,'notification_summary');assert.equal(s.provider_results.accepted,4);assert.equal(s.provider_results.delivered,0);assert.ok(s.dispatch.last_completed_at);
   const lastOrder=await order(db,'LAST-ATTEMPT'),lastJob=(await db.query("select * from notification_deliveries where order_id=$1 and target='owner_email'",[lastOrder.id])).rows[0];
-  await db.query("update notification_deliveries set attempts=5,first_attempt_at=now()-interval '5 minutes',request_payload=$1 where id=$2",[buildNotificationPayload(e,lastOrder,lastJob),lastJob.id]);
+  await db.query("update notification_deliveries set attempts=5,first_attempt_at=now()-interval '5 minutes',request_payload=$1 where id=$2",[buildNotificationPayload(e,lastOrder,lastJob,syntheticTemplates),lastJob.id]);
   const failing=router(db,()=>new Response('{}',{status:503}));
   const finalAttempt=await runNotifications({...e,NOTIFICATION_CHANNELS:'owner_email'},failing.fetcher);
   assert.equal(finalAttempt.counts.uncertain,1);assert.equal(finalAttempt.counts.retry,0); // Count the persisted final state, not the provider's retry suggestion.
@@ -254,7 +255,7 @@ test('consumer plus signed receipt handlers update the real synthetic database; 
 });
 test('admin notification center enforces staff roles and reports an unavailable queue as an error',async()=>{
  const e={...env(new Date().toISOString()),SUPABASE_ANON_KEY:'synthetic-anon-key'},original=globalThis.fetch;
- const request=()=>new Request('https://site.example.invalid/api/admin/notifications',{headers:{Authorization:'Bearer synthetic-staff-token'}});
+ const request=()=>new Request('https://site.example.invalid/api/admin/notifications',{headers:{Authorization:'Bearer fixture.'+Buffer.from(JSON.stringify({sub:actor,aal:'aal1'})).toString('base64url')+'.verified'}});
  try{
   let role='content',databaseCalls=0;
   globalThis.fetch=async(url)=>{const path=new URL(url).pathname;

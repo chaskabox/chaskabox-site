@@ -7,6 +7,12 @@ export async function notificationSQL() {
   return await readFile(new URL('./fixtures/notification-schema.sql', import.meta.url),'utf8') + '\n' +
     (await Promise.all(migrationFiles.map(f=>readFile(new URL('../database/migrations/'+f,import.meta.url),'utf8')))).join('\n');
 }
+export const syntheticTemplates=[
+ {name:'order_received_owner',channel:'email',subject:'Order {{order_number}}',body:'Received {{order_number}} {{total}}',is_active:true,version:1},
+ {name:'order_received_owner_whatsapp',channel:'whatsapp',body:'Received {{order_number}} {{total}}',is_active:true,version:1},
+ {name:'order_thankyou_customer',channel:'whatsapp',body:'Order {{order_number}} has been received.',is_active:true,version:1},
+ {name:'status_update',channel:'whatsapp',body:'Order {{order_number}} is {{status_text}}.',is_active:true,version:1}
+];
 export async function fixture() {
   const db=new PGlite();
   await db.exec(await readFile(new URL('./fixtures/notification-schema.sql',import.meta.url),'utf8'));
@@ -15,6 +21,8 @@ export async function fixture() {
     INSERT INTO notification_outbox(order_id,status) SELECT 'legacy-'||n,case when n<3 then 'retry' else 'pending' end FROM generate_series(1,3)n;
     INSERT INTO customer_notification_outbox(order_id,event_type,event_key,message) SELECT '${oldOrder}','order_status','legacy-customer-'||n,'Synthetic old message' FROM generate_series(1,16)n;`);
   await db.exec(await readFile(new URL('../database/migrations/'+migrationFiles.at(-1),import.meta.url),'utf8'));
+  await db.exec('ALTER TABLE notification_templates ADD COLUMN version int NOT NULL DEFAULT 1;');
+  await db.query('INSERT INTO notification_templates(name,channel,body,is_active) VALUES($1,$2,$3,true) ON CONFLICT(name) DO NOTHING',['order_received_owner_whatsapp','whatsapp','Synthetic {{order_number}}']);
   return db;
 }
 export async function activate(db) {
@@ -39,7 +47,8 @@ export function router(db,provider=()=>new Response(JSON.stringify({id:'syntheti
     if(u.pathname.startsWith('/rest/v1/rpc/'))data=await rpc(db,u.pathname.split('/').at(-1),JSON.parse(init.body||'{}'));
     else if(u.pathname==='/rest/v1/orders')data=(await db.query('select * from orders where id=$1',[u.searchParams.get('id').slice(3)])).rows;
     else if(u.pathname==='/rest/v1/order_items')data=(await db.query('select product_name,pack,quantity,unit_price from order_items where order_id=$1',[u.searchParams.get('order_id').slice(3)])).rows;
-    else if(u.pathname==='/rest/v1/notification_templates')data=(await db.query('select name,channel,subject,body,is_active from notification_templates')).rows;
+    else if(u.pathname==='/rest/v1/public_site_settings')data=[{key:'delivery_estimate',value:'Synthetic estimate'}];
+    else if(u.pathname==='/rest/v1/notification_templates')data=(await db.query('select name,channel,subject,body,is_active,version from notification_templates')).rows;
     else throw new Error('Unexpected synthetic route');
     return new Response(data===null?null:JSON.stringify(data));
   };

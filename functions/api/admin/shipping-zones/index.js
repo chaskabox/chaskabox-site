@@ -1,28 +1,8 @@
-/**
- * /api/admin/shipping-zones
- * GET — list. POST — create. PATCH /:id — update. DELETE /:id — delete.
- * Roles: owner, manager.
- */
-import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
-
-export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
-  const zones = await sb(context, '/rest/v1/shipping_zones?select=*&order=position.asc');
-  return json({ zones: zones || [] });
-});
-
-export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
-  const body = await readJson(context.request);
-  const name = String(body.name || '').trim();
-  if (!name) httpError('Zone name required', 400, 'invalid');
-  const row = {
-    name,
-    cities: Array.isArray(body.cities) ? body.cities : [],
-    fee: Number(body.fee) || 0,
-    free_above: body.free_above ? Number(body.free_above) : null,
-    is_active: body.is_active !== false,
-    position: Number(body.position) || 0,
-  };
-  const created = await sb(context, '/rest/v1/shipping_zones', { method: 'POST', body: row });
-  await audit(context, { actorId:user.id, actorRole:role, action:'shipping_zone.created', entityType:'shipping_zone', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ name } });
-  return json({ zone: Array.isArray(created) ? created[0] : created }, 201);
+import {withAdmin,sb,json,readJson} from '../_lib/auth.js';
+import {cmsMutate} from '../_lib/cms-mutate.js';
+import {businessInput} from '../_lib/business-input.js';
+export const onRequestGet=withAdmin(['owner','manager'],async c=>json({zones:await sb(c,'/rest/v1/shipping_zones?select=*&order=id.asc')}));
+export const onRequestPost=withAdmin(['owner','manager'],async(c,{user})=>{
+ const data=businessInput(await readJson(c.request),'zone',true);
+ const [row]=await cmsMutate(c,user,[{table:'shipping_zones',op:'insert',data}]);return json({zone:row},201);
 });

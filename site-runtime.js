@@ -6,6 +6,37 @@
  */
 (() => {
   'use strict';
+  const safeUrl=v=>typeof v==='string'&&/^(\/[^/]|\/$|https:\/\/|mailto:|tel:|#)[^\s"'<>]*$/.test(v);
+  window.applyStorefrontManifest=function(d){
+    if(Array.isArray(d.navigation)){
+      for(const [location,selector] of [['header','.hnav'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
+        document.querySelectorAll(selector).forEach(el=>{
+          el.replaceChildren();
+          for(const row of d.navigation.filter(r=>r.location===location&&r.is_enabled).sort((a,b)=>a.position-b.position)){
+            if(!safeUrl(row.url))continue;
+            const a=document.createElement('a');a.textContent=row.label;a.href=row.url;
+            if(row.is_external){a.target='_blank';a.rel='noopener noreferrer';}
+            if(row.parent_id)a.style.paddingInlineStart='24px';
+            if(location==='footer')a.style.display='block';el.append(a);
+          }
+        });
+      }
+    }
+    if(Array.isArray(d.navigation))document.querySelectorAll('footer .fwrap > div:nth-child(3)').forEach(el=>el.hidden=true);
+    const t=d.theme||{},style=document.getElementById('storefrontTheme')||document.createElement('style');
+    style.id='storefrontTheme';
+    const map={primary_color:['--navy','--primary'],accent_color:['--gold','--accent'],background_color:['--bg'],text_color:['--ink','--text']};
+    const tokens=[];
+    for(const [key,vars] of Object.entries(map))if(/^#[0-9a-f]{6}$/i.test(t[key]||''))for(const name of vars)tokens.push(name+':'+t[key]);
+    if(/^(?:[0-9]|1[0-9]|2[0-4])$/.test(t.border_radius||''))tokens.push('--radius:'+t.border_radius+'px');
+    style.textContent=':root{'+tokens.join(';')+'}';
+    if(['system-ui','Inter, system-ui','Georgia, serif',"'Segoe UI', system-ui"].includes(t.font_family))style.textContent+='body{font-family:'+t.font_family+'}';
+    document.head.append(style);
+    if(safeUrl(t.logo_url))document.querySelectorAll('.logo img,.logo-img').forEach(img=>img.src=t.logo_url);
+    if(safeUrl(t.favicon_url)){const link=document.querySelector('link[rel="icon"]');if(link)link.href=t.favicon_url;}
+    const section=(d.sections||[]).find(s=>s.section_key==='announcement_bar');
+    document.querySelectorAll('.promo').forEach(el=>{el.hidden=t.announcement_enabled==='false'||section?.enabled===false;if(t.announcement_text)el.textContent=t.announcement_text;});
+  };
   // Broken product image -> placeholder (capture phase catches <img> errors)
   document.addEventListener('error', function (e) {
     const t = e.target;
@@ -51,7 +82,7 @@
   }
   async function run(){
     try{
-      const r=await fetch('/api/storefront-config',{cache:'no-cache'});if(!r.ok)return;const d=await r.json();const s=d?.settings||{};
+      const r=await fetch('/api/storefront-config',{cache:'no-cache'});if(!r.ok)return;const d=await r.json();const s=d?.settings||{};window.applyStorefrontManifest(d);
       const phone=String(s.support_whatsapp||DEFAULT_PHONE).trim(), email=String(s.support_email||DEFAULT_EMAIL).trim(), address=String(s.store_address||DEFAULT_ADDRESS).trim(), promo=String(s.promo_text||'').trim();
       if(promo)document.querySelectorAll('.promo').forEach(el=>el.textContent=promo);
       replaceText(DEFAULT_PHONE,phone);replaceText(DEFAULT_EMAIL,email);replaceText(DEFAULT_ADDRESS,address);replaceCommerceText(s);

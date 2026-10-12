@@ -6,6 +6,7 @@
  * Max 200 ids per call. Each product change is audit-logged (product.visibility_changed, §5).
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
 const ALLOWED = new Set(['visible', 'hidden', 'draft']);
 
@@ -22,24 +23,7 @@ export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { u
   const cleanIds = [...new Set(ids.map((v) => String(v)))].filter((v) => v.length > 0 && v.length < 40);
   if (cleanIds.length === 0) httpError('no valid ids', 400, 'invalid_ids');
 
-  const beforeRows = await sb(
-    context,
-    `/rest/v1/products?id=in.(${cleanIds.map(encodeURIComponent).join(',')})&select=id,visibility,name`
-  );
-
-  const updated = await sb(
-    context,
-    `/rest/v1/products?id=in.(${cleanIds.map(encodeURIComponent).join(',')})`,
-    { method: 'PATCH', body: { visibility, updated_by: user.id } }
-  );
-
-  for (const p of beforeRows || []) {
-    await audit(context, {
-      actorId: user.id, actorRole: role, action: 'product.visibility_changed', // contract §5
-      entityType: 'product', entityId: p.id,
-      before: { visibility: p.visibility }, after: { visibility },
-    });
-  }
-
+  if(cleanIds.some(id=>!/^\d+$/.test(id)))httpError('Invalid product id',400,'invalid_ids');
+  const updated=await cmsMutate(context,user,cleanIds.map(id=>({table:'products',op:'update',id,data:{visibility,updated_by:user.id}})));
   return json({ updated: (updated || []).length, visibility, ids: cleanIds });
 });

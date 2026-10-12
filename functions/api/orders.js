@@ -92,6 +92,7 @@ async function createViaRpc(env, value, orderNumber) {
         payment_method: value.payment_method,
         transaction_reference: value.transaction_reference,
         customer_note: value.customer_note,
+        coupon_code: value.coupon_code,
         user_id: value.user_id || null,
       },
     });

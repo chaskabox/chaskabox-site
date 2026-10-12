@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout — ChaskaBox</title>
 <meta name="robots" content="noindex, follow">
-<link rel="stylesheet" href="/styles.css?v=7">
+<link rel="stylesheet" href="/styles.css?v=20261012-release?v=7">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
@@ -104,7 +104,7 @@
         <h2 id="summaryTitle" class="co-step-title">Order Summary</h2>
         <div id="coItems"></div>
         <div style="margin-top:10px">
-          <div class="sumrow"><span>Subtotal</span><span id="s_sub">Rs. 0</span></div>
+          <label for="f_coupon">Coupon (optional)</label><div class="field"><input id="f_coupon" maxlength="32" autocomplete="off" placeholder="Coupon code"><button type="button" class="btn secondary" id="applyCoupon">Apply</button></div><p id="quoteStatus" role="status" aria-live="polite">Enter your city to confirm delivery and total.</p><div class="sumrow"><span>Discount</span><span id="s_discount">Rs. 0</span></div><div class="sumrow"><span>Subtotal</span><span id="s_sub">Rs. 0</span></div>
           <div class="sumrow"><span>Delivery</span><span id="s_del">Rs. 0</span></div>
           <div class="sumrow total"><span>Total</span><span id="s_tot">Rs. 0</span></div>
         </div>
@@ -141,7 +141,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=4"></script>
 <script src="/analytics.js?v=1"></script>
-<script src="/account.js?v=1"></script>
+<script src="/account.js?v=20261012-release?v=1"></script>
 <script src="/checkout.js?v=7"></script>
 <div class="modal" id="acctmodal" role="dialog" aria-modal="true" aria-label="Account sign in" aria-hidden="true" onclick="if(event.target===this)closeAuthModal()">
   <div class="mbox acctbox"><button class="mclose" onclick="closeAuthModal()">✕</button><div id="abody"></div></div>

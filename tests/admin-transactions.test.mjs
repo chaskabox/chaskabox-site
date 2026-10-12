@@ -76,7 +76,7 @@ test('AAL2 claims are accepted only for the identity verified by Auth',async()=>
  try{
   globalThis.fetch=async()=>new Response(JSON.stringify({id:owner}),{status:200});
   assert.equal((await getUser(ctx(token(owner,'aal2')))).aal,'aal2');
-  assert.equal((await getUser(ctx(token(other,'aal2')))).aal,'aal1');
+  assert.equal(await getUser(ctx(token(other,'aal2'))),null);
   let denied;try{requireMfa(await getUser(ctx(token(owner,'aal1'))));}catch(e){denied=e;}
   assert.equal(denied.status,403);assert.equal((await denied.json()).error.code,'MFA_REQUIRED');
   globalThis.fetch=async()=>new Response('{}',{status:401});assert.equal(await getUser(ctx(token(owner,'aal2'))),null);

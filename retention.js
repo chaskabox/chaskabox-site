@@ -1,4 +1,4 @@
-/* ChaskaBox — PART 3: Retention features (all localStorage-first, degrade gracefully) */
+/* Local cart reminders. Unsupported rewards are explicitly paused. */
 (function(){
 'use strict';
 
@@ -7,13 +7,6 @@ function lsGet(k, d){ try{ const v = localStorage.getItem(k); return v==null ? d
 function lsSet(k, v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
 function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
 function todayStr(){ return new Date().toISOString().slice(0,10); }
-
-/* ---------- device id (for guest referral codes) ---------- */
-function deviceId(){
-  let id = lsGet('cb_device_id', null);
-  if(!id){ id = Math.random().toString(36).slice(2,8).toUpperCase(); lsSet('cb_device_id', id); }
-  return id;
-}
 
 /* ---------- slim dismissible banner (under header) ---------- */
 function showSlimBanner(html, id, opts){
@@ -70,7 +63,7 @@ function openCartNudge(){
     + '<button class="mclose" onclick="closeCartNudge()">✕</button>'
     + '<div class="nudge-emoji">🛒</div>'
     + '<h3>Bhool gaye? 😊</h3>'
-    + '<p>Aapki snack bag abhi bhi wait kar rahi hai!<br><small class="amut">Order complete karein — 4-7 din mein delivery.</small></p>'
+    + '<p>Aapki snack bag abhi bhi wait kar rahi hai!<br><small class="amut">Current price aur delivery fee checkout par confirm karein.</small></p>'
     + '<button class="abtn" onclick="closeCartNudge();openDrawer()">🛒 Complete Order</button>'
     + '<button class="alink" onclick="closeCartNudge()">Baad mein</button> '
     + '<button class="alink danger" onclick="if(confirm(\'Cart clear karein?\')){CART={};saveCart();}closeCartNudge()">Clear cart</button>'
@@ -83,119 +76,18 @@ window.closeCartNudge = function(){ const m=document.getElementById('cartnudge')
 /* Weekly pick is owned by app.js so a late retention init cannot replace
    its photo-eligible native product link with a separate renderer. */
 
-/* ============================================================
-   3. ONESIGNAL WEB PUSH — soft prompt after 2nd visit
-   (only fires when OneSignal is actually configured)
-   ============================================================ */
-var ONESIGNAL_APP_ID = ''; // Rameez: apni App ID yahan ya PUSH-SETUP.md ke mutabiq lagayein
-function oneSignalReady(){
-  return !!ONESIGNAL_APP_ID && typeof OneSignal !== 'undefined';
-}
-/* visit count is tracked in initRetention() below */
-function maybePushPrompt(){
-  if(!oneSignalReady()) return;
-  if(lsGet('cb_visits', 0) < 2) return;
-  if(lsGet('cb_push_asked','') === todayStr()) return;
-  // only ask if not already subscribed
+/* Rewards require verified ownership, server attribution/ledger, approved rules
+   and consent. None is operational. Old client-only codes/DOB are not retained. */
+window.CHASKABOX_REWARD_AVAILABILITY=Object.freeze({loyalty:false,referral:false,birthday:false,push:false});
+window.saveBirthday=window.copyReferral=window.shareReferralWA=window.enablePush=function(){return false;};
+function pauseUnsupportedRewards(){
+  for(const key of ['cb_birthday','cb_referral_code','cb_referred_by','cb_referrals','cb_device_id','cb_push_asked'])lsDel(key);
+  for(const id of ['retain-push','retain-bday0','retain-bday7'])document.getElementById(id)?.remove();
   try{
-    OneSignal.push(function(){
-      OneSignal.isPushNotificationsEnabled(function(enabled){
-        if(enabled) return;
-        lsSet('cb_push_asked', todayStr());
-        showSlimBanner('🔔 <b>Deals miss na karein!</b> Notifications on karein aur sale ki khabar sab se pehle payein.'
-          + ' <button class="alink" onclick="enablePush()">Enable</button>', 'push', {});
-      });
-    });
-  }catch(e){}
+    const url=new URL(location.href);
+    if(url.searchParams.has('ref')){url.searchParams.delete('ref');history.replaceState(null,'',url.pathname+url.search+url.hash);}
+  }catch{}
 }
-window.enablePush = function(){
-  if(!oneSignalReady()) return;
-  try{ OneSignal.push(function(){ OneSignal.showNativePrompt(); }); }catch(e){}
-  const b = document.getElementById('retain-push'); if(b) b.remove();
-};
-
-/* ============================================================
-   4. BIRTHDAY CLUB — 7 days before + on the day
-   Birthday stored in localStorage 'cb_birthday' (YYYY-MM-DD),
-   synced from account profile when logged in.
-   ============================================================ */
-function getBirthday(){ return lsGet('cb_birthday', ''); }
-function daysUntilBirthday(){
-  const b = getBirthday();
-  if(!b) return null;
-  const parts = b.split('-');
-  if(parts.length < 3) return null;
-  const now = new Date();
-  let next = new Date(now.getFullYear(), Number(parts[1])-1, Number(parts[2]));
-  if(next < new Date(now.getFullYear(), now.getMonth(), now.getDate())) next.setFullYear(next.getFullYear()+1);
-  return Math.round((next - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
-}
-function checkBirthday(){
-  const d = daysUntilBirthday();
-  if(d === null) return;
-  if(d === 0){
-    showSlimBanner('🎂 <b>Happy Birthday!</b> ChaskaBox ki taraf se bohat saari duaein — apna favourite snack box zaroor choose karein! 🎁', 'bday0', {cls:'bday'});
-  }else if(d <= 7){
-    showSlimBanner('🎂 <b>Birthday coming in '+d+' day'+(d>1?'s':'')+'!</b> Special gift tayyar hai — birthday par zaroor aayiyega! 🎁', 'bday7', {cls:'bday'});
-  }
-}
-window.saveBirthday = function(v){
-  if(!v) return;
-  lsSet('cb_birthday', v);
-};
-
-/* ============================================================
-   5. REFERRAL PROGRAM — unique code + WhatsApp share
-   ============================================================ */
-function getReferralCode(){
-  let code = lsGet('cb_referral_code', '');
-  if(code) return code;
-  let base = 'GUEST';
-  try{
-    if(typeof ACCT !== 'undefined' && ACCT.user && ACCT.user.email){
-      base = ACCT.user.email.split('@')[0].replace(/[^a-z0-9]/gi,'').toUpperCase().slice(0,5) || 'USER';
-    }else if(typeof ACCT !== 'undefined' && ACCT.user && ACCT.user.id){
-      base = String(ACCT.user.id).replace(/[^a-z0-9]/gi,'').toUpperCase().slice(-5) || 'USER';
-    }
-  }catch(e){}
-  if(base === 'GUEST' || base === 'USER') base += deviceId().slice(0,4);
-  code = 'CHASKA-' + base;
-  lsSet('cb_referral_code', code);
-  return code;
-}
-/* capture ?ref=CODE visits */
-function captureReferral(){
-  try{
-    const q = new URLSearchParams(location.search).get('ref');
-    if(!q) return;
-    const code = String(q).toUpperCase().slice(0,24);
-    if(!/^[A-Z0-9-]+$/.test(code)) return;
-    if(lsGet('cb_referred_by','')) return; // already attributed
-    lsSet('cb_referred_by', code);
-    const refs = lsGet('cb_referrals', {count:0, list:[]});
-    if(refs.list.indexOf(code) === -1){
-      refs.count += 1; refs.list.push(code);
-      lsSet('cb_referrals', refs);
-    }
-    // clean the URL (no reload)
-    history.replaceState(null, '', location.pathname + location.hash);
-  }catch(e){}
-}
-window.copyReferral = function(){
-  const code = getReferralCode();
-  const done = function(){ alert('Referral code copy ho gaya! 📋\n'+code); };
-  if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(code).then(done, function(){ prompt('Copy karein:', code); });
-  }else{ prompt('Copy karein:', code); }
-};
-window.shareReferralWA = function(){
-  const code = getReferralCode();
-  const msg = '🍬 ChaskaBox try karo — Pakistani snacks ghar baithe!\n'
-    + 'Mera referral code: *'+code+'*\n'
-    + 'Signup par is code se dono ko inaam! 🎁\n'
-    + 'https://chaskabox.online/?ref='+encodeURIComponent(code);
-  window.open('https://wa.me/?text='+encodeURIComponent(msg), '_blank');
-};
 
 /* ============================================================
    6. REORDER REMINDERS — 7 days after last order
@@ -230,15 +122,10 @@ window.reorderLast = function(){
    INIT
    ============================================================ */
 function initRetention(){
-  captureReferral();
-  // visit tracking (for push prompt)
-  const visits = lsGet('cb_visits', 0);
-  lsSet('cb_visits', visits + 1);
+  pauseUnsupportedRewards();
 
   checkAbandonedCart();
-  checkBirthday();
   checkReorderReminder();
-  maybePushPrompt();
 
   // track abandon when leaving the page with items in cart
   window.addEventListener('pagehide', markAbandon);

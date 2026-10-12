@@ -31,7 +31,7 @@ async function checkoutIdempotencyKey(payload) {
       name:String(payload.customer.name||'').trim(), phone:String(payload.customer.phone||'').replace(/\D/g,''),
       email:String(payload.customer.email||'').trim().toLowerCase(), address:String(payload.customer.address||'').trim(),
       city:String(payload.customer.city||'').trim(), country:String(payload.customer.country||'Pakistan').trim().toLowerCase()
-    }, payment_method:payload.payment_method,
+    }, coupon_code:payload.coupon_code||'',payment_method:payload.payment_method,
     transaction_reference:payload.transaction_reference||'', customer_note:payload.customer_note||''
   };
   const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(intent)));
@@ -89,6 +89,9 @@ async function init() {
     radio.addEventListener('change', e => setPay(e.target.value));
   });
   $('#placeBtn')?.addEventListener('click', placeOrder);
+  $('#f_city')?.addEventListener('input',()=>scheduleQuote());
+  $('#f_coupon')?.addEventListener('input',()=>scheduleQuote());
+  $('#applyCoupon')?.addEventListener('click',()=>refreshQuote().catch(e=>{if($('#quoteStatus'))$('#quoteStatus').textContent=e.message}));
   $('#copyBankBtn')?.addEventListener('click', copyBankAccount);
   $('#f_phone')?.addEventListener('blur', () => { $('#f_phone').value = normalizePhone($('#f_phone').value); });
 
@@ -161,6 +164,20 @@ function setPay(method) {
   renderSummary();
 }
 
+let quoteTimer,quoteSequence=0;
+function scheduleQuote(){clearTimeout(quoteTimer);quoteTimer=setTimeout(()=>refreshQuote().catch(e=>{if($('#quoteStatus'))$('#quoteStatus').textContent=e.message;}),350);}
+async function refreshQuote(){
+ const city=$('#f_city')?.value.trim();if(!city)throw new Error('Enter your delivery city to confirm the total.');
+ const seq=++quoteSequence,payload={items:Object.entries(CART).map(([id,qty])=>({product_id:Number(id),qty:Number(qty)})),payment_method:PAY,coupon_code:($('#f_coupon')?.value||'').trim().toUpperCase(),customer:{city,country:$('#f_country')?.value||'Pakistan'}};
+ if($('#quoteStatus'))$('#quoteStatus').textContent='Checking your total…';
+ const r=await fetch('/api/checkout-quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}),data=await r.json();
+ if(!r.ok||!data.quote)throw new Error(data.error?.message||'Could not confirm your total. Please retry.');
+ if(seq!==quoteSequence)throw new Error('Delivery details changed. Confirm the total again.');
+ const q=data.quote;$('#s_sub').textContent=fmt(q.subtotal);$('#s_del').textContent=fmt(q.delivery_fee);$('#s_tot').textContent=fmt(q.total);if($('#s_discount'))$('#s_discount').textContent=fmt(q.discount);
+ if($('#quoteStatus'))$('#quoteStatus').textContent='Total confirmed for '+city+'.';if($('#freeHint'))$('#freeHint').hidden=true;
+ return q;
+}
+
 function renderSummary() {
   const box = $('#coItems');
   if (!box) return;
@@ -173,6 +190,7 @@ function renderSummary() {
   $('#s_sub').textContent = fmt(sub);
   $('#s_del').innerHTML = del === 0 ? '<span class="free">FREE</span>' : fmt(del);
   $('#s_tot').textContent = fmt(sub + del);
+  scheduleQuote();
   const hint = $('#freeHint');
   if (!hint) return;
   if (isPrepaid() && sub < FREE_ABOVE) {
@@ -420,6 +438,7 @@ async function placeOrder() {
       city: $('#f_city').value.trim(),
       country: 'Pakistan'
     },
+    coupon_code:($('#f_coupon')?.value||'').trim().toUpperCase()||undefined,
     payment_method: PAY === 'cod' ? 'cod' : (PAY === 'jazzcash' ? 'jazzcash' : 'bank_transfer'),
     transaction_reference: reference,
     turnstile_token: turnstileToken,
@@ -431,6 +450,7 @@ async function placeOrder() {
     showOrderError('We could not prepare a safe checkout. Please allow browser storage for ChaskaBox and reload. Your bag has not been submitted.');
     placingOrder=false; btn.disabled=false; btn.textContent='Place Order →'; return;
   }
+  try {await refreshQuote();}catch(e){showOrderError(e.message,()=>placeOrder());placingOrder=false;btn.disabled=false;btn.textContent='Place Order →';return;}
   // Server-authoritative order creation. Cart is cleared ONLY on API success.
   const apiResult = await placeOrderViaAPI(apiPayload);
 

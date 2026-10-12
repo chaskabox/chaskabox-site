@@ -5,6 +5,7 @@
  * but historical order snapshots stay intact.
  */
 import { withAdmin, sb, json, httpError, audit } from '../../_lib/auth.js';
+import { cmsMutate } from '../../_lib/cms-mutate.js';
 
 export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (context, { user, role }) => {
   const id = context.params.id;
@@ -15,16 +16,6 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
   if (!p) httpError('Product not found', 404, 'not_found');
   if (p.visibility === 'archived') httpError('Product is already archived', 409, 'no_change');
 
-  const updated = await sb(context, `/rest/v1/products?id=eq.${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    body: { visibility: 'archived', updated_by: user.id },
-  });
-
-  await audit(context, {
-    actorId: user.id, actorRole: role, action: 'product.archived', // contract §5
-    entityType: 'product', entityId: p.id,
-    before: { visibility: p.visibility }, after: { visibility: 'archived' },
-  });
-
+  const updated=await cmsMutate(context,user,[{table:'products',op:'update',id,data:{visibility:'archived',updated_by:user.id}}]);
   return json({ product: updated && updated[0] });
 });

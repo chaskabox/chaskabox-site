@@ -22,8 +22,10 @@ export async function runNotifications(env, fetcher = fetch) {
         const order = (await privateRequest(env, '/rest/v1/orders?id=eq.' + encodeURIComponent(job.order_id) + '&select=id,order_number,customer_name,customer_phone,total,payment_method,payment_status&limit=1', undefined, fetcher))?.[0];
         if (!order) throw new Error('notification_order_missing');
         order.items = await privateRequest(env, '/rest/v1/order_items?order_id=eq.' + encodeURIComponent(job.order_id) + '&select=product_name,pack,quantity,unit_price&limit=100', undefined, fetcher);
-        const templates = await privateRequest(env, '/rest/v1/notification_templates?name=in.(order_received_owner,order_received_owner_whatsapp,order_thankyou_customer,status_update)&select=name,channel,subject,body,is_active&limit=4', undefined, fetcher);
-        try { payload = buildNotificationPayload(env, order, job, templates); }
+        const templates = await privateRequest(env, '/rest/v1/notification_templates?name=in.(order_received_owner,order_received_owner_whatsapp,order_thankyou_customer,status_update)&select=name,channel,subject,body,is_active,version&limit=4', undefined, fetcher);
+        const policyRows=await privateRequest(env,'/rest/v1/public_site_settings?key=in.(delivery_estimate,support_email,support_whatsapp)&select=key,value&limit=3',undefined,fetcher);
+        const policy=Object.fromEntries((policyRows||[]).map(r=>[r.key,r.value]));
+        try { payload = buildNotificationPayload({...env,NOTIFICATION_PUBLIC_POLICY:policy}, order, job, templates); }
         catch (error) {
           const saved = await rpc('notification_finish', { p_id: job.id, p_token: job.lease_token, p_status: 'blocked', p_error: error.message });
           if (!saved?.saved) throw new Error('notification_lease_lost'); counts[saved.status]++; continue;
@@ -50,6 +52,9 @@ export async function runNotifications(env, fetcher = fetch) {
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }); }
 export default {
   async scheduled(_controller, env, ctx) {
+    if(String(env.ANALYTICS_RETENTION_ENABLED)==='true'&&new Date(_controller.scheduledTime).getUTCMinutes()===0){
+      ctx.waitUntil(privateRequest(env,'/rest/v1/rpc/analytics_retention_run',{}).then(async result=>{console.log(JSON.stringify({event:'analytics_retention',...result}));const ai=await privateRequest(env,'/rest/v1/rpc/ai_maintenance_run',{});console.log(JSON.stringify({event:'ai_retention',...ai}));}));
+    }
     ctx.waitUntil(runNotifications(env).then(result => { console.log(JSON.stringify({ event: 'notification_run', ...result })); }));
   },
   async fetch(request, env) {

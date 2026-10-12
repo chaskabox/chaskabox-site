@@ -7,6 +7,7 @@
  * Body (DELETE): { "confirm": "<exact product name>" } typed confirmation.
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
 const VISIBILITIES = new Set(['draft', 'visible', 'hidden', 'archived']);
 const STOCK_STATES = new Set(['available', 'limited', 'unavailable', 'sourced_after_order']);
@@ -59,35 +60,7 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (
   const before = {};
   for (const k of Object.keys(patch)) before[k] = product[k];
 
-  // Save version snapshot before update (for history/revert)
-  try {
-    await sb(context, '/rest/v1/product_versions', {
-      method: 'POST',
-      body: {
-        product_id: product.id,
-        snapshot: product,
-        changed_by: user.email || user.id,
-        change_type: 'update',
-      },
-    });
-  } catch (e) { /* version save is best-effort */ }
-
-  const updated = await sb(context, `/rest/v1/products?id=eq.${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    body: patch,
-  });
-
-  const priceChanged = patch.price !== undefined && patch.price !== product.price;
-  const visibilityChanged = patch.visibility !== undefined && patch.visibility !== product.visibility;
-  // Contract §5 audit events; generic edits use the proposed 'product.updated' addition.
-  const action = priceChanged ? 'product.price_changed' : visibilityChanged ? 'product.visibility_changed' : 'product.updated';
-  await audit(context, {
-    actorId: user.id, actorRole: role,
-    action,
-    entityType: 'product', entityId: product.id,
-    before, after: patch,
-  });
-
+  const updated=await cmsMutate(context,user,[{table:'products',op:'update',id,data:patch,expected_updated_at:product.updated_at}]);
   return json({ product: updated && updated[0] });
 });
 
@@ -112,14 +85,6 @@ export const onRequestDelete = withAdmin(['owner'], async (context, { user, role
     httpError('Cannot permanently delete: product is a component of a Chaska Box. Remove it from the box first.', 409, 'referenced_by_bundle');
   }
 
-  await sb(context, `/rest/v1/products?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-
-  await audit(context, {
-    actorId: user.id, actorRole: role, action: 'product.deleted_permanent', // contract §5
-    entityType: 'product', entityId: product.id,
-    before: { id: product.id, name: product.name, slug: product.slug },
-    after: null,
-  });
-
+  await cmsMutate(context,user,[{table:'products',op:'delete',id,confirm:body.confirm}]);
   return json({ deleted: true, id: product.id });
 });

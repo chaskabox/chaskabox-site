@@ -1,23 +1,6 @@
-/**
- * /api/theme — public theme settings for storefront
- * Returns active design tokens. Cached.
- */
-export async function onRequestGet(context) {
-  const { env } = context;
-  const url = `${env.SUPABASE_URL}/rest/v1/theme_settings?select=key,value`;
-  try {
-    const res = await fetch(url, {
-      headers: { 'apikey': env.SUPABASE_SERVICE_ROLE_KEY, 'Authorization': `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}` },
-    });
-    const rows = await res.json();
-    const theme = {};
-    (rows || []).forEach(r => { theme[r.key] = r.value; });
-    return new Response(JSON.stringify({ theme }), {
-      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300' },
-    });
-  } catch (e) {
-    return new Response(JSON.stringify({ theme: {} }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+import {sbRequest} from './_lib/db.js';
+import {readableTheme} from './_lib/theme-contract.js';
+export async function onRequestGet({env}){
+ try{const rows=await sbRequest(env,'/theme_settings',{query:'?select=key,value'});const theme=readableTheme(Object.fromEntries(rows.map(r=>[r.key,r.value])));return new Response(JSON.stringify({theme}),{headers:{'Content-Type':'application/json','Cache-Control':'public,max-age=30'}});}
+ catch(e){return new Response(JSON.stringify({error:{code:'THEME_UNAVAILABLE',message:'Theme unavailable'}}),{status:503,headers:{'Content-Type':'application/json','Cache-Control':'no-store'}});}
 }

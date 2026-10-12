@@ -4,6 +4,7 @@
  * POST — create category. Roles: owner, manager, content.
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+import { cmsMutate } from '../_lib/cms-mutate.js';
 
 function slugify(s) {
   return String(s || '').toLowerCase().trim()
@@ -37,6 +38,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
 
 export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (context, { user, role }) => {
   const body = await readJson(context.request);
+  for(const key of ['is_visible','show_on_homepage','hide_if_empty','is_enabled','is_external','is_active'])if(body[key]!==undefined&&typeof body[key]!=='boolean')httpError(`${key} must be boolean`,400,'invalid_field');
   const name = String(body.name || '').trim();
   if (!name) httpError('name is required', 400, 'invalid_name');
 
@@ -60,10 +62,6 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
     assignment_rule: body.assignment_rule || {},
   };
 
-  const created = await sb(context, '/rest/v1/categories', {
-    method: 'POST',
-    body: row,
-  });
-  await audit(context, { actorId:user.id, actorRole:role, action:'category.created', entityType:'category', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ name, slug } });
+  const created=await cmsMutate(context,user,[{table:'categories',op:'insert',data:row}]);
   return json({ category: Array.isArray(created) ? created[0] : created }, 201);
 });
