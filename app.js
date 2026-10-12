@@ -1508,6 +1508,9 @@ document.addEventListener('keydown',event=>{
 
 /* ---------- init ---------- */
 document.addEventListener('DOMContentLoaded',async()=>{
+  // Render the initial HTML immediately. Slow catalogue/config APIs must not
+  // block the primary hero from being interactive or present to assistive tech.
+  // Dynamic lists still populate when both background fetches settle.
   fixMobileHeader();
   loadCart();
   try{await Promise.all([loadProducts(),loadStorefrontConfig().catch(()=>{})]);}
