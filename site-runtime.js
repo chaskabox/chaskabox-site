@@ -7,6 +7,7 @@
 (() => {
   'use strict';
   const safeUrl=v=>typeof v==='string'&&/^(\/[^/]|\/$|https:\/\/|mailto:|tel:|#)[^\s"'<>]*$/.test(v);
+  const logoSelector='.logo img,.logo-img', defaultLogo='/images/logo-navy.png';
   window.applyStorefrontManifest=function(d){
     if(Array.isArray(d.navigation)){
       for(const [location,selector] of [['header','.hnav'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
@@ -32,7 +33,11 @@
     style.textContent=':root{'+tokens.join(';')+'}';
     if(['system-ui','Inter, system-ui','Georgia, serif',"'Segoe UI', system-ui"].includes(t.font_family))style.textContent+='body{font-family:'+t.font_family+'}';
     document.head.append(style);
-    if(safeUrl(t.logo_url))document.querySelectorAll('.logo img,.logo-img').forEach(img=>img.src=t.logo_url);
+    document.querySelectorAll(logoSelector).forEach(img=>{
+      img.style.removeProperty('display');
+      delete img.dataset.imgFallback;
+      img.src=safeUrl(t.logo_url)?t.logo_url:defaultLogo;
+    });
     if(safeUrl(t.favicon_url)){const link=document.querySelector('link[rel="icon"]');if(link)link.href=t.favicon_url;}
     const section=(d.sections||[]).find(s=>s.section_key==='announcement_bar');
     document.querySelectorAll('.promo').forEach(el=>{el.hidden=t.announcement_enabled==='false'||section?.enabled===false;if(t.announcement_text)el.textContent=t.announcement_text;});
@@ -40,6 +45,12 @@
   // Broken product image -> placeholder (capture phase catches <img> errors)
   document.addEventListener('error', function (e) {
     const t = e.target;
+    // A failed CMS logo must restore the bundled branding, never hide it.
+    if(t && t.tagName==='IMG' && t.matches(logoSelector)){
+      t.style.removeProperty('display');
+      if(t.getAttribute('src')!==defaultLogo)t.src=defaultLogo;
+      return;
+    }
     if (t && t.tagName === 'IMG' && !t.dataset.imgFallback) {
       t.dataset.imgFallback = '1';
       const wrap = t.closest('.pimg, .pd-img, .pickimg, .dynamic-pd-img');
