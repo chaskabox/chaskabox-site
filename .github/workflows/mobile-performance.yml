@@ -16,6 +16,9 @@ jobs:
           node-version: '24'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Identify live CLS shift sources
+        continue-on-error: true
+        run: node tools/layout-shift-diagnostic.mjs
       - name: Production mobile Lighthouse baseline
         run: |
           mkdir -p perf-results
