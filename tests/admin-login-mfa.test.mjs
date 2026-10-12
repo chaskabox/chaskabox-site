@@ -58,7 +58,7 @@ function makeBrowser(){
   const code={value:'',focus(){}};
   const error={textContent:'',hidden:true};
   const submit={disabled:false,textContent:''};
-  const cancel={disabled:false};
+  const cancel={disabled:false,addEventListener(name,cb){listeners['cancel:'+name]=cb;}};
   const form={addEventListener(name,cb){listeners[name]=cb;}};
   const overlay={hidden:true,innerHTML:'',className:'',id:'',querySelector(sel){
     return {'#loginMfaFactor':select,'#loginMfaFactorLabel':{hidden:false},'#loginMfaCode':code,
