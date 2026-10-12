@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createServer } from 'node:net';
 import { createHash } from 'node:crypto';
+import { fileURLToPath } from 'node:url';
 import { createDatabaseArchive, verifyDatabaseArchive } from '../tools/database-backup.mjs';
 import { notificationSQL } from './notification-fixture.mjs';
 
@@ -22,6 +23,9 @@ async function freePort() {
 }
 function query(connection, sql) {
   return execFileSync(path.join(bin, 'psql'), ['-X', '-At', '-v', 'ON_ERROR_STOP=1', '--dbname', connection], { input:sql, encoding: 'utf8', timeout: 30_000 });
+}
+function queryFile(connection, file) {
+  return execFileSync(path.join(bin, 'psql'), ['-X', '-At', '-v', 'ON_ERROR_STOP=1', '--dbname', connection, '--file', file], { encoding: 'utf8', timeout: 30_000 });
 }
 async function fixture(mode, directory, processes) {
   const data = path.join(directory, mode);
@@ -186,7 +190,9 @@ test('native PostgreSQL 17 clean application baseline, role matrix, CMS rollback
   await new Promise((resolve,reject)=>{first.once('exit',code=>code===0?resolve():reject(new Error('First owner commit failed')));first.stdin.end('COMMIT;\n');});await completed;
   assert.equal(JSON.parse(secondOutput.split('\n').find(line=>line.startsWith('{'))).code,'LAST_OWNER');
   assert.equal(query(connection,"SELECT count(*) FROM admin_roles WHERE role='owner' AND active").trim(),'1');
-  const baseline=await readFile(new URL('../database/baseline/20261011_public.sql',import.meta.url),'utf8');
-  assert.throws(()=>query(connection,baseline),/Baseline requires an empty public schema/);
+  // File input preserves PostgreSQL's early rejection instead of an EPIPE from
+  // writing the rest of a large, intentionally rejected script to stdin.
+  const baseline=fileURLToPath(new URL('../database/baseline/20261011_public.sql',import.meta.url));
+  assert.throws(()=>queryFile(connection,baseline),/Baseline requires an empty public schema/);
  }finally{await Promise.all(processes.map(stop));await rm(directory,{recursive:true,force:true});}
 });
