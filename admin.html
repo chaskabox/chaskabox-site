@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>ChaskaBox Admin Console</title>
-<link rel="stylesheet" href="/admin.css?v=20261012-release?v=2">
+<link rel="stylesheet" href="/admin.css?v=20261012-staff-access-1">
 </head>
 <body>
 <!-- Auth bootstrap gate: visible until admin-live.js verifies the staff session.
@@ -60,11 +60,12 @@ setTimeout(function(){
       <button class="admin-nav-btn" data-view="health"><span>💚</span> System Health</button>
       <button class="admin-nav-btn" data-view="preview"><span>◉</span> Site Preview</button>
       <button class="admin-nav-btn" data-view="settings"><span>⚙</span> Store Settings</button>
-      <button class="admin-nav-btn" data-view="security"><span>🔐</span> Security & Audit</button>
+      <button class="admin-nav-btn" data-view="security"><span>🔐</span> Team &amp; Security</button>
     </nav>
     <div class="admin-sidebar-foot">
       <div class="backend-state warning" id="backendState"><span></span><b>Authentication required</b><small>Sign in with an approved staff account</small></div>
       <a href="/" target="_blank" rel="noopener">↗ Open live storefront</a>
+      <button type="button" id="adminSidebarSignOut" class="btn secondary" hidden>↪ Sign out</button>
     </div>
   </aside>
   <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
@@ -79,6 +80,8 @@ setTimeout(function(){
       <div class="admin-top-actions">
         <button class="btn secondary" id="globalPreviewBtn">Preview site</button>
         <button class="btn primary" id="quickAddProductBtn">+ Add product</button>
+        <span id="adminCurrentAccount" class="admin-current-account" hidden></span>
+        <button class="btn secondary" type="button" id="adminSignOut" hidden>Sign out</button>
       </div>
     </header>
 
@@ -415,7 +418,7 @@ setTimeout(function(){
       </section>
 
       <!-- SECURITY -->
-      <section class="admin-view" id="view-security" data-title="Security & Audit" data-subtitle="Admin authorization, destructive-action safety and activity history.">
+      <section class="admin-view" id="view-security" data-title="Team & Security" data-subtitle="Owner and staff permissions, MFA protection, sessions and audit history.">
         <div class="admin-grid two">
           <section class="panel">
             <div class="panel-head"><div><h2>Required production protection</h2></div></div>
@@ -629,6 +632,6 @@ setTimeout(function(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=4"></script>
 <script src="/admin.js?v=3" defer></script>
-<script src="/admin-live.js?v=20261012-release?v=5" defer></script>
+<script src="/admin-live.js?v=20261012-staff-access-1" defer></script>
 </body>
 </html>

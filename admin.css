@@ -144,3 +144,42 @@ html,body{overflow-x:clip}
 }
 .preview-fallback{background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:12px;margin-top:10px;text-align:center;font-size:13px}
 .preview-fallback a{color:var(--navy);font-weight:700}
+
+
+/* Team & Security: distinguish staff email, roles and account state. */
+.admin-current-account{align-self:center;max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:750;color:var(--muted)}
+.admin-top-actions #adminSignOut{color:var(--navy);background:#fff;border:1px solid var(--border);white-space:nowrap}
+.admin-sidebar-foot #adminSidebarSignOut{display:block;color:var(--navy);background:#eef2ff;border:1px solid #d4deee;border-radius:10px;padding:10px 12px;text-align:center;font-size:12px;font-weight:800;min-height:42px}
+.admin-sidebar-foot #adminSidebarSignOut[hidden],#adminSignOut[hidden],.admin-current-account[hidden]{display:none!important}
+.staff-invite-form{display:grid;grid-template-columns:minmax(200px,2fr) minmax(150px,1fr) auto;align-items:end;gap:10px;margin:18px 0 8px}
+.staff-invite-form label,.staff-access-row label{display:grid;gap:5px;font-size:11px;font-weight:750;color:var(--ink)}
+.staff-invite-form input,.staff-invite-form select,.staff-access-row select{background:#fff;border:1px solid var(--border);border-radius:9px;padding:10px;min-width:0;width:100%;color:var(--ink);font-size:13px}
+.staff-action-feedback{grid-column:1/-1;margin:0;color:#9a3412;font-size:11px}
+.staff-role-legend{border:1px solid var(--border);border-radius:11px;padding:10px 12px;margin:12px 0;font-size:12px}
+.staff-role-legend summary{font-weight:800;cursor:pointer}
+.staff-role-legend p{margin:7px 0;color:var(--muted)}
+.staff-access-row{display:grid!important;grid-template-columns:minmax(190px,1fr) minmax(135px,170px) 70px 140px!important;gap:12px!important;align-items:center!important;padding:12px 0!important}
+.staff-access-row .staff-identity{min-width:0}
+.staff-identity strong{display:block;font-size:13px;overflow-wrap:anywhere}
+.staff-identity small{display:block;margin-top:3px;color:var(--muted)}
+.staff-access-row .staff-active-label{display:flex;flex-direction:row;align-items:center;gap:8px}
+.staff-active-label input{width:18px;height:18px}
+.staff-row-actions{display:grid;gap:4px}
+.staff-row-actions button{min-width:115px}
+.staff-row-feedback{color:#9a3412;font-size:11px;overflow-wrap:anywhere}
+@media(max-width:1100px){.admin-current-account{display:none}}
+@media(max-width:900px){
+  .staff-invite-form{grid-template-columns:1fr 1fr}
+  .staff-invite-form button{grid-column:1/-1}
+  .staff-access-row{grid-template-columns:minmax(180px,1fr) minmax(140px,1fr)!important}
+}
+@media(max-width:767px){
+  .admin-topbar{flex-wrap:wrap}
+  .admin-top-actions{flex-wrap:wrap;justify-content:flex-end}
+  .admin-top-actions #globalPreviewBtn{display:none}
+  .admin-top-actions #adminSignOut{min-height:44px}
+  .staff-invite-form{grid-template-columns:1fr}
+  .staff-invite-form button{grid-column:auto}
+  .staff-access-row{grid-template-columns:1fr!important;gap:8px!important}
+  .staff-row-actions button{width:100%}
+}

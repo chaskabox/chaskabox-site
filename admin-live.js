@@ -30,6 +30,20 @@
   }
   window.chaskaAdminApi=api;
   function toast(msg){const el=$('#adminToast'); if(!el)return; el.textContent=msg;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2500);}
+
+  async function signOutAdmin(scope='local'){
+    if(scope==='global'&&!confirm('Sign out from all devices?'))return;
+    const buttons=['#adminSignOut','#adminSidebarSignOut'].map(selector=>$(selector)).filter(Boolean);
+    buttons.forEach(button=>button.disabled=true);
+    try{
+      const {error}=await SB.auth.signOut({scope});if(error)throw error;
+      location.assign('/admin/');
+    }catch(error){
+      toast('Sign out failed: '+(error.message||'Please retry'));
+      buttons.forEach(button=>button.disabled=false);
+    }
+  }
+
   function showLogin(message='Sign in with an approved staff account.'){
     hideBoot(); // bootstrap gate off — the login form is the only thing shown now
     let el=$('#liveAdminLogin'); if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);} el.hidden=false;
@@ -101,8 +115,8 @@
     }
     $('#backendState').className='backend-state'; $('#backendState').innerHTML=`<span></span><b>Live backend</b><small>${esc(me.role)} · authenticated</small>`;
     $('#securityNotice').className='security-notice live'; $('#securityNotice').innerHTML=`<strong>Live secure mode:</strong> authenticated as <b>${esc(me.role)}</b>. Every write is re-authorized server-side and audited.`;
-    const foot=$('.admin-sidebar-foot'); if(foot&&!$('#adminSignOut')) foot.insertAdjacentHTML('beforeend','<button class="text-btn" id="adminSignOut">Sign out</button>');
-    $('#adminSignOut')?.addEventListener('click',async()=>{await SB.auth.signOut();location.reload()});
+    const currentAccount=$('#adminCurrentAccount');if(currentAccount){currentAccount.textContent=me.user?.email||'Signed-in staff';currentAccount.hidden=false;}
+    for(const selector of ['#adminSignOut','#adminSidebarSignOut']){const button=$(selector);if(button){button.hidden=false;button.onclick=()=>signOutAdmin('local');}}
     wireNav(); wireOrderFilters(); wireLiveProductEditor(); wireHomepage(); wireMedia(); wireSettings(); wireBoxLive();
     hideBoot(); // session verified — reveal the console; views show their own loaders
     await Promise.allSettled([loadDashboard(),loadProducts()]);
@@ -407,29 +421,127 @@
     }
   }
 
+
+  const STAFF_PERMISSIONS={
+    owner:'All settings, staff, orders, payments and security',
+    manager:'Orders, products, customers, media and reports',
+    fulfilment:'Order fulfilment, payment review and notes',
+    content:'Products, homepage, media and catalogue content'
+  };
+
+  async function loadStaffAccess(){
+    const root=$('#staffAccessList');if(!root)return;
+    root.textContent='Loading team access…';
+    try{
+      const data=await api('/api/admin/staff');
+      const staff=Array.isArray(data.staff)?data.staff:[];
+      root.replaceChildren();
+      const summary=document.createElement('p');
+      summary.className='muted';
+      summary.textContent=staff.length+' assigned account(s). Select a role, change Active, then save. Permission changes require MFA.';
+      root.append(summary);
+
+      const form=document.createElement('form');
+      form.className='staff-invite-form';
+      form.setAttribute('aria-label','Grant staff access');
+      const emailLabel=document.createElement('label');emailLabel.textContent='Email address';
+      const email=document.createElement('input');email.type='email';email.required=true;email.maxLength=254;email.autocomplete='email';email.placeholder='person@example.com';
+      emailLabel.append(email);
+      const roleLabel=document.createElement('label');roleLabel.textContent='Access level';
+      const role=document.createElement('select');
+      for(const name of ['content','fulfilment','manager','owner']){
+        const option=document.createElement('option');option.value=name;
+        option.textContent=name.charAt(0).toUpperCase()+name.slice(1);
+        role.append(option);
+      }
+      roleLabel.append(role);
+      const grant=document.createElement('button');grant.type='submit';grant.className='btn primary';grant.textContent='Grant access / Send invite';
+      const feedback=document.createElement('p');feedback.className='staff-action-feedback';feedback.setAttribute('role','status');
+      form.append(emailLabel,roleLabel,grant,feedback);
+      root.append(form);
+      const explanation=document.createElement('p');explanation.className='muted';explanation.textContent='Existing users get access immediately. New users receive an email invitation; delivery must be confirmed separately.';
+      root.append(explanation);
+      form.addEventListener('submit',async event=>{
+        event.preventDefault();if(!form.reportValidity())return;
+        grant.disabled=true;grant.textContent='Saving…';feedback.textContent='';
+        try{
+          const result=await api('/api/admin/staff',{method:'POST',body:{email:email.value.trim(),role:role.value}});
+          feedback.textContent=result.message||'Access saved';
+          toast(result.invitation_requested?'Invitation requested':'Existing account access updated');
+          await loadStaffAccess();
+        }catch(error){feedback.textContent=error.message||'Access could not be saved';}
+        finally{grant.disabled=false;grant.textContent='Grant access / Send invite';}
+      });
+
+      const legend=document.createElement('details');legend.className='staff-role-legend';
+      const legendTitle=document.createElement('summary');legendTitle.textContent='What each access level allows';
+      legend.append(legendTitle);
+      for(const [name,description] of Object.entries(STAFF_PERMISSIONS)){
+        const item=document.createElement('p');item.textContent=name.charAt(0).toUpperCase()+name.slice(1)+': '+description;legend.append(item);
+      }
+      root.append(legend);
+
+      const listing=document.createElement('div');listing.className='staff-list';listing.setAttribute('aria-label','Current team members');
+      root.append(listing);
+      if(!staff.length){const empty=document.createElement('p');empty.textContent='No staff access assigned';listing.append(empty);}
+      for(const member of staff){
+        const row=document.createElement('div');row.className='staff-access-row';
+        const identity=document.createElement('div');identity.className='staff-identity';
+        const address=document.createElement('strong');address.textContent=member.email||'Account email unavailable';
+        const meta=document.createElement('small');
+        const isSelf=member.user_id===me?.user?.id;
+        meta.textContent=(member.invite_pending?'Invitation pending':'Account')+(isSelf?' · You':'');
+        identity.append(address,meta);
+        const memberRoleLabel=document.createElement('label');memberRoleLabel.textContent='Role';
+        const memberRole=document.createElement('select');memberRole.setAttribute('aria-label','Role for '+(member.email||'account'));
+        for(const name of ['owner','manager','fulfilment','content']){
+          const option=document.createElement('option');option.value=name;
+          option.textContent=name.charAt(0).toUpperCase()+name.slice(1);
+          option.selected=member.role===name;memberRole.append(option);
+        }
+        memberRoleLabel.append(memberRole);
+        const activeLabel=document.createElement('label');activeLabel.className='staff-active-label';
+        activeLabel.textContent='Active';
+        const active=document.createElement('input');active.type='checkbox';active.checked=Boolean(member.active);
+        active.setAttribute('aria-label','Active access for '+(member.email||'account'));activeLabel.append(active);
+        const save=document.createElement('button');save.type='button';save.className='btn secondary';save.textContent='Save access';
+        const resultLabel=document.createElement('small');resultLabel.className='staff-row-feedback';resultLabel.setAttribute('role','status');
+        const actions=document.createElement('div');actions.className='staff-row-actions';actions.append(save,resultLabel);
+        row.append(identity,memberRoleLabel,activeLabel,actions);listing.append(row);
+        save.onclick=async()=>{
+          if(memberRole.value===member.role && active.checked===Boolean(member.active)){
+            resultLabel.textContent='No changes to save';return;
+          }
+          const who=member.email||'this account';
+          if(!confirm('Update '+who+' to '+memberRole.value+' ('+(active.checked?'active':'disabled')+')?'))return;
+          save.disabled=true;resultLabel.textContent='Saving…';
+          try{
+            await api('/api/admin/staff',{method:'PATCH',body:{user_id:member.user_id,role:memberRole.value,active:active.checked}});
+            toast('Access updated for '+who);
+            await loadStaffAccess();
+          }catch(error){resultLabel.textContent=error.message||'Save failed';save.disabled=false;}
+        };
+      }
+    }catch(error){
+      root.textContent='Staff access unavailable: '+(error.message||'Please retry');
+      const retry=document.createElement('button');retry.type='button';retry.className='btn secondary';retry.textContent='Retry';
+      retry.onclick=loadStaffAccess;root.append(retry);
+    }
+  }
+
   async function loadSecurity(){
     const view=$('#view-security');if(!view)return;
     let ownerPanel='';
     if(roleAllows('owner')){
-      try{
-        const data=await api('/api/admin/staff');
-        ownerPanel=`<section class="panel"><h2>Staff access</h2><p>Owner-only changes require a verified authenticator session. The last active owner is protected.</p><div class="staff-list">${(data.staff||[]).map(u=>`<div><code>${esc(u.user_id)}</code><select data-staff-role="${esc(u.user_id)}" aria-label="Staff role">${['owner','manager','fulfilment','content'].map(role=>`<option ${role===u.role?'selected':''}>${role}</option>`).join('')}</select><label>Active <input type="checkbox" data-staff-active="${esc(u.user_id)}" ${u.active?'checked':''}></label><button class="btn secondary" data-staff-save="${esc(u.user_id)}">Save access</button></div>`).join('')}</div><h3>Invite staff</h3><div class="form-two"><label>Email<input id="staffEmail" type="email"></label><label>Role<select id="staffRole"><option>content</option><option>fulfilment</option><option>manager</option><option>owner</option></select></label></div><button class="btn primary" id="inviteStaff">Send invite</button></section>`;
-      }catch(e){ownerPanel=`<section class="panel"><p>Staff list unavailable: ${esc(e.message)}</p></section>`;}
+      ownerPanel='<section class="panel"><h2>Team & Staff Access</h2><p>Manage both owners and every staff email here. Role changes require MFA. The last active owner is protected.</p><div id="staffAccessList">Loading team access…</div></section>';
     }
     if(roleAllows('owner','manager')){
       try{const data=await api('/api/admin/audit?per_page=50');ownerPanel+=`<section class="panel"><h2>Recent audit history</h2><div class="history-list">${(data.events||[]).map(a=>`<div><b>${esc(a.action)}</b><small>${fmtDate(a.created_at)} · ${esc(a.actor_role)}</small></div>`).join('')||'<p>No audit events.</p>'}</div></section>`;}catch(e){ownerPanel+=`<section class="panel"><p>Audit history unavailable: ${esc(e.message)}</p></section>`;}
     }
     view.innerHTML=ownerPanel+`<section class="panel" style="margin-top:16px"><h2>Authenticator and recovery</h2><p>Verify your session before saving changes, exporting orders or downloading a backup.</p><div id="mfaSection">Loading…</div><p>Keep a second verified authenticator on a separate device. If all factors are lost, contact another active owner and follow the documented identity verification process. A password reset does not remove MFA.</p></section><section class="panel" style="margin-top:16px"><h2>Sessions</h2><button class="btn danger" id="signOutAllBtn">Sign out all devices</button></section>`;
-    $('#inviteStaff')?.addEventListener('click',async()=>{try{await api('/api/admin/staff',{method:'POST',body:{email:$('#staffEmail').value.trim(),role:$('#staffRole').value}});toast('Staff invite sent and access saved');await loadSecurity();}catch(e){toast(e.message);}});
-    $$('[data-staff-save]',view).forEach(button=>button.onclick=async()=>{
-      const id=button.dataset.staffSave;
-      const role=$$('[data-staff-role]',view).find(x=>x.dataset.staffRole===id).value;
-      const active=$$('[data-staff-active]',view).find(x=>x.dataset.staffActive===id).checked;
-      if(!confirm('Save this staff access change?'))return;
-      button.disabled=true;
-      try{await api('/api/admin/staff',{method:'PATCH',body:{user_id:id,role,active}});toast('Staff access updated');await loadSecurity();}catch(e){toast(e.message);button.disabled=false;}
-    });
-    $('#signOutAllBtn').onclick=async()=>{if(!confirm('Sign out from all devices?'))return;const {error}=await SB.auth.signOut({scope:'global'});if(error){toast(error.message);return;}location.reload();};
+    if(roleAllows('owner')) await loadStaffAccess();
+    $('#signOutAllBtn').onclick=()=>signOutAdmin('global');
+    const localSignOut=document.createElement('button');localSignOut.type='button';localSignOut.className='btn secondary';localSignOut.textContent='Sign out this device';localSignOut.onclick=()=>signOutAdmin('local');$('#signOutAllBtn').before(localSignOut);
     await loadMFAStatus();
   }
 
