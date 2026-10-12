@@ -66,8 +66,8 @@
 <div id="mnav" class="mnav" role="dialog" aria-label="Shop menu" aria-hidden="true" inert><div class="mnav-head"><b>Shop ChaskaBox</b><button class="mclose" aria-label="Close menu" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
 
 <main id="main">
-<div id="view-home"></div>
-<template id="tpl-home">
+<!-- Serve the homepage hero and sections in the initial HTML to avoid late layout shifts. -->
+<div id="view-home">
   <section class="hero">
     <div class="herowrap">
       <div class="herotxt">
@@ -162,7 +162,6 @@
   </section>
 </div>
 
-</template>
 <div id="view-shop" style="display:none">
   <div class="crumbs"><a href="/">Home</a> <span>›</span> <b id="crumbCat">All Snacks</b></div>
   <div class="catbanner"><h1 id="catTitle">All Snacks</h1><span class="catcount" id="catCount">249 products</span></div>

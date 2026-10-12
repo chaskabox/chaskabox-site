@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'tools/seo-live-audit.mjs'
+      - 'index.html'
       - '.github/workflows/seo-live-validation.yml'
   workflow_dispatch:
 permissions:
@@ -26,6 +27,10 @@ jobs:
         continue-on-error: true
         run: |
           npx --yes lighthouse@12.8.2 https://chaskabox.online/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=seo-audit/lighthouse-home-mobile.json --quiet
+      - name: Lighthouse mobile SEO preview homepage (lab)
+        continue-on-error: true
+        run: |
+          npx --yes lighthouse@12.8.2 https://c0bc801a.chaskabox-site.pages.dev/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=seo-audit/lighthouse-preview-home-mobile.json --quiet
       - name: Lighthouse mobile live product (lab)
         continue-on-error: true
         run: |
@@ -33,7 +38,7 @@ jobs:
       - name: Show available Lighthouse results
         if: always()
         run: |
-          node --input-type=module -e "import fs from 'node:fs'; for(const p of ['seo-audit/lighthouse-home-mobile.json','seo-audit/lighthouse-product-mobile.json']){if(!fs.existsSync(p)){console.log(p,'unavailable');continue;}const x=JSON.parse(fs.readFileSync(p));console.log(JSON.stringify({file:p,url:x.finalDisplayedUrl,performance:x.categories?.performance?.score,seo:x.categories?.seo?.score,labLCP:x.audits?.['largest-contentful-paint']?.numericValue,labCLS:x.audits?.['cumulative-layout-shift']?.numericValue,labTBT:x.audits?.['total-blocking-time']?.numericValue}));}"
+          node --input-type=module -e "import fs from 'node:fs'; for(const p of ['seo-audit/lighthouse-home-mobile.json','seo-audit/lighthouse-product-mobile.json','seo-audit/lighthouse-preview-home-mobile.json']){if(!fs.existsSync(p)){console.log(p,'unavailable');continue;}const x=JSON.parse(fs.readFileSync(p));console.log(JSON.stringify({file:p,url:x.finalDisplayedUrl,performance:x.categories?.performance?.score,seo:x.categories?.seo?.score,labLCP:x.audits?.['largest-contentful-paint']?.numericValue,labCLS:x.audits?.['cumulative-layout-shift']?.numericValue,labTBT:x.audits?.['total-blocking-time']?.numericValue}));}"
       - name: Upload audit results
         if: always()
         uses: actions/upload-artifact@v4
