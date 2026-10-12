@@ -544,6 +544,21 @@ function showView(v){
 }
 
 /* ---------- Route renderers ---------- */
+const SEO_CATEGORY_DATA = {"biscuits-and-wafers":{"name":"Biscuits & Wafers","title":"Biscuits & Wafers Online | ChaskaBox Pakistan","description":"Buy biscuits & wafers online in Pakistan from ChaskaBox. Explore original snack brands and compare pack sizes before ordering.","intro":"Browse biscuits, wafer packs and tea-time treats, including Mayfair varieties. Check the listed pack size and current price for each product; ChaskaBox confirms availability when sourcing your order."},"bunties-and-cakes":{"name":"Bunties & Cakes","title":"Bunties & Cakes Online | ChaskaBox Pakistan","description":"Shop bunties, cakes and sweet snacks online in Pakistan. Explore pack sizes and delivery details at ChaskaBox.","intro":"Explore cakes, bunties and individually packed sweet treats for school, guests or tea breaks. Compare the pack counts and prices shown on each ChaskaBox product page."},"chews-and-gums":{"name":"Chews & Gums","title":"Chews & Gums Online | ChaskaBox Pakistan","description":"Explore chews, chewing gums and chewy sweets in Pakistan at ChaskaBox with clear pack sizes and prices.","intro":"Browse chewing gum, fruity chews and other chewy snacks from the ChaskaBox catalogue. Product pages show pack sizes, prices and how to order."},"chocolates-and-candies":{"name":"Chocolates & Candies","title":"Chocolates & Candies Online | ChaskaBox Pakistan","description":"Buy chocolates and candies online in Pakistan at ChaskaBox. Browse candy packs and chocolate treats by brand and pack size.","intro":"Explore chocolate treats, candies and assorted sweet packs from Pakistani snack brands. Use product pages to check what is included and compare prices before placing your order."},"imli-and-ice-lollies":{"name":"Imli & Ice Lollies","title":"Imli & Ice Lollies Online | ChaskaBox Pakistan","description":"Browse imli, sour sweets and ice lollies online in Pakistan at ChaskaBox. Find your preferred flavors and pack sizes.","intro":"Discover tangy imli snacks, sour treats and ice-lolly style sweets in the ChaskaBox catalogue. Check individual listings for packaging, format and current order details."},"jellies-and-marshmallow":{"name":"Jellies & Marshmallow","title":"Jellies & Marshmallow Online | ChaskaBox Pakistan","description":"Shop jellies and marshmallow snacks online in Pakistan. Compare sweet varieties and packs at ChaskaBox.","intro":"Explore colorful jellies, chewy sweets and marshmallow packs, including popular Pakistani snack brands. Browse individual product listings for the pack quantity and current price."},"snacks-and-nimco":{"name":"Snacks & Nimco","title":"Snacks & Nimco Online | ChaskaBox Pakistan","description":"Buy nimco and savory Pakistani snacks online at ChaskaBox. Browse spicy, salty and crunchy snack packs.","intro":"Find salty, spicy and crunchy Pakistani snacks, including nimco-style mixes and packaged savory treats. Compare pack sizes and prices, then order your favorites for delivery in Pakistan."},"betel-nuts-and-pan-masala":{"name":"Betel Nuts & Pan Masala","title":"Betel Nuts & Pan Masala | ChaskaBox Pakistan","description":"Explore listed betel nut and pan masala products at ChaskaBox. Review packaging and product information before ordering.","intro":"Browse ChaskaBox's betel-nut and pan-masala catalogue listings. Read individual product information and packaging details before placing an order."},"shop":{"name":"All Snacks","title":"Pakistani Snacks Online | ChaskaBox","description":"Browse Pakistani snacks online at ChaskaBox: biscuits, nimco, candies, jellies, cakes and snack boxes with delivery across Pakistan.","intro":"Explore the ChaskaBox catalogue of Pakistani sweets and savory snacks. Filter by category, pack size and price; each product page has its current order information."},"bundles":{"name":"Chaska Boxes","title":"Chaska Boxes — Snack Bundles | ChaskaBox","description":"Explore ChaskaBox snack bundles online in Pakistan. Compare box contents, pack sizes and prices before ordering.","intro":"Browse Chaska Boxes for gifting, family snack tables and everyday cravings. Check the contents and current price of each bundle before ordering."}};
+function setCategorySeoCopy(data){
+  const target=document.getElementById('categorySeoIntro');
+  if(!target) return;
+  target.textContent=data?.intro||'';
+  target.hidden=!data?.intro;
+}
+function setCategoryBreadcrumb(name, path){
+  let script=document.getElementById('category-breadcrumb-schema');
+  if(!script){script=document.createElement('script');script.id='category-breadcrumb-schema';script.type='application/ld+json';document.head.appendChild(script);}
+  script.textContent=JSON.stringify({'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[
+    {'@type':'ListItem',position:1,name:'Home',item:'https://chaskabox.online/'},
+    {'@type':'ListItem',position:2,name:name,item:'https://chaskabox.online'+path},
+  ]});
+}
 function setMetaRobots(noindex){
   let m=document.querySelector('meta[name="robots"]');
   if(!m){ m=document.createElement('meta'); m.name='robots'; document.head.appendChild(m); }
@@ -562,6 +577,7 @@ function setPageMeta(title,path,noindex,description){
     setMetaTag('name','twitter:image','https://chaskabox.online/images/logo-navy.png');
   }
   if(!normalizePath(path||'/').startsWith('/brand/'))document.getElementById('brandBreadcrumbSchema')?.remove();
+  if(!normalizePath(path||'/').startsWith('/category/') && normalizePath(path||'/')!=='/shop/' && normalizePath(path||'/')!=='/bundles/')document.getElementById('category-breadcrumb-schema')?.remove();
   const canonical='https://chaskabox.online'+normalizePath(path||'/');
   let c=document.querySelector('link[rel="canonical"]');
   if(!c){ c=document.createElement('link'); c.rel='canonical'; document.head.appendChild(c); }
@@ -583,7 +599,9 @@ function renderHomeRoute(){
   loadStorefrontConfig().then(applyHomeCms);
 }
 function renderShopRoute(){
-  setPageMeta('Shop Pakistani Snacks | ChaskaBox','/shop/',false,'Browse Pakistani snacks by category, brand and price at ChaskaBox.');
+  setPageMeta(SEO_CATEGORY_DATA.shop.title,'/shop/',false,SEO_CATEGORY_DATA.shop.description);
+  setCategorySeoCopy(SEO_CATEGORY_DATA.shop);
+  setCategoryBreadcrumb('All Snacks','/shop/');
   shopState.cat='';
   const urlQ=new URLSearchParams(location.search).get('q'); if(urlQ!==null) shopState.q=urlQ;
   const params=new URLSearchParams(location.search);
@@ -593,7 +611,9 @@ function renderShopRoute(){
   renderShopContent();
 }
 function renderBundlesRoute(){
-  setPageMeta('Chaska Boxes — Snack Bundles | ChaskaBox','/bundles/',false,'Curated Chaska Boxes for gifting, cravings and easy snack shopping.');
+  setPageMeta(SEO_CATEGORY_DATA.bundles.title,'/bundles/',false,SEO_CATEGORY_DATA.bundles.description);
+  setCategorySeoCopy(SEO_CATEGORY_DATA.bundles);
+  setCategoryBreadcrumb('Chaska Boxes','/bundles/');
   shopState.cat='Bundles';
   showView('shop');
   renderShopContent();
@@ -750,7 +770,10 @@ function setBrandBreadcrumbSchema(brand){
 function renderCategoryRoute(slug){
   const catName=CATEGORY_SLUGS[slug];
   if(!catName){ render404('/category/'+slug+'/'); return; }
-  setPageMeta(catName+' | ChaskaBox','/category/'+slug+'/',false,'Shop '+catName+' from ChaskaBox.');
+  const seo=SEO_CATEGORY_DATA[slug];
+  setPageMeta(seo?.title||catName+' | ChaskaBox','/category/'+slug+'/',false,seo?.description||'Shop '+catName+' from ChaskaBox.');
+  setCategorySeoCopy(seo);
+  setCategoryBreadcrumb(catName,'/category/'+slug+'/');
   shopState.cat=catName;
   showView('shop');
   renderShopContent();
