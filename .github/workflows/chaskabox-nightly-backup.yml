@@ -64,7 +64,7 @@ jobs:
             --env PGCONNECT_TIMEOUT=30 \
             --volume "$PWD/backup:/backup" \
             postgres:17-bookworm \
-            bash -ec 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file="$1"' -- backup-dump "/backup/${filename}"
+            bash -ec 'pg_dump "$DATABASE_URL" --format=custom --no-owner --no-privileges --file="$1"' backup-dump "/backup/${filename}"
 
           test -s "backup/${filename}" || { echo "::error::Database dump is empty."; exit 1; }
           docker run --rm \
