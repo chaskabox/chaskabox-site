@@ -130,7 +130,7 @@ function renderHomeContent(){
   for(const p of candidates){if(!heroPicks.some(x=>x.category===p.category))heroPicks.push(p);if(heroPicks.length===3)break;}
   for(const p of candidates){if(heroPicks.length===3)break;if(!heroPicks.includes(p))heroPicks.push(p);}
   const hi=$('#heroCollage');
-  if(hi){hi.innerHTML=heroPicks.map((p,i)=>`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}" loading="eager" decoding="async" class="hc${i+1}">`).join('');const wrap=hi.closest('.heroimg');if(wrap)wrap.hidden=!heroPicks.length;}
+  if(hi){hi.innerHTML=heroPicks.map((p,i)=>`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}" width="150" height="150" loading="${i===0?'eager':'lazy'}" fetchpriority="${i===0?'high':'low'}" decoding="async" class="hc${i+1}">`).join('');const wrap=hi.closest('.heroimg');if(wrap)wrap.hidden=!heroPicks.length;}
   // Curated homepage shelves: fast discovery without dumping the full catalogue
   shelfSeq=0;
   let html='';
@@ -511,7 +511,7 @@ function applyHomeCms(){
     for(const sel of sels){
       const el=document.querySelector(sel); if(!el) continue;
       el.hidden=row.enabled===false;
-      if(key!=='announcement_bar')el.style.order=String(row.position*10);
+      if(key!=='announcement_bar')el.style.order=key==='hero'?'-100':String(row.position*10);
       const cfg=row.config||{};if(key==='hero'){const link=el.querySelector('.hero-actions a');if(link){if(cfg.button_text!==undefined)link.textContent=cfg.button_text;if(cfg.button_url&&/^(\/[^/]|https:\/\/)/.test(cfg.button_url))link.href=cfg.button_url;}}
       if(row.heading!==null&&row.heading!==undefined){const h=el.querySelector('h1,h2');if(h)h.textContent=row.heading;}
       if(row.subheading!==null&&row.subheading!==undefined){const text=el.querySelector('p,.freshdesc');if(text)text.textContent=row.subheading;}
@@ -601,7 +601,8 @@ function renderHomeRoute(){
   showView('home');
   renderHomeContent();
   applyHomeCms();
-  loadStorefrontConfig().then(()=>{renderHomeContent();applyHomeCms();});
+  // The initial route already awaited storefront configuration; avoid a second
+  // fetch and a destructive re-render of images/shelves in the first viewport.
 }
 function renderShopRoute(){
   setPageMeta(SEO_CATEGORY_DATA.shop.title,'/shop/',false,SEO_CATEGORY_DATA.shop.description);
