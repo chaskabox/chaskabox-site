@@ -46,6 +46,7 @@
 
   function showLogin(message='Sign in with an approved staff account.'){
     hideBoot(); // bootstrap gate off — the login form is the only thing shown now
+    const challenge=$('#liveAdminMfa');if(challenge)challenge.hidden=true;
     const mfaOverlay=$('#liveAdminMfa');if(mfaOverlay)mfaOverlay.hidden=true;
     let el=$('#liveAdminLogin'); if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);} el.hidden=false;
     el.innerHTML=`<form class="live-login-card" id="liveLoginForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Staff sign in</h1><p>${esc(message)}</p><label>Email<input id="liveEmail" type="email" autocomplete="username" required></label><label>Password<input id="livePassword" type="password" autocomplete="current-password" required></label><div id="liveLoginError" class="live-error" hidden></div><div id="liveLoginMsg" class="live-msg" hidden></div><button class="btn primary" type="submit">Sign in</button><a href="#" id="forgotPwLink" class="text-btn">Forgot password?</a><a href="/" class="text-btn">← Storefront</a></form>`;
