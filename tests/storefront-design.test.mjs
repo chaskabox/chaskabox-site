@@ -9,7 +9,7 @@ const shell=await readFile(new URL('../index.html',import.meta.url),'utf8');
 const retention=await readFile(new URL('../retention.js',import.meta.url),'utf8');
 function browser({reduced=false,observer=false}={}){
  const nodes=new Map(),listeners={},media={matches:reduced,addEventListener(type,fn){this.changed=fn}},history=[];
- const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,style:{removeProperty(){},setProperty(){}},classList:{s:new Set(),add(x){this.s.add(x)},remove(x){this.s.delete(x)},contains(x){return this.s.has(x)},toggle(){}},querySelectorAll(){return[];},closest(){return null;},setAttribute(){},focus(){}});return nodes.get(id);};
+ const node=id=>{if(!nodes.has(id))nodes.set(id,{innerHTML:'',textContent:'',hidden:false,style:{removeProperty(){},setProperty(){}},classList:{s:new Set(),add(x){this.s.add(x)},remove(x){this.s.delete(x)},contains(x){return this.s.has(x)},toggle(){}},querySelectorAll(){return[];},closest(){return null;},setAttribute(){},removeAttribute(){},focus(){}});return nodes.get(id);};
  const doc={hidden:false,body:node('body'),documentElement:node('html'),activeElement:null,getElementById:node,querySelector:s=>s.startsWith('#')?node(s.slice(1)):null,querySelectorAll:s=>s.includes('.reveal')?[node('reveal')]:[],addEventListener(type,fn){(listeners[type]??=[]).push(fn);}};
  const ctx={console,URL,URLSearchParams,setTimeout:()=>0,clearTimeout(){},matchMedia:()=>media,location:{pathname:'/shop/',origin:'https://fixture.invalid',search:'',hash:''},history:{pushState(a,b,url){history.push(url)},replaceState(a,b,url){history.push(url)}},document:doc,localStorage:{getItem(){return null}},CHASKABOX_LOCAL_PHOTOS:[...LOCAL_PHOTOS],addEventListener(){},scrollTo(){}};
  if(observer)ctx.IntersectionObserver=class{constructor(fn){this.callback=fn;}observe(){}unobserve(){}disconnect(){ctx.disconnected=true;}};
@@ -43,6 +43,12 @@ test('late retention initialization preserves the photo-eligible native weekly-p
  const before=b.node('weeklyPick').innerHTML;assert.match(before,/href="\/product\/27\/"/);assert.ok(!before.includes('showProductDetail'));
  vm.runInContext(retention,b.ctx);assert.equal(b.node('weeklyPick').innerHTML,before);
 });
+test('navigating away and back preserves the server-rendered homepage hero',()=>{
+ const b=browser();
+ b.node('view-home').innerHTML='<section class="hero"><h1>Bachpan Ka Zaiqa</h1></section>';
+ b.run('closeFilters=()=>{};closeMnav=()=>{};showView("shop");showView("home");');
+ assert.match(b.node('view-home').innerHTML,/Bachpan Ka Zaiqa/);
+});
 test('leaving a product route clears its schema and updates share metadata',()=>{
  const b=browser();let removed=false;
  b.ctx.document.querySelector=s=>b.node(s);b.node('product-schema').remove=()=>{removed=true};b.node('brandBreadcrumbSchema').remove=()=>{};
@@ -53,7 +59,7 @@ test('leaving a product route clears its schema and updates share metadata',()=>
 const product={id:272,visibility:'visible',name:'Fixture </script><script>alert(1)</script> Snack',price:650,category:'Snacks & Nimco',pack:'Fixture pack',image_url:'https://fixture.invalid/photo.png',description:'Fixture <b>description</b>'};
 function context(slug='272'){return {params:{slug:[slug]},request:new Request('https://fixture.invalid/product/'+slug+'/'),env:{SUPABASE_URL:'https://db.fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async()=>new Response(shell)}}};}
 test('new database products receive one canonical, safe SEO JSON and the shared site shell',async()=>{
- const original=globalThis.fetch;try{globalThis.fetch=async url=>{assert.match(String(url),/visibility=eq.visible/);return new Response(JSON.stringify([product]));};const r=await onRequestGet(context());assert.equal(r.status,200);const html=await r.text();assert.match(html,/id="view-product">/);assert.match(html,/Rs. 650/);assert.match(html,/id="current-product"/);assert.equal((html.match(/rel="canonical"/g)||[]).length,1);assert.ok(!html.includes('</script><script>alert(1)</script>'));const json=html.match(/<script type="application\/ld\+json" id="product-schema">([\s\S]*?)<\/script>/)[1];assert.equal(JSON.parse(json).name,product.name);assert.equal(JSON.parse(json).offers.priceCurrency,'PKR');assert.ok(!('aggregateRating' in JSON.parse(json)));}finally{globalThis.fetch=original;}
+ const original=globalThis.fetch;try{globalThis.fetch=async url=>{assert.match(String(url),/visibility=eq.visible/);return new Response(JSON.stringify([product]));};const r=await onRequestGet(context());assert.equal(r.status,200);const html=await r.text();assert.match(html,/id="view-product">/);assert.match(html,/id="view-home" style="display:none" hidden inert aria-hidden="true"/);assert.match(html,/Rs. 650/);assert.match(html,/id="current-product"/);assert.equal((html.match(/rel="canonical"/g)||[]).length,1);assert.ok(!html.includes('</script><script>alert(1)</script>'));const json=html.match(/<script type="application\/ld\+json" id="product-schema">([\s\S]*?)<\/script>/)[1];assert.equal(JSON.parse(json).name,product.name);assert.equal(JSON.parse(json).offers.priceCurrency,'PKR');assert.ok(!('aggregateRating' in JSON.parse(json)));}finally{globalThis.fetch=original;}
 });
 test('hidden, missing and invalid product routes fail closed with actual 404 responses',async()=>{
  const original=globalThis.fetch;try{globalThis.fetch=async()=>new Response(JSON.stringify([{...product,visibility:'hidden'}]));assert.equal((await onRequestGet(context())).status,404);globalThis.fetch=async()=>new Response('[]');assert.equal((await onRequestGet(context())).status,404);globalThis.fetch=async()=>{throw Error('Invalid id must not query');};assert.equal((await onRequestGet(context('not-an-id'))).status,404);}finally{globalThis.fetch=original;}

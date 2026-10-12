@@ -526,8 +526,8 @@ function showView(v){
     // Only active route content is in DOM; inactive views are cleared
     // (SEO: prevents multiple H1s; a11y: screen readers skip cleared content)
     if(!active){
-      // Preserve shop/account/cart shells (JS re-renders them), clear home static content
-      if(name==='home') el.innerHTML='';
+      // Hide inactive views without destroying the homepage's server-rendered hero.
+      // The same DOM must work when navigating Home -> Shop -> Home.
       el.style.display='none';
       el.setAttribute('hidden','');
       el.setAttribute('aria-hidden','true');
