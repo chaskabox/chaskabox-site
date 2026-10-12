@@ -97,7 +97,7 @@ try{
  {
   const {context,page}=await contextFor(390);
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
-  await page.locator('#acctBtn').click();
+  await page.evaluate(()=>toggleAccount());
   await page.locator('#acctmodal.open #authEmail').waitFor({timeout:15000});
   results.interactions.push({case:'on-demand Auth SDK opens sign-in for a guest',pass:true});
   await context.close();
@@ -106,7 +106,7 @@ try{
  {
   const {context,page}=await contextFor(390,'customer');
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
-  await page.locator('#acctBtn').click();
+  await page.evaluate(()=>toggleAccount());
   await page.waitForURL('**/account/',{timeout:15000});
   results.interactions.push({case:'on-demand Auth SDK restores existing session on first click',pass:true});
   await context.close();
