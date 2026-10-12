@@ -115,7 +115,7 @@
     }
     $('#backendState').className='backend-state'; $('#backendState').innerHTML=`<span></span><b>Live backend</b><small>${esc(me.role)} · authenticated</small>`;
     $('#securityNotice').className='security-notice live'; $('#securityNotice').innerHTML=`<strong>Live secure mode:</strong> authenticated as <b>${esc(me.role)}</b>. Every write is re-authorized server-side and audited.`;
-    const currentAccount=$('#adminCurrentAccount');if(currentAccount){currentAccount.textContent=me.email||'Signed-in staff';currentAccount.hidden=false;}
+    const currentAccount=$('#adminCurrentAccount');if(currentAccount){currentAccount.textContent=me.user?.email||'Signed-in staff';currentAccount.hidden=false;}
     for(const selector of ['#adminSignOut','#adminSidebarSignOut']){const button=$(selector);if(button){button.hidden=false;button.onclick=()=>signOutAdmin('local');}}
     wireNav(); wireOrderFilters(); wireLiveProductEditor(); wireHomepage(); wireMedia(); wireSettings(); wireBoxLive();
     hideBoot(); // session verified — reveal the console; views show their own loaders
@@ -489,7 +489,7 @@
         const identity=document.createElement('div');identity.className='staff-identity';
         const address=document.createElement('strong');address.textContent=member.email||'Account email unavailable';
         const meta=document.createElement('small');
-        const isSelf=member.user_id===me?.id;
+        const isSelf=member.user_id===me?.user?.id;
         meta.textContent=(member.invite_pending?'Invitation pending':'Account')+(isSelf?' · You':'');
         identity.append(address,meta);
         const memberRoleLabel=document.createElement('label');memberRoleLabel.textContent='Role';
