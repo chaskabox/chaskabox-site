@@ -907,6 +907,17 @@
       toast('Category deleted'); closeCategoryEditor(); loadCategories();
     }catch(e){toast(e.message);}
   }
+
+  async function openAdminOperation(kind,endpoint,method,defaults,reload){
+    if(!window.chaskaAdminOpsForms)return toast('Admin form unavailable: reload the page');
+    try{
+      const payload=await window.chaskaAdminOpsForms.show(kind,defaults||{});
+      if(!payload)return;
+      await api(endpoint,{method,body:payload});
+      toast('Saved successfully');await reload();
+    }catch(e){toast('Save failed: '+(e.message||'Unexpected error'));}
+  }
+
   function wireCategoryEditor(){
     document.querySelectorAll('[data-close-cat-modal]').forEach(b=>b.addEventListener('click',closeCategoryEditor));
     $('#refreshCategories')?.addEventListener('click',()=>loadCategories());
@@ -920,31 +931,11 @@
     $('#refreshAnalytics')?.addEventListener('click',()=>loadAnalytics());
     initBackup();
     $('#refreshCoupons')?.addEventListener('click',()=>loadCoupons());
-    $('#addCouponBtn')?.addEventListener('click',()=>{
-      const code=prompt('Coupon code (e.g. CHASKA10):'); if(!code?.trim()) return;
-      const type=prompt('Type: percent or fixed','percent'); if(!['percent','fixed'].includes(type)) return;
-      const value=prompt(type==='percent'?'Discount % (max 90):':'Discount Rs.:'); if(!value) return;
-      const min=prompt('Minimum order Rs. (0 for none):','0');
-      api('/api/admin/coupons',{method:'POST',body:{code, discount_type:type, discount_value:Number(value), min_order:Number(min)||0}})
-        .then(()=>{toast('Coupon created');loadCoupons();}).catch(e=>toast(e.message));
-    });
+    $('#addCouponBtn')?.addEventListener('click',()=>openAdminOperation('coupon','/api/admin/coupons','POST',{discount_type:'percent',min_order:0},loadCoupons));
     $('#refreshShipping')?.addEventListener('click',()=>loadShipping());
-    $('#addZoneBtn')?.addEventListener('click',()=>{
-      const name=prompt('Zone name:'); if(!name?.trim()) return;
-      const fee=prompt('Delivery fee Rs.:','300'); if(fee===null) return;
-      const freeAbove=prompt('Free delivery above Rs. (blank for none):','');
-      api('/api/admin/shipping-zones',{method:'POST',body:{name:name.trim(), fee:Number(fee)||0, free_above:freeAbove?Number(freeAbove):null}})
-        .then(()=>{toast('Zone added');loadShipping();}).catch(e=>toast(e.message));
-    });
+    $('#addZoneBtn')?.addEventListener('click',()=>openAdminOperation('zone','/api/admin/shipping-zones','POST',{fee:300},loadShipping));
     $('#resolutionStatusFilter')?.addEventListener('change',()=>loadResolutions());
-    $('#addResolutionBtn')?.addEventListener('click',()=>{
-      const issue_type=prompt('Issue type (refund/replacement/complaint/damaged/missing_item/late_delivery/other):','complaint');
-      if(!issue_type) return;
-      const description=prompt('Describe the issue:'); if(!description) return;
-      const order_number=prompt('Order number (optional):')||null;
-      const customer_name=prompt('Customer name (optional):')||null;
-      api('/api/admin/resolutions',{method:'POST',body:{issue_type,description,order_number,customer_name}}).then(()=>{toast('Case created');loadResolutions();}).catch(e=>toast(e.message));
-    });
+    $('#addResolutionBtn')?.addEventListener('click',()=>openAdminOperation('resolution','/api/admin/resolutions','POST',{issue_type:'complaint'},loadResolutions));
     $('#saveThemeBtn')?.addEventListener('click',async()=>{
       try{await api('/api/admin/theme',{method:'PUT',body:{settings:collectTheme()}});toast('Theme saved');}catch(e){toast(e.message);}
     });
@@ -1310,17 +1301,16 @@
           </div>
         </div>`).join('');
       el.querySelectorAll('[data-res-status]').forEach(b=>b.onclick=async()=>{
-        const [id,st]=b.dataset.resStatus.split('|');
-        await api(`/api/admin/resolutions/${id}`,{method:'PATCH',body:{status:st}});
-        toast('Case updated'); loadResolutions();
+        b.disabled=true;
+        try{
+          const [id,status]=b.dataset.resStatus.split('|');
+          if(status==='rejected'&&!confirm('Reject the case without issuing a refund?'))return;
+          await api('/api/admin/resolutions/'+encodeURIComponent(id),{method:'PATCH',body:{status}});
+          toast('Case updated');await loadResolutions();
+        }catch(e){toast('Update failed: '+e.message);}finally{b.disabled=false;}
       });
-      el.querySelectorAll('[data-res-resolve]').forEach(b=>b.onclick=async()=>{
-        const id=b.dataset.resResolve;
-        const resolution=prompt('Resolution details:'); if(!resolution) return;
-        const refund=prompt('Refund amount (Rs., 0 if none):','0');
-        await api(`/api/admin/resolutions/${id}`,{method:'PATCH',body:{status:'resolved',resolution,refund_amount:Number(refund)||0}});
-        toast('Case resolved'); loadResolutions();
-      });
+      el.querySelectorAll('[data-res-resolve]').forEach(b=>b.onclick=()=>openAdminOperation(
+        'resolve','/api/admin/resolutions/'+encodeURIComponent(b.dataset.resResolve),'PATCH',{refund_amount:0},loadResolutions));
     }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
 
@@ -1383,20 +1373,30 @@
             ${c.valid_until?`<span>·</span><span>Until ${new Date(c.valid_until).toLocaleDateString()}</span>`:''}
           </div>
           <div class="box-actions">
+            <button class="btn secondary compact" data-edit-coupon="${c.id}">Edit</button>
             <button class="btn secondary compact" data-toggle-coupon="${c.id}">${c.is_active?'Disable':'Enable'}</button>
-            <button class="btn danger compact" data-del-coupon="${c.id}">Delete</button>
+            ${roleAllows("owner")?`<button class="btn danger compact" data-del-coupon="${c.id}">Delete</button>`:""}
           </div>
         </div>`).join('');
+      el.querySelectorAll('[data-edit-coupon]').forEach(b=>b.onclick=()=>{
+        const c=coupons.find(c=>String(c.id)===b.dataset.editCoupon);
+        if(c)openAdminOperation('coupon','/api/admin/coupons/'+encodeURIComponent(c.id),'PATCH',c,loadCoupons);
+      });
       el.querySelectorAll('[data-toggle-coupon]').forEach(b=>b.onclick=async()=>{
-        const id=b.dataset.toggleCoupon;
-        const c=coupons.find(x=>String(x.id)===String(id));
-        await api(`/api/admin/coupons/${id}`,{method:'PATCH',body:{is_active:!c.is_active}});
-        toast('Coupon updated'); loadCoupons();
+        b.disabled=true;
+        try{
+          const c=coupons.find(c=>String(c.id)===b.dataset.toggleCoupon);
+          if(!c)throw new Error('Coupon not found');
+          await api('/api/admin/coupons/'+encodeURIComponent(c.id),{method:'PATCH',body:{is_active:!c.is_active}});
+          toast('Coupon updated');await loadCoupons();
+        }catch(e){toast('Coupon update failed: '+e.message);}finally{b.disabled=false;}
       });
       el.querySelectorAll('[data-del-coupon]').forEach(b=>b.onclick=async()=>{
-        if(!confirm('Delete this coupon?')) return;
-        await api(`/api/admin/coupons/${b.dataset.delCoupon}`,{method:'DELETE'});
-        toast('Coupon deleted'); loadCoupons();
+        if(!roleAllows('owner'))return toast('Only Owners can delete coupons');
+        if(!confirm('Permanently delete coupon? Historical orders remain unchanged.'))return;
+        b.disabled=true;
+        try{await api('/api/admin/coupons/'+encodeURIComponent(b.dataset.delCoupon),{method:'DELETE'});toast('Coupon deleted');await loadCoupons();}
+        catch(e){toast('Coupon delete failed: '+e.message);}finally{b.disabled=false;}
       });
     }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
@@ -1420,7 +1420,7 @@
         </div>`).join('');
       el.querySelectorAll('[data-toggle-zone]').forEach(b=>b.onclick=async()=>{try{const z=zones.find(x=>String(x.id)===b.dataset.toggleZone);await api('/api/admin/shipping-zones/'+z.id,{method:'PATCH',body:{is_active:!z.is_active}});await loadShipping();}catch(e){toast(e.message)}});
       el.querySelectorAll('[data-delete-zone]').forEach(b=>b.onclick=async()=>{if(!confirm('Delete this shipping zone?'))return;try{await api('/api/admin/shipping-zones/'+b.dataset.deleteZone,{method:'DELETE'});await loadShipping();}catch(e){toast(e.message)}});
-      el.querySelectorAll('[data-edit-zone]').forEach(b=>b.onclick=async()=>{const z=zones.find(x=>String(x.id)===b.dataset.editZone);const fee=prompt('Delivery fee in PKR:',z.fee);if(fee===null)return;const cities=prompt('Cities separated by commas (empty = all cities):',z.cities.join(', '));if(cities===null)return;const threshold=prompt('Prepaid free-delivery threshold (empty = none):',z.free_above??'');if(threshold===null)return;try{await api('/api/admin/shipping-zones/'+z.id,{method:'PATCH',body:{fee:Number(fee),cities:cities.split(',').map(x=>x.trim()).filter(Boolean),free_above:threshold===''?null:Number(threshold)}});await loadShipping();}catch(e){toast(e.message)}});
+      el.querySelectorAll('[data-edit-zone]').forEach(b=>b.onclick=()=>{const z=zones.find(x=>String(x.id)===b.dataset.editZone);if(z)openAdminOperation('zone','/api/admin/shipping-zones/'+encodeURIComponent(z.id),'PATCH',z,loadShipping);});
     }catch(e){el.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
 
