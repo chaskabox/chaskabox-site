@@ -151,10 +151,13 @@ export function requireMfa(user) {
   if(user?.aal!=='aal2') httpError('Verify your authenticator in Security before this action.',403,'mfa_required');
 }
 
-export function needsAdminMfa(request) {
+export function needsAdminMfa(request, role=null) {
   const method=request.method.toUpperCase();
   const path=new URL(request.url).pathname.replace(/\/+$/,'');
-  return !['GET','HEAD','OPTIONS'].includes(method) ||
+  // Owners have access to privileged customer and operational data even on GET.
+  // Only the minimal /me identity endpoint remains usable at AAL1 for onboarding.
+  return (role==='owner' && path!=='/api/admin/me') ||
+    !['GET','HEAD','OPTIONS'].includes(method) ||
     path==='/api/admin/backup' || path==='/api/admin/orders/export.csv';
 }
 
@@ -172,7 +175,7 @@ export function withAdmin(allowedRoles, handler) {
     try {
       const auth = await requireRole(context, allowedRoles);
       const method = (context.request.method || 'GET').toUpperCase();
-      if(needsAdminMfa(context.request)) await requireLiveMfa(context,auth.user);
+      if(needsAdminMfa(context.request,auth.role)) await requireLiveMfa(context,auth.user);
       if (method !== 'GET' && method !== 'HEAD' && method !== 'OPTIONS') {
         const rl = await distributedRateLimit(context, `admin:${auth.user.id}`, 120, 120);
         if (!rl.allowed) {
