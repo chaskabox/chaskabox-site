@@ -255,17 +255,19 @@ test('consumer plus signed receipt handlers update the real synthetic database; 
 });
 test('admin notification center enforces staff roles and reports an unavailable queue as an error',async()=>{
  const e={...env(new Date().toISOString()),SUPABASE_ANON_KEY:'synthetic-anon-key'},original=globalThis.fetch;
- const request=()=>new Request('https://site.example.invalid/api/admin/notifications',{headers:{Authorization:'Bearer fixture.'+Buffer.from(JSON.stringify({sub:actor,aal:'aal1'})).toString('base64url')+'.verified'}});
+ const request=(aal='aal1')=>new Request('https://site.example.invalid/api/admin/notifications',{headers:{Authorization:'Bearer fixture.'+Buffer.from(JSON.stringify({sub:actor,aal,session_id:'00000000-0000-4000-8000-000000000010'})).toString('base64url')+'.verified'}});
  try{
   let role='content',databaseCalls=0;
   globalThis.fetch=async(url)=>{const path=new URL(url).pathname;
    if(path==='/auth/v1/user')return new Response(JSON.stringify({id:actor,email:'fixture@example.invalid'}));
    if(path==='/rest/v1/admin_roles')return new Response(JSON.stringify([{role}]));
+   if(path==='/rest/v1/rpc/admin_session_check')return Response.json(true);
    databaseCalls++;return new Response(JSON.stringify({message:'synthetic queue unavailable'}),{status:503});
   };
   assert.equal((await adminNotifications({request:new Request('https://site.example.invalid/api/admin/notifications'),env:e})).status,401);
   assert.equal((await adminNotifications({request:request(),env:e})).status,403);assert.equal(databaseCalls,0);
-  role='owner';const response=await adminNotifications({request:request(),env:e});assert.equal(response.status,502);assert.ok((await response.json()).error);
+  role='owner';assert.equal((await adminNotifications({request:request(),env:e})).status,403);
+  const response=await adminNotifications({request:request('aal2'),env:e});assert.equal(response.status,502);assert.ok((await response.json()).error);
  }finally{globalThis.fetch=original;}
 });
 test('paused manual run and scheduled handler perform no external I/O and return explicit paused state',async()=>{
