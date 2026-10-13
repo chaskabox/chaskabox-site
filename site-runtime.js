@@ -23,7 +23,7 @@
         });
       }
     }
-    if(Array.isArray(d.navigation))document.querySelectorAll('footer .fwrap > div:nth-child(3)').forEach(el=>el.hidden=true);
+    document.querySelectorAll('footer .fwrap > div:nth-child(3)').forEach(el=>el.hidden=false);
     const t=d.theme||{},style=document.getElementById('storefrontTheme')||document.createElement('style');
     style.id='storefrontTheme';
     const map={primary_color:['--navy','--primary'],accent_color:['--gold','--accent'],background_color:['--bg'],text_color:['--ink','--text']};

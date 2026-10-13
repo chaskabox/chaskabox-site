@@ -44,6 +44,29 @@ jobs:
       - run: node node_modules/playwright-core/cli.js install --with-deps chromium
       - name: Actual source browser and accessibility acceptance with synthetic data
         run: npm run test:browser
+      - name: Save synthetic browser acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: consolidated-browser-acceptance
+          path: test-results/browser/
+          retention-days: 7
+          compression-level: 0
+      - name: Install pinned live audit tool
+        if: github.ref == 'refs/heads/main'
+        run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund lighthouse@12.8.2
+      - name: Audit the deployed checked source on mobile
+        if: github.ref == 'refs/heads/main'
+        env:
+          AUDIT_BASE_URL: https://chaskabox.online
+        run: node tools/live-lighthouse-audit.mjs
+      - name: Save read-only live mobile audit results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: live-mobile-audit
+          path: test-results/live-mobile/
+          retention-days: 7
   secrets:
     runs-on: ubuntu-24.04
     timeout-minutes: 5

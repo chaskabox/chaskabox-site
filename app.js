@@ -12,6 +12,8 @@ function assetUrl(src){ if(!src) return ''; if(/^(https?:|data:|blob:|\/)/i.test
 
 /* ---------- data ---------- */
 async function loadProducts(){
+  try{const initial=JSON.parse(document.getElementById('current-catalogue')?.textContent||'null');if(Array.isArray(initial)&&initial.every(p=>Number.isSafeInteger(Number(p.id))&&typeof p.name==='string')){PRODUCTS=initial;return;}}catch{}
+
   let lastError=null;
   let seed=null;try{seed=JSON.parse(document.getElementById('current-product')?.textContent||'null');}catch{}
   for(const url of [seed?'/api/products?fresh=1':'/api/products','/products.json']){
@@ -45,7 +47,7 @@ function bundleFanHTML(p){
 }
 function cardHTML(p){
   const src=hasPhoto(p)?assetUrl(p.img):'';
-  const img=src?`<img src="${esc(src)}" alt="${esc(p.name)}" loading="lazy">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
+  const img=src?`<img src="${esc(src)}" alt="${esc(p.name)}" loading="lazy" width="300" height="300" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'SALE':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="savepill">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
@@ -57,7 +59,7 @@ function cardHTML(p){
     <div class="pbody">
       ${catlabel}
       <a class="pname" href="${href}">${esc(p.name)}</a>
-      <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Individual product photos shown · see contents</small>':''}
+      <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
       <button class="addcart" ${p.stockState==='unavailable'?'disabled':''} aria-label="Add ${esc(p.name)} to bag" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">Add to Bag</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
@@ -151,7 +153,7 @@ function renderHomeContent(){
   if(wp){
     const pick=sale[0]||picks[0]||actImg[0];
     if(pick){
-      wp.innerHTML=`<a class="pickcard" href="${productHref(pick.id)}"><div class="pickimg"><img src="${esc(assetUrl(pick.img||''))}" alt="${esc(pick.name)}" loading="lazy"></div><div class="pickinfo"><div class="picktag">${esc((pick.category||'ChaskaBox').toUpperCase())}</div><b>${esc(pick.name)}</b><div class="pickprice">${fmt(pick.price)}</div><span class="alink">View snack →</span></div></a>`;
+      wp.innerHTML=`<a class="pickcard" href="${productHref(pick.id)}"><div class="pickimg"><img src="${esc(assetUrl(pick.img||''))}" alt="${esc(pick.name)}" loading="lazy" width="300" height="300" decoding="async"></div><div class="pickinfo"><div class="picktag">${esc((pick.category||'ChaskaBox').toUpperCase())}</div><b>${esc(pick.name)}</b><div class="pickprice">${fmt(pick.price)}</div><span class="alink">View snack →</span></div></a>`;
     } else wp.innerHTML='';
   }
   observeReveals();
@@ -354,7 +356,7 @@ function shopSearchKey(event){
   else if(event.key==='Escape'&&box){box.hidden=true;shopSuggestIndex=-1;}
 }
 let smartSearchSeq=0, smartSearchTimer;
-function serverProductToLocal(p){return {id:Number(p.id),name:p.name||'',category:p.category||'',brand:p.brand||'',pack:p.pack||'',price:Number(p.price||0),oldPrice:(p.old_price??p.oldPrice)==null?null:Number(p.old_price??p.oldPrice),desc:p.description??p.desc??'',badge:p.badge||'',img:p.image_url??p.img??'',photoNote:p.image_warning??p.photoNote??'',stockState:p.stock_state??p.stockState??'sourced_after_order',bundle:!!(p.is_bundle??p.bundle)};}
+function serverProductToLocal(p){return {id:Number(p.id),name:p.name||'',category:p.category||'',brand:p.brand||'',pack:p.pack||'',price:Number(p.price||0),oldPrice:(p.old_price??p.oldPrice)==null?null:Number(p.old_price??p.oldPrice),desc:p.description??p.desc??'',badge:p.badge||'',img:p.image_url??p.img??'',photoNote:p.image_warning??p.photoNote??'',stockState:p.stock_state??p.stockState??'sourced_after_order',bundle:!!(p.is_bundle??p.bundle),seoTitle:p.seo_title??p.seoTitle??'',seoDescription:p.seo_description??p.seoDescription??'',bundleContents:p.bundle_contents??p.bundleContents??[],retailValue:p.bundle_retail_value??p.retailValue??null,bundleSavings:p.bundle_savings??p.bundleSavings??null,bundleNote:p.bundle_warning??p.bundleNote??''};}
 async function renderSmartSearchResults(query,seq){
   try{
     try{ sessionStorage.setItem('cb_last_search',query); }catch(e){}
@@ -421,7 +423,8 @@ function closeModal(){$('#pmodal').classList.remove('open');$('#pmodal').setAttr
 /* ---------- product detail page ---------- */
 function renderProductDetail(id){
   const p=PRODUCTS.find(x=>x.id===id); if(!p){render404(location.pathname);return;}
-  const img=hasPhoto(p)?`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
+  setProductMeta(p);
+  const img=hasPhoto(p)?`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}" width="600" height="600" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'Sale':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="pdsave">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
@@ -441,15 +444,19 @@ function renderProductDetail(id){
         <div class="pd-brand">${esc(getBrand(p))}</div>
         <div class="pd-price"><span class="price" style="font-size:26px">${fmt(p.price)}</span>${old}${save}</div>
         <div class="ppack" style="margin-bottom:10px">${esc(p.pack||'')}</div>
+
         <p class="pd-desc">${esc(p.desc||'Product details are being updated. Contact ChaskaBox if you need ingredient or allergen information before ordering.')}</p>
         <div class="pd-buyrow">
           <div class="qty"><button onclick="pdQty(-1)" aria-label="Decrease quantity">−</button><b id="pdqty">1</b><button onclick="pdQty(1)" aria-label="Increase quantity">+</button></div>
           <button class="pdbtn" ${p.stockState==='unavailable'?'disabled':''} onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">${p.stockState==='unavailable'?'Currently unavailable':'Add to Bag'}</button>
           <button class="pdwish${typeof isWished==='function'&&isWished(p.id)?' on':''}" aria-label="Add ${esc(p.name)} to wishlist" onclick="toggleWishlist(${p.id},this)">♥</button>
         </div>
+        <dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||'ChaskaBox')}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack||'See listed contents')}</dd></div><div><dt>Availability</dt><dd>${p.stockState==='sourced_after_order'?'Sourced after order; confirmed before fulfilment':p.stockState==='unavailable'?'Currently unavailable':'See current order details'}</dd></div></dl>
+        ${bundleContentsHTML(p)}
         <div class="dbox"><b>Estimated delivery</b><small>Pakistan-wide delivery window<br><span class="ddates">${deliveryRange()}</span></small></div>
         <div class="pd-meta"><span>🚚 COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery</span><span>Delivery fees confirmed at checkout for your city</span><span>✅ Original sealed packs</span></div>
-        <div class="product-help"><b>Need ingredients or allergen details?</b><span>Message ChaskaBox on WhatsApp before ordering. If an item becomes unavailable, we will contact you before any substitution.</span></div>
+        <div class="product-help"><b>Need ingredients, allergen or best-before details?</b><span>Read the original pack label. <a href="${esc(productSupportHref(p))}" target="_blank" rel="noopener">Ask ChaskaBox before ordering</a>. If an item becomes unavailable, we contact you before any substitution.</span></div>
+        <nav class="pd-policy-links" aria-label="Product and order help"><a href="/shipping-policy/">Delivery and charges</a><a href="/refund-policy/">Refund and resolution</a><a href="/track-order.html">Track your order</a></nav>
       </div>
     </div>
   </div>${relatedHTML}<div id="reviewsMount"></div>`;
@@ -475,6 +482,27 @@ function openImageLightbox(src,alt){
  }
  lightboxReturnFocus=document.activeElement;lb.querySelector('img').src=src;lb.querySelector('img').alt=alt||'Product image';
  lb.classList.add('open');lb.style.display='grid';lb.querySelector('button').focus();
+}
+function productSupportHref(p){return 'https://wa.me/923320005381?text='+encodeURIComponent('Please confirm ingredients, allergens and best-before for '+p.name+' ('+(p.pack||'listed pack')+'): https://chaskabox.online'+productHref(p.id));}
+function bundleContentsHTML(p){
+ if(!p.bundle)return '';
+ if(p.bundleNote)return '<p class="product-help">'+esc(p.bundleNote)+'</p>';
+ if(!Array.isArray(p.bundleContents)||!p.bundleContents.length)return '';
+ const items=p.bundleContents.map(i=>'<li>'+Number(i.quantity)+' × <a href="'+productHref(i.product_id)+'">'+esc(i.name)+'</a> — '+esc(i.pack)+'</li>').join('');
+ return '<section class="bundle-contents"><h2>Included packs</h2><ul>'+items+'</ul><p>'+((Number(p.retailValue)>0)?'Current individual pack total: '+fmt(p.retailValue)+'. ':'')+((Number(p.bundleSavings)>0)?'Save '+fmt(p.bundleSavings)+' against these current packs.':'')+'</p></section>';
+}
+function setProductMeta(p){
+ const pack=String(p.pack||''),title=p.seoTitle||p.name+(pack&&!String(p.name).toLowerCase().includes(pack.toLowerCase())?' — '+pack:'')+' | ChaskaBox';
+ const description=p.seoDescription||p.desc||'Compare the listed pack and order details at ChaskaBox Pakistan.';
+ setPageMeta(title,productHref(p.id),false,description);setMetaTag('property','og:type','product');
+ const photo=hasPhoto(p)?new URL(assetUrl(p.img),'https://chaskabox.online').href:'https://chaskabox.online/images/logo-navy.png';
+ setMetaTag('property','og:image',photo);setMetaTag('name','twitter:image',photo);
+ const canonical='https://chaskabox.online'+productHref(p.id),offer={'@type':'Offer',url:canonical,priceCurrency:'PKR',price:String(p.price),seller:{'@type':'Organization',name:'ChaskaBox'}};
+ const availability={available:'InStock',limited:'LimitedAvailability',unavailable:'OutOfStock'}[p.stockState];if(availability)offer.availability='https://schema.org/'+availability;
+ const schema={'@context':'https://schema.org','@type':'Product',name:p.name,description,sku:String(p.id),url:canonical,brand:{'@type':'Brand',name:p.brand||'ChaskaBox'},...(hasPhoto(p)?{image:[photo]}:{}),offers:offer};
+ for(const [id,data] of [['product-schema',schema],['breadcrumb-schema',{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:'https://chaskabox.online/'},{'@type':'ListItem',position:2,name:p.category||'Shop',item:'https://chaskabox.online'+categoryPath(p.category)},{'@type':'ListItem',position:3,name:p.name,item:canonical}]}]]){
+  let el=document.getElementById(id);if(!el){el=document.createElement('script');el.type='application/ld+json';el.id=id;document.head.appendChild(el);}el.textContent=JSON.stringify(data);
+ }
 }
 function pdBack(){ history.back(); }
 function pdQty(d){const e=$('#pdqty');e.textContent=Math.max(1,+e.textContent+d);}
@@ -694,7 +722,7 @@ async function renderBrandRoute(slug){
     titleEl.textContent=`${brand.name} Snacks Online in Pakistan`;
     document.getElementById('brandProdCount').textContent=brand.productCount+' products';
     if(brand.long||brand.short) document.getElementById('brandIntro').textContent=brand.long||brand.short;
-    if(brand.hero) document.getElementById('brandHero').innerHTML=`<img src="${esc(brand.hero)}" alt="${esc(brand.name)}" style="width:100%;border-radius:14px;max-height:280px;object-fit:cover" loading="lazy">`;
+    if(brand.hero) document.getElementById('brandHero').innerHTML=`<img src="${esc(brand.hero)}" alt="${esc(brand.name)}" style="width:100%;border-radius:14px;max-height:280px;object-fit:cover" loading="lazy" width="300" height="300" decoding="async">`;
     // Breadcrumb schema
     setBrandBreadcrumbSchema(brand);
     // Products
@@ -774,10 +802,10 @@ function setBrandBreadcrumbSchema(brand){
   ]});
 }
 function renderCategoryRoute(slug){
-  const catName=(STORE_CONFIG?.categories||[]).find(c=>c.slug===slug)?.name||(!Array.isArray(STORE_CONFIG?.categories)?CATEGORY_SLUGS[slug]:null);
+  const standardName=CATEGORY_SLUGS[slug];const cms=(STORE_CONFIG?.categories||[]).find(c=>c.slug===slug||c.name===standardName);const catName=cms?.name||standardName;
   if(!catName){ render404('/category/'+slug+'/'); return; }
-  const seo=SEO_CATEGORY_DATA[slug];
-  setPageMeta(seo?.title||catName+' | ChaskaBox','/category/'+slug+'/',false,seo?.description||'Shop '+catName+' from ChaskaBox.');
+  const seo={...(SEO_CATEGORY_DATA[CATEGORY_NAMES_TO_SLUG[catName]||slug]||{}),...(cms?.seo_title?{title:cms.seo_title}:{}),...(cms?.seo_description?{description:cms.seo_description}:{}),...(cms?.description?{intro:cms.description}:{})};
+  setPageMeta(seo?.title||catName+' | ChaskaBox',categoryPath(catName),false,seo?.description||'Shop '+catName+' from ChaskaBox.');
   setCategorySeoCopy(seo);
   setCategoryBreadcrumb(catName,'/category/'+slug+'/');
   shopState.cat=catName;
@@ -840,7 +868,7 @@ const CATEGORY_SLUGS = {
 };
 const CATEGORY_NAMES_TO_SLUG=Object.fromEntries(Object.entries(CATEGORY_SLUGS).map(([slug,name])=>[name,slug]));
 CATEGORY_NAMES_TO_SLUG['Bundles']='bundles';
-function categoryPath(cat){const managed=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);if(managed)return '/shop/?category='+encodeURIComponent(managed.slug); if(!cat)return '/shop/'; if(cat==='Bundles')return '/bundles/'; const slug=CATEGORY_NAMES_TO_SLUG[cat]||cat; return CATEGORY_SLUGS[slug]?'/category/'+slug+'/':'/shop/'; }
+function categoryPath(cat){if(!cat)return '/shop/';if(cat==='Bundles')return '/bundles/';const standard=CATEGORY_NAMES_TO_SLUG[cat];if(standard)return '/category/'+standard+'/';const managed=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);return managed?'/category/'+encodeURIComponent(managed.slug)+'/':'/shop/';}
 
 function normalizePath(p){
   if(!p) return '/';
@@ -1296,7 +1324,7 @@ function searchProductsAI(q){
 function aiProductCards(prods){
   return '<div class="aiprods">'+prods.map(p=>`
     <div class="aiprod">
-      <img src="${esc(assetUrl(p.img||'images/placeholder.png'))}" alt="${esc(p.name)}" loading="lazy">
+      <img src="${esc(assetUrl(p.img||'images/placeholder.png'))}" alt="${esc(p.name)}" loading="lazy" width="300" height="300" decoding="async">
       <div class="aipname">${esc(p.name)}</div>
       <div class="aipprice">Rs. ${p.price}</div>
       <button class="aipadd" onclick="addToCart(${p.id})">Add +</button>

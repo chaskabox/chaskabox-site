@@ -222,15 +222,67 @@
     wirePager(target,data,loadOrders);
     $$('[data-order]',target).forEach(b=>b.onclick=()=>openOrder(b.dataset.order));
   }
+  async function askForOrderDecision(title,description){
+    return new Promise(resolve=>{
+      const dialog=document.createElement('dialog');dialog.className='admin-ops-dialog order-decision-dialog';
+      const form=document.createElement('form');form.noValidate=true;
+      const heading=document.createElement('h2');heading.textContent=title;
+      const note=document.createElement('p');note.className='muted';note.textContent=description;
+      const label=document.createElement('label');label.className='admin-ops-field';label.textContent='Evidence / reason (required)';
+      const field=document.createElement('textarea');field.required=true;field.rows=3;field.maxLength=500;label.append(field);
+      const actions=document.createElement('div');actions.className='admin-ops-actions';
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='btn secondary';cancel.textContent='Cancel';
+      const save=document.createElement('button');save.type='submit';save.className='btn primary';save.textContent='Confirm';
+      actions.append(cancel,save);form.append(heading,note,label,actions);dialog.append(form);document.body.append(dialog);
+      let finished=false;const close=v=>{if(finished)return;finished=true;dialog.remove();resolve(v);};
+      cancel.onclick=()=>close(null);dialog.oncancel=e=>{e.preventDefault();close(null);};
+      form.onsubmit=e=>{e.preventDefault();const v=field.value.trim();if(v.length<3){field.setCustomValidity('Please provide at least three characters.');field.reportValidity();return;}close(v);};
+      field.oninput=()=>field.setCustomValidity('');
+      if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+      field.focus();
+    });
+  }
+
   async function openOrder(id){
     const data=await api(`/api/admin/orders/${encodeURIComponent(id)}`),o=data.order, items=data.items||[];
     let modal=$('#liveOrderModal'); if(!modal){modal=document.createElement('div');modal.id='liveOrderModal';modal.className='admin-modal';document.body.appendChild(modal);} modal.classList.add('open');
     const flow=['new','sourcing','packed','dispatched','delivered']; const idx=flow.indexOf(o.fulfilment_status); const next=idx>=0&&idx<flow.length-1?flow[idx+1]:null;
     modal.innerHTML=`<div class="modal-backdrop" data-close-order></div><section class="admin-modal-card live-order-card"><div class="modal-head"><div><small>ORDER</small><h2>${esc(o.order_number)}</h2></div><button class="icon-btn" data-close-order>×</button></div><div class="order-detail-grid"><section><h3>Customer</h3><p><b>${esc(o.customer_name)}</b><br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</p><h3>Items</h3><div class="order-items">${items.map(i=>`<div><span>${esc(i.product_name)} · ${esc(i.pack)} × ${i.quantity}</span><b>${money(i.line_total)}</b></div>`).join('')}</div></section><section><h3>Payment</h3><p>${esc(o.payment_method)} · <b>${esc(o.payment_status)}</b>${o.transaction_reference?`<br>Ref: ${esc(o.transaction_reference)}`:''}</p><h3>Total</h3><p>Subtotal ${money(o.subtotal)}<br>Delivery ${money(o.delivery_fee)}<br><b>${money(o.total)}</b></p><h3>Actions</h3><div class="order-actions">${next?`<button class="btn primary" data-status="${next}">Move to ${esc(next)}</button>`:''}${!['delivered','cancelled'].includes(o.fulfilment_status)?'<button class="btn danger" data-status="cancelled">Cancel</button>':''}${['payment_submitted','awaiting_payment'].includes(o.payment_status)?'<button class="btn secondary" data-pay="verified">Verify payment</button><button class="btn secondary" data-pay="rejected">Reject payment</button>':''}<button class="btn secondary" data-retry>Retry notification</button></div><h3>Status history</h3><div class="history-list">${(data.history||[]).map(h=>`<div><b>${esc(h.action)}</b><small>${fmtDate(h.created_at)} · ${esc(h.actor_role)}</small></div>`).join('')||'<small>No audit events yet.</small>'}</div></section></div></section>`;
     $$('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
-    $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{try{const st=b.dataset.status;let body={fulfilment_status:st,expected_updated_at:o.updated_at};if(st==='cancelled'){const reason=prompt('Cancellation reason (required):');if(!reason)return;body.cancel_reason=reason;}await api(`/api/admin/orders/${id}/status`,{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
-    $$('[data-pay]',modal).forEach(b=>b.onclick=async()=>{try{await api(`/api/admin/orders/${id}/payment/verify`,{method:'POST',body:{decision:b.dataset.pay,expected_updated_at:o.updated_at}});toast('Payment updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
-    $('[data-retry]',modal).onclick=async()=>{try{const r=await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast(r.queued?`${r.queued} safe notification job(s) queued`:'No safe retries available; check Notifications for review')}catch(e){toast(e.message)}};
+    $('[data-status]',modal).forEach(b=>b.onclick=async()=>{
+      if(b.disabled)return;
+      const st=b.dataset.status,body={fulfilment_status:st,expected_updated_at:o.updated_at};
+      if(st==='cancelled'){
+        const reason=await askForOrderDecision('Cancel '+o.order_number,'Cancellation is irreversible. Record the reason.');
+        if(!reason)return;body.cancel_reason=reason;
+      }else if(!confirm('Advance order '+o.order_number+' to '+st+'?'))return;
+      b.disabled=true;
+      try{await api('/api/admin/orders/'+encodeURIComponent(id)+'/status',{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.allSettled([loadOrders(),loadDashboard()]);}
+      catch(e){toast('Order update failed: '+e.message);await openOrder(id).catch(()=>{});}finally{b.disabled=false;}
+    });
+    $('[data-pay]',modal).forEach(b=>b.onclick=async()=>{
+      if(b.disabled)return;
+      const decision=b.dataset.pay;
+      if(decision==='verified'&&!String(o.transaction_reference||'').trim()){toast('A transaction reference is required before payment approval.');return;}
+      const note=await askForOrderDecision(
+        decision==='verified'?'Verify prepaid payment · '+o.order_number:'Reject prepaid payment · '+o.order_number,
+        decision==='verified'?'Confirm the reference against your actual receiving account. This decision does not contact the payment provider.':'Record the reason before rejecting payment.'
+      );
+      if(!note)return;
+      const actions=$('[data-pay], [data-status], [data-retry]',modal);actions.forEach(btn=>btn.disabled=true);
+      try{
+        await api('/api/admin/orders/'+encodeURIComponent(id)+'/payment/verify',{method:'POST',body:{decision,note,expected_updated_at:o.updated_at}});
+        toast('Payment review recorded');modal.classList.remove('open');await Promise.allSettled([loadOrders(),loadDashboard()]);
+      }catch(e){toast('Payment review failed: '+e.message);await openOrder(id).catch(()=>{});}
+      finally{actions.forEach(btn=>btn.disabled=false);}
+    });
+    $('[data-retry]',modal).onclick=async e=>{
+      const b=e.currentTarget;if(b.disabled)return;b.disabled=true;
+      try{
+        const r=await api('/api/admin/orders/'+encodeURIComponent(id)+'/notifications/retry',{method:'POST',body:{}});
+        toast(r.queued?String(r.queued)+' notification(s) queued; delivery is not yet confirmed':'No safe retries available; review Notifications');
+      }catch(err){toast('Notification retry failed: '+err.message);}finally{b.disabled=false;}
+    };
     // Print invoice / packing slip
     const printBar = document.createElement('div');
     printBar.style.cssText = 'display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)';
@@ -448,8 +500,12 @@
     view.querySelector('[data-customer-back]').onclick=()=>loadCustomers().catch(e=>toast(e.message));wirePager(view,d,p=>loadCustomerDetail(id,p));
   }
   async function loadCustomers(page=1){
-    const d=await api('/api/admin/customers?per_page=100&page='+page), view=$('#view-customers');view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Customers</h2><p>Order history and recognized customer value.</p></div></div><div class="live-table-wrap"><table class="live-table"><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Recognized spend</th><th>Last order</th></tr></thead><tbody>${(d.customers||[]).map(c=>`<tr><td><button class="btn secondary compact" data-customer="${esc(c.id)}">${esc(c.name||'—')}</button></td><td>${esc(c.phone||'—')}</td><td>${c.order_count||0}</td><td>${money(c.lifetime_spend)}</td><td>${esc(c.last_order_number||'—')}<small>${c.last_order_at?fmtDate(c.last_order_at):''}</small></td></tr>`).join('')}</tbody></table></div></div>`;
-    wirePager(view,d,loadCustomers);$$('[data-customer]',view).forEach(b=>b.onclick=()=>loadCustomerDetail(b.dataset.customer).catch(e=>toast(e.message)));
+    const search=$('#customerSearch')?.value.trim()||'';
+    const sp=new URLSearchParams({per_page:'25',page:String(page)});if(search)sp.set('q',search);
+    const d=await api('/api/admin/customers?'+sp), view=$('#view-customers');view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Customers</h2><p>Order history and recognized customer value. Customer identity details are read-only.</p></div></div><label class="admin-search-field">Search customers<input id="customerSearch" type="search" aria-label="Search customers" maxlength="100" placeholder="Name, phone or email" value="${esc(search)}"></label><div class="live-table-wrap"><table class="live-table"><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Recognized spend</th><th>Last order</th></tr></thead><tbody>${(d.customers||[]).map(c=>`<tr><td><button class="btn secondary compact" data-customer="${esc(c.id)}">${esc(c.name||'—')}</button></td><td>${esc(c.phone||'—')}</td><td>${c.order_count||0}</td><td>${money(c.lifetime_spend)}</td><td>${esc(c.last_order_number||'—')}<small>${c.last_order_at?fmtDate(c.last_order_at):''}</small></td></tr>`).join('')}</tbody></table></div></div>`;
+    wirePager(view,d,loadCustomers);
+    const input=$('#customerSearch');if(input){input.addEventListener('input',debounce(()=>loadCustomers(1),350));input.focus({preventScroll:true});input.setSelectionRange(input.value.length,input.value.length);}
+    $('[data-customer]',view).forEach(b=>b.onclick=()=>loadCustomerDetail(b.dataset.customer).catch(e=>toast(e.message)));
   }
   async function loadReviews(page=1){
     const d=await api('/api/admin/reviews?per_page=100&page='+page),view=$('#view-reviews');
@@ -486,9 +542,23 @@
   }
   function wireHomepage(){}
   async function loadHomepage(){
-    const d=await api('/api/admin/homepage'),view=$('#view-homepage'); view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Homepage sections</h2><p>Visibility and headings save immediately; curated product lists publish explicitly.</p></div></div><div class="section-manager">${(d.sections||[]).map(s=>`<div data-home-key="${esc(s.section_key)}"><span class="drag">⋮⋮</span><b>${esc(s.section_key.replaceAll('_',' '))}</b><em>${esc(s.heading||'')}</em><button class="home-toggle ${s.enabled?'on':''}" data-home-toggle="${esc(s.section_key)}">${s.enabled?'On':'Off'}</button></div>`).join('')}</div></section><section class="panel"><div class="panel-head"><div><h2>Edit selected section</h2><p>Save draft, preview, then publish.</p></div></div><label>Section<select id="homeKey">${(d.sections||[]).map(s=>`<option value="${esc(s.section_key)}">${esc(s.section_key)}</option>`).join('')}</select></label><label>Heading<input id="homeHeading"></label><label>Subheading<textarea id="homeSub" rows="4"></textarea></label><label>Featured product IDs <small>(optional, comma-separated)</small><input id="homeProductIds" placeholder="e.g. 30, 54, 179"></label><div class="action-row"><button class="btn secondary" id="homeSave">Save</button>${roleAllows('owner','manager')?'<button class="btn primary" id="homePublish">Publish curated products</button>':''}</div></section></div>`;
+    const d=await api('/api/admin/homepage'),view=$('#view-homepage'); view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Homepage sections</h2><p>Visibility and headings save immediately; curated product lists publish explicitly.</p></div></div><div class="section-manager">${(d.sections||[]).map(s=>`<div data-home-key="${esc(s.section_key)}"><span class="drag" aria-hidden="true">⋮⋮</span><b>${esc(s.section_key.replaceAll('_',' '))}</b><em>${esc(s.heading||'')}</em><span class="home-position-actions"><button type="button" data-home-move="${esc(s.section_key)}" data-home-direction="-1" aria-label="Move section up">↑</button><button type="button" data-home-move="${esc(s.section_key)}" data-home-direction="1" aria-label="Move section down">↓</button></span><button class="home-toggle ${s.enabled?'on':''}" data-home-toggle="${esc(s.section_key)}">${s.enabled?'On':'Off'}</button></div>`).join('')}</div></section><section class="panel"><div class="panel-head"><div><h2>Edit selected section</h2><p>Save draft, preview, then publish.</p></div></div><label>Section<select id="homeKey">${(d.sections||[]).map(s=>`<option value="${esc(s.section_key)}">${esc(s.section_key)}</option>`).join('')}</select></label><label>Heading<input id="homeHeading"></label><label>Subheading<textarea id="homeSub" rows="4"></textarea></label><label>Featured product IDs <small>(optional, comma-separated)</small><input id="homeProductIds" placeholder="e.g. 30, 54, 179"></label><div class="action-row"><button class="btn secondary" id="homeSave">Save</button>${roleAllows('owner','manager')?'<button class="btn primary" id="homePublish">Publish curated products</button>':''}</div></section></div>`;
     const rows=d.sections||[];function hydrate(){const x=rows.find(r=>r.section_key===$('#homeKey').value)||{};$('#homeHeading').value=x.heading||'';$('#homeSub').value=x.subheading||'';const ids=(x.draft_config?.product_ids||x.config?.product_ids||[]);$('#homeProductIds').value=Array.isArray(ids)?ids.join(', '):'';}hydrate();$('#homeKey').onchange=hydrate;
-    $$('[data-home-toggle]',view).forEach(b=>b.onclick=async()=>{const row=rows.find(r=>r.section_key===b.dataset.homeToggle);try{await api('/api/admin/homepage',{method:'PATCH',body:{sections:[{section_key:row.section_key,enabled:!row.enabled}]}});toast('Homepage visibility saved');loadHomepage()}catch(e){toast(e.message)}});
+    $('[data-home-move]',view).forEach(button=>button.onclick=async()=>{
+      const index=rows.findIndex(row=>row.section_key===button.dataset.homeMove);
+      const next=index+Number(button.dataset.homeDirection);
+      if(index<0||next<0||next>=rows.length)return;
+      const a=rows[index],b=rows[next],pa=Number(a.position),pb=Number(b.position);
+      if(!Number.isInteger(pa)||!Number.isInteger(pb)||pa===pb){toast('Section positions need review before reordering.');return;}
+      button.disabled=true;
+      try{
+        await api('/api/admin/homepage',{method:'PATCH',body:{sections:[
+          {section_key:a.section_key,position:pb},{section_key:b.section_key,position:pa}
+        ]}});
+        toast('Homepage section order saved');await loadHomepage();
+      }catch(error){toast('Reorder failed: '+error.message);button.disabled=false;}
+    });
+    $('[data-home-toggle]',view).forEach(b=>b.onclick=async()=>{const row=rows.find(r=>r.section_key===b.dataset.homeToggle);try{await api('/api/admin/homepage',{method:'PATCH',body:{sections:[{section_key:row.section_key,enabled:!row.enabled}]}});toast('Homepage visibility saved');loadHomepage()}catch(e){toast(e.message)}});
     $('#homeSave').onclick=async()=>{try{const ids=$('#homeProductIds').value.split(',').map(x=>Number(x.trim())).filter(x=>Number.isInteger(x)&&x>0);const current=rows.find(r=>r.section_key===$('#homeKey').value)||{};const draft={...(current.draft_config||current.config||{}),product_ids:ids};await api('/api/admin/homepage',{method:'PATCH',body:{sections:[{section_key:$('#homeKey').value,heading:$('#homeHeading').value.trim(),subheading:$('#homeSub').value.trim(),draft_config:draft}]}});toast('Homepage changes saved; publish curated products when ready');await loadHomepage()}catch(e){toast(e.message)}};
     if($('#homePublish'))$('#homePublish').onclick=async()=>{try{await api('/api/admin/homepage/publish',{method:'POST',body:{keys:[$('#homeKey').value]}});toast('Homepage section published');loadHomepage()}catch(e){toast(e.message)}};
     const preview=document.createElement('button');preview.className='btn secondary';preview.textContent='Preview saved drafts';view.append(preview);
@@ -498,10 +568,25 @@
 
   function wireMedia(){}
   async function loadMedia(page=1,operationPage=1){
-    const d=await api('/api/admin/media?per_page=100&page='+page),view=$('#view-media'); view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Media library</h2><p>JPEG, PNG, WebP, AVIF · max 5MB / 4 million pixels. Verified images are resized to 1024px WebP. Use authentic pack photos.</p></div><label class="btn primary media-upload-btn">Upload image<input id="mediaUpload" type="file" ${d.processor_available?'':'disabled'} accept="image/jpeg,image/png,image/webp,image/avif" hidden></label></div><p class="safe-note">${d.processor_available?'Secure image processor ready.':'Uploads paused: the owner must enable the configured secure processor.'} Monthly app admission limit: ${esc(d.monthly_app_limit)} attempts.</p><div class="media-grid">${(d.media||[]).map(m=>`<article>${m.url?`<img src="${esc(m.url)}" alt="" loading="lazy">`:'<div class="media-placeholder">▣</div>'}<small>${esc(m.object_path)}</small><b>${Math.round(Number(m.size_bytes||0)/1024)} KB</b>${m.url?`<button class="btn secondary compact" data-copy-media="${esc(m.url)}">Copy URL</button>`:''}<small>${esc(m.state)}</small><button class="btn secondary compact" data-delete-media="${esc(m.id)}">${m.state==='deleting'?'Resume deletion':'Delete unused image'}</button></article>`).join('')||'<div class="empty-mini">No uploaded media yet.</div>'}</div></div>`;
+    const d=await api('/api/admin/media?per_page=100&page='+page),view=$('#view-media'); view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Media library</h2><p>JPEG, PNG, WebP, AVIF · max 5MB / 4 million pixels. Verified images are resized to 1024px WebP. Use authentic pack photos.</p></div><label class="btn primary media-upload-btn">Upload image<input id="mediaUpload" type="file" ${d.processor_available?'':'disabled'} accept="image/jpeg,image/png,image/webp,image/avif" hidden></label></div><p class="safe-note">${d.processor_available?'Secure image processor ready.':'Uploads paused: the owner must enable the configured secure processor.'} Monthly app admission limit: ${esc(d.monthly_app_limit)} attempts.</p><div class="media-grid">${(d.media||[]).map(m=>`<article>${m.url?`<img src="${esc(m.url)}" alt="" loading="lazy">`:'<div class="media-placeholder">▣</div>'}<small>${esc(m.object_path)}</small><b>${Math.round(Number(m.size_bytes||0)/1024)} KB</b>${m.url?`<button class="btn secondary compact" data-copy-media="${esc(m.url)}">Copy URL</button>${m.bucket==='product-media'?`<button class="btn secondary compact" data-assign-media="${esc(m.id)}">Assign to product</button>`:''}`:''}<small>${esc(m.state)}</small><button class="btn secondary compact" data-delete-media="${esc(m.id)}">${m.state==='deleting'?'Resume deletion':'Delete unused image'}</button></article>`).join('')||'<div class="empty-mini">No uploaded media yet.</div>'}</div></div>`;
     wirePager(view,d,loadMedia);
     $$('[data-copy-media]',view).forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(b.dataset.copyMedia);toast('Image URL copied')}catch{toast('Could not copy URL')}});
-    $$('[data-delete-media]',view).forEach(b=>b.onclick=async()=>{if(!confirm('Delete this unused image permanently? Product, CMS and version references are checked first.'))return;b.disabled=true;try{await api('/api/admin/media/'+b.dataset.deleteMedia,{method:'DELETE'});toast('Image deleted');await loadMedia(page)}catch(e){toast(e.message);b.disabled=false}});
+    $('[data-assign-media]',view).forEach(b=>b.onclick=async()=>{
+      const asset=(d.media||[]).find(m=>String(m.id)===b.dataset.assignMedia);
+      if(!asset||!asset.url){toast('This image is not active');return;}
+      const raw=prompt('Product ID to receive this verified image (e.g., 186). Confirm the pack photo matches the actual product before assigning:');
+      if(raw===null)return;
+      const productId=Number(raw.trim());
+      if(!Number.isSafeInteger(productId)||productId<1){toast('Enter a valid positive product ID');return;}
+      if(!confirm('Assign this exact uploaded photo to product #'+productId+'? Its current product image will be replaced; pack and price will not change.'))return;
+      b.disabled=true;
+      try{
+        const response=await api('/api/admin/media/'+encodeURIComponent(asset.id)+'/assign-product',{method:'POST',body:{product_id:productId}});
+        toast(response.changed?'Product image assigned and saved':'Product already uses this image');
+        await loadMedia(page);
+      }catch(error){toast('Image assignment failed: '+error.message);b.disabled=false;}
+    });
+    $('[data-delete-media]',view).forEach(b=>b.onclick=async()=>{if(!confirm('Delete this unused image permanently? Product, CMS and version references are checked first.'))return;b.disabled=true;try{await api('/api/admin/media/'+b.dataset.deleteMedia,{method:'DELETE'});toast('Image deleted');await loadMedia(page)}catch(e){toast(e.message);b.disabled=false}});
     if(roleAllows('owner','manager')){try{const review=await api('/api/admin/media/operations?page='+operationPage);if(review.total){const panel=document.createElement('section');panel.className='panel';panel.innerHTML='<h3>Pending media operations ('+esc(review.total)+')</h3><p>Upload cleanup can be resumed after 15 minutes. Review each operation before retrying.</p>'+review.operations.map(op=>'<p>'+esc(op.object_path)+' · '+esc(op.state)+' <button class="btn secondary compact" data-recover-media="'+esc(op.id)+'">Review and resume</button></p>').join('');view.append(panel);wirePager(panel,review,p=>loadMedia(page,p));$$('[data-recover-media]',panel).forEach(b=>b.onclick=async()=>{if(!confirm('Resume this reviewed storage cleanup or pending deletion?'))return;try{await api('/api/admin/media/operations',{method:'POST',body:{operation_id:b.dataset.recoverMedia,confirm:true}});toast('Media operation recovered');await loadMedia(page)}catch(e){toast(e.message)}});}}catch(e){toast('Media operation status unavailable: '+e.message)}}
     $('#mediaUpload').onchange=async e=>{const file=e.target.files?.[0];if(!file)return;const fd=new FormData();fd.append('file',file);try{const saved=await api('/api/admin/media',{method:'POST',body:fd});if(saved?.url)try{await navigator.clipboard.writeText(saved.url);toast('Image uploaded — URL copied')}catch{toast('Image uploaded')}else toast('Image uploaded');loadMedia()}catch(x){toast(x.message)}};
   }

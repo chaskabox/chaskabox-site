@@ -1,3 +1,4 @@
+import {enrichPublicBundles} from './bundle-details.js';
 import {cataloguePhoto,photoUnderReview} from './catalogue-photos.js';
 import { sbRequest, rpc } from './db.js';
 import { runEmbeddings, vectorLiteral, aiAvailable } from './ai.js';
@@ -7,9 +8,9 @@ export async function publicCatalogue(env) {
     const rows=await sbRequest(env,'/public_products',{query:'?select=*&order=id.asc&limit=500&offset='+offset});
     if(!Array.isArray(rows))throw new Error('Invalid catalogue response');
     if(offset===10000&&rows.length)throw new Error('Catalogue exceeds the supported complete-read size');
-    out.push(...rows.map(p=>({...p,image_url:cataloguePhoto(p),image_warning:photoUnderReview(p)?'Photo under review':''})));if(rows.length<500)return out;
+    out.push(...rows.map(p=>({...p,image_url:cataloguePhoto(p),image_warning:photoUnderReview(p)?'Photo under review':''})));if(rows.length<500)return enrichPublicBundles(env,out);
   }
-  return out;
+  return enrichPublicBundles(env,out);
 }
 export function cleanQuery(value) { return typeof value==='string'?value.replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim().slice(0,280):''; }
 export function priceBounds(query) {

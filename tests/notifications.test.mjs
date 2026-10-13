@@ -222,6 +222,8 @@ test('bounded bodies, permanent DB failures and protected run/health endpoints f
  const e={...env(new Date().toISOString()),RESEND_WEBHOOK_SECRET:resendSecret,OUTBOX_RUN_SECRET:'fixture-run-secret'};
  assert.equal((await worker.fetch(new Request('https://worker.example.invalid/run'),e)).status,401);
  assert.equal((await worker.fetch(new Request('https://worker.example.invalid/run',{headers:{Authorization:'Bearer fixture-run-secret'}}),e)).status,405);
+ const originalFetch=globalThis.fetch;globalThis.fetch=async()=>new Response('sensitive provider response',{status:401});
+ try {const health=await worker.fetch(new Request('https://worker.example.invalid/health',{headers:{Authorization:'Bearer fixture-run-secret'}}),e);assert.equal(health.status,503);assert.deepEqual(await health.json(),{ok:false,reasons:['queue_api_401']});}finally{globalThis.fetch=originalFetch;}
  const data={type:'email.delivered',created_at:new Date().toISOString(),data:{email_id:'signed-ack'}};
  assert.equal((await handleNotificationReceipt(await signedEmail(data),e,'email',async()=>new Response(null,{status:503}))).status,503);
 });

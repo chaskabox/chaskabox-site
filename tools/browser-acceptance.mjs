@@ -5,6 +5,8 @@ import path from 'node:path';
 import {chromium} from 'playwright-core';
 import AxeBuilder from '@axe-core/playwright';
 import {cataloguePhoto,photoUnderReview} from '../functions/api/_lib/catalogue-photos.js';
+import {renderCataloguePage,renderBrandPage} from '../functions/api/_lib/catalogue-page.js';
+import {onRequestGet as occasionPage} from '../functions/snack-boxes/[[slug]].js';
 import {onRequestGet as productPage} from '../functions/product/[[slug]].js';
 const args=process.argv.slice(2),option=(name,fallback)=>args.includes(name)?args[args.indexOf(name)+1]:fallback;
 const root=path.resolve('.'),output=path.resolve(option('--output','test-results/browser'));await mkdir(output,{recursive:true});
@@ -26,8 +28,12 @@ const originalFetch=globalThis.fetch;
 globalThis.fetch=async(url,init)=>{
  const u=new URL(typeof url==='string'?url:url.url);
  if(u.hostname==='fixture.example.invalid'){
-  const id=Number(u.searchParams.get('id')?.replace('eq.','')),p=raw.find(p=>p.id===id&&products.some(q=>q.id===id));
-  return Response.json(p?[{...p,image_url:p.image_url??p.img,description:p.desc,old_price:p.oldPrice,is_bundle:p.bundle,visibility:'visible',stock_state:p.stockState||p.stock_state||'sourced_after_order'}]:[]);
+  const dbRows=raw.filter(p=>products.some(q=>q.id===p.id)).map(p=>({...p,image_url:p.image_url??p.img,description:p.desc,old_price:p.oldPrice,is_bundle:p.bundle,visibility:'visible',stock_state:p.stockState||p.stock_state||'sourced_after_order'}));
+  if(u.pathname.endsWith('/public_products'))return Response.json(dbRows);
+  if(u.pathname.endsWith('/bundle_items'))return Response.json([]);
+  if(u.pathname.endsWith('/rpc/storefront_manifest'))return Response.json(manifest);
+  if(u.pathname.endsWith('/brands'))return Response.json(brands.filter(b=>'eq.'+b.slug===u.searchParams.get('slug')));
+  const id=Number(u.searchParams.get('id')?.replace('eq.',''));return Response.json(dbRows.filter(p=>p.id===id));
  }return originalFetch(url,init);
 };
 let attentionError=false;
@@ -60,6 +66,12 @@ const server=createServer(async(req,res)=>{try{
   if(req.method!=='GET')return json(res,{error:{message:'Mutations disabled in browser fixture'}},503);
   return json(res,{});
  }
+ const parts=p.split('/').filter(Boolean);
+ if(p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'&&parts.length===2){
+  const ctx={params:{slug:parts[1]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async request=>{let filename=path.join(root,new URL(request.url).pathname,'index.html');return new Response(await readFile(filename).catch(()=>Buffer.from(shell)));}}}};
+  const response=parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
+  res.writeHead(response.status,{'Content-Type':'text/html'});return res.end((await response.text()).replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
+ }
  if(/^\/product\/\d+\/$/.test(p)){
   const response=await productPage({params:{slug:p.split('/')[2]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async()=>new Response(shell)}}});
   res.writeHead(response.status,{'Content-Type':'text/html'});return res.end((await response.text()).replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
@@ -76,9 +88,9 @@ await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='htt
 const executablePath=option('--browser-executable',process.env.QA_BROWSER_EXECUTABLE);
 const browser=await chromium.launch({headless:true,...(executablePath?{executablePath}:{}),args:['--no-sandbox','--disable-dev-shm-usage','--disable-gpu']});
 const results={method:'Actual local source with synthetic API/Auth fixtures; not managed acceptance',cases:[],interactions:[],errors:[]};
-async function contextFor(width,role){const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});if(role)await context.addCookies([{name:'qa_role',value:role,url:base}]);await context.route('https://**/*',route=>route.request().url().includes('/@supabase/supabase-js@')
+async function contextFor(width,role){const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});if(role)await context.addCookies([{name:'qa_role',value:role,url:base}]);await context.route('https://**/*',async route=>route.request().url().includes('/@supabase/supabase-js@')
  ?route.fulfill({status:200,contentType:'text/javascript',body:'('+fakeSdk.toString()+')();'})
- :route.fulfill({status:200,contentType:'text/plain',body:''}));const page=await context.newPage();page.on('pageerror',e=>results.errors.push(e.stack));page.on('dialog',d=>d.dismiss());return {context,page};}
+ :route.request().url().startsWith('https://chaskabox.online/images/')?(async()=>{const r=await originalFetch(base+new URL(route.request().url()).pathname);return route.fulfill({status:r.status,headers:Object.fromEntries(r.headers),body:Buffer.from(await r.arrayBuffer())});})():route.fulfill({status:200,contentType:'text/plain',body:''}));const page=await context.newPage();page.on('pageerror',e=>results.errors.push(e.stack));page.on('dialog',d=>d.dismiss());return {context,page};}
 async function inspect(page,route,width,role){
  const response=await page.goto(base+route,{waitUntil:'domcontentloaded'});
  if(route==='/admin/'){
@@ -99,12 +111,14 @@ async function inspect(page,route,width,role){
  else if(route!=='/track-order.html')await page.waitForFunction(()=>typeof PRODUCTS==='undefined'||PRODUCTS.length>0);
  await page.waitForTimeout(180);
  const layout=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,duplicatePromo:['.promo-desktop','.promo-mobile'].every(s=>{const e=document.querySelector(s);return !!e&&getComputedStyle(e).display!=='none';})}));
+ if(layout.overflow)console.error('OVERFLOW_DETAILS',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>getComputedStyle(e).display!=='none'&&e.getBoundingClientRect().right>innerWidth+1).slice(0,20).map(e=>({tag:e.tagName,id:e.id,cls:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right,text:e.textContent.slice(0,70)})))));
  const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
  const violations=axe.violations.filter(v=>['serious','critical'].includes(v.impact)).map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));
+ if(width===390&&['/','/shop/','/product/39/','/snack-boxes/bachpan/','/guides/choosing-a-snack-box/'].includes(route))await page.screenshot({path:path.join(output,route==='/'?'home-390.png':route.replace(/\//g,'_')+'390.png'),fullPage:true});
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
- const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/'];
+ const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){const {context,page}=await contextFor(width);for(const route of routes)await inspect(page,route,width);await context.close();}
  // Reproduce the live legacy logo setting and prove branding survives errors.
  {
@@ -157,6 +171,10 @@ try{
  await page.goto(base+'/product/39/');const zoom=page.locator('[data-zoom-src]');await zoom.waitFor();await zoom.focus();await page.keyboard.press('Enter');const open=await page.locator('#imgLightbox').evaluate(e=>e.classList.contains('open'));await page.keyboard.press('Escape');results.interactions.push({case:'keyboard zoom and focus return',pass:open&&await zoom.evaluate(e=>e===document.activeElement)});
  await page.goto(base+'/product/186/');results.interactions.push({case:'mismatched photo withheld',pass:(await page.locator('#pdetail').innerText()).includes('Photo under review')});
  const unavailable=products.find(p=>p.stockState==='unavailable');if(unavailable){await page.goto(base+'/product/'+unavailable.id+'/');await page.waitForFunction(()=>document.querySelector('#pdetail .pdbtn')?.textContent==='Currently unavailable');results.interactions.push({case:'unavailable stock cannot be added',pass:await page.locator('#pdetail .pdbtn').isDisabled()});}
+ await page.goto(base+'/snack-boxes/bachpan/');await page.locator('#addOccasion').click();await page.waitForFunction(()=>document.getElementById('occasionStatus')?.textContent.includes('Packs added'));
+ results.interactions.push({case:'occasion adds one of each current pack atomically',pass:await page.evaluate(()=>{const bag=JSON.parse(localStorage.getItem('chaskabox-cart'));return [69,76,156].every(id=>bag[id]===1);})});
+ await page.evaluate(()=>localStorage.setItem('chaskabox-cart',JSON.stringify({69:99})));await page.locator('#addOccasion').click();await page.waitForFunction(()=>document.getElementById('occasionStatus')?.textContent.includes('Reduce the quantity'));
+ results.interactions.push({case:'occasion quantity cap retains the original bag',pass:await page.evaluate(()=>localStorage.getItem('chaskabox-cart')===JSON.stringify({69:99}))});
  await context.close();
  if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});if(role==='owner'){attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;}await context.close();}
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));globalThis.fetch=originalFetch;await writeFile(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));}
