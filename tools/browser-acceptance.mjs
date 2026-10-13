@@ -81,7 +81,17 @@ async function contextFor(width,role){const context=await browser.newContext({vi
  :route.fulfill({status:200,contentType:'text/plain',body:''}));const page=await context.newPage();page.on('pageerror',e=>results.errors.push(e.stack));page.on('dialog',d=>d.dismiss());return {context,page};}
 async function inspect(page,route,width,role){
  const response=await page.goto(base+route,{waitUntil:'domcontentloaded'});
- if(route==='/admin/')await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+ if(route==='/admin/'){
+  try{await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none',{timeout:12000});}
+  catch(error){console.error('ADMIN_BOOT_DIAGNOSTIC',JSON.stringify({role,width,dom:await page.evaluate(()=>({
+    boot:document.getElementById('adminBoot')?.outerHTML.slice(0,650),
+    login:document.getElementById('liveAdminLogin')?.outerHTML.slice(0,350),
+    mfa:document.getElementById('liveAdminMfa')?.outerHTML.slice(0,350),
+    backend:document.getElementById('backendState')?.textContent,
+    booted:window.chaskaAdminBooted,
+    sdk:Boolean(window.supabase),
+  })),errors:results.errors.slice(-6)}));throw error;}
+ }
  else if(route==='/account/')await page.waitForFunction(()=>!document.getElementById('acctbody')?.textContent.includes('Loading'));
  else if(route!=='/track-order.html')await page.waitForFunction(()=>typeof PRODUCTS==='undefined'||PRODUCTS.length>0);
  await page.waitForTimeout(180);
