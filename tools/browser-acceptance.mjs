@@ -90,6 +90,9 @@ async function inspect(page,route,width,role){
     backend:document.getElementById('backendState')?.textContent,
     booted:window.chaskaAdminBooted,
     sdk:Boolean(window.supabase),
+    scripts:[...document.scripts].filter(s=>s.src.includes('/admin')).map(s=>({src:s.src,loaded:performance.getEntriesByName(s.src).length})),
+    candidateFetch:await Promise.all(['/admin.js?v=20261013-admin-controls-1','/admin-login-mfa.js?v=20261012-mfa-gate-1','/admin-live.js?v=20261013-admin-controls-1'].map(async url=>({url,status:(await fetch(url,{cache:'no-store'})).status}))),
+
   })),errors:results.errors.slice(-6)}));throw error;}
  }
  else if(route==='/account/')await page.waitForFunction(()=>!document.getElementById('acctbody')?.textContent.includes('Loading'));
