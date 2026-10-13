@@ -82,7 +82,7 @@ async function contextFor(width,role){const context=await browser.newContext({vi
 async function inspect(page,route,width,role){
  const response=await page.goto(base+route,{waitUntil:'domcontentloaded'});
  if(route==='/admin/'){
-  try{await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none',{timeout:12000});}
+  try{await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none',undefined,{timeout:12000});}
   catch(error){console.error('ADMIN_BOOT_DIAGNOSTIC',JSON.stringify({role,width,dom:await page.evaluate(()=>({
     boot:document.getElementById('adminBoot')?.outerHTML.slice(0,650),
     login:document.getElementById('liveAdminLogin')?.outerHTML.slice(0,350),
