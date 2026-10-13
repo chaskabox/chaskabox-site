@@ -444,14 +444,15 @@ function renderProductDetail(id){
         <div class="pd-brand">${esc(getBrand(p))}</div>
         <div class="pd-price"><span class="price" style="font-size:26px">${fmt(p.price)}</span>${old}${save}</div>
         <div class="ppack" style="margin-bottom:10px">${esc(p.pack||'')}</div>
-        <dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||'ChaskaBox')}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack||'See listed contents')}</dd></div><div><dt>Availability</dt><dd>${p.stockState==='sourced_after_order'?'Sourced after order; confirmed before fulfilment':p.stockState==='unavailable'?'Currently unavailable':'See current order details'}</dd></div></dl>
-        ${bundleContentsHTML(p)}
+
         <p class="pd-desc">${esc(p.desc||'Product details are being updated. Contact ChaskaBox if you need ingredient or allergen information before ordering.')}</p>
         <div class="pd-buyrow">
           <div class="qty"><button onclick="pdQty(-1)" aria-label="Decrease quantity">−</button><b id="pdqty">1</b><button onclick="pdQty(1)" aria-label="Increase quantity">+</button></div>
           <button class="pdbtn" ${p.stockState==='unavailable'?'disabled':''} onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">${p.stockState==='unavailable'?'Currently unavailable':'Add to Bag'}</button>
           <button class="pdwish${typeof isWished==='function'&&isWished(p.id)?' on':''}" aria-label="Add ${esc(p.name)} to wishlist" onclick="toggleWishlist(${p.id},this)">♥</button>
         </div>
+        <dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||'ChaskaBox')}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack||'See listed contents')}</dd></div><div><dt>Availability</dt><dd>${p.stockState==='sourced_after_order'?'Sourced after order; confirmed before fulfilment':p.stockState==='unavailable'?'Currently unavailable':'See current order details'}</dd></div></dl>
+        ${bundleContentsHTML(p)}
         <div class="dbox"><b>Estimated delivery</b><small>Pakistan-wide delivery window<br><span class="ddates">${deliveryRange()}</span></small></div>
         <div class="pd-meta"><span>🚚 COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery</span><span>Delivery fees confirmed at checkout for your city</span><span>✅ Original sealed packs</span></div>
         <div class="product-help"><b>Need ingredients, allergen or best-before details?</b><span>Read the original pack label. <a href="${esc(productSupportHref(p))}" target="_blank" rel="noopener">Ask ChaskaBox before ordering</a>. If an item becomes unavailable, we contact you before any substitution.</span></div>
