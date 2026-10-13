@@ -159,6 +159,7 @@
       me=await getMe();
       syncRoleNavigation();
     }catch(e){
+      if(location.hostname==='127.0.0.1')window.__qaAdminBootError=String(e?.stack||e);
       // A network blip must NEVER destroy a valid session — only real auth
       // failures (401/403) sign out. Anything else shows a retry state.
       if(![401,403].includes(e?.status)){ showBootError('Account verification is unavailable. Reload to retry; your session has been kept.'); return false; }
