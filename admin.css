@@ -183,3 +183,16 @@ html,body{overflow-x:clip}
   .staff-access-row{grid-template-columns:1fr!important;gap:8px!important}
   .staff-row-actions button{width:100%}
 }
+
+
+/* Admin controls phase 1: explicit state, selectable live products and honest drafts. */
+.admin-view-error{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border:1px solid #fda4af;background:#fff1f2;color:#9f1239;border-radius:11px;padding:14px;margin-bottom:14px;font-size:13px;overflow-wrap:anywhere}
+.admin-action-feedback{font-size:12px;font-weight:650;color:var(--navy);margin:6px 0 12px;min-height:1.3em}
+.live-select-label{display:inline-flex;gap:6px;align-items:center;margin:0 8px 8px 0;font-size:12px;cursor:pointer;color:var(--navy);font-weight:750}
+.live-select-label input{width:17px;height:17px;accent-color:var(--navy)}
+.box-draft-preview{margin-top:16px;padding:16px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:12px}
+.box-draft-preview h3{margin:0 0 8px;color:var(--navy)}
+.box-draft-preview ul{padding-left:18px;margin:12px 0}
+.box-draft-preview li{padding:4px 0;font-size:12px}
+.box-draft-preview small{display:block;margin:8px 0;color:var(--muted)}
+@media(max-width:767px){.bulkbar{flex-wrap:wrap}.bulkbar .btn{min-height:44px}.admin-view-error{display:grid}}
