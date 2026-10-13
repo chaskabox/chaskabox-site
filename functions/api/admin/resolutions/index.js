@@ -3,6 +3,7 @@
  * GET  — list cases. POST — create case. Roles: owner, manager.
  */
 import { withAdmin, sb, json, httpError, readJson, audit, pagination } from '../_lib/auth.js';
+import { validateCaseCreate } from '../_lib/resolution-input.js';
 
 export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
   const url = new URL(context.request.url);
@@ -17,19 +18,7 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async (context) => {
 });
 
 export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
-  const body = await readJson(context.request);
-  if (!body.issue_type || !body.description) httpError('issue_type and description required', 400, 'invalid');
-
-  const row = {
-    order_id: body.order_id || null,
-    order_number: body.order_number || null,
-    customer_name: body.customer_name || null,
-    customer_phone: body.customer_phone || null,
-    issue_type: body.issue_type,
-    description: body.description,
-    status: 'open',
-    refund_amount: Number(body.refund_amount) || 0,
-  };
+  const row=validateCaseCreate(await readJson(context.request,16*1024));
   const created = await sb(context, '/rest/v1/resolution_cases', { method: 'POST', body: row });
   await audit(context, { actorId:user.id, actorRole:role, action:'resolution.created', entityType:'resolution', entityId:(Array.isArray(created)?created[0]?.id:created?.id), after:{ issue_type: row.issue_type } });
   return json({ case: Array.isArray(created) ? created[0] : created }, 201);

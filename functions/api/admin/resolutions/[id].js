@@ -3,25 +3,17 @@
  * PATCH — update status/resolution. Roles: owner, manager.
  */
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
+import { validateCasePatch } from '../_lib/resolution-input.js';
 
 export const onRequestPatch = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const id = context.params.id;
   if (!id) httpError('Case id required', 400);
 
-  const body = await readJson(context.request);
-  const patch = {};
-  if (body.status) {
-    if (!['open', 'in_progress', 'resolved', 'rejected'].includes(body.status)) httpError('Invalid status', 400);
-    patch.status = body.status;
-    if (body.status === 'resolved' || body.status === 'rejected') patch.resolved_at = new Date().toISOString();
-  }
-  if (body.resolution !== undefined) patch.resolution = body.resolution || null;
-  if (body.refund_amount !== undefined) patch.refund_amount = Number(body.refund_amount) || 0;
-  patch.updated_at = new Date().toISOString();
-
+  const patch=validateCasePatch(await readJson(context.request,16*1024));
   const updated = await sb(context, `/rest/v1/resolution_cases?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH', body: patch,
   });
+  if(!Array.isArray(updated)||updated.length===0)httpError('Case not found. Refresh before retrying.',404,'not_found');
   await audit(context, { actorId:user.id, actorRole:role, action:'resolution.updated', entityType:'resolution', entityId:id, after:{ id, status: patch.status } });
   return json({ case: Array.isArray(updated) ? updated[0] : updated });
 });
