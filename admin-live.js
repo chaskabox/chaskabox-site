@@ -222,15 +222,67 @@
     wirePager(target,data,loadOrders);
     $$('[data-order]',target).forEach(b=>b.onclick=()=>openOrder(b.dataset.order));
   }
+  async function askForOrderDecision(title,description){
+    return new Promise(resolve=>{
+      const dialog=document.createElement('dialog');dialog.className='admin-ops-dialog order-decision-dialog';
+      const form=document.createElement('form');form.noValidate=true;
+      const heading=document.createElement('h2');heading.textContent=title;
+      const note=document.createElement('p');note.className='muted';note.textContent=description;
+      const label=document.createElement('label');label.className='admin-ops-field';label.textContent='Evidence / reason (required)';
+      const field=document.createElement('textarea');field.required=true;field.rows=3;field.maxLength=500;label.append(field);
+      const actions=document.createElement('div');actions.className='admin-ops-actions';
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='btn secondary';cancel.textContent='Cancel';
+      const save=document.createElement('button');save.type='submit';save.className='btn primary';save.textContent='Confirm';
+      actions.append(cancel,save);form.append(heading,note,label,actions);dialog.append(form);document.body.append(dialog);
+      let finished=false;const close=v=>{if(finished)return;finished=true;dialog.remove();resolve(v);};
+      cancel.onclick=()=>close(null);dialog.oncancel=e=>{e.preventDefault();close(null);};
+      form.onsubmit=e=>{e.preventDefault();const v=field.value.trim();if(v.length<3){field.setCustomValidity('Please provide at least three characters.');field.reportValidity();return;}close(v);};
+      field.oninput=()=>field.setCustomValidity('');
+      if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+      field.focus();
+    });
+  }
+
   async function openOrder(id){
     const data=await api(`/api/admin/orders/${encodeURIComponent(id)}`),o=data.order, items=data.items||[];
     let modal=$('#liveOrderModal'); if(!modal){modal=document.createElement('div');modal.id='liveOrderModal';modal.className='admin-modal';document.body.appendChild(modal);} modal.classList.add('open');
     const flow=['new','sourcing','packed','dispatched','delivered']; const idx=flow.indexOf(o.fulfilment_status); const next=idx>=0&&idx<flow.length-1?flow[idx+1]:null;
     modal.innerHTML=`<div class="modal-backdrop" data-close-order></div><section class="admin-modal-card live-order-card"><div class="modal-head"><div><small>ORDER</small><h2>${esc(o.order_number)}</h2></div><button class="icon-btn" data-close-order>×</button></div><div class="order-detail-grid"><section><h3>Customer</h3><p><b>${esc(o.customer_name)}</b><br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</p><h3>Items</h3><div class="order-items">${items.map(i=>`<div><span>${esc(i.product_name)} · ${esc(i.pack)} × ${i.quantity}</span><b>${money(i.line_total)}</b></div>`).join('')}</div></section><section><h3>Payment</h3><p>${esc(o.payment_method)} · <b>${esc(o.payment_status)}</b>${o.transaction_reference?`<br>Ref: ${esc(o.transaction_reference)}`:''}</p><h3>Total</h3><p>Subtotal ${money(o.subtotal)}<br>Delivery ${money(o.delivery_fee)}<br><b>${money(o.total)}</b></p><h3>Actions</h3><div class="order-actions">${next?`<button class="btn primary" data-status="${next}">Move to ${esc(next)}</button>`:''}${!['delivered','cancelled'].includes(o.fulfilment_status)?'<button class="btn danger" data-status="cancelled">Cancel</button>':''}${['payment_submitted','awaiting_payment'].includes(o.payment_status)?'<button class="btn secondary" data-pay="verified">Verify payment</button><button class="btn secondary" data-pay="rejected">Reject payment</button>':''}<button class="btn secondary" data-retry>Retry notification</button></div><h3>Status history</h3><div class="history-list">${(data.history||[]).map(h=>`<div><b>${esc(h.action)}</b><small>${fmtDate(h.created_at)} · ${esc(h.actor_role)}</small></div>`).join('')||'<small>No audit events yet.</small>'}</div></section></div></section>`;
     $$('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
-    $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{try{const st=b.dataset.status;let body={fulfilment_status:st,expected_updated_at:o.updated_at};if(st==='cancelled'){const reason=prompt('Cancellation reason (required):');if(!reason)return;body.cancel_reason=reason;}await api(`/api/admin/orders/${id}/status`,{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
-    $$('[data-pay]',modal).forEach(b=>b.onclick=async()=>{try{await api(`/api/admin/orders/${id}/payment/verify`,{method:'POST',body:{decision:b.dataset.pay,expected_updated_at:o.updated_at}});toast('Payment updated');modal.classList.remove('open');await Promise.all([loadOrders(),loadDashboard()]);}catch(e){toast(e.message)}});
-    $('[data-retry]',modal).onclick=async()=>{try{const r=await api(`/api/admin/orders/${id}/notifications/retry`,{method:'POST',body:{}});toast(r.queued?`${r.queued} safe notification job(s) queued`:'No safe retries available; check Notifications for review')}catch(e){toast(e.message)}};
+    $('[data-status]',modal).forEach(b=>b.onclick=async()=>{
+      if(b.disabled)return;
+      const st=b.dataset.status,body={fulfilment_status:st,expected_updated_at:o.updated_at};
+      if(st==='cancelled'){
+        const reason=await askForOrderDecision('Cancel '+o.order_number,'Cancellation is irreversible. Record the reason.');
+        if(!reason)return;body.cancel_reason=reason;
+      }else if(!confirm('Advance order '+o.order_number+' to '+st+'?'))return;
+      b.disabled=true;
+      try{await api('/api/admin/orders/'+encodeURIComponent(id)+'/status',{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.allSettled([loadOrders(),loadDashboard()]);}
+      catch(e){toast('Order update failed: '+e.message);await openOrder(id).catch(()=>{});}finally{b.disabled=false;}
+    });
+    $('[data-pay]',modal).forEach(b=>b.onclick=async()=>{
+      if(b.disabled)return;
+      const decision=b.dataset.pay;
+      if(decision==='verified'&&!String(o.transaction_reference||'').trim()){toast('A transaction reference is required before payment approval.');return;}
+      const note=await askForOrderDecision(
+        decision==='verified'?'Verify prepaid payment · '+o.order_number:'Reject prepaid payment · '+o.order_number,
+        decision==='verified'?'Confirm the reference against your actual receiving account. This decision does not contact the payment provider.':'Record the reason before rejecting payment.'
+      );
+      if(!note)return;
+      const actions=$('[data-pay], [data-status], [data-retry]',modal);actions.forEach(btn=>btn.disabled=true);
+      try{
+        await api('/api/admin/orders/'+encodeURIComponent(id)+'/payment/verify',{method:'POST',body:{decision,note,expected_updated_at:o.updated_at}});
+        toast('Payment review recorded');modal.classList.remove('open');await Promise.allSettled([loadOrders(),loadDashboard()]);
+      }catch(e){toast('Payment review failed: '+e.message);await openOrder(id).catch(()=>{});}
+      finally{actions.forEach(btn=>btn.disabled=false);}
+    });
+    $('[data-retry]',modal).onclick=async e=>{
+      const b=e.currentTarget;if(b.disabled)return;b.disabled=true;
+      try{
+        const r=await api('/api/admin/orders/'+encodeURIComponent(id)+'/notifications/retry',{method:'POST',body:{}});
+        toast(r.queued?String(r.queued)+' notification(s) queued; delivery is not yet confirmed':'No safe retries available; review Notifications');
+      }catch(err){toast('Notification retry failed: '+err.message);}finally{b.disabled=false;}
+    };
     // Print invoice / packing slip
     const printBar = document.createElement('div');
     printBar.style.cssText = 'display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)';
