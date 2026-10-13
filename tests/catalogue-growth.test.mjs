@@ -8,7 +8,7 @@ import {organizationSchema} from '../functions/api/_lib/storefront-html.js';
 const shell=await readFile(new URL('../shop/index.html',import.meta.url),'utf8');
 const occasion=await readFile(new URL('../snack-boxes/index.html',import.meta.url),'utf8');
 const rows=[{id:69,name:'Fixture <sweet>',brand:'Fixture',category:'Chews & Gums',price:100,pack:'Pack of 12',image_url:'images/p69.webp',stock_state:'sourced_after_order'},{id:76,name:'Fixture fruity pack',brand:'Fixture',category:'Chews & Gums',price:200,pack:'Pack of 24',image_url:'images/p76.webp',stock_state:'sourced_after_order'}];
-const env={SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async req=>new Response(new URL(req.url).pathname==='/snack-boxes/'?occasion:shell)}};
+const env={SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async req=>{assert.ok(['/', '/about/'].includes(new URL(req.url).pathname),'SSR must read a static shell outside its own handled route');return new Response(new URL(req.url).pathname==='/about/'?occasion:shell);}}};
 const context={env,request:new Request('https://chaskabox.online/shop/'),params:{}};
 test('public collection HTML, aliases, missing brand, outage and incomplete occasion are truthful',async()=>{
  const original=globalThis.fetch;let outage=false;
