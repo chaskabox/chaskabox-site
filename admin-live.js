@@ -55,11 +55,56 @@
   }
   async function getMe(){ return await api('/api/admin/me'); }
   function roleAllows(...roles){return me&&roles.includes(me.role)}
+  const ROLE_VIEWS={
+    dashboard:['owner','manager','fulfilment','content'],
+    orders:['owner','manager','fulfilment'],
+    resolutions:['owner','manager'],
+    coupons:['owner','manager'],
+    shipping:['owner','manager'],
+    analytics:['owner','manager'],
+    backup:['owner'],
+    studio:['owner','manager','content'],
+    products:['owner','manager','content'],
+    categories:['owner','manager','content'],
+    brands:['owner','manager'],
+    boxes:['owner','manager','content'],
+    homepage:['owner','manager','content'],
+    navigation:['owner','manager','content'],
+    theme:['owner','manager'],
+    customers:['owner','manager'],
+    reviews:['owner','manager','content'],
+    media:['owner','manager','content'],
+    notifications:['owner','manager'],
+    assistant:['owner','manager','content'],
+    health:['owner','manager'],
+    preview:['owner','manager','fulfilment','content'],
+    settings:['owner'],
+    security:['owner','manager','fulfilment','content'],
+  };
+  function canOpenAdminView(name){return Boolean(me&&ROLE_VIEWS[name]?.includes(me.role));}
+  function syncRoleNavigation(){
+    $('.admin-nav-btn').forEach(button=>{
+      const allowed=canOpenAdminView(button.dataset.view);
+      button.hidden=!allowed;
+      button.style.display=allowed?'':'none';
+      button.setAttribute('aria-hidden',String(!allowed));
+    });
+    $('[data-jump]').forEach(button=>{
+      const allowed=canOpenAdminView(button.dataset.jump);
+      button.hidden=!allowed;button.style.display=allowed?'':'none';
+    });
+    for(const id of ['quickAddProductBtn','addProductBtn']){
+      const button=$('#'+id);
+      if(button){button.hidden=!canOpenAdminView('products');button.style.display=canOpenAdminView('products')?'':'none';}
+    }
+  }
   function wireNav(){
     $$('.admin-nav-btn').forEach(btn=>btn.addEventListener('click',()=>setTimeout(()=>{ $('#adminSidebar').classList.remove('open'); $('#sidebarBackdrop')?.classList.remove('show'); loadView(btn.dataset.view); },0),true));
   }
   async function loadView(name){
+    if(!canOpenAdminView(name)){toast('Your staff role does not allow this panel.');return;}
     try{
+      $('#view-'+name)?.querySelector('.admin-view-error')?.remove();
       if(name==='orders') await loadOrders();
       if(name==='analytics' && roleAllows('owner','manager')) await loadAnalytics();
       if(name==='coupons' && roleAllows('owner','manager')) await loadCoupons();
@@ -85,6 +130,9 @@
       // Session died mid-use: send back to the staff login instead of showing dead views.
       if(e && e.status===401){ try{await SB?.auth?.signOut();}catch(se){} showLogin(); return; }
       toast(e.message);
+      const view=$('#view-'+name);
+      if(view){const msg=document.createElement('div');msg.className='admin-view-error';msg.setAttribute('role','alert');msg.textContent='Could not load '+name+': '+(e.message||'Unknown error')+'. ';
+        const retry=document.createElement('button');retry.type='button';retry.className='btn secondary compact';retry.textContent='Retry';retry.onclick=()=>loadView(name);msg.append(retry);view.prepend(msg);}
     }
   }
   /* ============ AUTH BOOTSTRAP GATE ============
@@ -109,6 +157,7 @@
       const passed=await window.chaskaAdminMfa.gate(SB,()=>bootAuthenticated(),()=>showLogin());
       if(!passed)return false;
       me=await getMe();
+      syncRoleNavigation();
     }catch(e){
       // A network blip must NEVER destroy a valid session — only real auth
       // failures (401/403) sign out. Anything else shows a retry state.
@@ -122,7 +171,7 @@
     $('#securityNotice').className='security-notice live'; $('#securityNotice').innerHTML=`<strong>Live secure mode:</strong> authenticated as <b>${esc(me.role)}</b>. Every write is re-authorized server-side and audited.`;
     const currentAccount=$('#adminCurrentAccount');if(currentAccount){currentAccount.textContent=me.user?.email||'Signed-in staff';currentAccount.hidden=false;}
     for(const selector of ['#adminSignOut','#adminSidebarSignOut']){const button=$(selector);if(button){button.hidden=false;button.onclick=()=>signOutAdmin('local');}}
-    wireNav(); wireOrderFilters(); wireLiveProductEditor(); wireHomepage(); wireMedia(); wireSettings(); wireBoxLive();
+    wireNav(); wireOrderFilters(); wireLiveProductEditor(); wireProductBulkActions(); wireBoxPreview(); wireHomepage(); wireMedia(); wireSettings(); wireBoxLive();
     hideBoot(); // session verified — reveal the console; views show their own loaders
     await Promise.allSettled([loadDashboard(),loadProducts()]);
     // Boot legacy admin.js catalogue UI now that we are authenticated.
@@ -215,12 +264,15 @@
   }
 
   let productPage = 1, productTotalPages = 1, productTotal = 0;
+  const bulkSelectedIds=new Set();
   const PRODUCT_PER_PAGE = 1000; // All products on one page (no pagination)
   async function loadProducts(page){
     productPage = page || 1;
     const data=await api(`/api/admin/products?per_page=${PRODUCT_PER_PAGE}&page=${productPage}`); products=data.products||[];
     productTotal = data.total ?? products.length;
     productTotalPages = data.total_pages ?? 1;
+    const validIds=new Set(products.map(p=>Number(p.id)));
+    for(const id of bulkSelectedIds)if(!validIds.has(id))bulkSelectedIds.delete(id);
     $('#metricProducts').textContent=productTotal; $('#productNavCount').textContent=productTotal;
     renderFilteredProducts();
     renderProductPagination();
@@ -265,9 +317,11 @@
       if(vis==='bundle' && !p.is_bundle) return false;
       return true;
     });
-    const grid=$('#productAdminGrid'); if(!grid)return; grid.innerHTML=filtered.map(p=>`<article class="admin-product-card" data-product-id="${p.id}"><span class="visibility-chip ${p.visibility==='visible'?'':'hidden-product'}">${esc(p.visibility)}</span><div class="admin-product-image">${p.image_url?`<img src="${esc(p.image_url)}" alt="${esc(p.name||'ChaskaBox product')}">`:'<span class="placeholder">🍿</span>'}</div><div class="admin-product-body"><h3>${esc(p.name)}</h3><div class="admin-product-meta">${esc(p.category)} · ${esc(p.pack||'')}</div><div class="admin-product-price"><strong>${money(p.price)}</strong>${p.old_price?`<del>${money(p.old_price)}</del>`:''}</div><div class="admin-card-actions"><button data-live-edit="${p.id}">Edit</button><button data-live-vis="${p.id}">${p.visibility==='visible'?'Hide':'Show'}</button></div></div></article>`).join('') || '<div class="panel"><p class="muted">No matching products.</p></div>';
+    const grid=$('#productAdminGrid'); if(!grid)return; grid.innerHTML=filtered.map(p=>`<article class="admin-product-card" data-product-id="${p.id}"><label class="live-select-label"><input type="checkbox" data-live-select="${p.id}" aria-label="Select ${esc(p.name)}" ${bulkSelectedIds.has(Number(p.id))?'checked':''}> Select</label><span class="visibility-chip ${p.visibility==='visible'?'':'hidden-product'}">${esc(p.visibility)}</span><div class="admin-product-image">${p.image_url?`<img src="${esc(p.image_url)}" alt="${esc(p.name||'ChaskaBox product')}">`:'<span class="placeholder">🍿</span>'}</div><div class="admin-product-body"><h3>${esc(p.name)}</h3><div class="admin-product-meta">${esc(p.category)} · ${esc(p.pack||'')}</div><div class="admin-product-price"><strong>${money(p.price)}</strong>${p.old_price?`<del>${money(p.old_price)}</del>`:''}</div><div class="admin-card-actions"><button data-live-edit="${p.id}">Edit</button><button data-live-vis="${p.id}">${p.visibility==='visible'?'Hide':'Show'}</button></div></div></article>`).join('') || '<div class="panel"><p class="muted">No matching products.</p></div>';
     $('#productResultCount').textContent=`Showing ${filtered.length} of ${products.length} products`; $('#loadMoreProducts').style.display='none';
-    $$('[data-live-edit]',grid).forEach(b=>b.onclick=()=>openLiveProduct(b.dataset.liveEdit)); $$('[data-live-vis]',grid).forEach(b=>b.onclick=async()=>{const p=products.find(x=>String(x.id)===String(b.dataset.liveVis));try{await api(`/api/admin/products/${p.id}`,{method:'PATCH',body:{visibility:p.visibility==='visible'?'hidden':'visible'}});toast('Visibility updated');loadProducts()}catch(e){toast(e.message)}});
+    $('[data-live-select]',grid).forEach(b=>b.onchange=()=>{const id=Number(b.dataset.liveSelect);b.checked?bulkSelectedIds.add(id):bulkSelectedIds.delete(id);updateProductBulkBar();});
+    updateProductBulkBar();
+    $('[data-live-edit]',grid).forEach(b=>b.onclick=()=>openLiveProduct(b.dataset.liveEdit)); $$('[data-live-vis]',grid).forEach(b=>b.onclick=async()=>{const p=products.find(x=>String(x.id)===String(b.dataset.liveVis));try{await api(`/api/admin/products/${p.id}`,{method:'PATCH',body:{visibility:p.visibility==='visible'?'hidden':'visible'}});toast('Visibility updated');loadProducts()}catch(e){toast(e.message)}});
     // Wire filter inputs to re-render (if not already wired)
     if(!renderFilteredProducts._wired){
       renderFilteredProducts._wired=true;
@@ -291,6 +345,68 @@
     // Refresh preview (admin.js listens for input events on the form)
     try{ $('#editImage').dispatchEvent(new Event('input',{bubbles:true})); }catch{}
   }
+
+  function updateProductBulkBar(){
+    const bar=$('#bulkBar'),n=bulkSelectedIds.size;
+    if(!bar)return;
+    bar.classList.toggle('hidden',!n);
+    $('#bulkCount').textContent=n+' selected (max 50 per action)';
+    const feedback=$('#bulkFeedback');if(feedback)feedback.textContent='';
+  }
+  function wireProductBulkActions(){
+    const bar=$('#bulkBar');if(!bar||bar.dataset.liveBulkWired)return;
+    bar.dataset.liveBulkWired='1';
+    bar.addEventListener('click',async event=>{
+      const button=event.target.closest('[data-bulk]');if(!button)return;
+      // The legacy prototype also owns a bubble handler. Stop it so no
+      // misleading "disabled" toast appears after real authenticated writes.
+      event.preventDefault();event.stopImmediatePropagation();
+      const action=button.dataset.bulk;
+      if(action==='clear'){bulkSelectedIds.clear();renderFilteredProducts();return;}
+      const ids=[...bulkSelectedIds];
+      if(!ids.length)return;
+      if(ids.length>50){toast('Select at most 50 products per bulk action.');return;}
+      if(!['show','hide','archive','restore'].includes(action))return;
+      const verb={show:'show',hide:'hide',archive:'archive',restore:'restore as hidden'}[action];
+      if(!confirm('Are you sure you want to '+verb+' '+ids.length+' product(s)? All changes will be saved and audited together.'))return;
+      const buttons=$('[data-bulk]',bar);
+      buttons.forEach(b=>b.disabled=true);
+      const feedback=$('#bulkFeedback');
+      if(feedback)feedback.textContent='Saving '+ids.length+' product(s)…';
+      try{
+        const r=await api('/api/admin/products/bulk',{method:'POST',body:{ids,action}});
+        bulkSelectedIds.clear();
+        await loadProducts(productPage);
+        if(feedback)feedback.textContent=r.changed+' updated, '+r.skipped+' already in target state.';
+        toast(r.changed+' products updated');
+      }catch(error){if(feedback)feedback.textContent='Not saved: '+error.message;toast(error.message);}
+      finally{buttons.forEach(b=>b.disabled=false);}
+    },true);
+  }
+
+  function wireBoxPreview(){
+    const button=$('#previewBoxBtn');if(!button||button.dataset.livePreviewWired)return;
+    button.dataset.livePreviewWired='1';
+    button.addEventListener('click',event=>{
+      event.preventDefault();event.stopImmediatePropagation();
+      const rows=$('#boxSelectedItems .builder-item');
+      if(!rows.length){toast('Choose products first');return;}
+      const title=$('#boxName').value.trim()||'Untitled Chaska Box';
+      const price=Number($('#boxPrice').value||0);
+      if(!Number.isSafeInteger(price)||price<0){toast('Enter a valid selling price');return;}
+      let pane=$('#boxDraftPreview');
+      if(!pane){pane=document.createElement('section');pane.id='boxDraftPreview';pane.className='box-draft-preview';pane.setAttribute('aria-label','Chaska Box draft preview');$('#previewBoxBtn').closest('.builder-summary').append(pane);}
+      const summary=rows.map(r=>{
+        const name=r.querySelector('span')?.textContent||'Product';
+        const qty=Number(r.querySelector('.qty-controls b')?.textContent||0);
+        return '<li>'+esc(name)+' × '+qty+'</li>';
+      }).join('');
+      pane.innerHTML='<h3>'+esc(title)+'</h3><p>'+esc($('#boxDescription').value.trim())+'</p><ul>'+summary+'</ul><p><b>Customer price: '+money(price)+'</b></p><small>Draft preview only. Nothing has been saved or published.</small><div><button type="button" class="btn secondary compact" id="closeBoxDraftPreview">Close preview</button></div>';
+      $('#closeBoxDraftPreview').onclick=()=>pane.remove();
+      pane.scrollIntoView({behavior:'smooth',block:'nearest'});
+    },true);
+  }
+
   function wireLiveProductEditor(){
     const form=$('#productForm'); if(!form)return; form.addEventListener('submit',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();const id=$('#editProductId').value;const body={name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),old_price:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,description:$('#editDescription').value.trim(),image_url:$('#editImage').value.trim(),visibility:$('#editVisibility').value,brand:$('#editBrand').value.trim(),stock_state:$('#editStock').value,tags:$('#editTags').value.split(',').map(t=>t.trim()).filter(Boolean),seo_title:$('#editSeoTitle').value.trim()||null,seo_description:$('#editSeoDesc').value.trim()||null,og_image:$('#editOgImage').value.trim()||null,canonical_url:$('#editCanonical').value.trim()||null};try{const saved=id?await api(`/api/admin/products/${id}`,{method:'PATCH',body}):await api('/api/admin/products',{method:'POST',body});const savedId=saved?.product?.id||id;toast('Product saved');$('#productEditor').classList.remove('open');await loadProducts();}catch(x){toast(x.message)}},true);
     // Inline AI: improve description
@@ -397,10 +513,10 @@
     try{const state=await api('/api/admin/ai-status');document.getElementById('aiBudgetState').textContent=(state.enabled?'AI enabled. ':'AI paused. ')+'App estimate: '+state.budget.accounted_neuron_estimate+' / '+state.budget.policy_budget+' neurons. Index remaining: '+state.index.remaining+'.';}
     catch{document.getElementById('aiBudgetState').textContent='AI state unavailable; do not assume quota or index completion.';}
 
-    $('#saveSettings').onclick=async()=>{try{
+    $('#saveSettings').onclick=async()=>{const saveBtn=$('#saveSettings');if(saveBtn.disabled)return;saveBtn.disabled=true;saveBtn.textContent='Saving…';try{
       // Get real values from masked fields
       const getVal=id=>{const el=document.getElementById(id);return el.getRealValue?el.getRealValue():el.value;};
-      await api('/api/admin/settings',{method:'PATCH',body:{settings:{cod_delivery_fee_pkr:Number($('#setCodFee').value),prepaid_delivery_fee_pkr:Number($('#setPreFee').value),prepaid_free_delivery_threshold_pkr:Number($('#setThreshold').value),delivery_estimate:$('#setEstimate').value.trim(),support_whatsapp:getVal('setSupportWhatsApp'),support_email:$('#setSupportEmail').value.trim(),store_address:$('#setStoreAddress').value.trim(),promo_text:$('#setPromo').value.trim(),jazzcash_till_id:getVal('setJazzTill'),jazzcash_qr_url:$('#setJazzQr').value.trim(),bank_transfer_details:{bank:$('#setBankName').value.trim(),account_title:getVal('setBankTitle'),account_number:getVal('setBankAccount')},cod_enabled:$('#setCod').checked,jazzcash_enabled:$('#setJazz').checked,bank_transfer_enabled:$('#setBank').checked,media_upload_enabled:$('#setMediaEnabled').checked,media_monthly_transform_limit:Number($('#setMediaLimit').value),ai_enabled:$('#setAiEnabled').checked,ai_text_enabled:$('#setAiText').checked,ai_images_enabled:$('#setAiImages').checked,ai_embeddings_enabled:$('#setAiEmbeddings').checked,ai_daily_budget_neurons:Number($('#setAiBudget').value),ai_customer_assistant_enabled:$('#setAiHelp').checked,ai_semantic_search_enabled:$('#setAiSearch').checked}}});toast('Settings saved and storefront will refresh automatically')}catch(e){toast(e.message)}};
+      await api('/api/admin/settings',{method:'PATCH',body:{settings:{cod_delivery_fee_pkr:Number($('#setCodFee').value),prepaid_delivery_fee_pkr:Number($('#setPreFee').value),prepaid_free_delivery_threshold_pkr:Number($('#setThreshold').value),delivery_estimate:$('#setEstimate').value.trim(),support_whatsapp:getVal('setSupportWhatsApp'),support_email:$('#setSupportEmail').value.trim(),store_address:$('#setStoreAddress').value.trim(),promo_text:$('#setPromo').value.trim(),jazzcash_till_id:getVal('setJazzTill'),jazzcash_qr_url:$('#setJazzQr').value.trim(),bank_transfer_details:{bank:$('#setBankName').value.trim(),account_title:getVal('setBankTitle'),account_number:getVal('setBankAccount')},cod_enabled:$('#setCod').checked,jazzcash_enabled:$('#setJazz').checked,bank_transfer_enabled:$('#setBank').checked,media_upload_enabled:$('#setMediaEnabled').checked,media_monthly_transform_limit:Number($('#setMediaLimit').value),ai_enabled:$('#setAiEnabled').checked,ai_text_enabled:$('#setAiText').checked,ai_images_enabled:$('#setAiImages').checked,ai_embeddings_enabled:$('#setAiEmbeddings').checked,ai_daily_budget_neurons:Number($('#setAiBudget').value),ai_customer_assistant_enabled:$('#setAiHelp').checked,ai_semantic_search_enabled:$('#setAiSearch').checked}}});await loadSettings();toast('Settings saved and verified by reloading from database')}catch(e){toast(e.message)}finally{const b=$('#saveSettings');if(b){b.disabled=false;b.textContent='Save settings';}}};
     // Mask sensitive fields by default
     wireSensitiveField('setJazzTill', map.jazzcash_till_id);
     wireSensitiveField('setBankTitle', map.bank_transfer_details?.account_title);
@@ -1516,8 +1632,9 @@
     const input=document.getElementById(inputId);
     if(!input) return;
     // Store real value, show masked
-    input.dataset.realValue=realValue||'';
-    input.value=maskValue(realValue);
+    const originalValue=realValue==null?input.value:String(realValue);
+    input.dataset.realValue=originalValue;
+    input.value=maskValue(originalValue);
     input.readOnly=true;
     input.style.background='#f8fafc';
     // Add reveal button
@@ -1546,7 +1663,7 @@
       }
     };
     // When saving, use the real value
-    input.getRealValue=()=>input.dataset.realValue;
+    input.getRealValue=()=>revealed?input.value:input.dataset.realValue;
   }
 
   /* ============ AI IMAGE STUDIO ============ */
