@@ -1755,9 +1755,9 @@
         "unit_price": 650
       }
     ],
-    "bundleRetailValue": 2450,
     "bundleSavings": 251,
-    "bundleWarning": ""
+    "retailValue": 2450,
+    "bundleNote": ""
   },
   {
     "id": 269,
@@ -1776,7 +1776,7 @@
     "seoTitle": "",
     "seoDescription": "",
     "bundleContents": [],
-    "bundleWarning": "Contents are being checked. Contact ChaskaBox before ordering."
+    "bundleNote": "Contents are being checked. Contact ChaskaBox before ordering."
   },
   {
     "id": 270,
@@ -1817,9 +1817,9 @@
         "unit_price": 410
       }
     ],
-    "bundleRetailValue": 1450,
     "bundleSavings": 151,
-    "bundleWarning": ""
+    "retailValue": 1450,
+    "bundleNote": ""
   },
   {
     "id": 271,
@@ -1860,9 +1860,9 @@
         "unit_price": 655
       }
     ],
-    "bundleRetailValue": 1553,
     "bundleSavings": 158,
-    "bundleWarning": ""
+    "retailValue": 1553,
+    "bundleNote": ""
   },
   {
     "id": 272,
@@ -1917,8 +1917,8 @@
         "unit_price": 399
       }
     ],
-    "bundleRetailValue": 2157,
     "bundleSavings": 218,
-    "bundleWarning": ""
+    "retailValue": 2157,
+    "bundleNote": ""
   }
 ]
