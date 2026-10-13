@@ -68,6 +68,9 @@ export default {
       const summary = await privateRequest(env, '/rest/v1/rpc/notification_summary', {});
       const health = notificationHealth(notificationConfig(env), summary);
       return json(health, health.ok ? 200 : 503);
-    } catch { return json({ ok: false, reasons: ['notification_health_or_run_unavailable'] }, 503); }
+    } catch (error) {
+      const reason=/^queue_api_\d{3}$/.test(error?.message)?error.message:error?.message==='queue_request_failed'?'queue_request_failed':'notification_health_or_run_unavailable';
+      return json({ ok: false, reasons: [reason] }, 503);
+    }
   },
 };

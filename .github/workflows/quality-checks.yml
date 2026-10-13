@@ -53,12 +53,12 @@ jobs:
           retention-days: 7
           compression-level: 0
       - name: Install pinned live audit tool
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/improve/consolidated-storefront-release-20261013' || github.head_ref == 'improve/consolidated-storefront-release-20261013'
+        if: github.ref == 'refs/heads/main'
         run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund lighthouse@12.8.2
       - name: Audit the deployed checked source on mobile
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/improve/consolidated-storefront-release-20261013' || github.head_ref == 'improve/consolidated-storefront-release-20261013'
+        if: github.ref == 'refs/heads/main'
         env:
-          AUDIT_BASE_URL: ${{ github.ref == 'refs/heads/main' && 'https://chaskabox.online' || 'https://improve-consolidated-storefr.chaskabox-site.pages.dev' }}
+          AUDIT_BASE_URL: https://chaskabox.online
         run: node tools/live-lighthouse-audit.mjs
       - name: Save read-only live mobile audit results
         if: always()

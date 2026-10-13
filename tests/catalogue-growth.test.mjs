@@ -33,9 +33,9 @@ test('public collection HTML, aliases, missing brand, outage and incomplete occa
 test('bundle details use public components and current prices without a fixed discount claim',()=>{
  const products=[{id:1,name:'Box',is_bundle:true,price:250},{id:2,name:'Pack A',pack:'Pack of 12',price:100},{id:3,name:'Pack B',pack:'Pack of 24',price:200}];
  const links=[{bundle_product_id:1,component_product_id:2,quantity:1},{bundle_product_id:1,component_product_id:3,quantity:1}];
- let p=bundleDetails(products,links)[0];assert.equal(p.bundle_retail_value,300);assert.equal(p.bundle_savings,50);assert.equal(p.bundle_contents[1].pack,'Pack of 24');
- p=bundleDetails(products.map(p=>p.id===1?{...p,price:400}:p),links)[0];assert.equal(p.bundle_savings,0);
- p=bundleDetails(products,links.concat({bundle_product_id:1,component_product_id:999,quantity:1}))[0];assert.equal(p.bundle_contents.length,0);assert.match(p.bundle_warning,/checked/);
+ let p=bundleDetails(products,links)[0];assert.equal(p.bundle_retail_value,300);assert.equal(p.old_price,300);assert.equal(p.bundle_savings,50);assert.equal(p.bundle_contents[1].pack,'Pack of 24');
+ p=bundleDetails(products.map(p=>p.id===1?{...p,price:400}:p),links)[0];assert.equal(p.bundle_savings,0);assert.equal(p.old_price,null);
+ p=bundleDetails(products,links.concat({bundle_product_id:1,component_product_id:999,quantity:1}))[0];assert.equal(p.bundle_contents.length,0);assert.equal(p.old_price,null);assert.match(p.bundle_warning,/checked/);
 });
 test('organization return information refers to the actual policy without inventing a blanket return window',()=>{
  const p=organizationSchema().hasMerchantReturnPolicy;assert.equal(p.merchantReturnLink,'https://chaskabox.online/refund-policy/');assert.equal(p.merchantReturnDays,undefined);

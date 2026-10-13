@@ -1731,7 +1731,33 @@
     "bundle": true,
     "stockState": "sourced_after_order",
     "seoTitle": "",
-    "seoDescription": ""
+    "seoDescription": "",
+    "bundleContents": [
+      {
+        "product_id": 54,
+        "name": "Giggly | Butter Fudge Butter Milk Toffee",
+        "pack": "Pack of 120",
+        "quantity": 1,
+        "unit_price": 1050
+      },
+      {
+        "product_id": 55,
+        "name": "Mayfair | Eclairs Pouch",
+        "pack": "Pack of 90",
+        "quantity": 1,
+        "unit_price": 750
+      },
+      {
+        "product_id": 57,
+        "name": "Candyland | Now Chocolate Paste",
+        "pack": "Pack of 50",
+        "quantity": 1,
+        "unit_price": 650
+      }
+    ],
+    "bundleRetailValue": 2450,
+    "bundleSavings": 251,
+    "bundleWarning": ""
   },
   {
     "id": 269,
@@ -1739,7 +1765,7 @@
     "name": "ChaskaBox Family Pack",
     "brand": null,
     "price": 2039,
-    "oldPrice": 2268,
+    "oldPrice": null,
     "category": "Bundles",
     "pack": "Bundle Pack",
     "desc": "Bundle pack with: Giggly | Butter Fudge Butter Milk Toffee, Winner | Nony Pops, Giggly | Big Twisto Mango Jelly, Mayfair | Delight Chocolate Cream Croissant. One of each listed retail pack is included. Compare current pack details before ordering.",
@@ -1748,7 +1774,9 @@
     "bundle": true,
     "stockState": "sourced_after_order",
     "seoTitle": "",
-    "seoDescription": ""
+    "seoDescription": "",
+    "bundleContents": [],
+    "bundleWarning": "Contents are being checked. Contact ChaskaBox before ordering."
   },
   {
     "id": 270,
@@ -1765,7 +1793,33 @@
     "bundle": true,
     "stockState": "sourced_after_order",
     "seoTitle": "",
-    "seoDescription": ""
+    "seoDescription": "",
+    "bundleContents": [
+      {
+        "product_id": 156,
+        "name": "Giggly | Big Twisto Mango Jelly",
+        "pack": "Pack of 60",
+        "quantity": 1,
+        "unit_price": 520
+      },
+      {
+        "product_id": 157,
+        "name": "Giggly | Big Twisto Lychee Jelly",
+        "pack": "Pack of 60",
+        "quantity": 1,
+        "unit_price": 520
+      },
+      {
+        "product_id": 160,
+        "name": "Giggly | Pom Poms Chocolate Coated Marshmallow",
+        "pack": "Pack of 24",
+        "quantity": 1,
+        "unit_price": 410
+      }
+    ],
+    "bundleRetailValue": 1450,
+    "bundleSavings": 151,
+    "bundleWarning": ""
   },
   {
     "id": 271,
@@ -1782,7 +1836,33 @@
     "bundle": true,
     "stockState": "sourced_after_order",
     "seoTitle": "",
-    "seoDescription": ""
+    "seoDescription": "",
+    "bundleContents": [
+      {
+        "product_id": 5,
+        "name": "Mayfair | Delight Chocolate Cream Croissant",
+        "pack": "Pack of 6",
+        "quantity": 1,
+        "unit_price": 499
+      },
+      {
+        "product_id": 8,
+        "name": "Mayfair | Special Choco Delight Biscuit",
+        "pack": "Pack of 12",
+        "quantity": 1,
+        "unit_price": 399
+      },
+      {
+        "product_id": 27,
+        "name": "Hilal | Cupkake Double Chocolate With Sprinkles",
+        "pack": "Pack of 12",
+        "quantity": 1,
+        "unit_price": 655
+      }
+    ],
+    "bundleRetailValue": 1553,
+    "bundleSavings": 158,
+    "bundleWarning": ""
   },
   {
     "id": 272,
@@ -1799,6 +1879,46 @@
     "bundle": true,
     "stockState": "sourced_after_order",
     "seoTitle": "",
-    "seoDescription": ""
+    "seoDescription": "",
+    "bundleContents": [
+      {
+        "product_id": 55,
+        "name": "Mayfair | Eclairs Pouch",
+        "pack": "Pack of 90",
+        "quantity": 1,
+        "unit_price": 750
+      },
+      {
+        "product_id": 182,
+        "name": "Winner | Patti Fry Masala",
+        "pack": "Pack of 12",
+        "quantity": 1,
+        "unit_price": 199
+      },
+      {
+        "product_id": 147,
+        "name": "Ap | Jhat Pat Chatni Balls",
+        "pack": "Pack of 48",
+        "quantity": 1,
+        "unit_price": 399
+      },
+      {
+        "product_id": 160,
+        "name": "Giggly | Pom Poms Chocolate Coated Marshmallow",
+        "pack": "Pack of 24",
+        "quantity": 1,
+        "unit_price": 410
+      },
+      {
+        "product_id": 8,
+        "name": "Mayfair | Special Choco Delight Biscuit",
+        "pack": "Pack of 12",
+        "quantity": 1,
+        "unit_price": 399
+      }
+    ],
+    "bundleRetailValue": 2157,
+    "bundleSavings": 218,
+    "bundleWarning": ""
   }
 ]
