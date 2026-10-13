@@ -44,6 +44,14 @@ jobs:
       - run: node node_modules/playwright-core/cli.js install --with-deps chromium
       - name: Actual source browser and accessibility acceptance with synthetic data
         run: npm run test:browser
+      - name: Save synthetic browser acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: consolidated-browser-acceptance
+          path: test-results/browser/
+          retention-days: 7
+          compression-level: 0
   secrets:
     runs-on: ubuntu-24.04
     timeout-minutes: 5

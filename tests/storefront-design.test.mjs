@@ -39,7 +39,7 @@ test('submitted and edited searches survive refresh and clearing removes stale q
  b.run('renderShopContent=()=>{};clearAllFilters();');assert.equal(b.history.at(-1),'/shop/#results');
 });
 test('late retention initialization preserves the photo-eligible native weekly-pick link',()=>{
- const b=browser();b.run("PRODUCTS=[{id:5,name:'Missing photo',category:'Snacks',price:1,img:'images/p5.webp',badge:'Bestseller'},{id:27,name:'Fixture snack',category:'Snacks',price:10,img:'images/p27.webp'}];renderHomeContent();");
+ const b=browser();b.run("PRODUCTS=[{id:5,name:'Missing photo',category:'Snacks',price:1,img:'images/p999999.webp',badge:'Bestseller'},{id:27,name:'Fixture snack',category:'Snacks',price:10,img:'images/p27.webp'}];renderHomeContent();");
  const before=b.node('weeklyPick').innerHTML;assert.match(before,/href="\/product\/27\/"/);assert.ok(!before.includes('showProductDetail'));
  vm.runInContext(retention,b.ctx);assert.equal(b.node('weeklyPick').innerHTML,before);
 });

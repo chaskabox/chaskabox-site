@@ -24,6 +24,7 @@ function localShape(p) {
     photoNote: p.image_warning || '',
     bundle: !!p.is_bundle,
     stockState: p.stock_state || 'sourced_after_order',
+    seoTitle:p.seo_title||'',seoDescription:p.seo_description||'',bundleContents:p.bundle_contents||[],retailValue:p.bundle_retail_value??null,bundleSavings:p.bundle_savings??null,bundleNote:p.bundle_warning||'',
   };
 }
 
