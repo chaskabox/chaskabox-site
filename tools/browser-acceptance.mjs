@@ -83,7 +83,7 @@ async function inspect(page,route,width,role){
  const response=await page.goto(base+route,{waitUntil:'domcontentloaded'});
  if(route==='/admin/'){
   try{await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none',undefined,{timeout:12000});}
-  catch(error){console.error('ADMIN_BOOT_DIAGNOSTIC',JSON.stringify({role,width,dom:await page.evaluate(()=>({
+  catch(error){console.error('ADMIN_BOOT_DIAGNOSTIC',JSON.stringify({role,width,dom:await page.evaluate(async()=>({
     boot:document.getElementById('adminBoot')?.outerHTML.slice(0,650),
     login:document.getElementById('liveAdminLogin')?.outerHTML.slice(0,350),
     mfa:document.getElementById('liveAdminMfa')?.outerHTML.slice(0,350),
