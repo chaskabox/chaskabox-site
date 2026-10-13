@@ -83,13 +83,13 @@
   };
   function canOpenAdminView(name){return Boolean(me&&ROLE_VIEWS[name]?.includes(me.role));}
   function syncRoleNavigation(){
-    $('.admin-nav-btn').forEach(button=>{
+    $$('.admin-nav-btn').forEach(button=>{
       const allowed=canOpenAdminView(button.dataset.view);
       button.hidden=!allowed;
       button.style.display=allowed?'':'none';
       button.setAttribute('aria-hidden',String(!allowed));
     });
-    $('[data-jump]').forEach(button=>{
+    $$('[data-jump]').forEach(button=>{
       const allowed=canOpenAdminView(button.dataset.jump);
       button.hidden=!allowed;button.style.display=allowed?'':'none';
     });
