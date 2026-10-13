@@ -172,6 +172,7 @@
     state.editorId=id; const p=id?mergedProduct(state.products.find(x=>Number(x.id)===Number(id))): {id:'',name:'',price:'',oldPrice:'',category:state.categories[0]||'',pack:'',desc:'',badge:'',img:'',bundle:false};
     $('#productEditorMode').textContent=id?'EDIT PRODUCT':'NEW PRODUCT'; $('#productEditorTitle').textContent=id?`Edit ${p.name}`:'Add product';
     $('#editProductId').value=id||''; $('#editName').value=p.name||''; $('#editPrice').value=p.price||''; $('#editOldPrice').value=p.oldPrice||''; $('#editCategory').value=p.category||''; $('#editPack').value=p.pack||''; $('#editBadge').value=p.badge||''; $('#editVisibility').value=id&&isHidden(id)?'hidden':'visible'; $('#editDescription').value=p.desc||''; $('#editImage').value=p.img||''; $('#editBundle').checked=!!p.bundle; $('#archiveProduct').style.display=id?'inline-flex':'none';
+    if(!id){for(const field of ['editBrand','editSeoTitle','editSeoDesc','editOgImage','editCanonical','editTags']){const input=$('#'+field);if(input)input.value='';}const stock=$('#editStock');if(stock)stock.value='sourced_after_order';}
     renderEditorPreview(); $('#productEditor').classList.add('open'); $('#productEditor').setAttribute('aria-hidden','false'); setTimeout(()=>$('#editName').focus(),50);
   }
   function closeEditor(){ $('#productEditor').classList.remove('open'); $('#productEditor').setAttribute('aria-hidden','true'); }

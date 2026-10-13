@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>ChaskaBox Admin Console</title>
-<link rel="stylesheet" href="/admin.css?v=20261012-staff-access-1">
+<link rel="stylesheet" href="/admin.css?v=20261013-ops-1">
 </head>
 <body>
 <!-- Auth bootstrap gate: visible until admin-live.js verifies the staff session.
@@ -272,10 +272,10 @@ setTimeout(function(){
           <div class="searchbox"><span>⌕</span><input id="productSearch" placeholder="Search name, category, pack…"></div>
           <select id="productCategory"><option value="">All categories</option></select>
           <select id="productVisibility"><option value="">All products</option><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="bundle">Chaska Boxes</option><option value="archived">Archived</option></select>
-          <button class="btn" id="resetFiltersBtn" title="Clear search, filters and local drafts">Reset</button>
+          <button class="btn" id="resetFiltersBtn" title="Clear search and catalogue filters">Reset</button>
           <button class="btn primary" id="addProductBtn">+ Add product</button>
         </div>
-        <div class="bulkbar hidden" id="bulkBar"><b id="bulkCount">0 selected</b><button class="btn secondary" data-bulk="show">Show</button><button class="btn secondary" data-bulk="hide">Hide</button><button class="btn danger" data-bulk="archive">Archive</button><button class="text-btn" data-bulk="clear">Clear</button></div>
+        <div class="bulkbar hidden" id="bulkBar"><b id="bulkCount">0 selected</b><button class="btn secondary" data-bulk="show">Show</button><button class="btn secondary" data-bulk="hide">Hide</button><button class="btn danger" data-bulk="archive">Archive</button><button class="btn secondary" data-bulk="restore">Restore archived</button><button class="text-btn" data-bulk="clear">Clear</button></div><p id="bulkFeedback" class="admin-action-feedback" role="status" aria-live="polite"></p>
         <div class="product-admin-grid" id="productAdminGrid"></div>
         <div class="pagination-row"><span id="productResultCount"></span><button class="btn secondary" id="loadMoreProducts">Load more</button></div>
       </section>
@@ -296,7 +296,7 @@ setTimeout(function(){
             <div class="builder-items" id="boxSelectedItems"><p class="muted">No products selected yet.</p></div>
             <div class="builder-totals"><span>Items retail value</span><b id="boxRetailValue">Rs. 0</b><span>Customer price</span><b id="boxCustomerPrice">Rs. 0</b><span>Saving</span><b id="boxSaving">Rs. 0</b></div>
             <div class="action-row"><button class="btn secondary" id="previewBoxBtn">Preview box</button><button class="btn primary" id="saveBoxDraftBtn">Save Chaska Box</button></div>
-            <p class="safe-note">Drafts remain in this review browser only. Publishing must go through the secure admin API.</p>
+            <p class="safe-note">Preview shows your unsaved selections. Save writes a private draft to the database; publishing is a separate authenticated action.</p>
           </section>
         </div>
         <section class="panel" style="margin-top:16px">
@@ -631,8 +631,9 @@ setTimeout(function(){
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=4"></script>
-<script src="/admin.js?v=3" defer></script>
+<script src="/admin.js?v=20261013-admin-controls-1" defer></script>
 <script src="/admin-login-mfa.js?v=20261012-mfa-gate-1" defer></script>
-<script src="/admin-live.js?v=20261012-mfa-gate-1" defer></script>
+<script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
+<script src="/admin-live.js?v=20261013-ops-1" defer></script>
 </body>
 </html>
