@@ -7,7 +7,10 @@ export const OCCASIONS={
  'office':{name:'Office snack break',title:'Office Snack Packs in Pakistan | ChaskaBox',description:'Explore biscuits, sweets and savory packs for office snack breaks. Compare listed pack counts and current ChaskaBox prices.',ids:[11,55,183],intro:'Biscuits, sweets and a savory pack for a shared break. Check the original labels and ask about allergens before ordering for a group.'}
 };
 export async function onRequestGet(context){
- const parts=Array.isArray(context.params.slug)?context.params.slug:[context.params.slug],slug=parts[0],copy=OCCASIONS[slug];if(parts.length!==1||!copy)return catalogueUnavailable(404);
+ const parts=Array.isArray(context.params.slug)?context.params.slug:[context.params.slug],slug=parts[0],copy=OCCASIONS[slug];
+ // Pages optional catch-all routes also receive the collection index request.
+ if(!parts.length||parts.length===1&&!slug)return context.next?context.next():context.env.ASSETS.fetch(context.request);
+ if(parts.length!==1||!copy)return catalogueUnavailable(404);
  try{
   const all=await publicCatalogue(context.env),rows=copy.ids.map(id=>all.find(p=>Number(p.id)===id&&p.stock_state!=='unavailable')).filter(Boolean),complete=rows.length===copy.ids.length;
   const subtotal=rows.reduce((n,p)=>n+Number(p.price),0),path='/snack-boxes/'+slug+'/';

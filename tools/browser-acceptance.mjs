@@ -67,8 +67,8 @@ const server=createServer(async(req,res)=>{try{
   return json(res,{});
  }
  const parts=p.split('/').filter(Boolean);
- if(p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'&&parts.length===2){
-  const ctx={params:{slug:parts[1]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async request=>{let filename=path.join(root,new URL(request.url).pathname,'index.html');return new Response(await readFile(filename).catch(()=>Buffer.from(shell)));}}}};
+ if(p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'){
+  const ctx={params:{slug:parts[0]==='snack-boxes'?parts.slice(1):parts[1]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async request=>{let filename=path.join(root,new URL(request.url).pathname,'index.html');return new Response(await readFile(filename).catch(()=>Buffer.from(shell)));}}}};
   const response=parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
   res.writeHead(response.status,{'Content-Type':'text/html'});return res.end((await response.text()).replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
  }
