@@ -17,7 +17,7 @@ const LEAK=/@|(?:\+?\d[\s().-]*){10,}|bearer\s|password|api[_-]?key|secret|one.t
 export function prepareAgentJob({agentKey,action,dedupeKey,metadata={}}={}){
  if(!AGENTS.includes(agentKey)) throw new TypeError('Unknown agent');
  if(!OBSERVE_ACTIONS.includes(action)) throw new TypeError('M01 does not allow side-effect actions');
- if(typeof dedupeKey!=='string'||!DEDUPE.test(dedupeKey)||LEAK.test(dedupeKey))
+ if(typeof dedupeKey!=='string'||!DEDUPE.test(dedupeKey))
   throw new TypeError('Dedupe key must be an opaque stable identifier');
  if(!metadata||Array.isArray(metadata)||typeof metadata!=='object')
   throw new TypeError('Metadata object required');
@@ -26,7 +26,7 @@ export function prepareAgentJob({agentKey,action,dedupeKey,metadata={}}={}){
   if(!METADATA_KEYS.has(key)) throw new TypeError('Unsupported metadata field');
   if(value===null||!['string','number','boolean'].includes(typeof value))
    throw new TypeError('Nested or null metadata is not accepted');
-  if(typeof value==='string'&&(value.length>180||LEAK.test(value)))
+  if(typeof value==='string'&&(value.length>180||(key!=='subject_hash'&&LEAK.test(value))))
    throw new TypeError('Possible private information in metadata');
   if(typeof value==='number'&&!Number.isFinite(value))
    throw new TypeError('Non-finite metadata');
