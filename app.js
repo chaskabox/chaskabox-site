@@ -7,8 +7,14 @@ const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
 function reducedMotion(){return motionPreference.matches;}
 function hasPhoto(p){const src=String(p?.img||'').trim();return /^https?:\/\//i.test(src)||LOCAL_PHOTOS.has(src.replace(/^\/?(?:\.\/)?/,''));}
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-const fmt=n=>'Rs. '+Number(n).toLocaleString('en-PK');
+const currencyFormatter=new Intl.NumberFormat('en-PK');
+const fmt=n=>'Rs. '+currencyFormatter.format(Number(n));
 function assetUrl(src){ if(!src) return ''; if(/^(https?:|data:|blob:|\/)/i.test(src)) return src; return '/'+String(src).replace(/^\.\//,''); }
+function photoAttributes(src,sizes='(max-width:700px) 45vw, 260px'){
+ const path=String(src||'').replace(/^https:\/\/chaskabox\.online\//,'').replace(/^\//,'');
+ const sources=window.CHASKABOX_IMAGE_VARIANTS?.[path];
+ return sources?'src="'+esc(sources[0].src)+'" srcset="'+sources.map(v=>esc(v.src)+' '+v.width+'w').join(', ')+'" sizes="'+esc(sizes)+'"':'src="'+esc(assetUrl(src))+'"';
+}
 
 /* ---------- data ---------- */
 async function loadProducts(){
@@ -43,11 +49,11 @@ function bundleFanHTML(p){
   const wanted=m[1].split(',').map(s=>s.trim()).filter(Boolean);
   const picks=wanted.map(name=>PRODUCTS.find(x=>String(x.name||'').trim().toLowerCase()===name.toLowerCase())).filter(x=>x&&x.img).slice(0,3);
   if(picks.length<2) return '';
-  return `<span class="bundle-fan" aria-hidden="true">${picks.map((x,i)=>`<img src="${esc(assetUrl(x.img))}" alt="" class="bf${i+1}">`).join('')}</span>`;
+  return `<span class="bundle-fan" aria-hidden="true">${picks.map((x,i)=>`<img src="${esc(assetUrl(x.img))}" alt="" loading="lazy" width="80" height="80" class="bf${i+1}">`).join('')}</span>`;
 }
 function cardHTML(p){
   const src=hasPhoto(p)?assetUrl(p.img):'';
-  const img=src?`<img src="${esc(src)}" alt="${esc(p.name)}" loading="lazy" width="300" height="300" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
+  const img=src?`<img ${photoAttributes(p.img)} alt="${esc(p.name)}" loading="lazy" width="300" height="300" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'SALE':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="savepill">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
@@ -61,7 +67,7 @@ function cardHTML(p){
       <a class="pname" href="${href}">${esc(p.name)}</a>
       <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
-      <button class="addcart" ${p.stockState==='unavailable'?'disabled':''} aria-label="Add ${esc(p.name)} to bag" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">Add to Bag</span><span class="addcart-price">${fmt(p.price)}</span></button>
+      <button class="addcart" ${p.stockState==='unavailable'?'disabled':''} aria-label="Add to Bag ${fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">Add to Bag</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -132,7 +138,7 @@ function renderHomeContent(){
   for(const p of candidates){if(!heroPicks.some(x=>x.category===p.category))heroPicks.push(p);if(heroPicks.length===3)break;}
   for(const p of candidates){if(heroPicks.length===3)break;if(!heroPicks.includes(p))heroPicks.push(p);}
   const hi=$('#heroCollage');
-  if(hi){hi.innerHTML=heroPicks.map((p,i)=>`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}" width="150" height="150" loading="${i===0?'eager':'lazy'}" fetchpriority="${i===0?'high':'low'}" decoding="async" class="hc${i+1}">`).join('');const wrap=hi.closest('.heroimg');if(wrap)wrap.hidden=!heroPicks.length;}
+  if(hi){hi.innerHTML=heroPicks.map((p,i)=>`<img ${photoAttributes(p.img,"150px")} alt="${esc(p.name)}" width="150" height="150" loading="${i===0?'eager':'lazy'}" fetchpriority="${i===0?'high':'low'}" decoding="async" class="hc${i+1}">`).join('');const wrap=hi.closest('.heroimg');if(wrap)wrap.hidden=!heroPicks.length;}
   // Curated homepage shelves: fast discovery without dumping the full catalogue
   shelfSeq=0;
   let html='';
@@ -153,7 +159,7 @@ function renderHomeContent(){
   if(wp){
     const pick=sale[0]||picks[0]||actImg[0];
     if(pick){
-      wp.innerHTML=`<a class="pickcard" href="${productHref(pick.id)}"><div class="pickimg"><img src="${esc(assetUrl(pick.img||''))}" alt="${esc(pick.name)}" loading="lazy" width="300" height="300" decoding="async"></div><div class="pickinfo"><div class="picktag">${esc((pick.category||'ChaskaBox').toUpperCase())}</div><b>${esc(pick.name)}</b><div class="pickprice">${fmt(pick.price)}</div><span class="alink">View snack →</span></div></a>`;
+      wp.innerHTML=`<a class="pickcard" href="${productHref(pick.id)}"><div class="pickimg"><img ${photoAttributes(pick.img||'')} alt="${esc(pick.name)}" loading="lazy" width="300" height="300" decoding="async"></div><div class="pickinfo"><div class="picktag">${esc((pick.category||'ChaskaBox').toUpperCase())}</div><b>${esc(pick.name)}</b><div class="pickprice">${fmt(pick.price)}</div><span class="alink">View snack →</span></div></a>`;
     } else wp.innerHTML='';
   }
   observeReveals();
@@ -424,7 +430,7 @@ function closeModal(){$('#pmodal').classList.remove('open');$('#pmodal').setAttr
 function renderProductDetail(id){
   const p=PRODUCTS.find(x=>x.id===id); if(!p){render404(location.pathname);return;}
   setProductMeta(p);
-  const img=hasPhoto(p)?`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}" width="600" height="600" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
+  const img=hasPhoto(p)?`<img ${photoAttributes(p.img,"(max-width:700px) calc(100vw - 32px), 520px")} alt="${esc(p.name)}" fetchpriority="high" width="600" height="600" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'Sale':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="pdsave">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
@@ -1113,6 +1119,8 @@ document.addEventListener('click', function(e){
   if(!href || href.startsWith('#')) return; // skip hash-only links
   // Skip special protocols
   if(/^(mailto:|tel:|javascript:)/i.test(href)) return;
+  // Content and occasion routes have their own Pages HTML, outside this SPA.
+  if(/^\/(?:guides|snack-boxes)(?:\/|$)/.test(href))return;
   // Skip download links
   if(a.hasAttribute('download')) return;
   // Skip external links
