@@ -19,7 +19,7 @@ test('M03 SQL grants aggregate-only access to service_role and replays without l
  const db=new PGlite();try{
   await db.exec('CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;');
   await db.exec("CREATE TABLE ai_usage(created_at timestamptz,success boolean); CREATE TABLE products(visibility text,seo_title text,seo_description text,image_url text); CREATE TABLE orders(created_at timestamptz,fulfilment_status text,payment_status text,payment_method text,total integer,customer_email text); CREATE TABLE funnel_events(created_at timestamptz,event text,session_id text);");
-  await db.exec("INSERT INTO products VALUES ('visible',NULL,'desc','/pic.webp'),('visible','title',NULL,'/pic.webp'); INSERT INTO ai_usage VALUES(now(),false); INSERT INTO orders VALUES(now(),'delivered','cod_due','cod',200,'private@example.invalid'); INSERT INTO funnel_events VALUES(now(),'checkout_started','session-secret');");
+  await db.exec("INSERT INTO products VALUES ('visible',NULL,'desc','/pic.webp'),('visible','title',NULL,'/pic.webp'); INSERT INTO ai_usage VALUES(now(),false); INSERT INTO orders VALUES(now(),'delivered','cod_due','cod',200,'private@example.invalid'),(now(),'delivered','payment_verified','card',99999,'ignore@example.invalid'); INSERT INTO funnel_events VALUES(now(),'checkout_started','session-secret');");
   await db.exec('GRANT SELECT ON public.ai_usage,public.products,public.orders,public.funnel_events TO service_role;');
   await db.exec(script);
   for(const user of ['anon','authenticated']){
