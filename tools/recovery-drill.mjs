@@ -23,12 +23,18 @@ try{
  step='pull_official_postgres_image';run('docker',['pull',image]);
  const imageDigest=JSON.parse(run('docker',['image','inspect',image]))[0].RepoDigests?.[0];
  if(!imageDigest?.startsWith('supabase/postgres@sha256:'))throw Error('Unexpected container image');
- await writeFile(path.join(root,'container.env'),'POSTGRES_PASSWORD='+randomBytes(32).toString('hex')+'\nPOSTGRES_DB=postgres\n',{mode:0o600});
+ const password=randomBytes(32).toString('hex');
+ await writeFile(path.join(root,'container.env'),'POSTGRES_PASSWORD='+password+'\nPGPASSWORD='+password+'\nPGHOST=/var/run/postgresql\nPOSTGRES_DB=postgres\n',{mode:0o600});
  step='start_offline_target';run('docker',['run','-d','--name',container,'--network','none','--env-file',path.join(root,'container.env'),'-v',root+':/recovery:ro',image]);
  let bootstrap=null;
  for(let i=0;i<40&&!bootstrap;i++){for(const user of ['supabase_admin','postgres'])try{db('select current_user;','postgres',user);bootstrap=user;break;}catch{}if(!bootstrap)await new Promise(r=>setTimeout(r,1000));}
- if(!bootstrap)throw Error('Disposable target did not start');
- db('create role chaskabox_recovery_operator login superuser;','postgres',bootstrap);
+ if(!bootstrap){
+  const state=JSON.parse(run('docker',['inspect',container]))[0].State;
+  const logs=run('docker',['logs',container]);
+  console.error(JSON.stringify({target_running:state.Running,target_exit_code:state.ExitCode,startup_signals:{password_authentication_failed:/password authentication failed/i.test(logs),permission_denied:/permission denied/i.test(logs),configuration_missing:/could not access.*configuration|configuration file.*does not exist/i.test(logs),database_ready:/database system is ready to accept connections/i.test(logs)}}));
+  throw Error('Disposable target did not start');
+ }
+ db("create role chaskabox_recovery_operator login superuser password '"+password+"';",'postgres',bootstrap);
  const existing=new Set(db('select rolname from pg_roles;').trim().split('\n'));
  const roles=await readFile(path.join(root,'roles.sql'),'utf8');if(/\bPASSWORD\b/i.test(roles))throw Error('Role password export forbidden');
  const filtered=roles.split('\n').filter(line=>{const m=/^CREATE ROLE ("(?:[^"]|"")*"|[a-zA-Z0-9_]+);$/.exec(line);return !m||!existing.has(m[1].replace(/^"|"$/g,'').replace(/""/g,'"'));}).join('\n');
