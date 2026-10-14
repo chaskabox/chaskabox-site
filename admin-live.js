@@ -249,7 +249,7 @@
     const flow=['new','sourcing','packed','dispatched','delivered']; const idx=flow.indexOf(o.fulfilment_status); const next=idx>=0&&idx<flow.length-1?flow[idx+1]:null;
     modal.innerHTML=`<div class="modal-backdrop" data-close-order></div><section class="admin-modal-card live-order-card"><div class="modal-head"><div><small>ORDER</small><h2>${esc(o.order_number)}</h2></div><button class="icon-btn" data-close-order>×</button></div><div class="order-detail-grid"><section><h3>Customer</h3><p><b>${esc(o.customer_name)}</b><br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</p><h3>Items</h3><div class="order-items">${items.map(i=>`<div><span>${esc(i.product_name)} · ${esc(i.pack)} × ${i.quantity}</span><b>${money(i.line_total)}</b></div>`).join('')}</div></section><section><h3>Payment</h3><p>${esc(o.payment_method)} · <b>${esc(o.payment_status)}</b>${o.transaction_reference?`<br>Ref: ${esc(o.transaction_reference)}`:''}</p><h3>Total</h3><p>Subtotal ${money(o.subtotal)}<br>Delivery ${money(o.delivery_fee)}<br><b>${money(o.total)}</b></p><h3>Actions</h3><div class="order-actions">${next?`<button class="btn primary" data-status="${next}">Move to ${esc(next)}</button>`:''}${!['delivered','cancelled'].includes(o.fulfilment_status)?'<button class="btn danger" data-status="cancelled">Cancel</button>':''}${['payment_submitted','awaiting_payment'].includes(o.payment_status)?'<button class="btn secondary" data-pay="verified">Verify payment</button><button class="btn secondary" data-pay="rejected">Reject payment</button>':''}<button class="btn secondary" data-retry>Retry notification</button></div><h3>Status history</h3><div class="history-list">${(data.history||[]).map(h=>`<div><b>${esc(h.action)}</b><small>${fmtDate(h.created_at)} · ${esc(h.actor_role)}</small></div>`).join('')||'<small>No audit events yet.</small>'}</div></section></div></section>`;
     $$('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
-    $('[data-status]',modal).forEach(b=>b.onclick=async()=>{
+    $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{
       if(b.disabled)return;
       const st=b.dataset.status,body={fulfilment_status:st,expected_updated_at:o.updated_at};
       if(st==='cancelled'){
@@ -260,7 +260,7 @@
       try{await api('/api/admin/orders/'+encodeURIComponent(id)+'/status',{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.allSettled([loadOrders(),loadDashboard()]);}
       catch(e){toast('Order update failed: '+e.message);await openOrder(id).catch(()=>{});}finally{b.disabled=false;}
     });
-    $('[data-pay]',modal).forEach(b=>b.onclick=async()=>{
+    $$('[data-pay]',modal).forEach(b=>b.onclick=async()=>{
       if(b.disabled)return;
       const decision=b.dataset.pay;
       if(decision==='verified'&&!String(o.transaction_reference||'').trim()){toast('A transaction reference is required before payment approval.');return;}
@@ -269,7 +269,7 @@
         decision==='verified'?'Confirm the reference against your actual receiving account. This decision does not contact the payment provider.':'Record the reason before rejecting payment.'
       );
       if(!note)return;
-      const actions=$('[data-pay], [data-status], [data-retry]',modal);actions.forEach(btn=>btn.disabled=true);
+      const actions=$$('[data-pay], [data-status], [data-retry]',modal);actions.forEach(btn=>btn.disabled=true);
       try{
         await api('/api/admin/orders/'+encodeURIComponent(id)+'/payment/verify',{method:'POST',body:{decision,note,expected_updated_at:o.updated_at}});
         toast('Payment review recorded');modal.classList.remove('open');await Promise.allSettled([loadOrders(),loadDashboard()]);
@@ -372,9 +372,9 @@
     });
     const grid=$('#productAdminGrid'); if(!grid)return; grid.innerHTML=filtered.map(p=>`<article class="admin-product-card" data-product-id="${p.id}"><label class="live-select-label"><input type="checkbox" data-live-select="${p.id}" aria-label="Select ${esc(p.name)}" ${bulkSelectedIds.has(Number(p.id))?'checked':''}> Select</label><span class="visibility-chip ${p.visibility==='visible'?'':'hidden-product'}">${esc(p.visibility)}</span><div class="admin-product-image">${p.image_url?`<img src="${esc(p.image_url)}" alt="${esc(p.name||'ChaskaBox product')}">`:'<span class="placeholder">🍿</span>'}</div><div class="admin-product-body"><h3>${esc(p.name)}</h3><div class="admin-product-meta">${esc(p.category)} · ${esc(p.pack||'')}</div><div class="admin-product-price"><strong>${money(p.price)}</strong>${p.old_price?`<del>${money(p.old_price)}</del>`:''}</div><div class="admin-card-actions"><button data-live-edit="${p.id}">Edit</button><button data-live-vis="${p.id}">${p.visibility==='archived'?'Restore':p.visibility==='visible'?'Hide':'Show'}</button></div></div></article>`).join('') || '<div class="panel"><p class="muted">No matching products.</p></div>';
     $('#productResultCount').textContent=`Showing ${filtered.length} of ${products.length} products`; $('#loadMoreProducts').style.display='none';
-    $('[data-live-select]',grid).forEach(b=>b.onchange=()=>{const id=Number(b.dataset.liveSelect);b.checked?bulkSelectedIds.add(id):bulkSelectedIds.delete(id);updateProductBulkBar();});
+    $$('[data-live-select]',grid).forEach(b=>b.onchange=()=>{const id=Number(b.dataset.liveSelect);b.checked?bulkSelectedIds.add(id):bulkSelectedIds.delete(id);updateProductBulkBar();});
     updateProductBulkBar();
-    $('[data-live-edit]',grid).forEach(b=>b.onclick=()=>openLiveProduct(b.dataset.liveEdit)); $$('[data-live-vis]',grid).forEach(b=>b.onclick=async()=>{const p=products.find(x=>String(x.id)===String(b.dataset.liveVis));try{await api(`/api/admin/products/${p.id}`,{method:'PATCH',body:{visibility:p.visibility==='archived'?'hidden':p.visibility==='visible'?'hidden':'visible'}});toast('Visibility updated');loadProducts()}catch(e){toast(e.message)}});
+    $$('[data-live-edit]',grid).forEach(b=>b.onclick=()=>openLiveProduct(b.dataset.liveEdit)); $$('[data-live-vis]',grid).forEach(b=>b.onclick=async()=>{const p=products.find(x=>String(x.id)===String(b.dataset.liveVis));try{await api(`/api/admin/products/${p.id}`,{method:'PATCH',body:{visibility:p.visibility==='archived'?'hidden':p.visibility==='visible'?'hidden':'visible'}});toast('Visibility updated');loadProducts()}catch(e){toast(e.message)}});
     // Wire filter inputs to re-render (if not already wired)
     if(!renderFilteredProducts._wired){
       renderFilteredProducts._wired=true;
@@ -422,7 +422,7 @@
       if(!['show','hide','archive','restore'].includes(action))return;
       const verb={show:'show',hide:'hide',archive:'archive',restore:'restore as hidden'}[action];
       if(!confirm('Are you sure you want to '+verb+' '+ids.length+' product(s)? All changes will be saved and audited together.'))return;
-      const buttons=$('[data-bulk]',bar);
+      const buttons=$$('[data-bulk]',bar);
       buttons.forEach(b=>b.disabled=true);
       const feedback=$('#bulkFeedback');
       if(feedback)feedback.textContent='Saving '+ids.length+' product(s)…';
@@ -442,7 +442,7 @@
     button.dataset.livePreviewWired='1';
     button.addEventListener('click',event=>{
       event.preventDefault();event.stopImmediatePropagation();
-      const rows=$('#boxSelectedItems .builder-item');
+      const rows=$$('#boxSelectedItems .builder-item');
       if(!rows.length){toast('Choose products first');return;}
       const title=$('#boxName').value.trim()||'Untitled Chaska Box';
       const price=Number($('#boxPrice').value||0);
@@ -505,7 +505,7 @@
     const d=await api('/api/admin/customers?'+sp), view=$('#view-customers');view.innerHTML=`<div class="panel"><div class="panel-head"><div><h2>Customers</h2><p>Order history and recognized customer value. Customer identity details are read-only.</p></div></div><label class="admin-search-field">Search customers<input id="customerSearch" type="search" aria-label="Search customers" maxlength="100" placeholder="Name, phone or email" value="${esc(search)}"></label><div class="live-table-wrap"><table class="live-table"><thead><tr><th>Name</th><th>Phone</th><th>Orders</th><th>Recognized spend</th><th>Last order</th></tr></thead><tbody>${(d.customers||[]).map(c=>`<tr><td><button class="btn secondary compact" data-customer="${esc(c.id)}">${esc(c.name||'—')}</button></td><td>${esc(c.phone||'—')}</td><td>${c.order_count||0}</td><td>${money(c.lifetime_spend)}</td><td>${esc(c.last_order_number||'—')}<small>${c.last_order_at?fmtDate(c.last_order_at):''}</small></td></tr>`).join('')}</tbody></table></div></div>`;
     wirePager(view,d,loadCustomers);
     const input=$('#customerSearch');if(input){input.addEventListener('input',debounce(()=>loadCustomers(1),350));input.focus({preventScroll:true});input.setSelectionRange(input.value.length,input.value.length);}
-    $('[data-customer]',view).forEach(b=>b.onclick=()=>loadCustomerDetail(b.dataset.customer).catch(e=>toast(e.message)));
+    $$('[data-customer]',view).forEach(b=>b.onclick=()=>loadCustomerDetail(b.dataset.customer).catch(e=>toast(e.message)));
   }
   async function loadReviews(page=1){
     const d=await api('/api/admin/reviews?per_page=100&page='+page),view=$('#view-reviews');
