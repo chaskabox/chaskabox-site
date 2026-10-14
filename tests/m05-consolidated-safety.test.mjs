@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {PGlite} from '@electric-sql/pglite';
+import {spawnSync} from 'node:child_process';
 const files=['20261014170000_m0_internal_table_grants.sql',
  '20261014200000_m01_agent_infrastructure.sql','20261014210000_m02_monitoring_snapshots.sql',
  '20261014220000_m03_insight_signals.sql','20261014230000_m04_marketing_draft_approvals.sql'];
@@ -48,4 +49,12 @@ test('M05 isolated synthetic replay: five migrations together, 8 agents disabled
    }finally{await db.exec('RESET ROLE')}
   }
  }finally{await db.close()}
+});
+
+test('M05 deploy guard validates source but explicitly blocks unapproved production',()=>{
+ const ok=spawnSync(process.execPath,['tools/ai-agents-release-gate.mjs'],{encoding:'utf8'});
+ assert.equal(ok.status,0,ok.stderr||ok.stdout);
+ const denied=spawnSync(process.execPath,['tools/ai-agents-release-gate.mjs','--production'],{encoding:'utf8'});
+ assert.equal(denied.status,2,denied.stderr||denied.stdout);
+ assert.match(denied.stderr,/PRODUCTION BLOCKED/);
 });
