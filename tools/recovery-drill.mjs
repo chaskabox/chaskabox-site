@@ -7,7 +7,7 @@ import {backupConfiguration,verifyPrivateBackupBucket,verifyDatabaseArchive} fro
 const e=process.env,root=path.join(e.RUNNER_TEMP||'/tmp','chaskabox-isolated-recovery');
 const container='chaskabox-recovery-'+String(e.GITHUB_RUN_ID||process.pid),image='supabase/postgres:17.6.1.136';
 let step='preflight';
-function run(bin,args,env=e,input){try{return execFileSync(bin,args,{env,input,encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:32*1024*1024,timeout:8*60000});}catch{throw new Error('recovery_'+step+'_failed');}}
+function run(bin,args,env=e,input){try{return execFileSync(bin,args,{env,input,encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:32*1024*1024,timeout:8*60000});}catch(error){if(step==='start_offline_target'&&!(bin==='docker'&&args[0]==='exec')){const diagnostic=String(error.stderr||'');console.error(JSON.stringify({step,command:args[0],exit_code:error.status??null,signals:{invalid_mount:/invalid mount|mount.*denied|not shared/i.test(diagnostic),permission_denied:/permission denied/i.test(diagnostic),invalid_environment:/invalid.*env|poorly formatted/i.test(diagnostic),docker_unavailable:/daemon|not found/i.test(diagnostic),image_unavailable:/pull access|manifest|No such image/i.test(diagnostic)}}));}throw new Error('recovery_'+step+'_failed');}}
 function db(sql,database='postgres',user='chaskabox_recovery_operator'){return run('docker',['exec','-i',container,'psql','-U',user,'-d',database,'-At','-v','ON_ERROR_STOP=1'],e,sql);}
 try{
  if(e.GITHUB_ACTIONS!=='true'||!e.RUNNER_TEMP)throw Error('Isolated Actions runner required');
