@@ -9,7 +9,7 @@ function tar(args){try{return execFileSync('tar',args,{encoding:'utf8',stdio:['i
 export async function createMediaArchive({directory,inventory,readInventory,imagesDirectory=new URL('../images/',import.meta.url),fetcher=fetch}){
  const payload=path.join(directory,'payload');await mkdir(payload,{mode:0o700});
  const entries=[];let total=0;
- async function add(bytes,source){if(!bytes.length||bytes.length>MAX_FILE||(total+=bytes.length)>MAX_TOTAL)throw Error('Media archive size limit');const file='payload/'+String(entries.length).padStart(6,'0')+'.blob';await writeFile(path.join(directory,file),bytes,{mode:0o600});entries.push({...source,file,bytes:bytes.length,sha256:hash(bytes)});}
+ async function add(bytes,source){if(!bytes.length)throw Error('Empty media file');if(bytes.length>MAX_FILE||(total+=bytes.length)>MAX_TOTAL)throw Error('Media archive size limit');const file='payload/'+String(entries.length).padStart(6,'0')+'.blob';await writeFile(path.join(directory,file),bytes,{mode:0o600});entries.push({...source,file,bytes:bytes.length,sha256:hash(bytes)});}
  try{
   if(!Array.isArray(inventory.buckets)||!Array.isArray(inventory.objects)||inventory.objects.length>10000)throw Error('Invalid media inventory');
   for(const o of inventory.objects){

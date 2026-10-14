@@ -8,6 +8,11 @@
   'use strict';
   const safeUrl=v=>typeof v==='string'&&/^(\/[^/]|\/$|https:\/\/|mailto:|tel:|#)[^\s"'<>]*$/.test(v);
   const logoSelector='.logo img,.logo-img', defaultLogo='/images/logo-navy.png';
+  function setLogo(img,src){
+    if(src===defaultLogo){img.srcset='/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w';img.sizes='210px';}
+    else{img.removeAttribute('srcset');img.removeAttribute('sizes');}
+    img.src=src;
+  }
   window.applyStorefrontManifest=function(d){
     if(Array.isArray(d.navigation)){
       for(const [location,selector] of [['header','.hnav'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
@@ -36,7 +41,7 @@
     document.querySelectorAll(logoSelector).forEach(img=>{
       img.style.removeProperty('display');
       delete img.dataset.imgFallback;
-      img.src=safeUrl(t.logo_url)?t.logo_url:defaultLogo;
+      setLogo(img,safeUrl(t.logo_url)?t.logo_url:defaultLogo);
     });
     if(safeUrl(t.favicon_url)){const link=document.querySelector('link[rel="icon"]');if(link)link.href=t.favicon_url;}
     const section=(d.sections||[]).find(s=>s.section_key==='announcement_bar');
@@ -48,7 +53,7 @@
     // A failed CMS logo must restore the bundled branding, never hide it.
     if(t && t.tagName==='IMG' && t.matches(logoSelector)){
       t.style.removeProperty('display');
-      if(t.getAttribute('src')!==defaultLogo)t.src=defaultLogo;
+      if(t.getAttribute('src')!==defaultLogo)setLogo(t,defaultLogo);
       return;
     }
     if (t && t.tagName === 'IMG' && !t.dataset.imgFallback) {
