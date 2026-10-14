@@ -75,6 +75,7 @@
     reviews:['owner','manager','content'],
     media:['owner','manager','content'],
     notifications:['owner','manager'],
+    agents:['owner'],
     assistant:['owner','manager','content'],
     health:['owner','manager'],
     preview:['owner','manager','fulfilment','content'],
