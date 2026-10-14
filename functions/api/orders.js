@@ -28,11 +28,12 @@
  * Replay : 200 { ..., idempotent_replay: true }
  */
 
-import { selectOne, selectIn, rpc, isUniqueViolation } from './_lib/db.js';
+import { selectOne, selectIn, selectMany, rpc, isUniqueViolation } from './_lib/db.js';
 import { validateOrderPayload } from './_lib/validate.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
 import { verifyTurnstile } from './_lib/turnstile.js';
 import { ok, Errors, logError } from './_lib/respond.js';
+import { sendOwnerWhatsApp } from './_lib/waha-notify.js';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const ORDER_NUMBER_RETRIES = 5;
@@ -227,7 +228,34 @@ export async function onRequest(context) {
           throw rpcErr;
         }
         const status = result.replay ? 200 : 201;
-        // The order transaction enqueues channel jobs. No provider I/O in checkout.
+        // WhatsApp owner notification (best-effort, fire-and-forget; never blocks checkout)
+        if (!result.replay) {
+          try {
+            const items = await selectMany(env, 'order_items', { order_id: result.row.id });
+            const orderForNotify = {
+              id: result.row.id,
+              order_number: result.row.order_number,
+              customer_name: result.row.customer_name,
+              customer_phone: result.row.customer_phone,
+              total: result.row.total,
+              payment_method: result.row.payment_method,
+              payment_status: result.row.payment_status,
+              created_at: result.row.created_at,
+              items: (items || []).map(it => ({
+                product_name: it.product_name,
+                qty: it.quantity,
+                unit_price: it.unit_price,
+                product_pack: it.pack,
+              })),
+            };
+            // Fire-and-forget: don't await, don't let failures affect the order response
+            sendOwnerWhatsApp(env, orderForNotify).catch(err =>
+              logError('orders:waha-notify', err)
+            );
+          } catch (notifyErr) {
+            logError('orders:waha-notify-setup', notifyErr);
+          }
+        }
         return ok(publicOrderShape(result.row, result.replay), status);
       } catch (err) {
         if (isUniqueViolation(err)) {
