@@ -181,6 +181,33 @@ try{
  await page.evaluate(()=>localStorage.setItem('chaskabox-cart',JSON.stringify({69:99})));await page.locator('#addOccasion').click();await page.waitForFunction(()=>document.getElementById('occasionStatus')?.textContent.includes('Reduce the quantity'));
  results.interactions.push({case:'occasion quantity cap retains the original bag',pass:await page.evaluate(()=>localStorage.getItem('chaskabox-cart')===JSON.stringify({69:99}))});
  await context.close();
+ // Credibility controls use local synthetic fixtures, never real reviews or media.
+ {
+  const {context,page}=await contextFor(390);let failReviews=true,videoRequests=0;
+  await context.route('**/api/reviews?*',route=>route.fulfill({status:failReviews?503:200,contentType:'application/json',body:JSON.stringify({count:2,avg_rating:3,reviews:[{id:1,rating:2,review_text:'Synthetic guest review',verified_purchase:false},{id:2,rating:4,review_text:'Synthetic delivered purchase',verified_purchase:true}]})}));
+  await page.goto(base+'/product/39/');await page.getByRole('button',{name:'Retry reviews',exact:true}).waitFor();failReviews=false;await page.getByRole('button',{name:'Retry reviews',exact:true}).click();await page.locator('.rw-summary').waitFor();
+  results.interactions.push({case:'review retry restores honest guest and verified-purchase labels',pass:(await page.locator('.rw-summary').innerText()).includes('2 reviews')&&await page.locator('.rw-verified').count()===1&&await page.locator('.rw-rate input:checked').count()===0});
+  await context.route('**/api/storefront-config',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({...manifest,sections:[{section_key:'how_it_works',enabled:true,config:{packing_video_url:'https://youtu.be/abcdefghijk'}}]})}));
+  await context.route('https://www.youtube-nocookie.com/**',route=>{videoRequests++;return route.fulfill({status:200,contentType:'text/html',body:'<p>Synthetic player</p>'});});
+  await page.goto(base+'/');await page.locator('[data-load-packing-video]').waitFor();
+  const deferred=videoRequests===0&&await page.locator('#packingVideoBox iframe').count()===0;
+  await page.locator('[data-load-packing-video]').click();await page.locator('#packingVideoBox iframe').waitFor();
+  results.interactions.push({case:'packing video waits for visitor choice and uses the restricted player',pass:deferred&&await page.locator('#packingVideoBox iframe').getAttribute('src')==='https://www.youtube-nocookie.com/embed/abcdefghijk'});
+  await context.close();
+ }
+ {
+  const {context,page}=await contextFor(1440,'owner');let review={id:1,product_id:39,rating:3,review_text:'Synthetic approved review',moderation_status:'approved',verified_purchase:false,created_at:'2026-10-14T00:00:00Z'};
+  await context.route('**/api/admin/reviews?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reviews:[review],page:1,total:1,total_pages:1})}));
+  await context.route('**/api/admin/reviews/1',route=>{review={...review,moderation_status:route.request().postDataJSON().action==='reject'?'rejected':'approved'};return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({review})});});
+  const section={section_key:'how_it_works',enabled:true,position:6,heading:'How it works',config:{button_text:'Preserved'},draft_config:null};
+  await context.route('**/api/admin/homepage',route=>{if(route.request().method()==='PATCH')section.draft_config=route.request().postDataJSON().sections[0].draft_config;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="reviews"]').click();await page.getByRole('button',{name:'Unpublish',exact:true}).click();await page.locator('#view-reviews').getByText(/rejected/).waitFor();
+  results.interactions.push({case:'owner can unpublish an approved review without deleting its record',pass:review.moderation_status==='rejected'&&await page.locator('#view-reviews [data-review-action="approve"]').count()===1});
+  await page.locator('[data-view="homepage"]').click();await page.locator('#homePackingVideo').waitFor();await page.locator('#homePackingVideo').fill('https://youtu.be/abcdefghijk');const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage'&&r.request().method()==='PATCH');await page.locator('#homeSave').click();await saved;await page.waitForFunction(()=>document.getElementById('homePackingVideo')?.value==='https://youtu.be/abcdefghijk');
+  results.interactions.push({case:'admin packing-video draft retains other section configuration before publish',pass:section.draft_config?.packing_video_url==='https://youtu.be/abcdefghijk'&&section.draft_config?.button_text==='Preserved'&&!section.config.packing_video_url});
+  await context.close();
+ }
  if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});if(role==='owner'){attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;}await context.close();}
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));globalThis.fetch=originalFetch;await writeFile(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));}
 console.log(JSON.stringify({pages:results.cases.length,interactions:results.interactions,errors:results.errors}));

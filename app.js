@@ -557,6 +557,7 @@ function applyHomeCms(){
   }
 
   window.applyStorefrontManifest?.(STORE_CONFIG);
+  renderPackingVideo();
 }
 /* ---------- views ---------- */
 function showView(v){
@@ -1398,31 +1399,25 @@ function initPromo(){
   el.textContent=promoItems()[0];
 }
 
-/* ---------- packing video (Market Fresh section) ----------
-   Rameez: apni packing video ka path/link yahan dalo.
-   - MP4 file:   'videos/packing.mp4'            (file repo ke "videos" folder mein rakho)
-   - YouTube:    'https://www.youtube.com/embed/VIDEO_ID'
-   - Khaali '':  video section hidden rahega. */
-const PACKING_VIDEO = '';
-function renderPackingVideo(){
+/* Original packing video: published How it works configuration, loaded on request. */
+let packingVideoRender=0;
+async function renderPackingVideo(){
   const box=document.getElementById('packingVideoBox');
   if(!box) return;
-  const v=(PACKING_VIDEO||'').trim();
-  if(!v){ const wrap=box.closest('.freshvideo'); if(wrap) wrap.hidden=true; box.innerHTML=''; return; }
-  const wrap=box.closest('.freshvideo'); if(wrap) wrap.hidden=false;
-  if(/\.mp4(\?|$)/i.test(v)){
-    box.innerHTML='<video class="fv-frame" controls preload="metadata" playsinline src="'+esc(v)+'">'
-      +'Aapka browser video support nahi karta.</video>';
-  }else if(/youtu(\.be|be\.com)/i.test(v)){
-    let src=v;
-    if(/watch\?v=/.test(v)) src=v.replace('watch?v=','embed/');
-    if(/youtu\.be\//.test(v)) src=v.replace('youtu.be/','www.youtube.com/embed/');
-    box.innerHTML='<iframe class="fv-frame" src="'+esc(src)+'" title="Packing video" frameborder="0" '
-      +'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
-  }else{
-    // unknown format — treat as direct video file
-    box.innerHTML='<video class="fv-frame" controls preload="metadata" playsinline src="'+esc(v)+'"></video>';
-  }
+  const seq=++packingVideoRender,wrap=box.closest('.freshvideo');
+  if(wrap)wrap.hidden=true;box.innerHTML='';
+  const section=(STORE_CONFIG.sections||[]).find(s=>s.section_key==='how_it_works');
+  const raw=section?.config?.packing_video_url;
+  if(section?.enabled===false||!raw)return;
+  try{
+    const {packingVideoSource}=await import('/packing-video.js');const video=packingVideoSource(raw);
+    if(seq!==packingVideoRender||!video)return;
+    if(wrap)wrap.hidden=false;
+    box.innerHTML='<button class="cta" type="button" data-load-packing-video>Show packing video</button><p class="fv-sub">Video loads when you choose to watch.</p>';
+    box.querySelector('[data-load-packing-video]').onclick=()=>{
+      box.innerHTML=video.type==='youtube'?'<iframe class="fv-frame" src="'+esc(video.src)+'" title="ChaskaBox original packing video" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe>':'<video class="fv-frame" controls preload="none" playsinline src="'+esc(video.src)+'">Your browser does not support this video.</video>';
+    };
+  }catch{if(seq===packingVideoRender){box.innerHTML='';if(wrap)wrap.hidden=true;}}
 }
 
 /* ---------- animations: scroll reveals, hero tilt ---------- */
