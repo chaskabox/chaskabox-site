@@ -8,7 +8,7 @@ const e=process.env,root=path.join(e.RUNNER_TEMP||'/tmp','chaskabox-isolated-rec
 const container='chaskabox-recovery-'+String(e.GITHUB_RUN_ID||process.pid),image='supabase/postgres:17.6.1.136';
 let step='preflight';
 function run(bin,args,env=e,input){try{return execFileSync(bin,args,{env,input,encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:32*1024*1024,timeout:8*60000});}catch(error){if(step==='start_offline_target'&&!(bin==='docker'&&args[0]==='exec')){const diagnostic=String(error.stderr||'');console.error(JSON.stringify({step,command:args[0],exit_code:error.status??null,signals:{invalid_mount:/invalid mount|mount.*denied|not shared/i.test(diagnostic),permission_denied:/permission denied/i.test(diagnostic),invalid_environment:/invalid.*env|poorly formatted/i.test(diagnostic),docker_unavailable:/daemon|not found/i.test(diagnostic),image_unavailable:/pull access|manifest|No such image/i.test(diagnostic)}}));}throw new Error('recovery_'+step+'_failed');}}
-function db(sql,database='postgres',user='chaskabox_recovery_operator'){return run('docker',['exec','-i',container,'psql','-U',user,'-d',database,'-At','-v','ON_ERROR_STOP=1'],e,sql);}
+function db(sql,database='postgres',user='chaskabox_recovery_operator'){return run('docker',['exec','-i',container,'psql',...(user==='chaskabox_recovery_operator'?['-h','127.0.0.1']:[]),'-U',user,'-d',database,'-At','-v','ON_ERROR_STOP=1'],e,sql);}
 try{
  if(e.GITHUB_ACTIONS!=='true'||!e.RUNNER_TEMP)throw Error('Isolated Actions runner required');
  const config=backupConfiguration(e);await verifyPrivateBackupBucket(e);await mkdir(root,{mode:0o700});
@@ -44,7 +44,7 @@ try{
  if(passwords.some(m=>m[1].trim()!=='NULL'))throw Error('Role password export forbidden');
  const filtered=roles.split('\n').filter(line=>{const m=/^CREATE ROLE ("(?:[^"]|"")*"|[a-zA-Z0-9_]+);$/.exec(line);return !m||!existing.has(m[1].replace(/^"|"$/g,'').replace(/""/g,'"'));}).join('\n');
  step='restore_roles';db(filtered);step='create_disposable_database';db('create database chaskabox_recovery template template0;');
- step='restore_actual_archive';run('docker',['exec',container,'pg_restore','-U','chaskabox_recovery_operator','-d','chaskabox_recovery','--clean','--if-exists','--exit-on-error','--single-transaction','/recovery/database.dump']);
+ step='restore_actual_archive';run('docker',['exec',container,'pg_restore','-h','127.0.0.1','-U','chaskabox_recovery_operator','-d','chaskabox_recovery','--clean','--if-exists','--exit-on-error','--single-transaction','/recovery/database.dump']);
  step='verify_recovered_application';
  const checks=JSON.parse(db("select json_build_object('products',(select count(*) from public.products),'visible_products',(select count(*) from public.public_products),'bundle_links',(select count(*) from public.bundle_items),'public_tables',(select count(*) from pg_tables where schemaname='public'),'rls_tables',(select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r' and c.relrowsecurity),'policies',(select count(*) from pg_policies where schemaname='public'),'order_count',(select count(*) from public.orders),'product_sequence_valid',(select last_value >= (select coalesce(max(id),0) from public.products) from public.products_id_seq));",'chaskabox_recovery'));
  if(checks.products<1||checks.rls_tables<1||checks.policies<1||!checks.product_sequence_valid)throw Error('Recovery verification failed');
