@@ -1,7 +1,7 @@
 /* Restore an actual completed private archive only inside a disposable, offline container. */
 import {execFileSync} from 'node:child_process';
 import {randomBytes,createHash} from 'node:crypto';
-import {mkdir,readFile,writeFile,rm} from 'node:fs/promises';
+import {mkdir,readFile,writeFile,rm,readdir} from 'node:fs/promises';
 import path from 'node:path';
 import {backupConfiguration,verifyPrivateBackupBucket,verifyDatabaseArchive} from './database-backup.mjs';
 import {verifyMediaArchive,STORAGE_INVENTORY_SQL} from './media-backup.mjs';
@@ -9,7 +9,7 @@ const e=process.env,root=path.join(e.RUNNER_TEMP||'/tmp','chaskabox-isolated-rec
 const container='chaskabox-recovery-'+String(e.GITHUB_RUN_ID||process.pid),image='supabase/postgres:17.6.1.136';
 const authContainer=container+'-auth',authImage='supabase/gotrue:v2.196.0',nodeImage='node:24-alpine';
 let step='preflight',operatorPassword;
-function run(bin,args,env=e,input){try{return execFileSync(bin,args,{env,input,encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:32*1024*1024,timeout:8*60000});}catch(error){if(step==='start_offline_target'&&!(bin==='docker'&&args[0]==='exec')){const diagnostic=String(error.stderr||'');console.error(JSON.stringify({step,command:args[0],exit_code:error.status??null,signals:{invalid_mount:/invalid mount|mount.*denied|not shared/i.test(diagnostic),permission_denied:/permission denied/i.test(diagnostic),invalid_environment:/invalid.*env|poorly formatted/i.test(diagnostic),docker_unavailable:/daemon|not found/i.test(diagnostic),image_unavailable:/pull access|manifest|No such image/i.test(diagnostic)}}));}throw new Error('recovery_'+step+'_failed');}}
+function run(bin,args,env=e,input){try{return execFileSync(bin,args,{env,input,encoding:'utf8',stdio:['pipe','pipe','pipe'],maxBuffer:32*1024*1024,timeout:8*60000});}catch(error){if(step==='verify_offline_auth_login'){const line=String(error.stderr||'').split('\n').find(x=>x.startsWith('AUTH_RECOVERY_FAILURE '));if(line){try{const diagnostic=JSON.parse(line.slice('AUTH_RECOVERY_FAILURE '.length));console.error(JSON.stringify({offline_auth_failure:diagnostic}));}catch{}}}if(step==='start_offline_target'&&!(bin==='docker'&&args[0]==='exec')){const diagnostic=String(error.stderr||'');console.error(JSON.stringify({step,command:args[0],exit_code:error.status??null,signals:{invalid_mount:/invalid mount|mount.*denied|not shared/i.test(diagnostic),permission_denied:/permission denied/i.test(diagnostic),invalid_environment:/invalid.*env|poorly formatted/i.test(diagnostic),docker_unavailable:/daemon|not found/i.test(diagnostic),image_unavailable:/pull access|manifest|No such image/i.test(diagnostic)}}));}throw new Error('recovery_'+step+'_failed');}}
 function db(sql,database='postgres',user='chaskabox_recovery_operator'){const operator=user==='chaskabox_recovery_operator';return run('docker',['exec',...(operator?['-e','PGPASSWORD']:[]),'-i',container,'psql',...(operator?['-h','127.0.0.1']:[]),'-U',user,'-d',database,'-At','-v','ON_ERROR_STOP=1'],operator?{...e,PGPASSWORD:operatorPassword}:e,sql);}
 try{
  if(e.GITHUB_ACTIONS!=='true'||!e.RUNNER_TEMP)throw Error('Isolated Actions runner required');
@@ -23,8 +23,13 @@ try{
  const initialManifest=JSON.parse(await readFile(path.join(root,'manifest.json'),'utf8'));
  if(initialManifest.version===2)for(const name of ['media.json','media.tar.gz'])run('aws',['s3','cp','s3://'+config.bucket+'/'+prefix+'/'+name,path.join(root,name),'--only-show-errors',...endpoint],aws);
  const manifest=await verifyDatabaseArchive(root),success=JSON.parse(await readFile(path.join(root,'SUCCESS.json'),'utf8'));
+ if(manifest.version!==2)throw Error('A completed database and media archive is required');
  if(success.readback_verified!==true||success.archive_hash!==manifest.files['database.dump'])throw Error('Archive marker mismatch');
- step='restore_actual_media_bytes';const media=manifest.version===2?await verifyMediaArchive(root):null;
+ step='restore_actual_media_bytes';const media=await verifyMediaArchive(root);
+ const mediaManifest=JSON.parse(await readFile(path.join(root,'media.json'),'utf8'));
+ const sourceImages=new Set((await readdir('images')).filter(n=>/\.(png|webp|jpe?g|svg|gif|avif)$/i.test(n)).map(n=>'images/'+n));
+ for(const entry of mediaManifest.entries.filter(x=>x.kind==='git_image')){if(!sourceImages.delete(entry.path)||createHash('sha256').update(await readFile(entry.path)).digest('hex')!==entry.sha256)throw Error('Completed media archive differs from the checked source images; create a fresh backup');}
+ if(sourceImages.size)throw Error('Completed media archive omits checked source images; create a fresh backup');
  step='pull_official_postgres_image';run('docker',['pull',image]);
  const imageDigest=JSON.parse(run('docker',['image','inspect',image]))[0].RepoDigests?.[0];
  if(!imageDigest?.startsWith('supabase/postgres@sha256:'))throw Error('Unexpected container image');
@@ -79,7 +84,7 @@ try{
  step='start_offline_auth';run('docker',['run','-d','--name',authContainer,'--network','container:'+container,'--env-file',path.join(root,'auth.env'),authImage]);
  step='verify_offline_auth_login';let auth;
  try{auth=JSON.parse(run('docker',['run','--rm','--network','container:'+container,'--env-file',path.join(root,'auth.env'),'-v',root+':/recovery:ro',nodeImage,'node','/recovery/auth-acceptance.mjs']).trim());}
- catch(error){const logs=run('docker',['logs',authContainer]);console.error(JSON.stringify({auth_startup_signals:{migration_error:/migration.*(fail|error)/i.test(logs),database_permission_denied:/permission denied/i.test(logs),database_authentication_failed:/password authentication failed/i.test(logs),missing_configuration:/required|missing/i.test(logs)}}));throw error;}
+ catch(error){const logs=run('docker',['logs',authContainer]);console.error(JSON.stringify({auth_startup_signals:{migration_error:/migration.*(fail|error)/i.test(logs),database_permission_denied:/permission denied/i.test(logs),database_authentication_failed:/password authentication failed/i.test(logs),missing_configuration:/required|missing/i.test(logs)},sqlstates:[...new Set(logs.match(/SQLSTATE [A-Z0-9]{5}/g)||[])]}));throw error;}
  const afterAuth=JSON.parse(db(authCountsSQL,'chaskabox_recovery'));if(afterAuth.users!==recoveredAuth.users+1||afterAuth.verified_factors!==recoveredAuth.verified_factors||afterAuth.admin_roles!==recoveredAuth.admin_roles)throw Error('Recovered Auth metadata unexpectedly changed');
  const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,live_auth_provider_acceptance_verified:false};
  console.log(JSON.stringify(report));if(e.GITHUB_STEP_SUMMARY)await writeFile(e.GITHUB_STEP_SUMMARY,JSON.stringify(report,null,2)+'\n',{flag:'a'});

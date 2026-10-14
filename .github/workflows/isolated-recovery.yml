@@ -3,6 +3,12 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      fresh_backup:
+        description: Create a fresh private backup before restoring (leave enabled for routine drills)
+        required: true
+        default: true
+        type: boolean
 permissions:
   contents: read
 jobs:
@@ -29,6 +35,7 @@ jobs:
       - name: Install PostgreSQL 17 client
         run: bash tools/install-pg17-client.sh
       - name: Create and read back a fresh database and media backup
+        if: github.event_name == 'workflow_dispatch' && inputs.fresh_backup
         run: |
           node tools/database-backup.mjs dump
           node tools/database-backup.mjs upload
