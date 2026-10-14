@@ -15,7 +15,7 @@ export const onRequestPost=withAdmin(['owner'],async(context,{user})=>{
   return json({proposal,published:false,sent:false});
  }
  if(b.operation==='decide'){
-  if(typeof b.draft_id!=='string'||!/^[a-f0-9-]{36}$/i.test(b.draft_id)
+  if(typeof b.draft_id!=='string'||!/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(b.draft_id)
     ||!['approved','rejected'].includes(b.decision))httpError('Invalid decision',400);
   const decision=await call(context,'agent_m04_decide',{
    p_actor:user.id,p_draft:b.draft_id,p_decision:b.decision
