@@ -521,6 +521,10 @@ function pdQty(d){const e=$('#pdqty');e.textContent=Math.max(1,+e.textContent+d)
 let STORE_CONFIG={settings:{},sections:[]},HOME_PREVIEW_ROWS=null;
 window.addEventListener('message',event=>{if(event.source!==window.parent||window.parent===window||event.origin!==location.origin||!new URLSearchParams(location.search).has('cms_preview')||event.data?.type!=='CHASKABOX_HOME_PREVIEW'||!Array.isArray(event.data.sections)||event.data.sections.length>20)return;HOME_PREVIEW_ROWS=event.data.sections;STORE_CONFIG.sections=HOME_PREVIEW_ROWS;if(document.getElementById('catTiles')){renderHomeContent();applyHomeCms();}});
 async function loadStorefrontConfig(){
+  if(window.loadStorefrontManifest){
+    try{const data=await window.loadStorefrontManifest();STORE_CONFIG=HOME_PREVIEW_ROWS?{...data,sections:HOME_PREVIEW_ROWS}:data;window.applyStorefrontManifest?.(STORE_CONFIG);}catch{}
+    return STORE_CONFIG;
+  }
   try{const seed=JSON.parse(document.getElementById('current-storefront-config')?.textContent||'null');if(seed&&typeof seed==='object'&&!Array.isArray(seed)&&Array.isArray(seed.categories)){STORE_CONFIG=seed;if(HOME_PREVIEW_ROWS)STORE_CONFIG.sections=HOME_PREVIEW_ROWS;window.applyStorefrontManifest?.(STORE_CONFIG);return STORE_CONFIG;}}catch{}
   try{const r=await fetch('/api/storefront-config',{cache:'no-cache'});if(r.ok){STORE_CONFIG=await r.json();if(HOME_PREVIEW_ROWS)STORE_CONFIG.sections=HOME_PREVIEW_ROWS;window.applyStorefrontManifest?.(STORE_CONFIG);}}catch(e){}
   return STORE_CONFIG;

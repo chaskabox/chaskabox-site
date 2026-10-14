@@ -118,6 +118,18 @@ async function inspect(page,route,width,role){
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ // The bridge and application must share the public config request; SSR pages
+ // must hydrate the supplied manifest rather than fetching it again.
+ for(const [route,expected] of [['/',1],['/shop/',0]]){
+  const {context,page}=await contextFor(390);let manifestRequests=0;
+  page.on('request',request=>{if(new URL(request.url()).pathname==='/api/storefront-config')manifestRequests++;});
+  await page.goto(base+route,{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
+  await page.waitForTimeout(250);
+  if(manifestRequests!==expected)throw Error('Unexpected manifest requests for '+route+': '+manifestRequests);
+  results.interactions.push({case:route==='/'?'home application and runtime share one manifest request':'shop hydrates the server manifest without an extra config request',pass:true});
+  await context.close();
+ }
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){const {context,page}=await contextFor(width);for(const route of routes)await inspect(page,route,width);await context.close();}
  // Reproduce the live legacy logo setting and prove branding survives errors.

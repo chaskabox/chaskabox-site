@@ -7,6 +7,7 @@
 <meta name="referrer" content="no-referrer">
 <title>ChaskaBox Admin Console</title>
 <link rel="stylesheet" href="/admin.css?v=20261013-ops-1">
+<style>.agent-m05-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:12px;margin:14px 0}.agent-m05-grid .panel h3{margin:0 0 8px;color:var(--navy);font-size:15px}.agent-m05-grid .panel p{overflow-wrap:anywhere;font-size:12px}.agent-m05-grid .panel button{margin:6px}</style>
 </head>
 <body>
 <!-- Auth bootstrap gate: visible until admin-live.js verifies the staff session.
@@ -56,6 +57,7 @@ setTimeout(function(){
       <button class="admin-nav-btn" data-view="reviews"><span>★</span> Reviews</button>
       <button class="admin-nav-btn" data-view="media"><span>▣</span> Media Library</button>
       <button class="admin-nav-btn" data-view="notifications"><span>🔔</span> Notifications</button>
+      <button class="admin-nav-btn" data-view="agents"><span>🤖</span> AI Agents</button>
       <button class="admin-nav-btn" data-view="assistant"><span>✦</span> AI Center</button>
       <button class="admin-nav-btn" data-view="health"><span>💚</span> System Health</button>
       <button class="admin-nav-btn" data-view="preview"><span>◉</span> Site Preview</button>
@@ -357,6 +359,12 @@ setTimeout(function(){
       </section>
 
       <!-- AI -->
+      <section class="admin-view" id="view-agents" data-title="AI Agents" data-subtitle="Owner-controlled monitoring, drafts, diagnostics and approvals.">
+        <div class="panel"><h2>AI Agents — Owner Control Centre</h2><p class="muted">Observation only. All eight agents remain disabled by default. No automatic messages or publishing.</p><button id="agentsM05Refresh" class="btn secondary" type="button">Refresh Agent Status</button><p id="agentsM05Message" role="status" aria-live="polite">Select AI Agents to load diagnostics.</p></div>
+        <div id="agentsM05Readiness" class="agent-m05-grid"></div>
+        <div id="agentsM05Signals" class="agent-m05-grid"></div>
+        <div class="panel"><h2>Marketing proposals (review only)</h2><form id="agentsM05Propose" class="toolbar"><label>Public product ID <input id="agentsM05ProductId" type="number" min="1" step="1" required></label><label>Channel <select id="agentsM05Channel"><option value="social">Social</option><option value="email">Email draft</option><option value="whatsapp">WhatsApp draft</option></select></label><button class="btn primary" type="submit">Create review draft</button></form><p class="safe-note">Approving a draft does NOT send, publish, or create a marketing campaign.</p><div id="agentsM05Drafts" class="agent-m05-grid"></div></div>
+      </section>
       <section class="admin-view" id="view-assistant" data-title="Admin Copilot" data-subtitle="AI-assisted catalogue and merchandising work — always reviewed by you before saving.">
         <div class="admin-grid two copilot-grid">
           <section class="panel">
@@ -635,5 +643,6 @@ setTimeout(function(){
 <script src="/admin-login-mfa.js?v=20261012-mfa-gate-1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
 <script src="/admin-live.js?v=20261014-final-readiness" defer></script>
+<script src="/admin-agents.js?v=20261014-m05" defer></script>
 </body>
 </html>
