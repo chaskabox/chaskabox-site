@@ -33,7 +33,7 @@ import { validateOrderPayload } from './_lib/validate.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
 import { verifyTurnstile } from './_lib/turnstile.js';
 import { ok, Errors, logError } from './_lib/respond.js';
-import { sendOwnerWhatsApp, WHATSAPP_ON_HOLD } from './_lib/waha-notify.js';
+import { sendOwnerWhatsApp } from './_lib/waha-notify.js';
 
 const MAX_BODY_BYTES = 64 * 1024;
 const ORDER_NUMBER_RETRIES = 5;
@@ -229,7 +229,7 @@ export async function onRequest(context) {
         }
         const status = result.replay ? 200 : 201;
         // WhatsApp owner notification (best-effort, fire-and-forget; never blocks checkout)
-        if (!result.replay && !WHATSAPP_ON_HOLD) {
+        if (!result.replay) {
           try {
             const items = await selectMany(env, 'order_items', { order_id: result.row.id });
             const orderForNotify = {
