@@ -1,6 +1,7 @@
 import {publicCatalogue} from './catalogue-search.js';
 import {imageAttributes} from './responsive-images.js';
-import {rpc,sbRequest} from './db.js';
+import {sbRequest} from './db.js';
+import {storefrontConfig} from './storefront-config.js';
 import {productImage} from './seo.js';
 import {LOCAL_PHOTOS} from './local-photos.js';
 import {SEO_CATEGORIES} from './catalogue-content.js';
@@ -12,7 +13,7 @@ function collectionSchema(rows,name,path){return {'@context':'https://schema.org
 async function shell(context){const request=new Request(new URL('/',context.request.url));const r=context.next?await context.next(request):await context.env.ASSETS.fetch(request);if(!r.ok)throw Error('Store shell unavailable');return r.text();}
 export async function renderCataloguePage(context,kind,slug=''){
  try{
-  const [all,manifest]=await Promise.all([publicCatalogue(context.env),kind==='category'?rpc(context.env,'storefront_manifest',{}):Promise.resolve({})]);
+  const [all,manifest,staticShell]=await Promise.all([publicCatalogue(context.env),storefrontConfig(context.env).catch(error=>{if(kind==='category')throw error;return null;}),shell(context)]);
   let rows=all,path=kind==='category'?'/category/'+slug+'/':kind==='bundles'?'/bundles/':'/shop/',copy=SEO_CATEGORIES[kind]||SEO_CATEGORIES.shop;
   if(kind==='bundles')rows=all.filter(p=>p.is_bundle);
   if(kind==='category'){
@@ -23,11 +24,11 @@ export async function renderCataloguePage(context,kind,slug=''){
    copy={...(known||{name:cms.name,title:cms.name+' | ChaskaBox',description:'Browse '+cms.name+' at ChaskaBox Pakistan.',intro:''}),...(cms?.seo_title?{title:cms.seo_title}:{}),...(cms?.seo_description?{description:cms.seo_description}:{}),...(cms?.description?{intro:cms.description}:{})};
    rows=cms?all.filter(p=>(cms.product_ids||[]).map(Number).includes(Number(p.id))):all.filter(p=>p.category===known.name);
   }
-  let html=routeShell(await shell(context,path),'shop');
-  html=replaceMount(html,'shopGrid',rows.map(catalogueCard).join('')||'<p>No public products in this collection yet. <a href="/shop/">Browse all snacks</a>.</p>');
+  let html=routeShell(staticShell,'shop');
+  html=replaceMount(html,'shopGrid',rows.map((p,i)=>catalogueCard(p).replace('loading="lazy"',i===0?'loading="eager" fetchpriority="high"':i===1?'loading="eager"':'loading="lazy"')).join('')||'<p>No public products in this collection yet. <a href="/shop/">Browse all snacks</a>.</p>');
   html=html.replace(/(<h1\b[^>]*id="catTitle"[^>]*>)[\s\S]*?<\/h1>/i,'$1'+esc(copy.name)+'</h1>').replace(/(<[^>]+id="catCount"[^>]*>)[\s\S]*?<\//i,'$1'+rows.length+' products</');
   html=html.replace(/(<[^>]+id="categorySeoIntro"[^>]*>)[\s\S]*?<\//i,'$1'+esc(copy.intro)+'</');
-  html=withSeo(html,{title:copy.title,description:copy.description,path,noindex:rows.length===0,schemas:[organizationSchema(),collectionSchema(rows,copy.name,path)],seed:'<script type="application/json" id="current-catalogue">'+safeJson(all.map(browserProduct))+'</script>'});
+  html=withSeo(html,{title:copy.title,description:copy.description,path,noindex:rows.length===0,schemas:[organizationSchema(),collectionSchema(rows,copy.name,path)],seed:'<script type="application/json" id="current-catalogue">'+safeJson(all.map(browserProduct))+'</script>'+(manifest?'<script type="application/json" id="current-storefront-config">'+safeJson(manifest)+'</script>':'')});
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
  }catch(error){console.error('[catalogue-page]',error?.code||'unavailable');return catalogueUnavailable();}
 }

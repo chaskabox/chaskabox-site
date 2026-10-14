@@ -51,7 +51,10 @@ function ownerText(env, order) {
     `\nOpen Admin: ${adminOrderUrl(env, order)}`;
 }
 
+export const WHATSAPP_ON_HOLD = true;
+
 export async function sendOwnerWhatsApp(env, order) {
+  if (WHATSAPP_ON_HOLD) return { sent: false, skipped: true, error: 'WhatsApp notifications are on hold' };
   const baseUrl = cleanBaseUrl(env.WAHA_API_URL);
   const apiKey = env.WAHA_API_KEY;
   const session = env.WAHA_SESSION || 'default';

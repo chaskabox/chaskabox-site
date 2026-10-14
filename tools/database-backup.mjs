@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {createMediaArchive,verifyMediaArchive,STORAGE_INVENTORY_SQL} from './media-backup.mjs';
 
 const ACCOUNT = '16d9379f99684cfc5cad2e5a1b6a4363';
 const PROJECT = 'jtvswuvnasqqzrjysgfd';
@@ -61,16 +62,21 @@ export async function createDatabaseArchive({ databaseURL, directory, runId = 'm
   await mkdir(directory, { recursive: true, mode: 0o700 });
   if ((await readdir(directory)).length) throw new Error('Backup directory must be empty.');
   const archive = path.join(directory, 'database.dump');
+  const readInventory=async()=>JSON.parse(command(path.join(bin,'psql'),['--dbname',databaseURL,'-X','-At','-v','ON_ERROR_STOP=1','-c',STORAGE_INVENTORY_SQL],env,'storage inventory'));
+  const inventory=await readInventory();
   command(path.join(bin, 'pg_dump'), ['--dbname', databaseURL, '--format=custom', '--file', archive], env, 'consistent database dump');
   command(path.join(bin, 'pg_restore'), ['--list', archive], env, 'archive validation');
   command(path.join(bin, 'pg_dumpall'), ['--dbname', databaseURL, '--roles-only', '--no-role-passwords', '--file', path.join(directory, 'roles.sql')], env, 'role export');
+  const media=await createMediaArchive({directory,inventory,readInventory});
+  await verifyMediaArchive(directory);
   const files = {};
-  for (const name of ['database.dump', 'roles.sql']) files[name] = await hashFile(path.join(directory, name));
+  for (const name of ['database.dump', 'roles.sql','media.json','media.tar.gz']) files[name] = await hashFile(path.join(directory, name));
   const manifest = {
-    version: 1, kind: 'postgresql_database_archive', completed_at: new Date().toISOString(),
+    version: 2, kind: 'postgresql_database_archive', completed_at: new Date().toISOString(),
     run_id: String(runId), postgres_major: 17, data_format: 'copy', archive_consistency: 'single_database_snapshot',
     scope: ['accessible database schemas', 'table data', 'sequences', 'functions', 'triggers', 'RLS policies', 'owners and grants', 'roles without login passwords'],
-    excluded: ['storage object bytes', 'provider configuration', 'environment secrets', 'role login passwords'],
+    media:{...media,entries:undefined},media_consistency:'Storage inventory unchanged before database dump and after media download; separate systems are not one atomic snapshot',
+    excluded: ['provider configuration', 'environment secrets', 'role login passwords'],
     recovery_verified: false, files,
   };
   await writeFile(path.join(directory, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n', { mode: 0o600 });
@@ -83,6 +89,7 @@ export async function verifyDatabaseArchive(directory) {
   const checksums = await readFile(path.join(directory, 'SHA256SUMS'), 'utf8');
   const lines = checksums.trim().split('\n');
   const allowed = new Set(['database.dump', 'roles.sql', 'manifest.json']);
+  if(manifest.version===2){allowed.add('media.json');allowed.add('media.tar.gz');}
   if (lines.length !== allowed.size || manifest.kind !== 'postgresql_database_archive' || manifest.postgres_major !== 17) throw new Error('Invalid archive manifest.');
   for (const line of lines) {
     const match = /^([a-f0-9]{64})  ([a-zA-Z0-9.]+)$/.exec(line);
@@ -121,11 +128,12 @@ async function main(mode) {
     // Every file is downloaded and hashed before a dated success marker exists.
     const verifyDirectory = path.join(e.BACKUP_DIR, 'readback');
     await mkdir(verifyDirectory, { mode: 0o700 });
-    for (const name of ['database.dump', 'roles.sql', 'manifest.json', 'SHA256SUMS']) {
+    for (const name of [...Object.keys(manifest.files),'manifest.json','SHA256SUMS']) {
       command('aws', ['s3', 'cp', path.join(e.BACKUP_DIR, name), `${destination}/${name}`, '--only-show-errors', ...args], awsEnv, 'private upload');
       command('aws', ['s3', 'cp', `${destination}/${name}`, path.join(verifyDirectory, name), '--only-show-errors', ...args], awsEnv, 'backup readback');
     }
     await verifyDatabaseArchive(verifyDirectory);
+    if(manifest.version===2)await verifyMediaArchive(verifyDirectory);
     const marker = path.join(e.BACKUP_DIR, 'SUCCESS.json');
     await writeFile(marker, JSON.stringify({ completed_at: new Date().toISOString(), prefix, archive_hash: manifest.files['database.dump'], readback_verified: true, recovery_verified: false }) + '\n', { mode: 0o600 });
     command('aws', ['s3', 'cp', marker, `${destination}/SUCCESS.json`, '--only-show-errors', ...args], awsEnv, 'success marker upload');

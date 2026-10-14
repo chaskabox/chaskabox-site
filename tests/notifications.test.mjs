@@ -32,6 +32,12 @@ test('provider diagnostics never send a WAHA credential to a temporary gateway',
  const result=await providerReadiness({RESEND_API_KEY:'fixture-email',RESEND_FROM_EMAIL:'notify@example.invalid',WAHA_API_URL:'https://temporary.trycloudflare.com',WAHA_API_KEY:'fixture-private-key'},async url=>{assert.equal(url,'https://api.resend.com/domains');return Response.json({data:[{name:'example.invalid',status:'verified'}]});});
  assert.equal(result.whatsapp.check_blocked,true);assert.equal(result.email.sender_domain_verified,true);assert.doesNotMatch(JSON.stringify(result),/fixture-private-key/);
 });
+test('approved provider diagnostics distinguish missing sessions, unavailable tunnels and restricted email domain access',async()=>{
+ const gateway='https://approved.trycloudflare.com',e={WAHA_API_URL:gateway,WAHA_APPROVED_GATEWAY_ORIGIN:gateway,WAHA_API_KEY:'fixture-private-key',WAHA_SESSION:'default'};
+ const result=await providerReadiness(e,async(url,init)=>{assert.equal(init.redirect,'manual');if(url==='https://api.resend.com/domains')return Response.json({message:'restricted'},{status:401});assert.equal(init.headers['X-Api-Key'],'fixture-private-key');if(url.endsWith('?all=true'))return Response.json([{name:'configured-session',status:'WORKING',config:{private:'must not expose'}}]);return Response.json({message:'Session not found'},{status:404});});
+ assert.equal(result.email.sender_domain_verified,null);assert.equal(result.email.domain_check_available,false);assert.deepEqual(result.whatsapp.available_sessions,[{name:'configured-session',status:'WORKING'}]);assert.doesNotMatch(JSON.stringify(result),/fixture-private-key|must not expose/);
+ let gatewayCalls=0;const unavailable=await providerReadiness(e,async url=>{if(url==='https://api.resend.com/domains')return Response.json({data:[]});gatewayCalls++;return new Response('no tunnel here',{status:404});});assert.equal(gatewayCalls,1);assert.equal(unavailable.whatsapp.tunnel_unavailable,true);assert.equal(unavailable.whatsapp.response_kind,'text');
+});
 
 test('migration retains 20 legacy jobs without replay; new order creates three unique channel jobs atomically',async()=>{
  const db=await fixture();try{

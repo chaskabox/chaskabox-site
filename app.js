@@ -51,9 +51,10 @@ function bundleFanHTML(p){
   if(picks.length<2) return '';
   return `<span class="bundle-fan" aria-hidden="true">${picks.map((x,i)=>`<img src="${esc(assetUrl(x.img))}" alt="" loading="lazy" width="80" height="80" class="bf${i+1}">`).join('')}</span>`;
 }
-function cardHTML(p){
+function cardHTML(p,priority){
   const src=hasPhoto(p)?assetUrl(p.img):'';
-  const img=src?`<img ${photoAttributes(p.img)} alt="${esc(p.name)}" loading="lazy" width="300" height="300" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
+  const loading=priority==='high'?'loading="eager" fetchpriority="high"':priority==='eager'?'loading="eager"':'loading="lazy"';
+  const img=src?`<img ${photoAttributes(p.img)} alt="${esc(p.name)}" ${loading} width="300" height="300" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
   const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'SALE':p.badge.toUpperCase())}</span>`:'';
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="savepill">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
@@ -381,7 +382,7 @@ function renderShopResults(){
   $('#catCount').textContent=list.length+' products';
   const cnt=document.getElementById('shopResultCount');if(cnt)cnt.textContent=list.length+' products';
   const canSmart=!list.length&&String(shopState.q||'').trim().length>=2&&!shopState.cat&&!shopState.brands.length&&!shopState.maxPrice&&!shopState.pack&&!shopState.badge;
-  if(list.length){clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML=list.map(cardHTML).join('');}
+  if(list.length){clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML=list.map((p,i)=>cardHTML(p,i===0?'high':i===1?'eager':undefined)).join('');}
   else if(canSmart){const seq=++smartSearchSeq;clearTimeout(smartSearchTimer);$('#shopGrid').innerHTML='<div class="empty">✦ Looking for smart matches…</div>';smartSearchTimer=setTimeout(()=>renderSmartSearchResults(shopState.q,seq),420);}
   else {clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML='<div class="empty">No products found. Try another search.</div>';}
   renderFilterChips();updateApplyBtn();
@@ -518,6 +519,7 @@ function pdQty(d){const e=$('#pdqty');e.textContent=Math.max(1,+e.textContent+d)
 let STORE_CONFIG={settings:{},sections:[]},HOME_PREVIEW_ROWS=null;
 window.addEventListener('message',event=>{if(event.source!==window.parent||window.parent===window||event.origin!==location.origin||!new URLSearchParams(location.search).has('cms_preview')||event.data?.type!=='CHASKABOX_HOME_PREVIEW'||!Array.isArray(event.data.sections)||event.data.sections.length>20)return;HOME_PREVIEW_ROWS=event.data.sections;STORE_CONFIG.sections=HOME_PREVIEW_ROWS;if(document.getElementById('catTiles')){renderHomeContent();applyHomeCms();}});
 async function loadStorefrontConfig(){
+  try{const seed=JSON.parse(document.getElementById('current-storefront-config')?.textContent||'null');if(seed&&typeof seed==='object'&&!Array.isArray(seed)&&Array.isArray(seed.categories)){STORE_CONFIG=seed;if(HOME_PREVIEW_ROWS)STORE_CONFIG.sections=HOME_PREVIEW_ROWS;window.applyStorefrontManifest?.(STORE_CONFIG);return STORE_CONFIG;}}catch{}
   try{const r=await fetch('/api/storefront-config',{cache:'no-cache'});if(r.ok){STORE_CONFIG=await r.json();if(HOME_PREVIEW_ROWS)STORE_CONFIG.sections=HOME_PREVIEW_ROWS;window.applyStorefrontManifest?.(STORE_CONFIG);}}catch(e){}
   return STORE_CONFIG;
 }

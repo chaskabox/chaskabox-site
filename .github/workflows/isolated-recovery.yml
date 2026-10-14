@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   restore:
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'fix/occasion-index-route-20261013')
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && github.head_ref == 'improve/final-closeout-20261014')
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -18,9 +18,22 @@ jobs:
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
       CLOUDFLARE_BACKUP_READ_TOKEN: ${{ secrets.CLOUDFLARE_BACKUP_READ_TOKEN }}
     steps:
+      - name: Set private backup directory
+        run: echo "BACKUP_DIR=$RUNNER_TEMP/chaskabox-database-backup" >> "$GITHUB_ENV"
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: '24'
-      - name: Restore a completed private archive into an offline disposable target
+      - name: Validate private backup configuration
+        run: node tools/database-backup.mjs preflight
+      - name: Install PostgreSQL 17 client
+        run: bash tools/install-pg17-client.sh
+      - name: Create and read back a fresh database and media backup
+        run: |
+          node tools/database-backup.mjs dump
+          node tools/database-backup.mjs upload
+      - name: Restore a completed private archive and test offline Auth
         run: node tools/recovery-drill.mjs
+      - name: Remove plaintext backup files
+        if: always()
+        run: node tools/database-backup.mjs cleanup
