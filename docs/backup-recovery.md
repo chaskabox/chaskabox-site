@@ -31,6 +31,8 @@ The official GoTrue Auth service and a synthetic acceptance client share only th
 
 A production disaster recovery procedure still requires secure restoration of provider configuration/secrets, review of managed Supabase internals, and actual authorized staff acceptance. Never point the disposable restore commands at production.
 
+The same-repository `improve/product-evidence-20261014` PR is also an exact trusted recovery branch. Its final release preflight reuses the most recent completed, checksum-verified archive and checks that every archived Git image matches the candidate source. After the database/media/Auth recovery checks pass, M0–M04 are replayed only inside that disposable network-none clone. The preflight verifies eight agents remain disabled, actual read-only RPCs execute against recovered schema, client roles lack private table/RPC access, and business/staff row counts stay unchanged. It records migration hashes and aggregate results only. This is native compatibility evidence on recovered production schema; it does not substitute for managed staging, a real owner's MFA session, provider acceptance or production migration authorization. Ordinary manual recovery runs retain the original restore-only behavior.
+
 ## Monitoring
 
 Check the latest workflow conclusion and dated success marker daily, and after configuration changes. GitHub may delay scheduled jobs. Failed steps are visible in the run and step summary; separate external failure alerts are not configured. Readback verifies stored integrity, while the separate isolated drill verifies restoration. Neither should be mislabeled as real customer or staff acceptance.
