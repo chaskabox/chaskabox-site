@@ -30,7 +30,7 @@ test('public collection HTML, aliases, missing brand, outage and incomplete occa
   throw Error('Unexpected fixture request');
  };
  try{
-  let r=await renderCataloguePage(context,'shop'),html=await r.text();assert.equal(r.status,200);assert.match(html,/Fixture &lt;sweet&gt;/);assert.match(html,/2 products/);assert.match(html,/"id":69/);assert.equal((html.match(/rel="canonical"/g)||[]).length,1);assert.doesNotMatch(html,/>249 products</);
+  let r=await renderCataloguePage(context,'shop'),html=await r.text();assert.equal(r.status,200);assert.match(html,/Fixture &lt;sweet&gt;/);assert.match(html,/2 products/);assert.match(html,/"id":69/);assert.equal((html.match(/rel="canonical"/g)||[]).length,1);assert.doesNotMatch(html,/>249 products</);assert.match(html,/id="current-storefront-config"/);assert.match(html,/loading="eager" fetchpriority="high"/);assert.equal(r.headers.get('Cache-Control'),'no-store');
   r=await renderCataloguePage(context,'category','chews-gums');assert.equal(r.status,301);assert.equal(r.headers.get('location'),'https://chaskabox.online/category/chews-and-gums/');
   r=await renderCataloguePage(context,'category','unknown');assert.equal(r.status,404);
   r=await renderBrandPage(context,'missing');assert.equal(r.status,404);r=await renderBrandPage(context,'fixture');assert.equal(r.status,200);assert.match(await r.text(),/Fixture Snacks Online/);

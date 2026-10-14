@@ -45,7 +45,7 @@ async function fixture(mode, directory, processes) {
   });
   const connection = 'postgresql://postgres@127.0.0.1:' + port + '/postgres?sslmode=disable';
   query(connection, 'CREATE ROLE fixture_reader NOLOGIN;');
-  if (mode === 'source') query(connection, await readFile(new URL('./fixtures/recovery-schema.sql', import.meta.url), 'utf8'));
+  if (mode === 'source') {query(connection, await readFile(new URL('./fixtures/recovery-schema.sql', import.meta.url), 'utf8'));query(connection,'create schema storage;create table storage.buckets(id text,public boolean);create table storage.objects(bucket_id text,name text,version text,metadata jsonb,updated_at timestamptz);');}
   if (mode === 'notifications') query(connection, await notificationSQL());
   if (mode === 'baseline') {
     query(connection, await readFile(new URL('./fixtures/platform-schema.sql',import.meta.url),'utf8'));

@@ -4,6 +4,11 @@ const variants=JSON.parse(await readFile(new URL('../image-variants.json',import
 const outputs=[['../photo-manifest.js','window.CHASKABOX_LOCAL_PHOTOS='+JSON.stringify(paths)+';\nwindow.CHASKABOX_IMAGE_VARIANTS='+JSON.stringify(variants)+';\n'],['../functions/api/_lib/local-photos.js','export const LOCAL_PHOTOS=new Set('+JSON.stringify(paths)+');\n'],['../functions/api/_lib/image-variants.js','export const IMAGE_VARIANTS='+JSON.stringify(variants)+';\n']];
 for(const [path,content] of outputs){const url=new URL(path,import.meta.url);if(process.argv.includes('--check')){if(await readFile(url,'utf8')!==content)throw Error('Photo manifest is stale; run node tools/build-photo-manifest.mjs');}else await writeFile(url,content);}
 if(process.argv.includes('--check')){
+  for(const p of paths){
+    const bytes=await readFile(new URL('../'+p,import.meta.url));
+    if(bytes.length<12)throw Error('Image asset is empty or truncated: '+p);
+    if(p.endsWith('.webp')&&(bytes.toString('ascii',0,4)!=='RIFF'||bytes.toString('ascii',8,12)!=='WEBP'||bytes.readUInt32LE(4)+8!==bytes.length))throw Error('Invalid WebP asset: '+p);
+  }
   let entries=0;
   async function inspect(directory){
     for(const item of await readdir(directory,{withFileTypes:true})){

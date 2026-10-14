@@ -132,6 +132,7 @@ try{
   results.interactions.push({case:'missing CMS logo restores the bundled original',pass:true});
   await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/images/logo-white.png'}}));
   await loadedLogo('/images/logo-white.png');
+  if(!await page.locator('.logo img').evaluate(img=>new URL(img.currentSrc).pathname==='/images/logo-white.png'))throw Error('Custom CMS logo was overridden by default responsive sources');
   results.interactions.push({case:'valid custom logo still loads after a failed logo',pass:true});
   await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/missing-site-logo.png'}}));
   await loadedLogo('/images/logo-navy.png');
