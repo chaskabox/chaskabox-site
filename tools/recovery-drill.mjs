@@ -35,7 +35,13 @@ try{
   throw Error('Disposable target did not start');
  }
  step='create_recovery_operator';
- db("create role chaskabox_recovery_operator login superuser password '"+password+"';",'postgres',bootstrap);
+ db("set password_encryption='scram-sha-256'; create role chaskabox_recovery_operator login superuser password '"+password+"';",'postgres',bootstrap);
+ step='configure_isolated_operator_access';
+ const hba=db('show hba_file;','postgres',bootstrap).trim();
+ if(!/^\/[a-zA-Z0-9_./-]+$/.test(hba))throw Error('Unexpected offline authentication config path');
+ const originalHba=run('docker',['exec',container,'cat',hba]);
+ run('docker',['exec','-i',container,'sh','-c','cat > "$1"','sh',hba],e,'host all chaskabox_recovery_operator 127.0.0.1/32 scram-sha-256\n'+originalHba);
+ db('select pg_reload_conf();','postgres',bootstrap);
  step='list_target_roles';
  const existing=new Set(db('select rolname from pg_roles;').trim().split('\n'));
  step='validate_role_export';
