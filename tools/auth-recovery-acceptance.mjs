@@ -13,6 +13,6 @@ if(!signed.access_token||!signed.refresh_token||signed.user.id!==user.id)throw E
 const refreshed=await api('/token?grant_type=refresh_token',{body:{refresh_token:signed.refresh_token}});
 if(!refreshed.access_token||!refreshed.refresh_token)throw Error('Offline refresh failed');
 const current=await api('/user',{token:refreshed.access_token});if(current.id!==user.id)throw Error('Offline recovered user failed');
-await api('/logout?scope=global',{token:refreshed.access_token,status:204});
+await api('/logout?scope=global',{method:'POST',token:refreshed.access_token,status:204});
 await api('/token?grant_type=refresh_token',{body:{refresh_token:refreshed.refresh_token},status:400});
 console.log(JSON.stringify({synthetic_user_only:true,password_login:true,token_refresh:true,user_lookup:true,logout_revocation:true,external_provider_sends:false}));
