@@ -36,9 +36,12 @@ try{
  }
  step='create_recovery_operator';
  db("create role chaskabox_recovery_operator login superuser password '"+password+"';",'postgres',bootstrap);
- step='validate_role_export';
+ step='list_target_roles';
  const existing=new Set(db('select rolname from pg_roles;').trim().split('\n'));
- const roles=await readFile(path.join(root,'roles.sql'),'utf8');if(/^\s*ALTER\s+ROLE\b[^\n]*\bPASSWORD\b/im.test(roles))throw Error('Role password export forbidden');
+ step='validate_role_export';
+ const roles=await readFile(path.join(root,'roles.sql'),'utf8');
+ const passwords=[...roles.matchAll(/^\s*ALTER\s+ROLE\b[^\n]*\bPASSWORD\s+([^;\n]+)/gim)];
+ if(passwords.some(m=>m[1].trim()!=='NULL'))throw Error('Role password export forbidden');
  const filtered=roles.split('\n').filter(line=>{const m=/^CREATE ROLE ("(?:[^"]|"")*"|[a-zA-Z0-9_]+);$/.exec(line);return !m||!existing.has(m[1].replace(/^"|"$/g,'').replace(/""/g,'"'));}).join('\n');
  step='restore_roles';db(filtered);step='create_disposable_database';db('create database chaskabox_recovery template template0;');
  step='restore_actual_archive';run('docker',['exec',container,'pg_restore','-U','chaskabox_recovery_operator','-d','chaskabox_recovery','--clean','--if-exists','--exit-on-error','--single-transaction','/recovery/database.dump']);
