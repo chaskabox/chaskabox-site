@@ -27,7 +27,8 @@ async function loadProducts(){
   }
   throw lastError||new Error('Could not load product catalogue');
 }
-function activeProducts(){return PRODUCTS.filter(p=>p.active!==false&&p.stockState!=='unavailable');}
+function publicProducts(){return PRODUCTS.filter(p=>p.active!==false);}
+function activeProducts(){return publicProducts().filter(p=>p.stockState!=='unavailable');}
 
 /* ---------- delivery date estimate (4-7 days) ---------- */
 function deliveryRange(){
@@ -61,6 +62,7 @@ function cardHTML(p,priority){
   const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BOX':''}</div>`:'';
   const href=productHref(p.id);
   const fan=bundleFanHTML(p);
+  const unavailable=p.stockState==='unavailable';
   return `<article class="card${p.bundle?' bundle-card':''}">${badge}${typeof wishBtnHTML==='function'?wishBtnHTML(p):''}
     <a class="pimg" href="${href}">${fan}${img}</a>
     <div class="pbody">
@@ -68,7 +70,7 @@ function cardHTML(p,priority){
       <a class="pname" href="${href}">${esc(p.name)}</a>
       <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
-      <button class="addcart" ${p.stockState==='unavailable'?'disabled':''} aria-label="Add to Bag ${fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">Add to Bag</span><span class="addcart-price">${fmt(p.price)}</span></button>
+      <button class="addcart" ${unavailable?'disabled':''} aria-label="${unavailable?'Currently unavailable':'Add to Bag '+fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">${unavailable?'Currently unavailable':'Add to Bag'}</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -215,7 +217,7 @@ function brandSlug(name){
   return String(name||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'brand';
 }
 function filterPanelHTML(){
-  const all=activeProducts();
+  const all=publicProducts();
   const brands=[...new Set(all.map(p=>getBrand(p)))].sort();
   const packs=[...new Set(all.map(p=>p.pack).filter(Boolean))].sort();
   const maxP=Math.max(...all.map(p=>p.price),1000);
@@ -295,7 +297,7 @@ function toggleBrand(el){
   renderShopList();
 }
 function filteredShop(){
-  let list=activeProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
+  let list=publicProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
   if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>category?category.product_ids.includes(Number(p.id)):(cat==='Bundles'?p.bundle:p.category===cat));}
   if(badge)list=list.filter(p=>p.badge===badge);
   if(q){const n=q.toLowerCase();list=list.filter(p=>(p.name+' '+(p.pack||'')).toLowerCase().includes(n));}
