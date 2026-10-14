@@ -1410,7 +1410,7 @@ async function renderPackingVideo(){
   const raw=section?.config?.packing_video_url;
   if(section?.enabled===false||!raw)return;
   try{
-    const {packingVideoSource}=await import('/packing-video.js');const video=packingVideoSource(raw);
+    const {packingVideoSource}=await import('/packing-video.js?v=20261014-final-readiness');const video=packingVideoSource(raw);
     if(seq!==packingVideoRender||!video)return;
     if(wrap)wrap.hidden=false;
     box.innerHTML='<button class="cta" type="button" data-load-packing-video>Show packing video</button><p class="fv-sub">Video loads when you choose to watch.</p>';

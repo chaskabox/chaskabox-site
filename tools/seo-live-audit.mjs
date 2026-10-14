@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Public, unauthenticated production/preview SEO baseline; never mutates the website.
 import fs from 'node:fs';
-const preview=process.env.PREVIEW_BASE_URL||'https://seo-organic-search-foundatio.chaskabox-site.pages.dev';
+const preview=process.env.PREVIEW_BASE_URL||null;
 const production='https://chaskabox.online';
 const paths=['/','/shop/','/product/5/','/product/27/','/product/999999999/','/robots.txt','/api/product-sitemap'];
 const escaped=s=>String(s||'').replace(/[\n\r]/g,' ').slice(0,190);
@@ -19,7 +19,7 @@ async function fetchUrl(url, timeout=25000){
  try{const r=await fetch(url,{redirect:'follow',signal:c.signal,headers:{'User-Agent':'ChaskaBoxSEOAudit/1.0'}});const body=await r.text();return {status:r.status,finalUrl:r.url,contentType:r.headers.get('content-type')||'',body};}
  finally{clearTimeout(t);}
 }
-for(const [environment,baseUrl] of [['production',production],['preview',preview]]){
+for(const [environment,baseUrl] of [['production',production],...(preview?[['preview',preview]]:[])]){
  for(const path of paths){
   const url=baseUrl+path,entry={environment,url};
   try {
