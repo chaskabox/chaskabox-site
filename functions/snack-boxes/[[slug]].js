@@ -7,7 +7,10 @@ export const OCCASIONS={
  'office':{name:'Office snack break',title:'Office Snack Packs in Pakistan | ChaskaBox',description:'Explore biscuits, sweets and savory packs for office snack breaks. Compare listed pack counts and current ChaskaBox prices.',ids:[11,55,183],intro:'Biscuits, sweets and a savory pack for a shared break. Check the original labels and ask about allergens before ordering for a group.'}
 };
 export async function onRequestGet(context){
- const parts=Array.isArray(context.params.slug)?context.params.slug:[context.params.slug],slug=parts[0],copy=OCCASIONS[slug];if(parts.length!==1||!copy)return catalogueUnavailable(404);
+ const parts=Array.isArray(context.params.slug)?context.params.slug:[context.params.slug],slug=parts[0],copy=OCCASIONS[slug];
+ // Pages optional catch-all routes also receive the collection index request.
+ if(!parts.length||parts.length===1&&!slug)return context.next?context.next():context.env.ASSETS.fetch(context.request);
+ if(parts.length!==1||!copy)return catalogueUnavailable(404);
  try{
   const all=await publicCatalogue(context.env),rows=copy.ids.map(id=>all.find(p=>Number(p.id)===id&&p.stock_state!=='unavailable')).filter(Boolean),complete=rows.length===copy.ids.length;
   const subtotal=rows.reduce((n,p)=>n+Number(p.price),0),path='/snack-boxes/'+slug+'/';
@@ -16,7 +19,7 @@ export async function onRequestGet(context){
   html=html.replace(/<main\b[^>]*>[\s\S]*?<\/main>/i,main);
   const schema={'@context':'https://schema.org','@type':'CollectionPage',name:copy.name,url:SITE+path,mainEntity:{'@type':'ItemList',numberOfItems:rows.length,itemListElement:rows.map((p,i)=>({'@type':'ListItem',position:i+1,url:SITE+'/product/'+p.id+'/',name:p.name}))}};
   html=withSeo(html,{title:copy.title,description:copy.description,path,noindex:rows.length===0,schemas:[organizationSchema(),schema],seed:'<script type="application/json" id="occasion-selection">'+safeJson({ids:copy.ids})+'</script>'});
-  html=html.replace('</body>','<script src="/occasion-runtime.js?v=20261013-growth" defer></script></body>');
+  html=html.replace('</body>','<script src="/occasion-runtime.js?v=20261014-final" defer></script></body>');
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
  }catch{return catalogueUnavailable();}
 }

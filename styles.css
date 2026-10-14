@@ -180,7 +180,7 @@ header.scrolled .logo-img{height:68px;margin:-9px 0}
 /* footer */
 footer{background:var(--brand);color:#fff;margin-top:40px}
 .fwrap{max-width:1400px;margin:0 auto;padding:34px 10px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:24px}
-.fwrap h3{font-size:16px;margin-bottom:10px;color:var(--gold)}
+.fwrap h3,.fwrap h2{font-size:16px;margin-bottom:10px;color:var(--gold)}
 .fwrap p,.fwrap li{font-size:13px;opacity:.85;list-style:none;margin-bottom:6px}
 .fbottom{text-align:center;padding:14px;font-size:12px;color:#babfce;border-top:1px solid rgba(255,255,255,.15)}
 
@@ -939,3 +939,8 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
 /* Product detail must use a full-width reading column on narrow screens. */
 .pd-facts>div{grid-template-columns:100px minmax(0,1fr)}.pd-facts dd{min-width:0;overflow-wrap:anywhere}.pd-policy-links a{max-width:100%;overflow-wrap:anywhere}
 @media(max-width:700px){.pd-grid{grid-template-columns:minmax(0,1fr);gap:22px;margin-bottom:24px}.pd-imgwrap{width:100%;max-width:320px;margin:0 auto}.pd-facts>div{grid-template-columns:85px minmax(0,1fr)}.product-help a{max-width:100%;white-space:normal;overflow-wrap:anywhere}}
+
+/* Footer links retain usable touch space when populated by the CMS. */
+.fwrap a{display:inline-flex;align-items:center;min-height:44px;padding:6px 0;line-height:1.4}
+.fwrap .fbrand>a{padding:6px 8px}
+.fbottom a{display:inline-flex;align-items:center;min-height:44px;padding:6px 8px}

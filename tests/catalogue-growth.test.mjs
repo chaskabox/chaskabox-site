@@ -10,6 +10,14 @@ const occasion=await readFile(new URL('../snack-boxes/index.html',import.meta.ur
 const rows=[{id:69,name:'Fixture <sweet>',brand:'Fixture',category:'Chews & Gums',price:100,pack:'Pack of 12',image_url:'images/p69.webp',stock_state:'sourced_after_order'},{id:76,name:'Fixture fruity pack',brand:'Fixture',category:'Chews & Gums',price:200,pack:'Pack of 24',image_url:'images/p76.webp',stock_state:'sourced_after_order'}];
 const env={SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async req=>{assert.ok(['/', '/about/'].includes(new URL(req.url).pathname),'SSR must read a static shell outside its own handled route');return new Response(new URL(req.url).pathname==='/about/'?occasion:shell);}}};
 const context={env,request:new Request('https://chaskabox.online/shop/'),params:{}};
+test('the optional occasion catch-all serves its static index through both Pages adapters',async()=>{
+ const request=new Request('https://chaskabox.online/snack-boxes/');
+ for(const slug of [[],undefined,'']){
+  const r=await occasionPage({request,params:{slug},env:{ASSETS:{fetch:async req=>{assert.equal(req.url,request.url);return new Response(occasion);}}}});
+  assert.equal(r.status,200);assert.match(await r.text(),/href="https:\/\/chaskabox.online\/snack-boxes\/"/);
+ }
+ let calls=0;const r=await occasionPage({request,params:{slug:[]},next:async()=>{calls++;return new Response(occasion);}});assert.equal(r.status,200);assert.equal(calls,1);
+});
 test('public collection HTML, aliases, missing brand, outage and incomplete occasion are truthful',async()=>{
  const original=globalThis.fetch;let outage=false;
  globalThis.fetch=async value=>{

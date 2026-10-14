@@ -1,4 +1,4 @@
-import { notificationConfig, notificationHealth, privateRequest, buildNotificationPayload, sendNotification, equalSecret, activationMatches } from '../functions/api/_lib/notification-delivery.js';
+import { notificationConfig, notificationHealth, privateRequest, buildNotificationPayload, sendNotification, equalSecret, activationMatches,providerReadiness } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt } from '../functions/api/_lib/notification-receipts.js';
 
 export async function runNotifications(env, fetcher = fetch) {
@@ -60,17 +60,27 @@ export default {
   async fetch(request, env) {
     const path = new URL(request.url).pathname;
     if (path === '/webhooks/resend' || path === '/webhooks/waha') return handleNotificationReceipt(request, env, path.endsWith('resend') ? 'email' : 'whatsapp');
-    if (!['/health', '/run'].includes(path)) return json({ error: 'not_found' }, 404);
+    if (!['/health', '/run','/acceptance-email'].includes(path)) return json({ error: 'not_found' }, 404);
     if (!await equalSecret(request.headers.get('Authorization'), env.OUTBOX_RUN_SECRET && 'Bearer ' + env.OUTBOX_RUN_SECRET)) return json({ error: 'unauthorized' }, 401);
-    if (request.method !== (path === '/run' ? 'POST' : 'GET')) return json({ error: 'method_not_allowed' }, 405);
+    if (request.method !== (path === '/health' ? 'GET' : 'POST')) return json({ error: 'method_not_allowed' }, 405);
     try {
+      if(path==='/acceptance-email'){
+        if(env.OWNER_EMAIL_ACCEPTANCE_ENABLED!=='true')return json({error:'owner_email_acceptance_requires_approval'},409);
+        const body=await request.text();if(body.length>512)return json({error:'invalid_test_request'},400);
+        let data;try{data=JSON.parse(body);}catch{return json({error:'invalid_test_request'},400);}
+        if(!data||Object.keys(data).join(',')!=='test_id'||!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(data.test_id||''))return json({error:'invalid_test_request'},400);
+        if(!env.RESEND_API_KEY||!env.OWNER_ORDER_EMAIL||!env.RESEND_FROM_EMAIL)return json({error:'email_configuration_missing'},503);
+        const outcome=await sendNotification(env,{target:'owner_email',order_id:data.test_id,request_payload:{endpoint:'https://api.resend.com/emails',body:{from:env.RESEND_FROM_EMAIL,to:[env.OWNER_ORDER_EMAIL],subject:'ChaskaBox owner email integration test',text:'This is the authorized ChaskaBox owner email connectivity test. No customer order, payment or refund was created. Test reference: '+data.test_id+'.'}}});
+        return json({test_id:data.test_id,...outcome,delivery_confirmation:'verify_provider_receipt'},outcome.status==='accepted'?202:503);
+      }
       if (path === '/run') { const result = await runNotifications(env); return json(result, result.paused ? 503 : 200); }
       const summary = await privateRequest(env, '/rest/v1/rpc/notification_summary', {});
       const health = notificationHealth(notificationConfig(env), summary);
+      if(new URL(request.url).searchParams.get('providers')==='1')health.providers=await providerReadiness(env);
       return json(health, health.ok ? 200 : 503);
     } catch (error) {
-      const reason=/^queue_api_\d{3}$/.test(error?.message)?error.message:error?.message==='queue_request_failed'?'queue_request_failed':'notification_health_or_run_unavailable';
-      return json({ ok: false, reasons: [reason] }, 503);
+      const reason=/^queue_(?:api_\d{3}|configuration_invalid|key_invalid|response_invalid|request_timeout|request_failed|fetch_invocation_invalid)$/.test(error?.message)?error.message:'notification_health_or_run_unavailable';
+      return json({ ok: false, reasons: [reason],...(error.request_failure_kind?{request_failure_kind:error.request_failure_kind}:{}) }, 503);
     }
   },
 };

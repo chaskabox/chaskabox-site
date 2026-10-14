@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fixture, activate, order, rpc, env, router, actor } from './notification-fixture.mjs';
 import worker,{runNotifications} from '../workers/notification-outbox.js';
-import { buildNotificationPayload,sendNotification,notificationConfig,notificationHealth,limitedText } from '../functions/api/_lib/notification-delivery.js';
+import { buildNotificationPayload,sendNotification,notificationConfig,notificationHealth,limitedText,privateRequest,providerReadiness } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt,verifyResend,verifyWaha } from '../functions/api/_lib/notification-receipts.js';
 import { onRequestGet as adminNotifications } from '../functions/api/admin/notifications/index.js';
 
@@ -20,6 +20,18 @@ async function signedEmail(data,now=Date.now(),id='synthetic-receipt'){
  return new Request('https://worker.example.invalid/webhooks/resend',{method:'POST',body,headers:{'svix-id':id,'svix-timestamp':ts,'svix-signature':'v1,'+signature}});
 }
 async function signedWaha(data){const body=JSON.stringify(data),signature=await hmac('SHA-512',new TextEncoder().encode('fixture-hmac'),body,'hex');return new Request('https://worker.example.invalid/webhooks/waha',{method:'POST',body,headers:{'x-webhook-hmac':signature,'x-webhook-hmac-algorithm':'sha512'}});}
+test('private database calls normalize pasted configuration and report bounded failures',async()=>{
+ const e={SUPABASE_URL:' https://fixture.example.invalid/ \n',SUPABASE_SERVICE_ROLE_KEY:' fixture-secret \n'};
+ assert.deepEqual(await privateRequest(e,'/rest/v1/rpc/test',{},async(url,init)=>{assert.equal(url,'https://fixture.example.invalid/rest/v1/rpc/test');assert.equal(init.headers.apikey,'fixture-secret');assert.equal(init.redirect,'manual');return Response.json({ok:true});}),{ok:true});
+ await assert.rejects(privateRequest({...e,SUPABASE_SERVICE_ROLE_KEY:'bad\nkey'},'/rest/v1/rpc/test',{},async()=>{throw Error('must not send');}),/queue_key_invalid/);
+ await assert.rejects(privateRequest(e,'/rest/v1/rpc/test',{},async()=>new Response('<html>private proxy message</html>')),/queue_response_invalid/);
+ await assert.rejects(privateRequest(e,'/rest/v1/rpc/test',{},async()=>new Response(null,{status:302,headers:{Location:'https://untrusted.example.invalid/'}})),/queue_api_302/);
+ await assert.rejects(privateRequest(e,'/rest/v1/rpc/test',{},async()=>{throw new Error('sensitive network detail');}),/queue_request_failed/);
+});
+test('provider diagnostics never send a WAHA credential to a temporary gateway',async()=>{
+ const result=await providerReadiness({RESEND_API_KEY:'fixture-email',RESEND_FROM_EMAIL:'notify@example.invalid',WAHA_API_URL:'https://temporary.trycloudflare.com',WAHA_API_KEY:'fixture-private-key'},async url=>{assert.equal(url,'https://api.resend.com/domains');return Response.json({data:[{name:'example.invalid',status:'verified'}]});});
+ assert.equal(result.whatsapp.check_blocked,true);assert.equal(result.email.sender_domain_verified,true);assert.doesNotMatch(JSON.stringify(result),/fixture-private-key/);
+});
 
 test('migration retains 20 legacy jobs without replay; new order creates three unique channel jobs atomically',async()=>{
  const db=await fixture();try{
@@ -222,6 +234,8 @@ test('bounded bodies, permanent DB failures and protected run/health endpoints f
  const e={...env(new Date().toISOString()),RESEND_WEBHOOK_SECRET:resendSecret,OUTBOX_RUN_SECRET:'fixture-run-secret'};
  assert.equal((await worker.fetch(new Request('https://worker.example.invalid/run'),e)).status,401);
  assert.equal((await worker.fetch(new Request('https://worker.example.invalid/run',{headers:{Authorization:'Bearer fixture-run-secret'}}),e)).status,405);
+ const blockedTest=await worker.fetch(new Request('https://worker.example.invalid/acceptance-email',{method:'POST',headers:{Authorization:'Bearer fixture-run-secret'},body:JSON.stringify({test_id:'00000000-0000-4000-8000-000000000001'})}),e);assert.equal(blockedTest.status,409);
+ const badTest=await worker.fetch(new Request('https://worker.example.invalid/acceptance-email',{method:'POST',headers:{Authorization:'Bearer fixture-run-secret'},body:JSON.stringify({test_id:'00000000-0000-4000-8000-000000000001',to:'different@example.invalid'})}),{...e,OWNER_EMAIL_ACCEPTANCE_ENABLED:'true'});assert.equal(badTest.status,400);
  const originalFetch=globalThis.fetch;globalThis.fetch=async()=>new Response('sensitive provider response',{status:401});
  try {const health=await worker.fetch(new Request('https://worker.example.invalid/health',{headers:{Authorization:'Bearer fixture-run-secret'}}),e);assert.equal(health.status,503);assert.deepEqual(await health.json(),{ok:false,reasons:['queue_api_401']});}finally{globalThis.fetch=originalFetch;}
  const data={type:'email.delivered',created_at:new Date().toISOString(),data:{email_id:'signed-ack'}};

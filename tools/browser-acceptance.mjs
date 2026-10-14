@@ -67,8 +67,8 @@ const server=createServer(async(req,res)=>{try{
   return json(res,{});
  }
  const parts=p.split('/').filter(Boolean);
- if(p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'&&parts.length===2){
-  const ctx={params:{slug:parts[1]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async request=>{let filename=path.join(root,new URL(request.url).pathname,'index.html');return new Response(await readFile(filename).catch(()=>Buffer.from(shell)));}}}};
+ if(p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'){
+  const ctx={params:{slug:parts[0]==='snack-boxes'?parts.slice(1):parts[1]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async request=>{let filename=path.join(root,new URL(request.url).pathname,'index.html');return new Response(await readFile(filename).catch(()=>Buffer.from(shell)));}}}};
   const response=parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
   res.writeHead(response.status,{'Content-Type':'text/html'});return res.end((await response.text()).replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
  }
@@ -168,6 +168,10 @@ try{
  results.interactions.push({case:'password validation and outage',pass:noInvalidUpdate&&await page.locator('#recoveryPass').inputValue()==='Synthetic-Password-1'&&!await page.locator('#saveRecovery').isDisabled()});await context.clearCookies();
  await page.goto(base+'/shop/?q=chocolate&brand=Mayfair');await page.reload();await page.waitForFunction(()=>document.querySelector('#fq')?.value==='chocolate');results.interactions.push({case:'search query survives refresh',pass:true});
  await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(base+'/');await page.emulateMedia({reducedMotion:'reduce'});results.interactions.push({case:'runtime reduced motion reveals content',pass:await page.evaluate(()=>!document.documentElement.classList.contains('motion-reveals')&&[...document.querySelectorAll('.reveal')].every(e=>getComputedStyle(e).opacity==='1'))});
+ await page.getByRole('link',{name:'Find your snack moment',exact:false}).click();await page.waitForURL('**/snack-boxes/');
+ results.interactions.push({case:'home occasion link uses the actual content page',pass:(await page.locator('main').innerText()).includes('Movie night')});
+ await page.goto(base+'/');await page.getByRole('link',{name:'Snack and order guides',exact:true}).first().click();await page.waitForURL('**/guides/');
+ results.interactions.push({case:'home guide link is not intercepted by the store router',pass:(await page.locator('main').innerText()).includes('How')});
  await page.goto(base+'/product/39/');const zoom=page.locator('[data-zoom-src]');await zoom.waitFor();await zoom.focus();await page.keyboard.press('Enter');const open=await page.locator('#imgLightbox').evaluate(e=>e.classList.contains('open'));await page.keyboard.press('Escape');results.interactions.push({case:'keyboard zoom and focus return',pass:open&&await zoom.evaluate(e=>e===document.activeElement)});
  await page.goto(base+'/product/186/');results.interactions.push({case:'mismatched photo withheld',pass:(await page.locator('#pdetail').innerText()).includes('Photo under review')});
  const unavailable=products.find(p=>p.stockState==='unavailable');if(unavailable){await page.goto(base+'/product/'+unavailable.id+'/');await page.waitForFunction(()=>document.querySelector('#pdetail .pdbtn')?.textContent==='Currently unavailable');results.interactions.push({case:'unavailable stock cannot be added',pass:await page.locator('#pdetail .pdbtn').isDisabled()});}

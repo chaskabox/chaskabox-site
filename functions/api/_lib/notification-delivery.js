@@ -42,22 +42,40 @@ export async function limitedText(response, maxBytes = 32768) {
   return new TextDecoder().decode(data);
 }
 export async function privateRequest(env, path, body, fetcher = fetch) {
+  const baseURL=String(env.SUPABASE_URL||'').trim().replace(/\/+$/,''),key=String(env.SUPABASE_SERVICE_ROLE_KEY||'').trim();
+  if(!baseURL||!key)throw new Error('queue_configuration_invalid');
+  if(!/^[\x21-\x7e]+$/.test(key))throw new Error('queue_key_invalid');
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 10000);
   try {
-    const response = await fetcher(String(env.SUPABASE_URL).replace(/\/+$/, '') + path, {
-      method: body === undefined ? 'GET' : 'POST', signal: controller.signal, redirect: 'error',
-      headers: { apikey: env.SUPABASE_SERVICE_ROLE_KEY, Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`, 'Content-Type': 'application/json' },
+    const response = await fetcher.call(globalThis,baseURL + path, {
+      method: body === undefined ? 'GET' : 'POST', signal: controller.signal, redirect: 'manual',
+      headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
     if (!response.ok) { await response.body?.cancel(); throw new Error('queue_api_' + response.status); }
-    const text = await limitedText(response, 65536); return text ? JSON.parse(text) : null;
-  } catch (error) { if (/^queue_api_/.test(error.message)) throw error; throw new Error('queue_request_failed'); }
+    const text = await limitedText(response, 65536);try{return text?JSON.parse(text):null;}catch{throw new Error('queue_response_invalid');}
+  } catch (error) {
+    if (/^queue_(?:api_\d{3}|response_invalid)$/.test(error.message)) throw error;
+    const failure=new Error(controller.signal.aborted?'queue_request_timeout':/Illegal invocation/i.test(error?.message||'')?'queue_fetch_invocation_invalid':'queue_request_failed');
+    const m=String(error?.message||'');
+    failure.request_failure_kind=/header|ByteString|character/i.test(m)?'invalid_header':/certificate|TLS|SSL/i.test(m)?'tls':/DNS|resolve|getaddrinfo/i.test(m)?'dns':/redirect/i.test(m)?'redirect':/not a function|not defined|receiver|invocation/i.test(m)?'runtime':'network_or_runtime';
+    throw failure;
+  }
   finally { clearTimeout(timer); }
 }
 export function chatId(value) {
   let digits = String(value || '').trim().replace(/^\+/, '');
   if (/^03\d{9}$/.test(digits)) digits = '92' + digits.slice(1);
   return /^\d{10,15}$/.test(digits) ? digits + '@c.us' : '';
+}
+export async function providerReadiness(env,fetcher=fetch){
+ async function read(url,headers){const r=await fetcher.call(globalThis,url,{headers,redirect:'manual',signal:AbortSignal.timeout(10000)});if(!r.ok){await r.body?.cancel();return {http_status:r.status};}const text=await limitedText(r,32768);try{return {http_status:r.status,data:JSON.parse(text)};}catch{return {http_status:r.status,invalid_response:true};}}
+ const result={};
+ try{const r=await read('https://api.resend.com/domains',{Authorization:'Bearer '+String(env.RESEND_API_KEY||'').trim()});const from=String(env.RESEND_FROM_EMAIL||''),domain=from.match(/@([^>\s]+)/)?.[1]?.toLowerCase();result.email={http_status:r.http_status,sender_domain_verified:!!r.data?.data?.some(d=>d.name===domain&&d.status==='verified'),owner_recipient_configured:!!env.OWNER_ORDER_EMAIL};}catch{result.email={request_failed:true};}
+ const gateway=String(env.WAHA_API_URL||'');let temporary=false,origin=null;try{const parsed=new URL(gateway);origin=parsed.origin;temporary=parsed.hostname.endsWith('.trycloudflare.com');}catch{temporary=true;}
+ if(!origin||(temporary&&env.WAHA_APPROVED_GATEWAY_ORIGIN!==origin)){result.whatsapp={check_blocked:true,reason:'gateway_ownership_verification_required',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
+ else try{const r=await read(gateway.replace(/\/$/,'')+'/api/sessions/'+encodeURIComponent(env.WAHA_SESSION||'default'),{'X-Api-Key':String(env.WAHA_API_KEY||'').trim()});result.whatsapp={http_status:r.http_status,session_status:['WORKING','STARTING','SCAN_QR_CODE','FAILED','STOPPED'].includes(r.data?.status)?r.data.status:'unknown',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}catch{result.whatsapp={request_failed:true,signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
+ return result;
 }
 function base(value) { return String(value || 'https://chaskabox.online').replace(/\/+$/, ''); }
 export function wahaEndpoint(env) { const url = base(env.WAHA_API_URL); return url.endsWith('/api') ? url + '/sendText' : url + '/api/sendText'; }
@@ -111,11 +129,12 @@ export function previewNotificationTemplate(template, policy = {}) {
 export async function sendNotification(env, job, fetcher = fetch) {
   if (!TARGETS.includes(job.target) || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(job.order_id || '')) return { status: 'blocked', error: 'notification_identity_invalid' };
   const email = job.target === 'owner_email', payload = job.request_payload;
+  if(!email){try{const gateway=new URL(wahaEndpoint(env));if(gateway.hostname.endsWith('.trycloudflare.com')&&env.WAHA_APPROVED_GATEWAY_ORIGIN!==gateway.origin)return {status:'blocked',error:'gateway_ownership_verification_required'};}catch{return {status:'blocked',error:'provider_endpoint_invalid'};}}
   if (!payload || payload.endpoint !== (email ? 'https://api.resend.com/emails' : wahaEndpoint(env))) return { status: 'blocked', error: 'provider_endpoint_changed' };
   if (!email && payload.body?.session !== env.WAHA_SESSION) return { status: 'blocked', error: 'provider_session_changed' };
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
   try {
-    const response = await fetcher(payload.endpoint, { method: 'POST', redirect: 'error', signal: controller.signal,
+    const response = await fetcher.call(globalThis,payload.endpoint, { method: 'POST', redirect: 'manual', signal: controller.signal,
       headers: email ? { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': 'chaskabox-owner-order-' + job.order_id }
         : { 'X-Api-Key': env.WAHA_API_KEY, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload.body),
     });
