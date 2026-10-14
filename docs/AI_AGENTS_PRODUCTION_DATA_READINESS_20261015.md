@@ -41,3 +41,29 @@ An attempted M01 staging migration was blocked by safety checks; no alternate to
 
 ## Strict release invariants
 No customer PII in preflight; no production secrets printed. All eight agent settings initially `enabled=false`, runtime observation only. Marketing approvals never send/publish. No unauthorized live DB mutations or scheduled agent activation. Free-plan only; stop before any paid upgrade.
+
+
+## New recovery acceptance evidence — October 15 Pakistan time
+
+The isolated archive recovery **passed** on GitHub Actions run
+https://github.com/chaskabox/chaskabox-site/actions/runs/38651531979
+(completed Oct 14, 23:02 UTC). The recovered archive prefix was
+`chaskabox-db/2026-10-14T21-53-46-435Z-38643348103`.
+Job evidence reports:
+- `archive_checksum_verified=true`, `full_database_archive_restored=true`,
+  `owners_and_grants_preserved=true`, `production_database_modified=false`,
+  and network-isolated restore.
+- Products=249, orders=5, public tables=38, all 38 marked RLS; live Auth
+  users=4, factors=2 recovered, but **real owner MFA not tested**.
+- Media object recovery verified; 14 Storage objects and 325 static images,
+  with all object hashes verified.
+- In a DISPOSABLE offline clone, M0–M04 original migration files were applied,
+  eight agents remained disabled and browser-role DB/RPC access was denied.
+- CAUTION: this run used the *then-existing* M03 SQL hash
+  `2fb2a61eeecf1e36bea06637e6314ca8bfd62f1a0f560c4aba8d4fce76412c39`.
+  PR #31 changes the revenue filter, so its exact revised M03 file is not
+  certified by this old recovery job; PR #31's CI regression test covers
+  that revised filter, and final reviewed release should pin/test final SHA.
+- This is strong **backup/restore acceptance**, not Supabase staging parity
+  or production deployment authorization.
+
