@@ -1546,6 +1546,12 @@ document.addEventListener('keydown',event=>{
 });
 
 /* ---------- init ---------- */
+function hasStoredAccountSession(){
+  // Inspect storage key names only; the Auth SDK still validates any session.
+  // Fresh guests need no Auth download until they choose account/sign-in.
+  try{for(let i=0;i<localStorage.length;i++)if(/^sb-[a-z0-9]+-auth-token$/.test(localStorage.key(i)||''))return true;}catch{}
+  return false;
+}
 document.addEventListener('DOMContentLoaded',async()=>{
   // Render the initial HTML immediately. Slow catalogue/config APIs must not
   // block the primary hero from being interactive or present to assistive tech.
@@ -1569,8 +1575,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(typeof initAccount==='function'){
     const authStart=()=>initAccount().catch(e=>console.warn('account init',e));
     if(location.pathname==='/account/' || location.hash.includes('type=recovery')) authStart();
-    else if(typeof requestIdleCallback==='function') requestIdleCallback(authStart,{timeout:3500});
-    else setTimeout(authStart,2500);
+    else if(hasStoredAccountSession()){
+      if(typeof requestIdleCallback==='function') requestIdleCallback(authStart,{timeout:3500});
+      else setTimeout(authStart,2500);
+    }
   }
   observeReveals();
 });

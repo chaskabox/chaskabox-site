@@ -121,13 +121,17 @@ try{
  // The bridge and application must share the public config request; SSR pages
  // must hydrate the supplied manifest rather than fetching it again.
  for(const [route,expected] of [['/',1],['/shop/',0]]){
-  const {context,page}=await contextFor(390);let manifestRequests=0;
-  page.on('request',request=>{if(new URL(request.url()).pathname==='/api/storefront-config')manifestRequests++;});
+  const {context,page}=await contextFor(390);let manifestRequests=0;const sdkRequests=[];
+  page.on('request',request=>{if(new URL(request.url()).pathname==='/api/storefront-config')manifestRequests++;if(request.url().includes('/@supabase/supabase-js@'))sdkRequests.push(request.url());});
   await page.goto(base+route,{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
   await page.waitForTimeout(250);
   if(manifestRequests!==expected)throw Error('Unexpected manifest requests for '+route+': '+manifestRequests);
   results.interactions.push({case:route==='/'?'home application and runtime share one manifest request':'shop hydrates the server manifest without an extra config request',pass:true});
+  if(route==='/'){
+   await page.waitForTimeout(4000);
+   results.interactions.push({case:'fresh guest home does not load Auth SDK while idle',pass:sdkRequests.length===0});
+  }
   await context.close();
  }
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
@@ -226,7 +230,51 @@ try{
   results.interactions.push({case:'media assignment and upload handlers initialize for original photos',pass:await page.locator('[data-assign-media]').evaluate(e=>typeof e.onclick==='function')&&await page.locator('[data-delete-media]').evaluate(e=>typeof e.onclick==='function')&&!await page.locator('#mediaUpload').isDisabled()});
   await context.close();
  }
- if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});if(role==='owner'){attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;}await context.close();}
+ if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){
+  const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);
+  results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});
+  if(role==='owner'){attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;}
+  else results.interactions.push({case:role+' cannot see owner AI agent controls',pass:!await page.locator('[data-view="agents"]').isVisible()});
+  await context.close();
+ }
+ // Actual M05 controls, synthetic API only: never publish, send or enable agents.
+ {
+  const {context,page}=await contextFor(1440,'owner');page.removeAllListeners('dialog');page.on('dialog',d=>d.accept());
+  let draft=null,failProposal=true,releaseDecision;const writes=[];
+  const decisionGate=new Promise(resolve=>releaseDecision=resolve);
+  const ok=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
+  await context.route('**/api/admin/agents/**',async route=>{
+   const request=route.request(),kind=new URL(request.url()).pathname.split('/').at(-1);
+   if(request.method()==='POST'){
+    const body=request.postDataJSON();writes.push(body);
+    if(body.operation==='propose'){
+     if(failProposal){failProposal=false;return ok(route,{error:{message:'Synthetic proposal outage'}},503);}
+     draft={id:'00000000-0000-4000-8000-000000000071',headline:'Synthetic <img onerror=alert(1)> draft',draft_text:'Synthetic review text',channel:body.channel,decision:'pending'};
+     return ok(route,{draft,published:false,sent:false});
+    }
+    if(body.operation==='decide'){await decisionGate;draft.decision=body.decision;return ok(route,{draft,published:false,sent:false});}
+    throw Error('Unexpected synthetic agent write');
+   }
+   if(kind==='status')return ok(route,{agents:['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent_key=>({agent_key,enabled:false})),pending_jobs:0,pending_approvals:0});
+   if(kind==='preview'||kind==='insights')return ok(route,{agents:[]});
+   if(kind==='marketing')return ok(route,{drafts:draft?[draft]:[]});
+   throw Error('Unexpected synthetic agent route');
+  });
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="agents"]').click();await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('diagnostics updated'));
+  results.interactions.push({case:'owner agent view shows eight configured and zero enabled agents',pass:(await page.locator('#agentsM05Readiness').innerText()).includes('Configured agents: 8')&&(await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')});
+  await page.locator('#agentsM05ProductId').fill('5');await page.locator('#agentsM05Propose button[type="submit"]').click();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('Synthetic proposal outage'));
+  results.interactions.push({case:'agent draft failure retains product input and restores submit',pass:await page.locator('#agentsM05ProductId').inputValue()==='5'&&!await page.locator('#agentsM05Propose button[type="submit"]').isDisabled()});
+  await page.locator('#agentsM05Propose button[type="submit"]').click();await page.getByRole('button',{name:'Approve draft',exact:true}).waitFor();
+  results.interactions.push({case:'marketing draft is shown as literal text without injected HTML',pass:(await page.locator('#agentsM05Drafts').innerText()).includes('<img onerror=alert(1)>')&&await page.locator('#agentsM05Drafts img').count()===0});
+  await page.getByRole('button',{name:'Approve draft',exact:true}).click();
+  await page.waitForFunction(()=>[...document.querySelectorAll('#agentsM05Drafts button')].every(b=>b.disabled));
+  const pairedDisabled=await page.getByRole('button',{name:'Reject draft',exact:true}).isDisabled();releaseDecision();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Drafts')?.textContent.includes('approved'));
+  results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
+  await context.close();
+ }
  // Exercise operational UI writes only against intercepted, synthetic records.
  {
   const {context,page}=await contextFor(1440,'owner');page.removeAllListeners('dialog');page.on('dialog',d=>d.accept());
