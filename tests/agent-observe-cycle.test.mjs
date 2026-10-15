@@ -71,6 +71,8 @@ test('disposable PGlite M01 replay: enabled observation succeeds once; disabled 
   await db.exec('SET ROLE service_role');
   try{
    await assert.rejects(db.exec(completionSql('orders','ok',when)),/Agent not activated/i);
+   // Failed statements leave explicit BEGIN transactions aborted; reset the disposable database.
+   await db.exec('ROLLBACK;');
    await db.exec("UPDATE chaskabox_agents.agent_settings SET enabled=true WHERE agent_key='orders'");
    await db.exec(completionSql('orders','attention',when));
    await db.exec(completionSql('orders','attention',when));
