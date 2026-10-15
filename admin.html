@@ -271,7 +271,7 @@ setTimeout(function(){
 
       <section class="admin-view" id="view-products" data-title="Products" data-subtitle="Search, preview, edit, hide, archive and create catalogue items.">
         <div class="toolbar product-toolbar">
-          <div class="searchbox"><span>⌕</span><input id="productSearch" placeholder="Search name, category, pack…"></div>
+          <div class="searchbox"><span>⌕</span><input id="productSearch" type="search" aria-label="Search products by name, brand, slug, category, pack or tag" placeholder="Search name, brand, tag or pack…" autocomplete="off"></div>
           <select id="productCategory"><option value="">All categories</option></select>
           <select id="productVisibility"><option value="">All products</option><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="bundle">Chaska Boxes</option><option value="archived">Archived</option></select>
           <button class="btn" id="resetFiltersBtn" title="Clear search and catalogue filters">Reset</button>

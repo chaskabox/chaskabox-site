@@ -407,7 +407,8 @@
     const filtered=products.filter(p=>{
       if(vis==='archived' && p.visibility!=='archived') return false;
       if(vis!=='archived' && p.visibility==='archived') return false;
-      if(q && !`${p.name||''} ${p.category||''} ${p.pack||''}`.toLowerCase().includes(q)) return false;
+      const searchable=[p.name,p.brand,p.slug,p.category,p.pack,...(Array.isArray(p.tags)?p.tags:[])].map(v=>String(v||'')).join(' ').toLowerCase();
+      if(q && !searchable.includes(q)) return false;
       if(cat && normCat(p.category)!==cat) return false;
       if(vis==='visible' && p.visibility!=='visible') return false;
       if(vis==='hidden' && p.visibility!=='hidden') return false;

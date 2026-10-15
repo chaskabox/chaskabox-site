@@ -375,7 +375,7 @@ try{
   const {context,page}=await contextFor(1440,'owner');page.removeAllListeners('dialog');page.on('dialog',d=>d.accept());
   const orderId='00000000-0000-4000-8000-000000000021',customerId='00000000-0000-4000-8000-000000000022';
   let order={id:orderId,order_number:'CB-SYNTHETIC-ACCEPTANCE',customer_name:'Synthetic acceptance customer',customer_phone:'03000000000',customer_address:'Synthetic address',customer_city:'Fixture city',payment_method:'jazzcash',payment_status:'payment_submitted',transaction_reference:'SYNTHETIC-REF',fulfilment_status:'new',total:600,subtotal:300,delivery_fee:300,created_at:'2026-10-14T00:00:00Z',updated_at:'2026-10-14T00:00:00Z'};
-  let product={...products.find(p=>p.id===39),id:39,name:'Synthetic editor snack',description:'Synthetic pack description',price:300,old_price:null,visibility:'visible',stock_state:'sourced_after_order',tags:[]};
+  let product={...products.find(p=>p.id===39),id:39,name:'Synthetic editor snack',description:'Synthetic pack description',price:300,old_price:null,visibility:'visible',stock_state:'sourced_after_order',tags:['fixture-tag-unique'],brand:'FixtureBrandOnly',slug:'fixture-slug-only'};
   let failPayment=true,failBulk=true;const statusWrites=[],paymentWrites=[],bulkWrites=[],productWrites=[];
   const ok=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
   await context.route('**/api/admin/orders?*',r=>ok(r,{orders:[order],page:1,total:1,total_pages:1}));
@@ -401,7 +401,14 @@ try{
   results.interactions.push({case:'payment save outage retains pending status and offers a usable retry',pass:order.payment_status==='payment_submitted'&&!await page.locator('#liveOrderModal [data-pay="verified"]').isDisabled()});
   failPayment=false;await page.locator('#liveOrderModal [data-pay="verified"]').click();await page.locator('.order-decision-dialog textarea').fill('Synthetic receiving-account evidence');const approved=page.waitForResponse(r=>r.url().endsWith('/payment/verify'));await page.locator('.order-decision-dialog').getByRole('button',{name:'Confirm',exact:true}).click();await approved;await page.waitForFunction(()=>!document.getElementById('liveOrderModal')?.classList.contains('open'));
   results.interactions.push({case:'payment retry records an explicit decision with evidence and current version',pass:order.payment_status==='payment_verified'&&paymentWrites.length===2&&paymentWrites[1].note==='Synthetic receiving-account evidence'&&paymentWrites[1].expected_updated_at==='2026-10-14T00:01:00Z'});
-  await page.locator('[data-view="products"]').click();await page.locator('[data-live-edit="39"]').click();await page.locator('#editName').fill('Synthetic editor snack saved');const edited=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/products/39');await page.locator('#productForm').evaluate(e=>e.requestSubmit());await edited;await page.waitForFunction(()=>!document.getElementById('productEditor')?.classList.contains('open'));
+  await page.locator('[data-view="products"]').click();
+  for(const query of ['FixtureBrandOnly','fixture-tag-unique','fixture-slug-only']){
+   await page.locator('#productSearch').fill(query);
+   await page.locator('[data-live-edit="39"]').waitFor({state:'visible'});
+   results.interactions.push({case:'admin product search covers '+query,pass:await page.locator('#productAdminGrid [data-product-id="39"]').isVisible()});
+  }
+  await page.locator('#productSearch').fill('');
+  await page.locator('[data-live-edit="39"]').click();await page.locator('#editName').fill('Synthetic editor snack saved');const edited=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/products/39');await page.locator('#productForm').evaluate(e=>e.requestSubmit());await edited;await page.waitForFunction(()=>!document.getElementById('productEditor')?.classList.contains('open'));
   results.interactions.push({case:'product edit opens, hydrates fields and saves to the protected endpoint',pass:productWrites.length===1&&product.name==='Synthetic editor snack saved'&&productWrites[0].description==='Synthetic pack description'});
   await page.locator('[data-live-select="39"]').check();await page.waitForFunction(()=>document.getElementById('bulkCount')?.textContent.startsWith('1 selected'));
   const bulkFailed=page.waitForResponse(r=>r.url().endsWith('/products/bulk'));await page.locator('#bulkBar [data-bulk="hide"]').click();await bulkFailed;await page.waitForFunction(()=>document.getElementById('bulkFeedback')?.textContent.includes('Not saved'));
