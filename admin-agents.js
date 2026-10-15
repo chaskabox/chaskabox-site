@@ -13,6 +13,7 @@
   const article=element('article','', 'panel');article.append(element('h3',title));
   for(const [key,value] of rows){const p=element('p',key+': '+String(value));article.append(p);}
   node.append(article);
+  return article;
  }
  function renderMarketing(items){
   drafts.replaceChildren();
@@ -84,7 +85,11 @@
         agentKey==='marketing'&&marketing?'Human review workflow':'No validated live signal']];
    if(reading?.signals&&typeof reading.signals==='object')for(const [key,value] of Object.entries(reading.signals))
     data.push([key,typeof value==='object'?'Not comparable':value]);
-   block(signals,agentKey.toUpperCase()+' · '+status,data);
+   const card=block(signals,agentKey.toUpperCase()+' · '+status,data);
+   // Expose only normalized read-only flags to the companion workbench UI.
+   card.dataset.agent=agentKey;
+   card.dataset.activation=!state||!current?'unknown':current.enabled===true?'enabled':'disabled';
+   card.dataset.evidence=reading&&!/unavailable|unknown|error|no (?:data|observation)/i.test(String(status))?'observed':'missing';
   }
   const submit=propose?.querySelector('button[type=submit]');
   if(submit)submit.disabled=!state||!marketing;
