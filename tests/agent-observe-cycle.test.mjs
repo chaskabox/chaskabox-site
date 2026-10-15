@@ -60,3 +60,28 @@ test('scheduled runner cannot activate disabled agents or auto-publish',async()=
  assert.match(code,/s\.enabled===true&&s\.mode==='observe'/);
  assert.doesNotMatch(code,/WAHA_API_KEY|RESEND_API_KEY|publishProduct|chargePayment|supabase\.auth/);
 });
+
+test('disposable PGlite M01 replay: enabled observation succeeds once; disabled denied',async()=>{
+ const {PGlite}=await import('@electric-sql/pglite');
+ const db=new PGlite();
+ try{
+  await db.exec('CREATE ROLE anon; CREATE ROLE authenticated; CREATE ROLE service_role BYPASSRLS;');
+  const migration=await readFile(new URL('../database/migrations/20261014200000_m01_agent_infrastructure.sql',import.meta.url),'utf8');
+  await db.exec(migration);
+  await db.exec('SET ROLE service_role');
+  try{
+   await assert.rejects(db.exec(completionSql('orders','ok',when)),/Agent not activated/i);
+   await db.exec("UPDATE chaskabox_agents.agent_settings SET enabled=true WHERE agent_key='orders'");
+   await db.exec(completionSql('orders','attention',when));
+   await db.exec(completionSql('orders','attention',when));
+   const jobs=await db.query("SELECT status,attempts,metadata FROM chaskabox_agents.agent_jobs WHERE agent_key='orders'");
+   assert.equal(jobs.rows.length,1);
+   assert.equal(jobs.rows[0].status,'succeeded');
+   assert.equal(jobs.rows[0].attempts,1);
+   const events=await db.query("SELECT event_type FROM chaskabox_agents.agent_events WHERE agent_key='orders'");
+   assert.deepEqual(events.rows.map(x=>x.event_type),['started','completed']);
+   const metric=await db.query("SELECT runs,succeeded FROM chaskabox_agents.agent_run_metrics WHERE agent_key='orders'");
+   assert.equal(metric.rows[0].runs,1);assert.equal(metric.rows[0].succeeded,1);
+  }finally{await db.exec('RESET ROLE');}
+ }finally{await db.close();}
+});
