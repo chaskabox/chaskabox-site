@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Checkout — ChaskaBox</title>
 <meta name="robots" content="noindex, follow">
-<link rel="stylesheet" href="/styles.css?v=20261015-shopping-recheck">
+<link rel="stylesheet" href="/styles.css?v=20261015-az-validated">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
@@ -23,19 +23,19 @@
     <div>
       <section class="co-card" aria-labelledby="detailsTitle">
         <h2 id="detailsTitle" class="co-step-title">1 · Your Details</h2>
-        <div class="field"><label for="f_country">Delivery Country *</label><select id="f_country" name="country"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
+        <div class="field"><label for="f_country">Delivery country</label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help">We currently deliver within Pakistan only. Overseas shipping is not yet available.</p><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
         <div class="form-two">
           <div class="field"><label for="f_fname">First Name *</label><input id="f_fname" name="first_name" autocomplete="given-name" placeholder="e.g. Ahmed"><div class="err" id="e_fname">Enter first name</div></div>
           <div class="field"><label for="f_lname">Last Name <span class="optional">(optional)</span></label><input id="f_lname" name="last_name" autocomplete="family-name" maxlength="100" placeholder="e.g. Khan"><div class="err" id="e_lname">Name must be 100 characters or fewer in total.</div></div>
         </div>
         <!-- Hidden full name for backward compat -->
         <input type="hidden" id="f_name" name="name">
-        <div class="field"><label for="f_phone">Phone Number *</label><div class="phone-wrap"><select id="f_ccode" name="country_code" aria-label="Country code"><option value="+92" selected>🇵🇰 +92</option></select><input id="f_phone" name="phone" inputmode="tel" autocomplete="tel" maxlength="15" placeholder="3013085381"></div><div class="err" id="e_phone">Enter a valid mobile number</div></div>
+        <div class="field"><label for="f_phone">Phone Number *</label><div class="phone-wrap"><select id="f_ccode" name="country_code" aria-label="Country code"><option value="+92" selected>🇵🇰 +92</option></select><input id="f_phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" placeholder="0301 3085381" aria-describedby="f_phoneHelp e_phone"></div><p id="f_phoneHelp" class="checkout-field-help">Only used for delivery coordination. Enter a Pakistani mobile number (03XXXXXXXXX).</p><div class="err" id="e_phone">Enter a valid Pakistani mobile number.</div></div>
         <div class="field"><label for="f_email">Email Address *</label><input id="f_email" name="email" type="email" autocomplete="email" placeholder="you@example.com (for order updates)"><div class="err" id="e_email">Enter a valid email address</div></div>
         <div class="field"><label for="f_addr">Address *</label><textarea id="f_addr" name="address" autocomplete="street-address" rows="3" placeholder="House number, street, area / landmark..."></textarea><div class="err" id="e_addr">Please enter a complete delivery address</div></div>
         <div class="form-two">
           <div class="field"><label for="f_city">City *</label><input id="f_city" name="city" autocomplete="address-level2" list="pkCities" placeholder="e.g. Muzaffargarh"><datalist id="pkCities"><option value="Karachi"><option value="Lahore"><option value="Islamabad"><option value="Rawalpindi"><option value="Faisalabad"><option value="Multan"><option value="Peshawar"><option value="Quetta"><option value="Sialkot"><option value="Gujranwala"><option value="Hyderabad"><option value="Sukkur"><option value="Bahawalpur"><option value="Sargodha"><option value="Muzaffargarh"><option value="Dera Ghazi Khan"><option value="Sahiwal"><option value="Okara"><option value="Gujrat"><option value="Jhang"><option value="Kasur"><option value="Sheikhupura"><option value="Rahim Yar Khan"><option value="Mardan"><option value="Abbottabad"><option value="Mansehra"><option value="Kohat"><option value="Dera Ismail Khan"><option value="Turbat"><option value="Khuzdar"><option value="Gwadar"><option value="Mirpur"><option value="Muzaffarabad"></datalist><div class="err" id="e_city">Please enter your city</div></div>
-          <div class="field"><label for="f_postal">Postal Code <span class="optional">(optional)</span></label><input id="f_postal" name="postal_code" inputmode="numeric" autocomplete="postal-code" maxlength="10" placeholder="e.g. 34200"></div>
+          <div class="field"><label for="f_postal">Postal Code <span class="optional">(optional)</span></label><input id="f_postal" name="postal_code" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 34200" aria-describedby="e_postal"><div class="err" id="e_postal">Use a 5-digit Pakistan postal code, or leave blank.</div></div>
         </div>
         <div class="field checkbox-field"><label><input type="checkbox" id="f_saveinfo"> Save this information for next time</label></div>
         <div class="field"><label for="f_note">Order Note <span class="optional">(optional)</span></label><textarea id="f_note" name="note" rows="2" maxlength="300" placeholder="e.g. Call before delivery, gift note, do not substitute..."></textarea></div>
@@ -142,7 +142,7 @@
 <script src="/supabase-config.js?v=4"></script>
 <script src="/analytics.js?v=1"></script>
 <script src="/account.js?v=20261012-release?v=1"></script>
-<script src="/checkout.js?v=7"></script>
+<script src="/checkout.js?v=20261015-az-validated"></script>
 <div class="modal" id="acctmodal" role="dialog" aria-modal="true" aria-label="Account sign in" aria-hidden="true" onclick="if(event.target===this)closeAuthModal()">
   <div class="mbox acctbox"><button class="mclose" onclick="closeAuthModal()">✕</button><div id="abody"></div></div>
 </div>

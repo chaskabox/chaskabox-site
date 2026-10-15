@@ -23,13 +23,12 @@ const s = v => String(v ?? '').trim();
 
 function validPhoneDigits(v) {
   const raw = String(v ?? '').trim();
-  // International format (+XX...) - accept 7-15 digits after +
-  if(raw.startsWith('+')){
-    const d = raw.replace(/\D/g, '');
-    return (d.length >= 9 && d.length <= 15) ? raw : null;
-  }
-  const d = raw.replace(/\D/g, '');
-  return d.length === 11 && d.startsWith('03') ? d : null;
+  // E.164 contact numbers are supported; delivery is Pakistan-only.
+  // Don't silently discard alphabetic garbage or unexpected punctuation.
+  if (!/^\+?[-() 0-9]+$/.test(raw) || (raw.match(/\+/g)||[]).length>1) return null;
+  const digits=raw.replace(/\D/g,'');
+  if(raw.startsWith('+'))return /^[1-9][0-9]{8,14}$/.test(digits)?'+'+digits:null;
+  return /^03[0-9]{9}$/.test(digits)?digits:null;
 }
 
 /**
@@ -70,7 +69,9 @@ export function validateOrderPayload(body) {
         need(`items[${i}].qty`, `qty must be an integer between 1 and ${MAX_QTY}.`);
         return;
       }
-      merged.set(pid, Math.min(MAX_QTY, (merged.get(pid) || 0) + qty));
+      const combinedQty=(merged.get(pid)||0)+qty;
+      if(combinedQty>MAX_QTY){need(`items[${i}].qty`,`Combined quantity for product ${pid} exceeds ${MAX_QTY}.`);return;}
+      merged.set(pid,combinedQty);
     });
   }
   const items = [...merged.entries()]
@@ -96,8 +97,10 @@ export function validateOrderPayload(body) {
   if (c.country && String(c.country).trim().toLowerCase()!=='pakistan') {
     need('customer.country','Delivery is currently available within Pakistan.');
   }
-  if (address.length < 8 || address.length > 500) need('customer.address', 'Address must be 8–500 characters.');
-  if (city.length < 2 || city.length > 100) need('customer.city', 'City must be 2–100 characters.');
+  if (address.length < 8 || address.length > 500 || /[\u0000-\u001f\u007f]/.test(address))
+    need('customer.address', 'Enter 8–500 characters without control characters.');
+  if (city.length < 2 || city.length > 100 || /[\u0000-\u001f\u007f0-9<>]/.test(city))
+    need('customer.city', 'Enter a valid city without numbers or symbols.');
 
   const coupon_code=s(body.coupon_code).toUpperCase();
   if(coupon_code&&!/^[A-Z0-9]{1,32}$/.test(coupon_code))need('coupon_code','Invalid coupon code.');
