@@ -13,7 +13,7 @@ export function safeNavTarget(value){
   const s=value.trim();
   if(!s||s.length>500||/[\u0000-\u0020\u007f]/.test(s))
     httpError('Navigation URL is empty, too long or contains invalid spacing',400,'invalid_url');
-  if(s==='/'||(/^\/(?!\/)/.test(s)))return s;
+  if(s==='/'||(/^\/(?!\/)/.test(s)&&!s.includes('\\')))return s;
   if(/^#[a-z0-9_.-]*$/i.test(s))return s;
   if(/^mailto:[^@\s]+@[^@\s]+\.[^@\s]+$/i.test(s))return s;
   if(/^tel:\+?[0-9() -]{6,24}$/i.test(s))return s;
