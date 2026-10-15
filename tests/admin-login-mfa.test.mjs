@@ -49,7 +49,7 @@ test('MFA script is loaded before admin application and dashboard loads only aft
   assert.ok(html.indexOf('/admin-login-mfa.js')<html.indexOf('/admin-live.js'));
   assert.match(admin,/const passed=await window\.chaskaAdminMfa\.gate\(SB/);
   assert.ok(admin.indexOf('if(!passed)return false;')<admin.indexOf('me=await getMe();'));
-  assert.match(admin,/const ready=await bootAuthenticated\(\);if\(ready\)el\.hidden=true/);
+  assert.match(admin,/const ready=await bootAuthenticated\(\);\s*if\(ready\)el\.hidden=true/);
 });
 
 function makeBrowser(){

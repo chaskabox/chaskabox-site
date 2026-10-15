@@ -217,7 +217,7 @@ html,body{overflow-x:clip}
 .mfa-brand{display:flex;align-items:center;gap:11px;margin-bottom:25px}
 .mfa-login-card .mfa-brand img{width:56px;height:45px;object-fit:contain}
 .mfa-brand-name{display:grid;gap:2px;font-size:12px;font-weight:900;letter-spacing:.12em;color:var(--navy)}
-.mfa-brand-name small{font-size:10px;font-weight:700;letter-spacing:.19em;color:#75819b}
+.mfa-brand-name small{font-size:10px;font-weight:700;letter-spacing:.19em;color:#596983}
 .mfa-security-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:#eff4ff;border:1px solid #d7e2f6;color:#22407e;font-size:23px;font-weight:900;margin:0 0 17px}
 .mfa-stage{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:.12em;font-weight:900;color:#36558a;margin-bottom:9px}
 .mfa-stage span:last-child{background:#f1f5fb;padding:6px 9px;border-radius:999px;color:#536580;white-space:nowrap}
@@ -259,7 +259,7 @@ html,body{overflow-x:clip}
 .staff-login-brand{display:flex;align-items:center;gap:10px;margin:0 0 27px}
 .staff-login-card .staff-login-brand img{width:56px;height:46px;object-fit:contain}
 .staff-login-brandname{display:grid;gap:1px;color:var(--navy);font-weight:900;font-size:12px;letter-spacing:.11em}
-.staff-login-brandname small{font-size:10px;letter-spacing:.17em;font-weight:700;color:#7c879d}
+.staff-login-brandname small{font-size:10px;letter-spacing:.17em;font-weight:700;color:#596983}
 .staff-login-shield{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:#eff4ff;border:1px solid #d7e2f6;color:#264787;font-size:23px;font-weight:900;margin-bottom:18px}
 .staff-login-eyebrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px;color:#36558a;font-size:10px;font-weight:900;letter-spacing:.1em}
 .staff-login-eyebrow span:last-child{background:#f1f5fb;border-radius:999px;padding:6px 9px;white-space:nowrap;color:#536580}
@@ -272,7 +272,7 @@ html,body{overflow-x:clip}
  border:1.5px solid #cbd5e5;border-radius:12px;padding:12px 14px;
  color:#1a2b5c;background:#fff;font-weight:500;font-size:16px;outline:0;
 }
-.staff-login-card #liveEmail::placeholder{color:#8e99ac}
+.staff-login-card #liveEmail::placeholder{color:#586780}
 .staff-login-card #liveEmail:focus-visible,.staff-login-card #livePassword:focus-visible{border-color:#315ca9;box-shadow:0 0 0 3px rgba(47,90,168,.14)}
 .staff-login-password-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:9px}
 .staff-login-password-row a{font-size:12px;color:#254987;font-weight:800;text-decoration:underline;text-underline-offset:3px}

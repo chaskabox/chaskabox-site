@@ -160,7 +160,7 @@ try{
   if(await pwd.getAttribute('type')!=='password'||await toggle.getAttribute('aria-pressed')!=='false')throw Error('Hide password toggle failed');
   const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
   const issues=axe.violations.filter(v=>['serious','critical'].includes(v.impact));
-  if(issues.length)throw Error('Staff sign-in accessibility issue '+JSON.stringify(issues.map(v=>v.id)));
+  if(issues.length)throw Error('Staff sign-in accessibility issue '+JSON.stringify(issues.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary})).slice(0,6)}))));
   results.interactions.push({case:'staff sign-in professional form and password toggle / '+width,pass:true});
   if(width===390)await page.screenshot({path:path.join(output,'staff-signin-390.png'),fullPage:true});
   await context.close();
