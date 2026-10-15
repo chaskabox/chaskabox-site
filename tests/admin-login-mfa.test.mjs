@@ -121,3 +121,23 @@ test('existing AAL2 sessions skip challenge; users without enrolled MFA can reac
   assert.equal(await b.window.chaskaAdminMfa.gate(newUser,async()=>true,async()=>{}),true);
   assert.equal(b.overlay.hidden,true);
 });
+
+test('redesigned MFA is a six-slot accessible single-input challenge without relaxing auth checks', async()=>{
+ const source=await readFile(new URL('../admin-login-mfa.js',import.meta.url),'utf8');
+ const css=await readFile(new URL('../admin.css',import.meta.url),'utf8');
+ const html=await readFile(new URL('../admin.html',import.meta.url),'utf8');
+ assert.match(source,/mfa-login-card/);
+ assert.match(source,/mfa-code-slots/);
+ assert.match(source,/\.repeat\(6\)/);
+ assert.match(source,/autocomplete="one-time-code"/);
+ assert.match(source,/aria-labelledby="loginMfaCodeLabel"/);
+ assert.match(source,/function syncTiles\(\)/);
+ assert.match(source,/getAuthenticatorAssuranceLevel\(\)/);
+ assert.match(source,/currentLevel !== 'aal2'/);
+ assert.match(source,/challengeAndVerify\(\{ factorId, code \}\)/);
+ assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
+ assert.match(css,/@media\(max-width:390px\)/);
+ assert.match(css,/:focus-within/);
+ assert.match(html,/admin-login-mfa\.js\?v=20261015-mfa-ux1/);
+ assert.match(html,/admin\.css\?v=20261015-mfa-ux1/);
+});

@@ -19,17 +19,28 @@
     }
     screen.hidden = false;
     screen.innerHTML =
-      '<form class="live-login-card" id="loginMfaForm">' +
-      '<img src="/images/logo-navy.png" alt="ChaskaBox">' +
-      '<span class="eyebrow">SECURE ADMIN</span>' +
-      '<h1>Verify your sign-in</h1>' +
-      '<p>Enter the 6-digit code from your authenticator app to open the Admin Panel.</p>' +
-      '<label id="loginMfaFactorLabel">Authenticator<select id="loginMfaFactor"></select></label>' +
-      '<label>Authenticator code<input id="loginMfaCode" type="text" inputmode="numeric" autocomplete="one-time-code" ' +
-      'pattern="[0-9]{6}" maxlength="6" minlength="6" placeholder="000000" required></label>' +
-      '<div class="live-error" role="alert" id="loginMfaError" hidden></div>' +
-      '<button class="btn primary" type="submit" id="loginMfaVerify">Verify &amp; open Admin Panel</button>' +
-      '<button class="btn secondary" type="button" id="loginMfaCancel">Cancel &amp; sign out</button>' +
+      '<form class="live-login-card mfa-login-card" id="loginMfaForm" aria-labelledby="loginMfaHeading" novalidate>' +
+      '<div class="mfa-brand"><img src="/images/logo-navy.png" alt="ChaskaBox">' +
+        '<span class="mfa-brand-name">ADMIN CONSOLE<small>CHASKABOX</small></span></div>' +
+      '<div class="mfa-security-icon" aria-hidden="true">✓</div>' +
+      '<div class="mfa-stage"><span>SECURE SIGN-IN</span><span>STEP 2 OF 2</span></div>' +
+      '<h1 id="loginMfaHeading">Confirm it\'s you</h1>' +
+      '<p class="mfa-intro">Open your authenticator app and enter the current 6-digit code.</p>' +
+      '<label id="loginMfaFactorLabel" class="mfa-factor-choice" for="loginMfaFactor">Choose authenticator' +
+        '<select id="loginMfaFactor"></select></label>' +
+      '<label class="mfa-code-label" id="loginMfaCodeLabel" for="loginMfaCode">Verification code</label>' +
+      '<div class="mfa-code-control">' +
+        '<input id="loginMfaCode" class="mfa-code-input" type="text" inputmode="numeric" ' +
+          'autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" minlength="6" ' +
+          'aria-labelledby="loginMfaCodeLabel" aria-describedby="loginMfaHint loginMfaError" required>' +
+        '<div class="mfa-code-slots" aria-hidden="true">' +
+          '<span class="mfa-code-slot"></span>'.repeat(6) +
+        '</div></div>' +
+      '<p id="loginMfaHint" class="mfa-hint">Code not working? Wait for a fresh code in your app.</p>' +
+      '<div class="live-error mfa-error" role="alert" id="loginMfaError" hidden></div>' +
+      '<button class="btn primary mfa-verify-btn" type="submit" id="loginMfaVerify">Verify &amp; continue <span aria-hidden="true">→</span></button>' +
+      '<button class="btn secondary mfa-cancel-btn" type="button" id="loginMfaCancel">Cancel &amp; sign out</button>' +
+      '<p class="mfa-trust-note"><span aria-hidden="true">◈</span> Keep your authenticator code private.</p>' +
       '</form>';
     const options = screen.querySelector('#loginMfaFactor');
     for (const factor of factors) {
@@ -40,6 +51,19 @@
     }
     if (factors.length === 1) screen.querySelector('#loginMfaFactorLabel').hidden = true;
     const codeInput = screen.querySelector('#loginMfaCode');
+    // One native input preserves mobile OTP autofill and paste; six tiles are visual only.
+    const tiles = screen.querySelectorAll?.('.mfa-code-slot') || [];
+    function syncTiles() {
+      const digits = codeInput.value.replace(/[^0-9]/g, '').slice(0, 6);
+      if (codeInput.value !== digits) codeInput.value = digits;
+      tiles.forEach((tile, index) => {
+        tile.textContent = digits[index] || '';
+        tile.classList?.toggle('filled', index < digits.length);
+        tile.classList?.toggle('active', index === digits.length && digits.length < 6);
+      });
+    }
+    codeInput.addEventListener?.('input', syncTiles);
+    syncTiles();
     codeInput.focus();
     const form = screen.querySelector('#loginMfaForm');
     const errorBox = screen.querySelector('#loginMfaError');
@@ -48,6 +72,7 @@
     form.addEventListener('submit', async event => {
       event.preventDefault();
       errorBox.hidden = true;
+      syncTiles();
       const code = codeInput.value.trim();
       if (!/^\d{6}$/.test(code)) {
         errorBox.textContent = 'Enter a valid 6-digit code.';
@@ -67,14 +92,16 @@
         if (ready !== true) throw new Error('Admin session could not be verified. Please retry.');
         screen.hidden = true;
         codeInput.value = '';
+        syncTiles();
       } catch (error) {
         errorBox.textContent = error.message || 'Invalid authenticator code. Please retry.';
         errorBox.hidden = false;
         codeInput.value = '';
+        syncTiles();
         codeInput.focus();
       } finally {
         verifyButton.disabled = false;
-        verifyButton.textContent = 'Verify & open Admin Panel';
+        verifyButton.innerHTML = 'Verify &amp; continue <span aria-hidden="true">→</span>';
       }
     });
     cancelButton.addEventListener('click', async () => {

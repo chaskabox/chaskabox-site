@@ -210,3 +210,35 @@ html,body{overflow-x:clip}
 .admin-ops-actions{display:flex;justify-content:end;gap:8px;flex-wrap:wrap;margin-top:18px}
 .admin-ops-error{color:#b91c1c;font-size:13px;font-weight:700}
 @media(max-width:480px){.admin-ops-dialog{padding:15px}.admin-ops-actions .btn{flex:1;min-height:44px}}
+
+/* MFA challenge: scoped design only; Supabase AAL2 logic stays in admin-login-mfa.js. */
+.live-admin-login:has(.mfa-login-card){background:radial-gradient(circle at 14% 17%,#fce9bd 0,transparent 32%),linear-gradient(145deg,#f2f5fc,#e7edf8);padding:clamp(14px,3vw,36px);overflow-y:auto}
+.mfa-login-card{width:min(458px,100%);gap:0!important;padding:clamp(22px,4vw,34px)!important;border:1px solid #e3e9f3!important;border-radius:24px!important;box-shadow:0 24px 75px rgba(18,32,70,.14)!important}
+.mfa-brand{display:flex;align-items:center;gap:11px;margin-bottom:25px}
+.mfa-login-card .mfa-brand img{width:56px;height:45px;object-fit:contain}
+.mfa-brand-name{display:grid;gap:2px;font-size:12px;font-weight:900;letter-spacing:.12em;color:var(--navy)}
+.mfa-brand-name small{font-size:10px;font-weight:700;letter-spacing:.19em;color:#75819b}
+.mfa-security-icon{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:#eff4ff;border:1px solid #d7e2f6;color:#22407e;font-size:23px;font-weight:900;margin:0 0 17px}
+.mfa-stage{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:.12em;font-weight:900;color:#36558a;margin-bottom:9px}
+.mfa-stage span:last-child{background:#f1f5fb;padding:6px 9px;border-radius:999px;color:#536580;white-space:nowrap}
+.mfa-login-card h1{font-size:clamp(23px,5vw,29px);line-height:1.22;letter-spacing:-.035em;margin-bottom:10px}
+.mfa-login-card .mfa-intro{font-size:14px;line-height:1.6;color:#56637b;margin-bottom:23px}
+.mfa-login-card .mfa-factor-choice{font-size:12px;color:#2b3b5a;margin:0 0 17px;min-width:0}
+.mfa-factor-choice select{width:100%;min-height:44px;min-width:0;max-width:100%;padding:10px 12px;border:1px solid #cdd6e7;border-radius:12px;background:#fff;color:#263956;font-size:13px;font-weight:600;text-overflow:ellipsis}
+.mfa-login-card .mfa-code-label{display:block;font-size:12px;font-weight:800;color:#293855;margin-bottom:10px}
+.mfa-code-control{position:relative;width:100%;min-width:0;cursor:text}
+.mfa-login-card .mfa-code-input{position:absolute;inset:0;width:100%;height:100%;z-index:1;opacity:0;cursor:text;font-size:18px;padding:0;border:0;outline:0}
+.mfa-code-slots{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:clamp(5px,1.7vw,9px);pointer-events:none}
+.mfa-code-slot{height:clamp(47px,12vw,56px);min-width:0;display:grid;place-items:center;background:#f8faff;border:1.5px solid #c9d4e6;border-radius:12px;color:#1a2b5c;font-size:clamp(18px,5vw,23px);font-variant-numeric:tabular-nums;font-weight:800;box-shadow:0 1px 2px rgba(24,40,70,.035)}
+.mfa-code-control:focus-within .mfa-code-slot{border-color:#b2c4e8}
+.mfa-code-control:focus-within .mfa-code-slot.active{border-color:#294b92;box-shadow:0 0 0 3px rgba(45,91,175,.13);background:#fff}
+.mfa-code-slot.filled{background:#fff;border-color:#9caed0}
+.mfa-login-card .mfa-hint{font-size:11px;line-height:1.5;color:#64718b;margin:10px 0 19px}
+.mfa-login-card .mfa-error{padding:12px;font-size:12px;line-height:1.5;margin-bottom:13px}
+.mfa-login-card .mfa-verify-btn,.mfa-login-card .mfa-cancel-btn{width:100%;min-height:48px;padding:12px 16px;border-radius:13px;font-size:13px;font-weight:800;justify-content:center}
+.mfa-login-card .mfa-verify-btn{margin-bottom:10px;gap:8px;box-shadow:0 7px 17px rgba(26,43,92,.15)}
+.mfa-login-card .mfa-cancel-btn{border-color:#d8e0ed;color:#314667}
+.mfa-login-card .mfa-verify-btn:focus-visible,.mfa-login-card .mfa-cancel-btn:focus-visible,.mfa-factor-choice select:focus-visible{outline:3px solid #2563eb;outline-offset:3px}
+.mfa-login-card .mfa-trust-note{text-align:center;font-size:11px;color:#68778e;margin:21px 0 0}
+@media(max-width:390px){.mfa-login-card{padding:20px!important}.mfa-brand{margin-bottom:19px}.mfa-code-slot{border-radius:9px}.mfa-login-card .mfa-intro{margin-bottom:18px}}
+@media(prefers-reduced-motion:reduce){.mfa-login-card *, .mfa-login-card *::before,.mfa-login-card *::after{animation:none!important;transition:none!important}}
