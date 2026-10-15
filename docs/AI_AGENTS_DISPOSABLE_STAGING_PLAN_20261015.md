@@ -28,3 +28,10 @@ Date: 15 Oct 2026. **PLAN ONLY; no database/project changes authorized.**
 
 ## Single-release policy
 Keep combined code on draft PR #40; PR #33 and WhatsApp untouched. After owner approves separately tested changes, confirm exact `main` SHA and one approved Cloudflare deployment. Never claim real owner/provider acceptance from synthetic tests.
+
+## Verified current Cloudflare Workers AI plan limits (documentation checked 2026-10-15)
+- Official pricing docs: https://developers.cloudflare.com/workers-ai/platform/pricing/ — Workers Free includes **10,000 neurons/day** shared across models, reset at 00:00 UTC; beyond the allocation on Free inference fails until reset/upgrade.
+- ChaskaBox's current application-level cap in `functions/api/_lib/ai.js` is **8,000 neurons/day** (plus per-feature and actor rate-limits), protecting against the Workers Free allowance, assuming the estimate covers actual model billing. It is not proof of available capacity.
+- Workers AI model availability and costs must be checked in this Cloudflare account before enabling, and no plan upgrade is authorized.
+- Supabase CLI docs: https://supabase.com/docs/guides/local-development/cli/getting-started; local disposable DB with fake users is favored over creating any additional hosted project.
+- New in-memory PGlite integrated test `tests/ai-combined-isolated-migrations.test.mjs` replays M00–M04, checks 8 disabled agents and 8 service-only RPC grants. This is a synthetic isolated rehearsal, **not** hosted staging parity or live acceptance.
