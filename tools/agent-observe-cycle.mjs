@@ -54,7 +54,7 @@ async function workflow(name,event){
  const url='https://api.github.com/repos/chaskabox/chaskabox-site/actions/workflows/'+name+'/runs?per_page=35';
  const res=await fetch(url,{signal:AbortSignal.timeout(8000),headers:{Accept:'application/vnd.github+json','User-Agent':'chaskabox-agent-observer',...(process.env.GITHUB_TOKEN?{Authorization:'Bearer '+process.env.GITHUB_TOKEN}:{})}});
  if(!res.ok)throw Error('GitHub unavailable');
- const data=await res.json();return data.workflow_runs?.find(x=>x.status==='completed'&&(!event||x.event===event))||null;
+ const data=await res.json();return data.workflow_runs?.find(x=>x.status==='completed'&&x.conclusion!=='skipped'&&(!event||x.event===event))||null;
 }
 async function githubStates(){
  const x=await Promise.allSettled([workflow('quality-checks.yml','push'),workflow('chaskabox-nightly-backup.yml','schedule'),workflow('isolated-recovery.yml',null)]);
