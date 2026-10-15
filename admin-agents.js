@@ -119,3 +119,78 @@
  const nav=document.querySelector('.admin-nav-btn[data-view="agents"]');
  nav?.addEventListener('click',()=>{void refresh();});
 })();
+
+/* Phase 1+2: owner-only operational controls. All rendering is text-only. */
+(()=>{
+ 'use strict';
+ const root=document.getElementById('view-agents');
+ if(!root)return;
+ const api=(path,options)=>window.chaskaAdminApi(path,options);
+ const el=(tag,text,cls)=>{const n=document.createElement(tag);if(cls)n.className=cls;n.textContent=String(text??'');return n;};
+ const section=el('section','','panel');
+ section.id='agentsPhase12Operations';
+ section.append(el('h2','Phase 1 + 2 — Agent Operations'));
+ section.append(el('p','Six-hour scheduled read-only observations. Manual scans do not save receipts or send messages. Marketing publishing remains locked.'));
+ const status=el('p','Open AI Agents to load operations.');status.id='agentsPhase12Status';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+ const actions=el('div','','panel-actions');
+ const refresh=el('button','Refresh saved observations','btn secondary'),scan=el('button','Run read-only scan','btn secondary');
+ refresh.type='button';scan.type='button';actions.append(refresh,scan);
+ const alerts=el('div','','agent-phase12-alerts'),grid=el('div','','agent-m05-grid');
+ section.append(actions,status,alerts,grid);root.append(section);
+ let refreshSeq=0;
+ const agents=new Set(['orders','inventory','security','backups','support','seo','analytics']);
+ async function load(){
+  const seq=++refreshSeq;status.textContent='Loading owner-only monitoring status...';
+  grid.replaceChildren();alerts.replaceChildren();
+  try{
+   const data=await api('/api/admin/agents/operations');
+   if(seq!==refreshSeq)return;
+   if(!Array.isArray(data?.activation)||!Array.isArray(data?.observations)||!Array.isArray(data?.alerts))throw Error('Invalid operations response');
+   const latest=new Map(data.observations.filter(x=>x&&typeof x.agent==='string').map(x=>[x.agent,x]));
+   for(const a of data.activation){
+    if(typeof a.agent!=='string')continue;
+    const card=el('article','','panel');const isMarketing=a.agent==='marketing',enabled=a.enabled===true;
+    card.append(el('h3',a.agent.toUpperCase()+' — '+(enabled?'ON':'OFF')));
+    card.append(el('p',isMarketing?'Observe-only; marketing activation controls locked.':'Scheduled read-only observation: '+(enabled?'Enabled':'Disabled')));
+    const observation=latest.get(a.agent);
+    card.append(el('p',observation?.checked_at?'Last saved receipt: '+new Date(observation.checked_at).toLocaleString()+' · '+(observation.state||'unknown'):'No saved observation yet'));
+    if(!isMarketing&&agents.has(a.agent)){
+     const button=el('button',enabled?'Disable monitoring':'Enable safe monitoring','btn secondary');button.type='button';
+     button.onclick=async()=>{
+      if(!window.confirm((enabled?'Disable':'Enable')+' '+a.agent+' read-only monitoring? No external notifications or publishing.'))return;
+      button.disabled=true;
+      try{const response=await api('/api/admin/agents/operations',{method:'POST',body:{action:'activate',agent:a.agent,enabled:!enabled}});
+       if(response?.activation?.agent!==a.agent)throw Error('Activation response not verified');
+       await load();
+      }catch(err){status.textContent=err?.message||'Activation failed; no state claimed.';button.disabled=false;}
+     };
+     card.append(button);
+    }
+    grid.append(card);
+   }
+   status.textContent=(data.alerts.length?data.alerts.length+' open saved alert(s). ':'No open saved alerts. ')+
+    'Only owner/MFA monitoring controls are available. No outbound actions.';
+   for(const a of data.alerts.slice(0,30)){
+    if(!a||typeof a.agent!=='string')continue;
+    const notice=el('p',a.agent+': '+String(a.title||'Alert')+' ('+String(a.severity||'unknown')+')');
+    notice.setAttribute('role','alert');alerts.append(notice);
+   }
+  }catch(err){if(seq===refreshSeq)status.textContent=err?.message||'Operations unavailable; no change made.';}
+ }
+ refresh.addEventListener('click',()=>{void load();});
+ scan.addEventListener('click',async()=>{
+  scan.disabled=true;status.textContent='Checking current safe aggregate signals...';
+  try{
+   const result=await api('/api/admin/agents/operations',{method:'POST',body:{action:'scan'}});
+   if(result?.saved!==false||result?.scan?.mode!=='read_only_no_receipt')throw Error('Read-only scan not verified');
+   const x=result.scan;
+   const stock=x.inventory||{},orders=x.orders||{},seo=x.insights?.seo||{};
+   status.textContent='Read-only scan done (not saved). Open order signals: '+
+    Number(orders.stale_new_orders||0)+', unavailable visible products: '+
+    Number(stock.visible_unavailable||0)+', SEO titles missing: '+Number(seo.missing_seo_title||0)+'. No notifications sent.';
+  }catch(err){status.textContent=err?.message||'Read-only scan unavailable';}
+  finally{scan.disabled=false;}
+ });
+ const nav=document.querySelector('.admin-nav-btn[data-view="agents"]');
+ nav?.addEventListener('click',()=>{void load();});
+})();
