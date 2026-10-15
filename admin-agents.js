@@ -153,7 +153,14 @@
     card.append(el('h3',a.agent.toUpperCase()+' — '+(enabled?'ON':'OFF')));
     card.append(el('p',isMarketing?'Observe-only; marketing activation controls locked.':'Scheduled read-only observation: '+(enabled?'Enabled':'Disabled')));
     const observation=latest.get(a.agent);
-    card.append(el('p',observation?.checked_at?'Last saved receipt: '+new Date(observation.checked_at).toLocaleString()+' · '+(observation.state||'unknown'):'No saved observation yet'));
+    const receiptTime=Date.parse(observation?.checked_at||'');
+    const receiptAge=Number.isFinite(receiptTime)?Date.now()-receiptTime:NaN;
+    const receiptFresh=Number.isFinite(receiptAge)&&receiptAge>=0&&receiptAge<=8*60*60*1000;
+    const receiptLabel=!Number.isFinite(receiptTime)?'No valid saved observation receipt':
+      !receiptFresh?'Stale saved observation — scheduler not verified':
+      'Recent saved observation (scheduler origin not verified)';
+    card.append(el('p',receiptLabel+(Number.isFinite(receiptTime)?': '+new Date(receiptTime).toLocaleString()+' · '+(observation.state||'unknown'):'')));
+    if(isMarketing)card.append(el('p','Phase 3 HOLD: this panel does not authorize marketing activation, publishing, or delivery.'));
     if(!isMarketing&&agents.has(a.agent)){
      const button=el('button',enabled?'Disable monitoring':'Enable safe monitoring','btn secondary');button.type='button';
      button.onclick=async()=>{
