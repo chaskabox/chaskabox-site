@@ -1,6 +1,7 @@
 /* ChaskaBox static store app */
 const NAVY='#1a2b5c';
 let PRODUCTS=[], CART={};
+const MAX_CART_QTY=99, MAX_CART_ITEMS=50;
 const PROGRESS_STATE={drawer:0,cart:0};
 const LOCAL_PHOTOS=new Set(window.CHASKABOX_LOCAL_PHOTOS||[]);
 const motionPreference=matchMedia('(prefers-reduced-motion: reduce)');
@@ -209,7 +210,11 @@ function renderHeaderDropdowns(){
   }catch(e){ console.warn('header dropdowns', e); }
 }
 function getBrand(p){
-  if(p&&typeof p==='object'){if(String(p.brand||'').trim())return String(p.brand).trim();p=p.name;}
+  if(p&&typeof p==='object'){
+    if(String(p.brand||'').trim())return String(p.brand).trim();
+    if(p.bundle&&/^ChaskaBox\s/i.test(p.name||''))return 'ChaskaBox';
+    p=p.name;
+  }
   const m=String(p||'').split('|')[0].trim();
   return m||'ChaskaBox';
 }
@@ -234,6 +239,8 @@ function filterPanelHTML(){
     +'<button class="fclear" onclick="clearAllFilters()">Clear filters</button>';
 }
 function renderShopContent(){
+  const headerSearch=document.getElementById('headerSearch');
+  if(headerSearch&&document.activeElement!==headerSearch)headerSearch.value=shopState.q||'';
   const {cat,badge}=shopState;
   let title=cat||'All Snacks';
   if(badge) title=(badge==='Sale'?'🔥 ':'⭐ ')+title;
@@ -329,6 +336,8 @@ function renderShopList(){
 function syncShopSearchUrl(clearBrands=false){
   const url=new URL(location.pathname+location.search+location.hash,location.origin);
   const q=String(shopState.q||'').trim();
+  const headerSearch=document.getElementById('headerSearch');
+  if(headerSearch&&document.activeElement!==headerSearch)headerSearch.value=q;
   if(q)url.searchParams.set('q',q);else url.searchParams.delete('q');
   if(clearBrands)url.searchParams.delete('brand');
   history.replaceState(null,'',url.pathname+url.search+url.hash);
@@ -426,7 +435,7 @@ function openProduct(id){
   document.body.style.overflow='hidden';
   setTimeout(()=>$('#pmodal .mclose')?.focus(),0);
 }
-function mQty(d){const e=$('#mqty');e.textContent=Math.max(1,+e.textContent+d);}
+function mQty(d){const e=$('#mqty');e.textContent=Math.min(MAX_CART_QTY,Math.max(1,+e.textContent+d));}
 function closeModal(){$('#pmodal').classList.remove('open');$('#pmodal').setAttribute('aria-hidden','true');document.body.style.overflow='';if(productModalReturnFocus&&typeof productModalReturnFocus.focus==='function'){const f=productModalReturnFocus;productModalReturnFocus=null;setTimeout(()=>f.focus(),0);}}
 
 /* ---------- product detail page ---------- */
@@ -514,7 +523,7 @@ function setProductMeta(p){
  }
 }
 function pdBack(){ history.back(); }
-function pdQty(d){const e=$('#pdqty');e.textContent=Math.max(1,+e.textContent+d);}
+function pdQty(d){const e=$('#pdqty');e.textContent=Math.min(MAX_CART_QTY,Math.max(1,+e.textContent+d));}
 
 
 /* ---------- public CMS/settings (admin-controlled, public-safe) ---------- */
@@ -843,7 +852,7 @@ function renderCartPage(){
   const rows=items.map(([id,qty])=>{
     const p=PRODUCTS.find(x=>x.id==id); if(!p)return '';
     subtotal+=p.price*qty;
-    return `<div class="cart-page-item"><a href="${productHref(p.id)}"><img src="${esc(assetUrl(p.img||''))}" alt="${esc(p.name)}"></a><div class="cart-page-copy"><a href="${productHref(p.id)}"><b>${esc(p.name)}</b></a><small>${esc(p.pack||'')}</small><span>${fmt(p.price)}</span></div><div class="qty"><button onclick="setCartPageQty(${p.id},${qty-1})" aria-label="Decrease">−</button><b>${qty}</b><button onclick="setCartPageQty(${p.id},${qty+1})" aria-label="Increase">+</button></div><b>${fmt(p.price*qty)}</b><button class="cart-remove" onclick="setCartPageQty(${p.id},0)" aria-label="Remove ${esc(p.name)}">Remove</button></div>`;
+    return `<div class="cart-page-item"><a href="${productHref(p.id)}"><img src="${esc(assetUrl(p.img||''))}" alt="${esc(p.name)}"></a><div class="cart-page-copy"><a href="${productHref(p.id)}"><b>${esc(p.name)}</b></a><small>${esc(p.pack||'')}</small><span>${fmt(p.price)}</span></div><div class="qty"><button onclick="setCartPageQty(${p.id},${qty-1})" aria-label="Decrease">−</button><b>${qty}</b><button onclick="setCartPageQty(${p.id},${qty+1})" aria-label="Increase" ${qty>=MAX_CART_QTY?'disabled':''}>+</button></div><b>${fmt(p.price*qty)}</b><button class="cart-remove" onclick="setCartPageQty(${p.id},0)" aria-label="Remove ${esc(p.name)}">Remove</button></div>`;
   }).join('');
   const threshold=Math.max(0,settingNum('prepaid_free_delivery_threshold_pkr',5000));
   const remaining=Math.max(0,threshold-subtotal), pct=threshold<=0?100:Math.min(100,Math.round(subtotal/threshold*100));
@@ -852,10 +861,15 @@ function renderCartPage(){
   const cartCats=[...new Set(items.map(([id])=>{const pr=PRODUCTS.find(x=>x.id==id);return pr&&pr.category;}).filter(Boolean))];
   const crossSell=activeProducts().filter(p=>!cartIds.has(String(p.id))&&cartCats.indexOf(p.category)>=0).slice(0,4);
   const crossHTML=crossSell.length?`<section class="cart-cross"><h2>Complete your chaska</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">${crossSell.map(cardHTML).join('')}</div></section>`:'';
-  el.innerHTML=`<div class="section cart-page"><div class="crumbs"><a href="/">Home</a> <span>›</span> Bag</div><div class="section-head"><div><span class="eyebrow">YOUR CHASKA</span><h1>Your Snack Bag</h1></div><a href="/shop/">Continue shopping →</a></div><div class="cart-page-layout"><div class="cart-page-items">${rows}</div><aside class="cart-summary"><h3>Order summary</h3><div class="drow"><span>Subtotal</span><b>${fmt(subtotal)}</b></div><div class="shipping-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div>${progress}</div><p class="cart-note">COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery · Prepaid ${fmt(threshold)}+: free delivery</p><a class="checkoutbtn cart-checkout" href="/checkout.html">Proceed to Checkout →</a></aside></div>${crossHTML}</div>`;
+  el.innerHTML=`<div class="section cart-page"><div class="crumbs"><a href="/">Home</a> <span>›</span> Bag</div><div class="section-head"><div><span class="eyebrow">YOUR CHASKA</span><h1>Your Snack Bag</h1></div><a href="/shop/">Continue shopping →</a></div><div class="cart-page-layout"><div class="cart-page-items">${rows}</div><aside class="cart-summary"><h3>Order summary</h3><div class="drow"><span>Subtotal</span><b>${fmt(subtotal)}</b></div><div class="shipping-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div>${progress}</div><p class="cart-note">COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery · ${threshold>0?'Prepaid '+fmt(threshold)+'+: free delivery; below: '+fmt(settingNum('prepaid_delivery_fee_pkr',300)):'Prepaid delivery: FREE'}</p><a class="checkoutbtn cart-checkout" href="/checkout.html">Proceed to Checkout →</a></aside></div>${crossHTML}</div>`;
   animateProgressIn(el,'cart',pct);
 }
-function setCartPageQty(id,qty){ if(qty<=0)delete CART[id]; else CART[id]=qty; saveCart(); renderCartPage(); }
+function setCartPageQty(id,qty){
+  qty=Number(qty);
+  if(!Number.isInteger(qty)||qty>MAX_CART_QTY){toast('You can add up to '+MAX_CART_QTY+' packs of each snack.');return;}
+  if(qty<=0)delete CART[id]; else CART[id]=qty;
+  saveCart();
+}
 function renderAccountRoute(){
   setPageMeta('My Account | ChaskaBox','/account/',true);
   showView('account');
@@ -1197,9 +1211,12 @@ function showCartToast(p,qty){
 }
 function addToCart(id,qty=1,el){
   const p=PRODUCTS.find(x=>x.id===id);if(!p)return;if(p.stockState==='unavailable'){toast('This snack is unavailable right now.');return;}
-  qty=Math.max(1,Number(qty)||1);
+  qty=Number(qty);
+  const current=Number(CART[id]||0);
+  if(!Number.isInteger(qty)||qty<1||qty+current>MAX_CART_QTY){toast('You can add up to '+MAX_CART_QTY+' packs of each snack.');return;}
+  if(!current&&Object.keys(CART).length>=MAX_CART_ITEMS){toast('Your bag can contain up to '+MAX_CART_ITEMS+' different snacks.');return;}
   if(el) flyToCart(el,id);
-  CART[id]=(CART[id]||0)+qty; saveCart(); popBadge();
+  CART[id]=current+qty; saveCart(); popBadge();
   if(typeof window.chaskaTrack==='function') window.chaskaTrack('add_to_cart',{id:p.id,name:p.name,price:p.price,qty});
   // Wishlist → cart conversion tracking
   try{
@@ -1260,14 +1277,15 @@ function renderDrawer(){
     const img=p.img?`<img src="${esc(assetUrl(p.img))}" alt="${esc(p.name)}">`:'<div style="font-size:36px">🍪</div>';
     return `<div class="ditem">${img}<div class="di"><div class="din">${esc(p.name)}</div>
     <div class="dip">${fmt(p.price)} each</div></div>
-    <div class="qty"><button onclick="chQty(${id},-1)">−</button><b>${CART[id]}</b><button onclick="chQty(${id},1)">+</button></div></div>`;
+    <div class="qty"><button onclick="chQty(${id},-1)" aria-label="Decrease ${esc(p.name)}">−</button><b>${CART[id]}</b><button onclick="chQty(${id},1)" aria-label="Increase ${esc(p.name)}" ${CART[id]>=MAX_CART_QTY?'disabled':''}>+</button></div></div>`;
   }).join('');
   const sub=cartSubtotal();
-  const rem=Math.max(0,5000-sub), pct=Math.min(100,Math.round(sub/5000*100));
-  $('#dfoot').innerHTML=`<div class="drow total"><span>Subtotal</span><span>${fmt(sub)}</span></div><div class="drawer-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div><small>${rem?fmt(rem)+' more for FREE prepaid delivery':'🎉 FREE prepaid delivery unlocked'}</small></div><div class="drawer-actions"><a class="drawer-viewcart" href="/cart/" onclick="closeDrawer()">View Bag</a><a class="checkoutbtn" href="/checkout.html">Checkout →</a></div>`;
+  const threshold=Math.max(0,settingNum('prepaid_free_delivery_threshold_pkr',5000));
+  const rem=Math.max(0,threshold-sub), pct=threshold<=0?100:Math.min(100,Math.round(sub/threshold*100));
+  $('#dfoot').innerHTML=`<div class="drow total"><span>Subtotal</span><span>${fmt(sub)}</span></div><div class="drawer-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div><small>${rem?fmt(rem)+' more for FREE prepaid delivery':'🎉 FREE prepaid delivery unlocked'}</small></div><p class="cart-note">COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery · ${threshold>0?'Prepaid below '+fmt(threshold)+': '+fmt(settingNum('prepaid_delivery_fee_pkr',300))+' delivery':'Prepaid delivery: FREE'}</p><div class="drawer-actions"><a class="drawer-viewcart" href="/cart/" onclick="closeDrawer()">View Bag</a><a class="checkoutbtn" href="/checkout.html">Checkout →</a></div>`;
   animateProgressIn($('#dfoot'),'drawer',pct);
 }
-function chQty(id,d){CART[id]=(CART[id]||0)+d;if(CART[id]<=0)delete CART[id];saveCart();}
+function chQty(id,d){setCartPageQty(id,Number(CART[id]||0)+d);}
 
 function animateProgressIn(scope,key,pct){
   const bar=scope?.querySelector('.progress-track span[data-progress]');
