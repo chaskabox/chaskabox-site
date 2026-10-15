@@ -10,7 +10,8 @@ test('AI control center displays every agent independently without fabricating h
  for(const agent of AGENTS)assert.ok(src.includes("'"+agent+"'"),agent);
  assert.match(src,/No observation evidence/);
  assert.match(src,/Disabled/);
- assert.match(src,/Read-only runtime observation/);
+ assert.match(src,/Read-only validated aggregate/);
+ assert.match(src,/status==='ok'\\|\\|status==='attention'/);
  assert.match(src,/state\?\.agents/);
  assert.doesNotMatch(src,/fetch\(['"]https:\/\/api\.(?:resend|waha)/i);
  assert.match(html,/missing observations are not counted as working/);
