@@ -86,8 +86,10 @@
   const blob=new Blob([JSON.stringify(report,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const anchor=document.createElement('a');
-  anchor.href=url;anchor.download='chaskabox-agent-readiness.json';anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.href=url;anchor.download='chaskabox-agent-readiness.json';
+  document.body.append(anchor);anchor.click();anchor.remove();
+  // Allow the browser download to start before releasing the object URL.
+  window.setTimeout(()=>URL.revokeObjectURL(url),1500);
  });
  update();
 })();
