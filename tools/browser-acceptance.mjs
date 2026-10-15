@@ -511,6 +511,7 @@ try{
    if(key==='marketing'&&down)return respond(route,{error:{message:'Synthetic draft outage'}},503);
    if(key==='insights')return respond(route,{agents:[]});
    if(key==='marketing')return respond(route,{drafts:[]});
+   if(key==='operations')return respond(route,{error:{message:'Synthetic operations outage'}},503);
    throw Error('Unexpected agent endpoint '+key);
   });
   await page.goto(base+'/admin/');
