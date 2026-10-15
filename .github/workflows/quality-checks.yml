@@ -48,7 +48,7 @@ jobs:
         run: npm run test:browser
       - name: Save synthetic browser acceptance evidence
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0 (Node.js 24)
         with:
           name: consolidated-browser-acceptance
           path: test-results/browser/
@@ -63,8 +63,8 @@ jobs:
           AUDIT_BASE_URL: https://chaskabox.online
         run: node tools/live-lighthouse-audit.mjs
       - name: Save read-only live mobile audit results
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: ${{ always() && github.ref == 'refs/heads/main' }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0 (Node.js 24)
         with:
           name: live-mobile-audit
           path: test-results/live-mobile/
