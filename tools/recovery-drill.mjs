@@ -105,7 +105,24 @@ try{
   if(!permissions.public_rpc_denied||!permissions.private_tables_denied||permissions.products!==checks.products||permissions.orders!==checks.order_count||permissions.admin_roles!==recoveredAuth.admin_roles)throw Error('Agent preflight permission/data check failed');
   agentPreflight={scope:'M0-M04 applied only after restore verification in the disposable offline clone; not managed staging or real owner MFA',migrations:hashes,disabled_agents:8,read_only_rpcs_verified:true,client_rpc_and_table_access_denied:true,business_row_counts_preserved:true};
  }
- const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,agent_migration_preflight:agentPreflight,live_auth_provider_acceptance_verified:false};
+ let step3Preflight=null;
+ if(e.STEP3_MIGRATION_PREFLIGHT==='true'){
+  step='verify_step3_preflight_isolation';
+  const target=JSON.parse(run('docker',['inspect',container]))[0];
+  if(target.HostConfig.NetworkMode!=='none'||Object.keys(target.HostConfig.PortBindings||{}).length||db('select current_database();','chaskabox_recovery').trim()!=='chaskabox_recovery')throw Error('Step 3 preflight requires a network-none recovered clone');
+  const migration=await readFile(new URL('../database/migrations/20261015123000_step3_rls_performance.sql',import.meta.url),'utf8');
+  const before=JSON.parse(db("select json_build_object('products',(select count(*) from public.products),'orders',(select count(*) from public.orders),'staff',(select count(*) from public.admin_roles),'indexes',(select count(*) from pg_indexes where indexname like 'step3_%'));",'chaskabox_recovery'));
+  step='step3_rollback_only_migration_rehearsal';
+  const testSQL="BEGIN;\n"+migration+"\nDO $gates$ BEGIN "+
+    "IF (SELECT count(*) FROM pg_indexes WHERE indexname LIKE 'step3_%') <> 10 THEN RAISE EXCEPTION 'Step 3 index coverage mismatch'; END IF; "+
+    "IF (SELECT count(*) FROM pg_policies WHERE schemaname='public' AND policyname IN ('addresses_own_all','admin_roles_own_read','customers_own_read','orders_customer_read','order_items_customer_read','reviews_own_read','media_write','profiles_own_select','profiles_own_insert','profiles_own_update') AND (coalesce(qual,'')||coalesce(with_check,'')) ~* 'SELECT (auth\\.uid\\(\\)|staff_role\\(\\))') <> 10 THEN RAISE EXCEPTION 'Step 3 RLS cache check mismatch'; END IF; "+
+    "END $gates$;\nROLLBACK;";
+  db(testSQL,'chaskabox_recovery');
+  const after=JSON.parse(db("select json_build_object('products',(select count(*) from public.products),'orders',(select count(*) from public.orders),'staff',(select count(*) from public.admin_roles),'indexes',(select count(*) from pg_indexes where indexname like 'step3_%'));",'chaskabox_recovery'));
+  if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Rollback preflight modified the recovered clone');
+  step3Preflight={archive_restore_verified:true,offline_network:true,index_definitions_tested:10,rls_policies_tested:10,rolled_back:true,production_database_modified:false,sql_sha256:createHash('sha256').update(migration).digest('hex')};
+ }
+ const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,agent_migration_preflight:agentPreflight,step3_migration_preflight:step3Preflight,live_auth_provider_acceptance_verified:false};
  console.log(JSON.stringify(report));if(e.GITHUB_STEP_SUMMARY)await writeFile(e.GITHUB_STEP_SUMMARY,JSON.stringify(report,null,2)+'\n',{flag:'a'});
 }catch(error){console.error('Isolated recovery did not pass: '+step+'. No database rows, SQL, credentials or archive contents are logged.');process.exitCode=1;}
 finally{for(const name of [authContainer,container])try{execFileSync('docker',['rm','-f',name],{stdio:'ignore'});}catch{}await rm(root,{recursive:true,force:true});}
