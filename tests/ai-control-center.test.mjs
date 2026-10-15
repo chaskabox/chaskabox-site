@@ -11,7 +11,7 @@ test('AI control center displays every agent independently without fabricating h
  assert.match(src,/No observation evidence/);
  assert.match(src,/Disabled/);
  assert.match(src,/Read-only runtime observation/);
- assert.match(src,/state\.agents/);
+ assert.match(src,/state\?\.agents/);
  assert.doesNotMatch(src,/fetch\(['"]https:\/\/api\.(?:resend|waha)/i);
  assert.match(html,/missing observations are not counted as working/);
 });
@@ -25,4 +25,12 @@ test('AI diagnostics survive one endpoint outage without falsely confirming enab
  assert.match(source,/Marketing drafts unavailable/);
  assert.match(source,/submit\.disabled=!state\|\|!marketing/);
  assert.doesNotMatch(source,/Promise\.all\(\[\s*api\('\/api\/admin\/agents\/status'/);
+});
+
+test('admin menu reorder maintains the previous visible state when server persistence fails',async()=>{
+ const file=await readFile(new URL('../admin-live.js',import.meta.url),'utf8');
+ assert.match(file,/if\(el\._navSaving\)return/);
+ assert.match(file,/const previous=\(el\._navItems\|\|\[\]\)\.slice\(\)/);
+ assert.match(file,/catch\(e\)\{render\(previous/);
+ assert.match(file,/finally\{el\._navSaving=false/);
 });

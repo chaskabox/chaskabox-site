@@ -370,9 +370,36 @@ try{
   results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
   await context.close();
  }
+ // Navigation reorder must roll back safely if the protected API rejects a save.
+ {
+  const {context,page}=await contextFor(1440,'owner');let failing=true,patches=0;
+  const navItems=[{id:1,label:'Shop',url:'/shop/',is_enabled:true,position:1},{id:2,label:'About',url:'/about/',is_enabled:true,position:2}];
+  await context.route('**/api/admin/navigation',route=>{
+   if(route.request().method()==='PATCH'){
+    patches++;
+    if(failing)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{message:'Synthetic menu persistence outage'}})});
+    for(const item of route.request().postDataJSON().items){const row=navItems.find(n=>String(n.id)===String(item.id));if(row)row.position=item.position;}
+   }
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({navigation:{header:navItems,footer:[],mobile:[]}})});
+  });
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="navigation"]').click();
+  const original=await page.locator('#headerNavList .nav-row b').allTextContents();
+  await page.locator('#headerNavList [data-nav-down="0"]').click();
+  await page.waitForFunction(()=>document.getElementById('adminToast')?.textContent.includes('original menu restored'));
+  results.interactions.push({case:'admin menu reorder failure visibly reverts unsaved changes',pass:
+   JSON.stringify(original)===JSON.stringify(await page.locator('#headerNavList .nav-row b').allTextContents())&&patches===1});
+  failing=false;
+  await page.locator('#headerNavList [data-nav-down="0"]').click();
+  await page.waitForFunction(()=>[...document.querySelectorAll('#headerNavList .nav-row b')].map(e=>e.textContent).join(',')==='About,Shop');
+  results.interactions.push({case:'admin menu reorder saves correctly after retry',pass:
+   patches===2&&navItems[0].position===2&&navItems[1].position===1});
+  await context.close();
+ }
  // Partial-read outage must retain actual activation state and not invent healthy agent signals.
  {
-  const {context,page}=await contextFor(390,'owner');
+  const {context,page}=await contextFor(1440,'owner');
   let down=true, statusDown=false;
   const respond=(route,payload,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(payload)});
   await context.route('**/api/admin/agents/**',route=>{

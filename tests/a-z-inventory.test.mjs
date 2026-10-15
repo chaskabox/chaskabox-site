@@ -17,7 +17,7 @@ test('all eight agents have source-defined deny-by-default policy and an owner-o
  assert.equal(AGENTS.length,8);
  const source=await readFile(new URL('../admin-agents.js',import.meta.url),'utf8');
  const backend=await readFile(new URL('../functions/api/admin/agents/status.js',import.meta.url),'utf8');
- assert.match(source,/\/api\/admin\/agents\/status/);
+ assert.match(source,/api\('\/api\/admin\/agents\/'\+key\)/);
  assert.match(backend,/withAdmin\(\['owner'\]/);
  assert.match(backend,/Cache-Control/);
 });

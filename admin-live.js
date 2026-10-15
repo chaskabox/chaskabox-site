@@ -1175,19 +1175,19 @@
           <button data-nav-toggle="${esc(i.id)}" aria-label="Toggle enabled">${i.is_enabled?'✓':'✗'}</button></div>`).join('')
           :'<p class="muted">No items. Click + Add.</p>';
       };
-      const persistOrder=async(el)=>{
-        const items=el._navItems||[];
-        try{
-          await api('/api/admin/navigation',{method:'PATCH',body:{items:items.map((i,idx)=>({id:i.id,position:idx+1}))}});
-        }catch(e){ toast('Reorder failed: '+e.message); }
-      };
-      const move=(el,idx,dir)=>{
-        const items=el._navItems||[];
-        const j=idx+dir;
-        if(j<0||j>=items.length) return;
-        [items[idx],items[j]]=[items[j],items[idx]];
-        render(items,'#'+el.id);
-        persistOrder(el);
+      const persistOrder=async(items)=>api('/api/admin/navigation',{method:'PATCH',body:{
+        items:items.map((i,idx)=>({id:i.id,position:idx+1}))}});
+      const move=async(el,idx,dir)=>{
+        if(el._navSaving)return;
+        const previous=(el._navItems||[]).slice(),j=idx+dir;
+        if(j<0||j>=previous.length)return;
+        const updated=previous.slice();
+        [updated[idx],updated[j]]=[updated[j],updated[idx]];
+        el._navSaving=true;
+        render(updated,'#'+el.id);
+        try{await persistOrder(updated);}
+        catch(e){render(previous,'#'+el.id);toast('Reorder failed; original menu restored: '+e.message);}
+        finally{el._navSaving=false;}
       };
       render(nav.header,'#headerNavList'); render(nav.footer,'#footerNavList');
       const navView=$('#view-navigation');
