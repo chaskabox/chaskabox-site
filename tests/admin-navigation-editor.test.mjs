@@ -12,8 +12,8 @@ test('navigation backend permits audited create and limited edit with expected c
  const backend=await readFile(new URL('../functions/api/admin/navigation/index.js',import.meta.url),'utf8');
  const ui=await readFile(new URL('../admin-live.js',import.meta.url),'utf8');
  const html=await readFile(new URL('../admin.html',import.meta.url),'utf8');
- assert.match(backend,/onRequestPost = withAdmin\\(\\['owner', 'manager', 'content'\\]/);
- assert.match(backend,/data\\.url=safeNavTarget\\(it\\.url\\)/);
+ assert.ok(backend.includes("onRequestPost = withAdmin(['owner', 'manager', 'content']"));
+ assert.ok(backend.includes('data.url=safeNavTarget(it.url)'));
  assert.match(ui,/id="navEditForm"/);
  assert.match(ui,/navEditSave/);
  assert.match(ui,/data-nav-edit/);
