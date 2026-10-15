@@ -181,6 +181,21 @@ try{
   await page.getByRole('button',{name:'Close shopping bag'}).click();
   results.interactions.push({case:'cart and drawer cap quantity at 99 / '+width,pass:true});
   await inspect(page,'/checkout.html',width);
+  // Visual regression: new branded header, 2-step progress and a non-default coupon CTA.
+  const checkoutVisual=await page.evaluate(()=>{
+   const intro=document.querySelector('.checkout-intro'),coupon=document.querySelector('#applyCoupon'),
+    grid=document.querySelector('.co-grid'),total=document.querySelector('.checkout-totals .sumrow.total');
+   const btn=getComputedStyle(coupon),summary=getComputedStyle(document.querySelector('.checkout-summary-heading'));
+   return {intro:!!intro,progress:!!document.querySelector('.checkout-progress'),
+    turnstileSize:document.querySelector('.cf-turnstile')?.dataset.size,
+    couponStyled:btn.borderRadius!=='0px'&&btn.minHeight==='45px',
+    summaryBranded:summary.backgroundColor!=='rgba(0, 0, 0, 0)'&&summary.backgroundColor!=='rgb(255, 255, 255)',
+    total:!!total,columns:getComputedStyle(grid).gridTemplateColumns,overflow:document.documentElement.scrollWidth>innerWidth+1};
+  });
+  if(!checkoutVisual.intro||!checkoutVisual.progress||!checkoutVisual.couponStyled||!checkoutVisual.summaryBranded||!checkoutVisual.total||checkoutVisual.overflow
+    ||checkoutVisual.turnstileSize!==(width<=360?'compact':'flexible'))throw Error('Checkout visual audit failed '+JSON.stringify({width,checkoutVisual}));
+  results.interactions.push({case:'premium checkout visually styled / '+width,pass:true});
+  if(width===390||width===1440)await page.screenshot({path:path.join(output,'premium-checkout-'+width+'.png'),fullPage:true});
   await page.getByLabel('City *',{exact:true}).fill('Lahore');
   await page.waitForFunction(()=>document.getElementById('quoteStatus')?.textContent==='Total confirmed for Lahore.');
   const fmt=n=>'Rs. '+n.toLocaleString('en-PK');
@@ -300,7 +315,20 @@ try{
  if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){
   const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);
   results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});
-  if(role==='owner'){attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;}
+  if(role==='owner'){
+   // One synthetic navigation pass over every owner-facing panel; source wiring
+   // only. This does not replace authenticated persistence/provider acceptance.
+   const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
+   if(panelKeys.length!==25)throw Error('Expected Dashboard plus 24 owner panel targets, got '+panelKeys.length);
+   for(const key of panelKeys){
+    await page.locator('.admin-nav-btn[data-view="'+key+'"]').click();
+    const target=page.locator('#view-'+key);
+    const visible=await target.isVisible();
+    results.interactions.push({case:'owner opens admin panel: '+key,pass:visible});
+    if(!visible)throw Error('Admin navigation does not open '+key);
+   }
+   attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;
+  }
   else results.interactions.push({case:role+' cannot see owner AI agent controls',pass:!await page.locator('[data-view="agents"]').isVisible()});
   await context.close();
  }
@@ -342,12 +370,187 @@ try{
   results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
   await context.close();
  }
+ // Header/Footer/Mobile links must be creatable/editable by the owner without SQL.
+ {
+  const {context,page}=await contextFor(1440,'owner');
+  const items=[{id:'00000000-0000-4000-8000-000000000081',location:'header',label:'Shop',url:'/shop/',position:1,is_enabled:true}];
+  let posts=0,patches=0;
+  const reply=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
+  await context.route('**/api/admin/navigation',route=>{
+   const method=route.request().method();
+   if(method==='POST'){const item={id:'00000000-0000-4000-8000-000000000082',...route.request().postDataJSON()};
+    items.push(item);posts++;return reply(route,{item},201);}
+   if(method==='PATCH'){for(const update of route.request().postDataJSON().items){const item=items.find(i=>i.id===update.id);if(item)Object.assign(item,update);}patches++;return reply(route,{ok:true,updated:1});}
+   return reply(route,{navigation:{header:items.filter(i=>i.location==='header'),footer:items.filter(i=>i.location==='footer'),mobile:items.filter(i=>i.location==='mobile')}});
+  });
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="navigation"]').click();
+  await page.locator('#headerNavList [data-nav-edit]').first().waitFor();
+  await page.locator('#addMobileNav').click();
+  await page.locator('#navEditLabel').fill('My mobile offers');
+  await page.locator('#navEditUrl').fill('javascript:alert(1)');
+  await page.locator('#navEditSave').click();
+  const rejected=await page.locator('#navEditError').isVisible()&&posts===0;
+  await page.locator('#navEditUrl').fill('/shop/');
+  await page.locator('#navEditSave').click();
+  await page.locator('#mobileNavList [data-nav-edit]').first().waitFor();
+  results.interactions.push({case:'owner can create mobile navigation item and unsafe URL is rejected',
+    pass:rejected&&posts===1&&items[1].location==='mobile'&&items[1].label==='My mobile offers'});
+  await page.locator('#mobileNavList [data-nav-edit]').first().click();
+  await page.locator('#navEditLabel').fill('Daily snacks');
+  await page.locator('#navEditSave').click();
+  await page.locator('#mobileNavList').getByText('Daily snacks',{exact:true}).waitFor();
+  results.interactions.push({case:'owner edits mobile navigation item via audited PATCH',pass:
+    patches===1&&items[1].label==='Daily snacks'});
+  await context.close();
+ }
+ // Owner/Manager/Content category and brand actions must match backend role gates.
+ for(const role of ['owner','manager','content']){
+  const {context,page}=await contextFor(1440,role);
+  const category={id:'00000000-0000-4000-8000-000000000051',name:'Synthetic category',slug:'synthetic-category',is_visible:true,show_on_homepage:false,hide_if_empty:true};
+  const brand={id:'00000000-0000-4000-8000-000000000052',name:'Synthetic brand',slug:'synthetic-brand',is_visible:true};
+  const writes=[];
+  const respond=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
+  await context.route('**/api/admin/categories',route=>{
+   if(route.request().method()==='POST'){
+    const payload=route.request().postDataJSON();writes.push({method:'POST',payload});
+    return respond(route,{category:{...category,...payload}},201);
+   }
+   return respond(route,{categories:[category]});
+  });
+  await context.route('**/api/admin/categories/*',route=>{
+   writes.push({method:route.request().method()});
+   return respond(route,{error:{message:'Synthetic storage unavailable'}},503);
+  });
+  await context.route('**/api/admin/brands',route=>respond(route,{brands:[brand]}));
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="categories"]').click();
+  await page.locator('[data-edit-cat]').waitFor();
+  await page.locator('[data-edit-cat]').click();
+  const canCategoryDelete=await page.locator('#deleteCategoryBtn').isVisible();
+  results.interactions.push({case:role+' category delete control respects server role policy',
+   pass:canCategoryDelete===(role!=='content')});
+  await page.locator('#categoryEditor .modal-head button[data-close-cat-modal]').click();
+  // A content editor must still be allowed to create a draft category.
+  if(role==='content'){
+   await page.locator('#addCategoryBtn').click();
+   await page.locator('#catName').fill('Synthetic new category');
+   await page.locator('#categoryForm button[type=submit]').click();
+   await page.waitForFunction(()=>!document.getElementById('categoryEditor').classList.contains('open'));
+   results.interactions.push({case:'content category create safely reaches protected POST API',
+    pass:writes.length===1&&writes[0].method==='POST'&&writes[0].payload.name==='Synthetic new category'});
+  }
+  if(role!=='content'){
+   await page.locator('[data-view="brands"]').click();
+   await page.locator('[data-del-brand]').first().waitFor({state:role==='owner'?'visible':'hidden',timeout:8000}).catch(()=>{});
+   const canBrandDelete=await page.locator('[data-del-brand]').count()>0;
+   results.interactions.push({case:role+' brand delete control respects owner-only API policy',
+    pass:canBrandDelete===(role==='owner')});
+  }
+  await context.close();
+ }
+ // Navigation reorder must roll back safely if the protected API rejects a save.
+ {
+  const {context,page}=await contextFor(1440,'owner');let failing=true,patches=0;
+  const navItems=[{id:1,label:'Shop',url:'/shop/',is_enabled:true,position:1},{id:2,label:'About',url:'/about/',is_enabled:true,position:2}];
+  await context.route('**/api/admin/navigation',route=>{
+   if(route.request().method()==='PATCH'){
+    patches++;
+    if(failing)return route.fulfill({status:503,contentType:'application/json',body:JSON.stringify({error:{message:'Synthetic menu persistence outage'}})});
+    for(const item of route.request().postDataJSON().items){const row=navItems.find(n=>String(n.id)===String(item.id));if(row)row.position=item.position;}
+   }
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({navigation:{header:navItems,footer:[],mobile:[]}})});
+  });
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="navigation"]').click();
+  // allTextContents() does not wait for async panel load; capture only after rows exist.
+  await page.locator('#headerNavList .nav-row').first().waitFor({state:'visible'});
+  const original=await page.locator('#headerNavList .nav-row b').allTextContents();
+  await page.locator('#headerNavList [data-nav-down="0"]').click();
+  await page.waitForFunction(()=>document.getElementById('adminToast')?.textContent.includes('original menu restored'));
+  const restoredOrder=await page.locator('#headerNavList .nav-row b').allTextContents();
+  results.interactions.push({case:'admin menu reorder failure visibly reverts unsaved changes',pass:
+   JSON.stringify(original)===JSON.stringify(restoredOrder)&&patches===1,
+   evidence:{initialCount:original.length,restoredCount:restoredOrder.length,patches}});
+  failing=false;
+  await page.locator('#headerNavList [data-nav-down="0"]').click();
+  await page.waitForFunction(()=>[...document.querySelectorAll('#headerNavList .nav-row b')].map(e=>e.textContent).join(',')==='About,Shop');
+  results.interactions.push({case:'admin menu reorder saves correctly after retry',pass:
+   patches===2&&navItems[0].position===2&&navItems[1].position===1});
+  await context.close();
+ }
+ // Partial-read outage must retain actual activation state and not invent healthy agent signals.
+ {
+  const {context,page}=await contextFor(1440,'owner');
+  let down=true, statusDown=false;
+  const respond=(route,payload,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(payload)});
+  await context.route('**/api/admin/agents/**',route=>{
+   const key=new URL(route.request().url()).pathname.split('/').at(-1);
+   if(route.request().method()!=='GET')throw Error('Unexpected agent mutation during outage drill');
+   if(key==='status'&&statusDown)return respond(route,{error:{message:'Synthetic status outage'}},503);
+   if(key==='status')return respond(route,{agents:['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent_key=>({agent_key,mode:'observe',enabled:false})),pending_jobs:0,pending_approvals:0});
+   if(key==='preview')return respond(route,{agents:[{agent:'orders',state:'attention',signals:{stale_new_orders:2}}]});
+   if(key==='insights'&&down)return respond(route,{error:{message:'Synthetic insight outage'}},503);
+   if(key==='marketing'&&down)return respond(route,{error:{message:'Synthetic draft outage'}},503);
+   if(key==='insights')return respond(route,{agents:[]});
+   if(key==='marketing')return respond(route,{drafts:[]});
+   throw Error('Unexpected agent endpoint '+key);
+  });
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="agents"]').click();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('Partial diagnostics'));
+  const stillVisible=(await page.locator('#agentsM05Readiness').innerText()).includes('Configured agents: 8')&&
+   (await page.locator('#agentsM05Signals').innerText()).includes('ORDERS · attention')&&
+   await page.locator('#agentsM05Signals article').count()===8;
+  const locked=await page.locator('#agentsM05Propose button[type="submit"]').isDisabled();
+  results.interactions.push({case:'partial AI outage shows all eight and keeps healthy claims bounded',pass:stillVisible&&locked});
+  statusDown=true;await page.locator('#agentsM05Refresh').click();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Readiness')?.textContent.includes('Unknown — status endpoint unavailable'));
+  results.interactions.push({case:'agent status outage cannot fabricate zero enabled or configured agents',pass:
+   !(await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')&&
+   await page.locator('#agentsM05Propose button[type="submit"]').isDisabled()});
+  down=false;statusDown=false;await page.locator('#agentsM05Refresh').click();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('diagnostics updated'));
+  results.interactions.push({case:'AI diagnostics recover after endpoint outage without agent activation',pass:
+   !await page.locator('#agentsM05Propose button[type="submit"]').isDisabled()&&
+   (await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')});
+  await context.close();
+ }
+ // New brand's full CMS editor must create with all values; no prompt or real writes.
+ {
+  const {context,page}=await contextFor(1440,'owner');
+  let created=null;const requests=[];
+  await context.route('**/api/admin/brands',route=>{
+   const method=route.request().method();
+   if(method==='POST'){
+    const payload=route.request().postDataJSON();requests.push(payload);
+    created={id:115,name:payload.name,slug:payload.slug||'synthetic-owner-brand',is_visible:payload.is_visible,description:payload.long_description};
+    return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({brand:created})});
+   }
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({brands:created?[created]:[]})});
+  });
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="brands"]').click();
+  await page.locator('#addBrandBtn').click();await page.locator('#beName').waitFor();
+  await page.locator('#beName').fill('Synthetic owner brand');
+  await page.locator('#beShort').fill('Small batch fixture');
+  await page.locator('#beSeoTitle').fill('Synthetic brand SEO title');
+  await page.locator('#beLong').fill('Synthetic owner-authored brand description');
+  await page.locator('#beSave').click();
+  await page.getByText('Synthetic owner brand',{exact:false}).first().waitFor();
+  results.interactions.push({case:'brand create editor saves name, SEO and description via protected API',pass:requests.length===1&&requests[0].name==='Synthetic owner brand'&&requests[0].seo_title==='Synthetic brand SEO title'&&requests[0].short_description==='Small batch fixture'&&requests[0].long_description==='Synthetic owner-authored brand description'&&requests[0].is_visible===true});
+  await context.close();
+ }
  // Exercise operational UI writes only against intercepted, synthetic records.
  {
   const {context,page}=await contextFor(1440,'owner');page.removeAllListeners('dialog');page.on('dialog',d=>d.accept());
   const orderId='00000000-0000-4000-8000-000000000021',customerId='00000000-0000-4000-8000-000000000022';
   let order={id:orderId,order_number:'CB-SYNTHETIC-ACCEPTANCE',customer_name:'Synthetic acceptance customer',customer_phone:'03000000000',customer_address:'Synthetic address',customer_city:'Fixture city',payment_method:'jazzcash',payment_status:'payment_submitted',transaction_reference:'SYNTHETIC-REF',fulfilment_status:'new',total:600,subtotal:300,delivery_fee:300,created_at:'2026-10-14T00:00:00Z',updated_at:'2026-10-14T00:00:00Z'};
-  let product={...products.find(p=>p.id===39),id:39,name:'Synthetic editor snack',description:'Synthetic pack description',price:300,old_price:null,visibility:'visible',stock_state:'sourced_after_order',tags:[]};
+  let product={...products.find(p=>p.id===39),id:39,name:'Synthetic editor snack',description:'Synthetic pack description',price:300,old_price:null,visibility:'visible',stock_state:'sourced_after_order',tags:['fixture-tag-unique'],brand:'FixtureBrandOnly',slug:'fixture-slug-only'};
   let failPayment=true,failBulk=true;const statusWrites=[],paymentWrites=[],bulkWrites=[],productWrites=[];
   const ok=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
   await context.route('**/api/admin/orders?*',r=>ok(r,{orders:[order],page:1,total:1,total_pages:1}));
@@ -361,7 +564,24 @@ try{
   await context.route('**/api/admin/customers?*',r=>ok(r,{customers:[customer],page:1,total:1,total_pages:1}));
   await context.route('**/api/admin/customers/'+customerId+'?*',r=>ok(r,{customer,orders:[order],page:1,total:1,total_pages:1}));
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="orders"]').click();await page.getByRole('button',{name:'Manage',exact:true}).click();
+  await page.locator('[data-view="orders"]').click();
+  const requestedOrderUrls=[];
+  page.on('request',r=>{if(new URL(r.url()).pathname==='/api/admin/orders')requestedOrderUrls.push(new URL(r.url()));});
+  await page.locator('#orderStatusFilter').selectOption('dispatched');
+  await page.waitForFunction(()=>document.getElementById('orderStatusFilter')?.value==='dispatched');
+  await page.waitForTimeout(300);
+  const fulfilmentQuery=requestedOrderUrls.at(-1);
+  results.interactions.push({case:'orders fulfilment filter requests first page not a DOM event',pass:fulfilmentQuery?.searchParams.get('page')==='1'&&fulfilmentQuery.searchParams.get('fulfilment_status')==='dispatched'});
+  await page.locator('#orderPaymentFilter').selectOption('payment_submitted');
+  await page.locator('#orderMethodFilter').selectOption('jazzcash');
+  await page.locator('#orderDateFrom').fill('2026-10-01');await page.locator('#orderDateFrom').dispatchEvent('change');
+  await page.locator('#orderDateTo').fill('2026-10-15');await page.locator('#orderDateTo').dispatchEvent('change');
+  await page.waitForTimeout(300);
+  const filteredQuery=requestedOrderUrls.at(-1);
+  results.interactions.push({case:'orders payment method and date range reach authenticated API',pass:filteredQuery?.searchParams.get('payment_status')==='payment_submitted'&&filteredQuery?.searchParams.get('method')==='jazzcash'&&filteredQuery?.searchParams.get('date_from')==='2026-10-01'&&filteredQuery?.searchParams.get('date_to')==='2026-10-15'});
+  await page.locator('#orderResetFilters').click();await page.waitForTimeout(300);
+  results.interactions.push({case:'reset order filters restores first-page unfiltered view',pass:!requestedOrderUrls.at(-1)?.searchParams.get('payment_status')&&requestedOrderUrls.at(-1)?.searchParams.get('page')==='1'&&!await page.locator('#orderDateFrom').inputValue()});
+  await page.getByRole('button',{name:'Manage',exact:true}).click();
   const changed=page.waitForResponse(r=>r.url().endsWith('/status'));await page.locator('#liveOrderModal [data-status="sourcing"]').click();await changed;await page.waitForFunction(()=>!document.getElementById('liveOrderModal')?.classList.contains('open'));
   results.interactions.push({case:'order status control submits the current version and refreshes after success',pass:order.fulfilment_status==='sourcing'&&statusWrites.length===1&&statusWrites[0].expected_updated_at==='2026-10-14T00:00:00Z'});
   await page.getByRole('button',{name:'Manage',exact:true}).click();await page.locator('#liveOrderModal [data-status="cancelled"]').click();await page.locator('.order-decision-dialog').getByRole('button',{name:'Cancel',exact:true}).click();
@@ -373,7 +593,14 @@ try{
   results.interactions.push({case:'payment save outage retains pending status and offers a usable retry',pass:order.payment_status==='payment_submitted'&&!await page.locator('#liveOrderModal [data-pay="verified"]').isDisabled()});
   failPayment=false;await page.locator('#liveOrderModal [data-pay="verified"]').click();await page.locator('.order-decision-dialog textarea').fill('Synthetic receiving-account evidence');const approved=page.waitForResponse(r=>r.url().endsWith('/payment/verify'));await page.locator('.order-decision-dialog').getByRole('button',{name:'Confirm',exact:true}).click();await approved;await page.waitForFunction(()=>!document.getElementById('liveOrderModal')?.classList.contains('open'));
   results.interactions.push({case:'payment retry records an explicit decision with evidence and current version',pass:order.payment_status==='payment_verified'&&paymentWrites.length===2&&paymentWrites[1].note==='Synthetic receiving-account evidence'&&paymentWrites[1].expected_updated_at==='2026-10-14T00:01:00Z'});
-  await page.locator('[data-view="products"]').click();await page.locator('[data-live-edit="39"]').click();await page.locator('#editName').fill('Synthetic editor snack saved');const edited=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/products/39');await page.locator('#productForm').evaluate(e=>e.requestSubmit());await edited;await page.waitForFunction(()=>!document.getElementById('productEditor')?.classList.contains('open'));
+  await page.locator('[data-view="products"]').click();
+  for(const query of ['FixtureBrandOnly','fixture-tag-unique','fixture-slug-only']){
+   await page.locator('#productSearch').fill(query);
+   await page.locator('[data-live-edit="39"]').waitFor({state:'visible'});
+   results.interactions.push({case:'admin product search covers '+query,pass:await page.locator('#productAdminGrid [data-product-id="39"]').isVisible()});
+  }
+  await page.locator('#productSearch').fill('');
+  await page.locator('[data-live-edit="39"]').click();await page.locator('#editName').fill('Synthetic editor snack saved');const edited=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/products/39');await page.locator('#productForm').evaluate(e=>e.requestSubmit());await edited;await page.waitForFunction(()=>!document.getElementById('productEditor')?.classList.contains('open'));
   results.interactions.push({case:'product edit opens, hydrates fields and saves to the protected endpoint',pass:productWrites.length===1&&product.name==='Synthetic editor snack saved'&&productWrites[0].description==='Synthetic pack description'});
   await page.locator('[data-live-select="39"]').check();await page.waitForFunction(()=>document.getElementById('bulkCount')?.textContent.startsWith('1 selected'));
   const bulkFailed=page.waitForResponse(r=>r.url().endsWith('/products/bulk'));await page.locator('#bulkBar [data-bulk="hide"]').click();await bulkFailed;await page.waitForFunction(()=>document.getElementById('bulkFeedback')?.textContent.includes('Not saved'));

@@ -40,35 +40,59 @@
    drafts.append(card);
   }
  }
+ let refreshSequence=0;
  async function refresh(){
+  const sequence=++refreshSequence;
   show(message,'Loading owner-only agent diagnostics...');
+  // Isolate each endpoint so a single monitoring outage cannot blank the
+  // independently authorized activation evidence or masquerade as healthy.
+  const keys=['status','preview','insights','marketing'];
+  const results=await Promise.allSettled(keys.map(key=>api('/api/admin/agents/'+key)));
+  if(sequence!==refreshSequence)return; // Ignore a slower, stale refresh.
   output.replaceChildren();signals.replaceChildren();
-  try{
-   const [state,monitor,insights,marketing]=await Promise.all([
-    api('/api/admin/agents/status'),
-    api('/api/admin/agents/preview'),
-    api('/api/admin/agents/insights'),
-    api('/api/admin/agents/marketing')
-   ]);
-   block(output,'Agent activation',[
-    ['Mode','Observation / no automated execution'],
-    ['Pending jobs',state.pending_jobs??0],
-    ['Pending approvals',state.pending_approvals??0],
-    ['Configured agents',(state.agents||[]).length],
-    ['Enabled agents',(state.agents||[]).filter(x=>x.enabled).length]
-   ]);
-   for(const a of monitor.agents||[]){
-    block(signals,a.agent+' — '+a.state,Object.entries(a.signals||{}));
-   }
-   for(const a of insights.agents||[]){
-    block(signals,a.agent+' — '+a.status,Object.entries(a.signals||{}));
-   }
-   renderMarketing(marketing.drafts);
-   show(message,'Read-only diagnostics updated. No live jobs started.');
-  }catch(e){
-   show(message,(e.status===403?'Owner MFA required. Complete authenticator login. ':
-    'Agent diagnostics unavailable. ')+(e.message||'Please retry.'));
+  const values=results.map((r,i)=>{
+   if(r.status!=='fulfilled')return null;
+   const item=r.value;
+   if(!item||typeof item!=='object')return null;
+   if(i===0&&!Array.isArray(item.agents))return null;
+   if((i===1||i===2)&&!Array.isArray(item.agents))return null;
+   if(i===3&&!Array.isArray(item.drafts))return null;
+   return item;
+  });
+  const [state,monitor,insights,marketing]=values;
+  const failing=keys.filter((key,i)=>!values[i]);
+  const authDenied=results.some(r=>r.status==='rejected'&&(r.reason?.status===401||r.reason?.status===403));
+  block(output,'Agent activation',[
+   ['Mode','Observation / no automated execution'],
+   ['Pending jobs',state?.pending_jobs??'Unavailable'],
+   ['Pending approvals',state?.pending_approvals??'Unavailable'],
+   ['Configured agents',state?.agents.length??'Unknown — status endpoint unavailable'],
+   ['Enabled agents',state?.agents.filter(x=>x.enabled===true).length??'Unknown — status endpoint unavailable']
+  ]);
+  const eight=['orders','inventory','security','backups','support','seo','marketing','analytics'];
+  const observations=new Map([...(monitor?.agents||[]),...(insights?.agents||[])]
+   .filter(x=>x&&typeof x.agent==='string').map(x=>[x.agent,x]));
+  const settings=new Map((state?.agents||[]).map(x=>[x.agent_key,x]));
+  for(const agentKey of eight){
+   const current=settings.get(agentKey),reading=observations.get(agentKey);
+   const status=reading?.state||reading?.status||'No observation evidence';
+   const data=[['Activation',!state?'Unknown — status unavailable':
+       !current?'Not configured':current.enabled===true?'Enabled (scheduler not verified)':'Disabled'],
+     ['Agent mode',current?.mode||'Not reported'],
+     ['Signals',status],
+     ['Data basis',reading?'Read-only runtime observation':
+        agentKey==='marketing'&&marketing?'Human review workflow':'No validated live signal']];
+   if(reading?.signals&&typeof reading.signals==='object')for(const [key,value] of Object.entries(reading.signals))
+    data.push([key,typeof value==='object'?'Not comparable':value]);
+   block(signals,agentKey.toUpperCase()+' · '+status,data);
   }
+  const submit=propose?.querySelector('button[type=submit]');
+  if(submit)submit.disabled=!state||!marketing;
+  if(marketing)renderMarketing(marketing.drafts);
+  else show(drafts,'Marketing drafts unavailable. Retry diagnostics before creating or approving drafts.');
+  if(failing.length)show(message,(authDenied?'Owner MFA/session needs verification. ':'Partial diagnostics; ') +
+    failing.join(', ')+' unavailable. No live jobs started.');
+  else show(message,'Read-only diagnostics updated. No live jobs started.');
  }
  const propose=find('agentsM05Propose');
  propose?.addEventListener('submit',async e=>{

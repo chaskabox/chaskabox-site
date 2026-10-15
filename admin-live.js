@@ -252,14 +252,74 @@
     });
   }
 
+  function collectOrderFilters(){
+    const q=$('#orderSearch')?.value?.trim()||'';
+    const status=$('#orderStatusFilter')?.value||'';
+    const payment=$('#orderPaymentFilter')?.value||'';
+    const method=$('#orderMethodFilter')?.value||'';
+    const from=$('#orderDateFrom')?.value||'';
+    const to=$('#orderDateTo')?.value||'';
+    if(from&&to&&from>to)throw new Error('From date must be on or before To date.');
+    const sp=new URLSearchParams();
+    if(q)sp.set('q',q);
+    if(status)sp.set('fulfilment_status',status);
+    if(payment)sp.set('payment_status',payment);
+    if(method)sp.set('method',method);
+    if(from)sp.set('date_from',from);
+    if(to)sp.set('date_to',to);
+    return sp;
+  }
   function wireOrderFilters(){
-    const q=$('#orderSearch'),f=$('#orderStatusFilter'); if(q){q.disabled=false;q.addEventListener('input',debounce(loadOrders,250));} if(f){f.disabled=false;f.innerHTML='<option value="">All fulfilment statuses</option><option value="new">New</option><option value="sourcing">Sourcing</option><option value="packed">Packed</option><option value="dispatched">Dispatched</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option>';f.addEventListener('change',loadOrders);}
-    const exportBtn=$('#view-orders .toolbar .btn.secondary'); if(exportBtn){exportBtn.disabled=false;exportBtn.onclick=async()=>{try{const t=await token();const r=await fetch('/api/admin/orders/export.csv',{headers:{Authorization:`Bearer ${t}`}});if(!r.ok)throw new Error('Export failed');const blob=await r.blob();const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='chaskabox-orders.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}catch(e){toast(e.message)}}}
+    const q=$('#orderSearch');
+    if(q){q.disabled=false;q.addEventListener('input',debounce(()=>loadOrders(1),250));}
+    for(const id of ['orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
+      const el=$('#'+id);
+      if(el){el.disabled=false;el.addEventListener('change',()=>loadOrders(1));}
+    }
+    $('#orderResetFilters')?.addEventListener('click',()=>{
+      for(const id of ['orderSearch','orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
+        const el=$('#'+id);if(el)el.value='';
+      }
+      loadOrders(1);
+    });
+    const exportBtn=$('#orderExportCsv');
+    if(exportBtn){
+      const allowed=roleAllows('owner','manager');
+      exportBtn.hidden=!allowed;
+      exportBtn.disabled=!allowed;
+      exportBtn.onclick=async()=>{
+        if(!allowed)return;
+        const feedback=$('#orderFilterFeedback');
+        try{
+          const filters=collectOrderFilters();
+          if(feedback)feedback.textContent='';
+          exportBtn.disabled=true;exportBtn.textContent='Exporting…';
+          const t=await token();
+          const url='/api/admin/orders/export.csv'+(filters.size?'?'+filters:'');
+          const r=await fetch(url,{headers:{Authorization:`Bearer ${t}`}});
+          if(!r.ok)throw new Error('CSV export unavailable ('+r.status+'). Narrow the date range or retry.');
+          const blob=await r.blob();
+          const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='chaskabox-orders.csv';a.click();
+          setTimeout(()=>URL.revokeObjectURL(u),1000);
+          if(feedback)feedback.textContent='Filtered export prepared.';
+        }catch(e){if(feedback)feedback.textContent=e.message;toast(e.message);}
+        finally{exportBtn.disabled=false;exportBtn.textContent='Export filtered CSV';}
+      };
+    }
   }
   function debounce(fn,ms){let t;return()=>{clearTimeout(t);t=setTimeout(fn,ms)}}
+  let orderRequestSequence=0;
   async function loadOrders(page=1){
-    const q=$('#orderSearch')?.value?.trim()||'', status=$('#orderStatusFilter')?.value||''; const sp=new URLSearchParams({per_page:'50',page:String(page)}); if(q)sp.set('q',q);if(status)sp.set('fulfilment_status',status);
-    const data=await api('/api/admin/orders?'+sp);orders=data.orders||[];
+    const feedback=$('#orderFilterFeedback');
+    let filters;
+    try{filters=collectOrderFilters();if(feedback)feedback.textContent='';}
+    catch(e){if(feedback)feedback.textContent=e.message;return;}
+    const sp=new URLSearchParams({per_page:'50',page:String(Number.isSafeInteger(page)&&page>0?page:1)});
+    for(const [k,v] of filters)sp.set(k,v);
+    const sequence=++orderRequestSequence;
+    const data=await api('/api/admin/orders?'+sp);
+    if(sequence!==orderRequestSequence)return;
+    orders=data.orders||[];
     const target=$('#view-orders .empty-backend')||$('#view-orders .live-table-wrap')?.parentElement||$('#orderListWrap');
     if(!target) return;
     target.classList.remove('empty-backend'); target.innerHTML=orders.length?`<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Order</th><th>Customer</th><th>Payment</th><th>Fulfilment</th><th>Total</th><th></th></tr></thead><tbody>${orders.map(o=>`<tr><td><b>${esc(o.order_number)}</b><small>${fmtDate(o.created_at)}</small></td><td>${esc(o.customer_name)}<small>${esc(o.customer_phone)}</small></td><td><span class="status-pill">${esc(o.payment_status)}</span><small>${esc(o.payment_method)}</small></td><td><span class="status-pill ${esc(o.fulfilment_status)}">${esc(o.fulfilment_status)}</span></td><td><b>${money(o.total)}</b></td><td><button class="btn secondary compact" data-order="${esc(o.id)}">Manage</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-mini">No matching orders.</div>';
@@ -407,7 +467,8 @@
     const filtered=products.filter(p=>{
       if(vis==='archived' && p.visibility!=='archived') return false;
       if(vis!=='archived' && p.visibility==='archived') return false;
-      if(q && !`${p.name||''} ${p.category||''} ${p.pack||''}`.toLowerCase().includes(q)) return false;
+      const searchable=[p.name,p.brand,p.slug,p.category,p.pack,...(Array.isArray(p.tags)?p.tags:[])].map(v=>String(v||'')).join(' ').toLowerCase();
+      if(q && !searchable.includes(q)) return false;
       if(cat && normCat(p.category)!==cat) return false;
       if(vis==='visible' && p.visibility!=='visible') return false;
       if(vis==='hidden' && p.visibility!=='hidden') return false;
@@ -997,10 +1058,17 @@
         </div>`).join('');
       listEl.querySelectorAll('[data-edit-cat]').forEach(b=>b.onclick=()=>openCategoryEditor(b.dataset.editCat));
       listEl.querySelectorAll('[data-toggle-cat]').forEach(b=>b.onclick=async()=>{
+        if(b.disabled)return;
         const id=b.dataset.toggleCat;
         const cat=categoriesCache.find(x=>String(x.id)===id);
-        await api(`/api/admin/categories/${id}`,{method:'PATCH',body:{is_visible:!cat.is_visible}});
-        toast(cat.is_visible?'Category hidden':'Category visible'); loadCategories();
+        if(!cat)return toast('Category no longer exists; refresh and retry.');
+        b.disabled=true;
+        try{
+          await api(`/api/admin/categories/${encodeURIComponent(id)}`,{method:'PATCH',body:{is_visible:!cat.is_visible}});
+          toast(cat.is_visible?'Category hidden':'Category visible');
+          await loadCategories();
+        }catch(e){toast('Category visibility was not changed: '+e.message);}
+        finally{b.disabled=false;}
       });
     }catch(e){listEl.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
@@ -1020,8 +1088,10 @@
     $('#catHomepage').checked=c?.show_on_homepage!==false;
     $('#catHideEmpty').checked=c?.hide_if_empty!==false;
     $('#categoryEditorTitle').textContent=c?'Edit '+c.name:'New category';
-    $('#deleteCategoryBtn').style.display=c?'':'none';
-    $('#deleteCategoryBtn').onclick=()=>deleteCategory(c.id,c.name);
+    const mayDelete=Boolean(c)&&roleAllows('owner','manager');
+    $('#deleteCategoryBtn').hidden=!mayDelete;
+    $('#deleteCategoryBtn').style.display=mayDelete?'':'none';
+    $('#deleteCategoryBtn').onclick=mayDelete?()=>deleteCategory(c.id,c.name):null;
     $('#categoryEditor').classList.add('open');
     $('#categoryEditor').setAttribute('aria-hidden','false');
   }
@@ -1030,11 +1100,16 @@
     $('#categoryEditor').setAttribute('aria-hidden','true');
   }
   async function deleteCategory(id,name){
-    if(!confirm(`Delete category "${name}"? Products will NOT be deleted.`)) return;
+    if(!roleAllows('owner','manager'))return toast('Only Owners or Managers can delete categories.');
+    if(!confirm(`Delete category "${name}"? Products will NOT be deleted.`))return;
+    const button=$('#deleteCategoryBtn');
+    if(button?.disabled)return;
+    if(button)button.disabled=true;
     try{
-      await api(`/api/admin/categories/${id}`,{method:'DELETE'});
-      toast('Category deleted'); closeCategoryEditor(); loadCategories();
-    }catch(e){toast(e.message);}
+      await api(`/api/admin/categories/${encodeURIComponent(id)}`,{method:'DELETE'});
+      toast('Category deleted');closeCategoryEditor();await loadCategories();
+    }catch(e){toast('Category delete failed: '+e.message);}
+    finally{if(button)button.disabled=false;}
   }
 
   async function openAdminOperation(kind,endpoint,method,defaults,reload){
@@ -1052,10 +1127,7 @@
     $('#refreshCategories')?.addEventListener('click',()=>loadCategories());
     $('#addCategoryBtn')?.addEventListener('click',()=>openCategoryEditor(null));
     $('#refreshBrands')?.addEventListener('click',()=>loadBrands());
-    $('#addBrandBtn')?.addEventListener('click',()=>{
-      const name=prompt('Brand name:'); if(!name?.trim()) return;
-      api('/api/admin/brands',{method:'POST',body:{name:name.trim()}}).then(()=>{toast('Brand added');loadBrands();}).catch(e=>toast(e.message));
-    });
+    $('#addBrandBtn')?.addEventListener('click',()=>openBrandEditor(null,[]));
     $('#refreshResolutions')?.addEventListener('click',()=>loadResolutions());
     $('#refreshAnalytics')?.addEventListener('click',()=>loadAnalytics());
     initBackup();
@@ -1114,30 +1186,90 @@
         el.innerHTML=items.length?items.map((i,idx)=>`
           <div class="nav-row" data-id="${esc(i.id)}"><span class="drag">⋮⋮</span><b>${esc(i.label)}</b><em>${esc(i.url)}</em>
           <span class="nav-move"><button data-nav-up="${idx}" aria-label="Move up" title="Move up">↑</button><button data-nav-down="${idx}" aria-label="Move down" title="Move down">↓</button></span>
+          <button data-nav-edit="${esc(i.id)}" aria-label="Edit ${esc(i.label)}">Edit</button>
           <button data-nav-toggle="${esc(i.id)}" aria-label="Toggle enabled">${i.is_enabled?'✓':'✗'}</button></div>`).join('')
           :'<p class="muted">No items. Click + Add.</p>';
       };
-      const persistOrder=async(el)=>{
-        const items=el._navItems||[];
-        try{
-          await api('/api/admin/navigation',{method:'PATCH',body:{items:items.map((i,idx)=>({id:i.id,position:idx+1}))}});
-        }catch(e){ toast('Reorder failed: '+e.message); }
+      const persistOrder=async(items)=>api('/api/admin/navigation',{method:'PATCH',body:{
+        items:items.map((i,idx)=>({id:i.id,position:idx+1}))}});
+      const move=async(el,idx,dir)=>{
+        if(el._navSaving)return;
+        const previous=(el._navItems||[]).slice(),j=idx+dir;
+        if(j<0||j>=previous.length)return;
+        const updated=previous.slice();
+        [updated[idx],updated[j]]=[updated[j],updated[idx]];
+        el._navSaving=true;
+        render(updated,'#'+el.id);
+        try{await persistOrder(updated);}
+        catch(e){render(previous,'#'+el.id);toast('Reorder failed; original menu restored: '+e.message);}
+        finally{el._navSaving=false;}
       };
-      const move=(el,idx,dir)=>{
-        const items=el._navItems||[];
-        const j=idx+dir;
-        if(j<0||j>=items.length) return;
-        [items[idx],items[j]]=[items[j],items[idx]];
-        render(items,'#'+el.id);
-        persistOrder(el);
+      render(nav.header,'#headerNavList');
+      render(nav.footer,'#footerNavList');
+      render(nav.mobile,'#mobileNavList');
+      // Use a real, accessible form rather than an inert button or prompt().
+      const openNavEditor=(item=null,defaultLocation='header')=>{
+        if(document.querySelector('[data-nav-editor]'))return;
+        const existing=Boolean(item);
+        const dialog=document.createElement('dialog');
+        dialog.className='admin-ops-dialog';dialog.dataset.navEditor='true';
+        dialog.innerHTML=`<form id="navEditForm" novalidate>
+          <h2>${existing?'Edit menu link':'Add menu link'}</h2>
+          <p class="muted">Menus publish to the storefront after saving. Choose an internal path or a secure external URL.</p>
+          <label class="admin-ops-field">Label<input id="navEditLabel" required maxlength="100"></label>
+          <label class="admin-ops-field">Destination URL<input id="navEditUrl" required maxlength="500" placeholder="/shop/ or https://example.com"></label>
+          <label class="admin-ops-field">Menu location<select id="navEditLocation"><option value="header">Header</option><option value="footer">Footer</option><option value="mobile">Mobile</option></select></label>
+          <label class="admin-ops-field">Enabled <input type="checkbox" id="navEditEnabled"></label>
+          <p id="navEditError" role="alert" class="admin-ops-error" hidden></p>
+          <div class="admin-ops-actions"><button class="btn secondary" type="button" id="navEditCancel">Cancel</button><button class="btn primary" type="submit" id="navEditSave">Save menu link</button></div>
+        </form>`;
+        document.body.append(dialog);
+        const close=()=>{dialog.close?.();dialog.remove();};
+        dialog.querySelector('#navEditCancel').onclick=close;
+        dialog.oncancel=e=>{e.preventDefault();close();};
+        const val=id=>dialog.querySelector(id);
+        val('#navEditLabel').value=item?.label||'';
+        val('#navEditUrl').value=item?.url||'/';
+        val('#navEditLocation').value=item?.location||defaultLocation;
+        val('#navEditEnabled').checked=item?.is_enabled!==false;
+        val('#navEditForm').onsubmit=async e=>{
+          e.preventDefault();
+          const label=val('#navEditLabel').value.trim(),url=val('#navEditUrl').value.trim();
+          const location=val('#navEditLocation').value,error=val('#navEditError'),save=val('#navEditSave');
+          error.hidden=true;
+          if(label.length<1||label.length>100||!(/^(\/(?!\/)|https:\/\/|mailto:|tel:|#[a-z0-9_.-]*$)/i.test(url))||/\s/.test(url)){
+            error.textContent='Enter a label and a safe /path, HTTPS, email or telephone URL.';
+            error.hidden=false;return;
+          }
+          save.disabled=true;
+          try{
+            const data={label,url,location,is_enabled:val('#navEditEnabled').checked};
+            if(existing)await api('/api/admin/navigation',{method:'PATCH',body:{items:[{id:item.id,...data}]}});
+            else await api('/api/admin/navigation',{method:'POST',body:{...data,position:(nav[location]||[]).length+1}});
+            close();toast(existing?'Menu link updated':'Menu link added');
+            await loadNavigation();
+          }catch(err){error.textContent='Menu save failed: '+err.message;error.hidden=false;}
+          finally{if(save.isConnected)save.disabled=false;}
+        };
+        dialog.showModal?.();
+        val('#navEditLabel').focus();
       };
-      render(nav.header,'#headerNavList'); render(nav.footer,'#footerNavList');
+      for(const [id,location] of [['addHeaderNav','header'],['addFooterNav','footer'],['addMobileNav','mobile']]){
+        const button=$('#'+id);
+        if(button)button.onclick=()=>openNavEditor(null,location);
+      }
       const navView=$('#view-navigation');
       if(navView && !navView._navWired){
         navView._navWired=true;
         navView.addEventListener('click',async(e)=>{
-          const up=e.target.closest('[data-nav-up]'), down=e.target.closest('[data-nav-down]'), tog=e.target.closest('[data-nav-toggle]');
-          if(up){ const el=up.closest('.nav-row').parentElement; move(el,Number(up.dataset.navUp),-1); }
+          const up=e.target.closest('[data-nav-up]'), down=e.target.closest('[data-nav-down]'),
+            tog=e.target.closest('[data-nav-toggle]'), edit=e.target.closest('[data-nav-edit]');
+          if(edit){
+            const list=edit.closest('.nav-row')?.parentElement;
+            const item=(list?._navItems||[]).find(x=>String(x.id)===edit.dataset.navEdit);
+            if(item)openNavEditor(item,item.location);
+          }
+          else if(up){ const el=up.closest('.nav-row').parentElement; move(el,Number(up.dataset.navUp),-1); }
           else if(down){ const el=down.closest('.nav-row').parentElement; move(el,Number(down.dataset.navDown),1); }
           else if(tog){
             const el=tog.closest('.nav-row').parentElement;
@@ -1172,8 +1304,8 @@
         fl.innerHTML=fails.length?fails.map(f=>`<div class="box-product-row"><div style="flex:1"><h4>Order ${esc(f.order_id||'—')}</h4><small>${esc(f.target)} · ${esc(f.status)} · ${esc(f.last_error||f.delivery_status)}</small></div></div>`).join(''):'<p class="muted">No recorded issues in the new queue. Check consumer status and historical jobs above.</p>';
       }
     }catch(e){toast(e.message);}
-    $('#refreshNotifStatus')?.addEventListener('click',loadNotifications,{once:true});
-    $('#refreshTemplates')?.addEventListener('click',loadTemplates);
+    if($('#refreshNotifStatus'))$('#refreshNotifStatus').onclick=loadNotifications;
+    if($('#refreshTemplates'))$('#refreshTemplates').onclick=loadTemplates;
     loadTemplates();
   }
 
@@ -1201,7 +1333,7 @@
         <div><b>Branch:</b> ${esc(h.deployment?.branch||'unknown')}</div>
         <div><b>Checked:</b> ${esc(h.timestamp||'')}</div></div>`;
     }catch(e){ if(grid) grid.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`; }
-    $('#refreshHealth')?.addEventListener('click',loadHealth,{once:true});
+    if($('#refreshHealth'))$('#refreshHealth').onclick=loadHealth;
   }
 
   // ============ AI CENTER ============
@@ -1240,39 +1372,48 @@
           <div class="box-actions">
             ${b.id?`<button class="btn secondary compact" data-edit-brand="${b.id}">✏️ Edit</button>
             <button class="btn secondary compact" data-toggle-brand="${b.id}">${b.is_visible?'👁️ Hide':'👁️ Show'}</button>
-            <button class="btn danger compact" data-del-brand="${b.id}">🗑️ Delete</button>`:`
+            ${roleAllows('owner')?`<button class="btn danger compact" data-del-brand="${b.id}">🗑️ Delete</button>`:''}`:`
             <button class="btn primary compact" data-add-brand="${esc(b.name)}">+ Add brand</button>`}
           </div>
         </div>`).join('');
       listEl.querySelectorAll('[data-toggle-brand]').forEach(btn=>btn.onclick=async()=>{
+        if(btn.disabled)return;
         const id=btn.dataset.toggleBrand;
         const b=brands.find(x=>String(x.id)===String(id));
-        await api(`/api/admin/brands/${id}`,{method:'PATCH',body:{is_visible:!b.is_visible}});
-        toast(b.is_visible?'Brand hidden':'Brand visible'); loadBrands();
+        if(!b)return toast('Brand no longer exists; refresh and retry.');
+        btn.disabled=true;
+        try{
+          await api(`/api/admin/brands/${encodeURIComponent(id)}`,{method:'PATCH',body:{is_visible:!b.is_visible}});
+          toast(b.is_visible?'Brand hidden':'Brand visible');await loadBrands();
+        }catch(e){toast('Brand visibility was not changed: '+e.message);}
+        finally{btn.disabled=false;}
       });
-      listEl.querySelectorAll('[data-add-brand]').forEach(btn=>btn.onclick=async()=>{
-        const name=btn.dataset.addBrand;
-        await api('/api/admin/brands',{method:'POST',body:{name}});
-        toast('Brand added'); loadBrands();
-      });
+      listEl.querySelectorAll('[data-add-brand]').forEach(btn=>btn.onclick=()=>openBrandEditor(null,[],btn.dataset.addBrand));
       listEl.querySelectorAll('[data-edit-brand]').forEach(btn=>btn.onclick=()=>openBrandEditor(btn.dataset.editBrand, brands));
       listEl.querySelectorAll('[data-del-brand]').forEach(btn=>btn.onclick=async()=>{
+        if(!roleAllows('owner'))return toast('Only Owners can delete brands.');
+        if(btn.disabled)return;
         const id=btn.dataset.delBrand;
         const b=brands.find(x=>String(x.id)===String(id));
         if(!confirm(`Delete brand "${b?b.name:id}"? Products will NOT be deleted, only the brand entry.`))return;
-        await api(`/api/admin/brands/${id}`,{method:'DELETE'});
-        toast('Brand deleted'); loadBrands();
+        btn.disabled=true;
+        try{await api(`/api/admin/brands/${encodeURIComponent(id)}`,{method:'DELETE'});
+          toast('Brand deleted');await loadBrands();}
+        catch(e){toast('Brand delete failed: '+e.message);}
+        finally{btn.disabled=false;}
       });
     }catch(e){listEl.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
-  function openBrandEditor(id, brands){
-    const b=(brands||[]).find(x=>String(x.id)===String(id)); if(!b) return;
+  function openBrandEditor(id, brands=[], initialName=''){
+    const creating=id===null||id===undefined;
+    const b=creating?{name:initialName,slug:'',is_visible:false,featured_product_ids:[]}:brands.find(x=>String(x.id)===String(id));
+    if(!b) return;
     let modal=$('#brandEditorModal');
     if(!modal){modal=document.createElement('div');modal.id='brandEditorModal';modal.className='admin-modal';document.body.appendChild(modal);}
     modal.classList.add('open');
     const featIds=(b.featured_product_ids||[]).join(', ');
     modal.innerHTML=`<div class="modal-backdrop" data-close-brand></div>
-    <section class="admin-modal-card"><div class="modal-head"><div><small>BRAND</small><h2>${esc(b.name)} — Edit</h2></div><button class="icon-btn" data-close-brand>×</button></div>
+    <section class="admin-modal-card"><div class="modal-head"><div><small>BRAND</small><h2>${creating?'Add a brand':esc(b.name)+' — Edit'}</h2></div><button class="icon-btn" data-close-brand>×</button></div>
     <div style="padding:18px;display:grid;gap:14px">
       <div class="form-two">
         <label>Brand name<input id="beName" value="${esc(b.name||'')}"></label>
@@ -1324,7 +1465,7 @@
     modal.querySelector('#beLogoFile').onchange=e=>uploadFile(e.target.files[0],'logo');
     modal.querySelector('#beHeroFile').onchange=e=>uploadFile(e.target.files[0],'hero');
     modal.querySelector('#beAiDesc').onclick=async()=>{
-      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_description',context:{brand:b.name}}});
+      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_description',context:{brand:val('#beName')||b.name}}});
       const t=r.draft||'';if(t){modal.querySelector('#beLong').value=t;toast('Description generated — review before saving');}}catch(e){toast(e.message)}};
     modal.querySelector('#beAiSeo').onclick=async()=>{
       try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_seo',context:{brand:b.name}}});
@@ -1356,8 +1497,12 @@
     modal.querySelector('#beSave').onclick=async()=>{
       const body=collectBrandBody(true);
       if(!body.name){toast('Brand name required');return;}
-      try{await api(`/api/admin/brands/${id}`,{method:'PATCH',body});toast('Brand updated');
-        modal.classList.remove('open');loadBrands();}catch(e){toast(e.message)}
+      try{
+        if(creating) await api('/api/admin/brands',{method:'POST',body});
+        else await api(`/api/admin/brands/${id}`,{method:'PATCH',body});
+        toast(creating?'Brand created and published':'Brand updated');
+        modal.classList.remove('open');loadBrands();
+      }catch(e){toast('Brand save failed: '+e.message)}
     };
   }
 

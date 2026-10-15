@@ -174,7 +174,9 @@ async function refreshQuote(){
  if(!r.ok||!data.quote)throw new Error(data.error?.message||'Could not confirm your total. Please retry.');
  if(seq!==quoteSequence)throw new Error('Delivery details changed. Confirm the total again.');
  const q=data.quote;$('#s_sub').textContent=fmt(q.subtotal);$('#s_del').textContent=fmt(q.delivery_fee);$('#s_tot').textContent=fmt(q.total);if($('#s_discount'))$('#s_discount').textContent=fmt(q.discount);
- if($('#quoteStatus'))$('#quoteStatus').textContent='Total confirmed for '+city+'.';if($('#freeHint'))$('#freeHint').hidden=true;
+ if($('#quoteStatus'))$('#quoteStatus').textContent='Total confirmed for '+city+'.';
+ if($('#checkoutTotalLabel'))$('#checkoutTotalLabel').textContent='Verified total';
+ if($('#freeHint'))$('#freeHint').hidden=true;
  return q;
 }
 
@@ -190,6 +192,7 @@ function renderSummary() {
   $('#s_sub').textContent = fmt(sub);
   $('#s_del').innerHTML = del === 0 ? '<span class="free">FREE</span>' : fmt(del);
   $('#s_tot').textContent = fmt(sub + del);
+  if($('#checkoutTotalLabel'))$('#checkoutTotalLabel').textContent='Estimated total';
   scheduleQuote();
   const hint = $('#freeHint');
   if (!hint) return;
@@ -261,8 +264,9 @@ function checkForm() {
     ['f_lname','e_lname',v=>v.trim().length<=100],
     ['f_phone','e_phone',validPhone],
     ['f_email','e_email',validEmail],
-    ['f_addr','e_addr',v=>v.trim().length>=8],
-    ['f_city','e_city',v=>v.trim().length>=2],
+    ['f_addr','e_addr',v=>v.trim().length>=8 && v.trim().length<=500 && !/[\u0000-\u001f\u007f]/.test(v)],
+    ['f_city','e_city',v=>v.trim().length>=2 && v.trim().length<=100 && !/[\u0000-\u001f\u007f0-9<>]/.test(v)],
+    ['f_postal','e_postal',v=>!v.trim() || /^[0-9]{5}$/.test(v.trim())],
     ['f_country','e_country',v=>v.trim()==='Pakistan']
   ];
   need.forEach(([f,e,fn]) => {
@@ -391,7 +395,7 @@ async function placeOrder() {
   if (placingOrder) return;
   clearOrderError();
   if (!checkForm()) {
-    document.querySelector('.err[style=""]')?.closest('.field')?.querySelector('input,textarea')?.focus();
+    document.querySelector('[aria-invalid="true"]')?.focus?.();
     window.scrollTo({top:0,behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'});
     return;
   }
@@ -414,6 +418,10 @@ async function placeOrder() {
   const reference = isPrepaid() ? ($('#f_reference').value.trim()) : '';
   const wantVideo = !!$('#f_video')?.checked;
   const note = ($('#f_note')?.value || '').trim();
+  // Until shipping address has a dedicated postal-code column, carry verified
+  // optional code in the persisted address string (not pricing metadata).
+  const postalCode=($('#f_postal')?.value||'').trim();
+  const deliveryAddress=$('#f_addr').value.trim()+(postalCode?', Postal code '+postalCode:'');
   const _ph = getFullPhone();
   let phone;
   if(_ph.ccode === '+92'){
@@ -434,7 +442,7 @@ async function placeOrder() {
       name: $('#f_name').value.trim(),
       phone: phone,
       email: $('#f_email').value.trim().toLowerCase() || undefined,
-      address: $('#f_addr').value.trim(),
+      address: deliveryAddress,
       city: $('#f_city').value.trim(),
       country: 'Pakistan'
     },
@@ -468,7 +476,7 @@ async function placeOrder() {
 
   const order = {
     no: finalOrderNo, name: $('#f_name').value.trim(), phone,
-    addr: $('#f_addr').value.trim(), city: $('#f_city').value.trim(),
+    addr: deliveryAddress, city: $('#f_city').value.trim(),
     items: itemRows, sub, del, total: finalTotal,
     pay_method: PAY === 'cod' ? 'COD' : (PAY === 'jazzcash' ? 'JazzCash' : 'Bank Transfer'),
     payment_reference: reference, video: wantVideo, note,
@@ -594,3 +602,9 @@ function populateCountries(){
 }
 document.addEventListener('DOMContentLoaded',populateCountryCodes);
 document.addEventListener('DOMContentLoaded',populateCountries);
+
+// Select the compact challenge on extra narrow screens BEFORE the deferred
+// Turnstile script scans the markup. Never bypass or mock server Siteverify.
+const checkoutTurnstileElement=document.querySelector('.cf-turnstile');
+if(checkoutTurnstileElement && typeof window.matchMedia==='function')
+ checkoutTurnstileElement.dataset.size=window.matchMedia('(max-width: 360px)').matches?'compact':'flexible';

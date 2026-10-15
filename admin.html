@@ -133,10 +133,26 @@ setTimeout(function(){
 
       <!-- ORDERS -->
       <section class="admin-view" id="view-orders" data-title="Orders" data-subtitle="Manage fulfilment, payment verification and customer communication.">
-        <div class="toolbar">
-          <div class="searchbox"><span>⌕</span><input id="orderSearch" placeholder="Search order, customer, phone…" disabled></div>
-          <select id="orderStatusFilter" disabled><option>All statuses</option><option>New</option><option>Awaiting payment</option><option>Payment submitted</option><option>Payment verified</option><option>Sourcing</option><option>Packed</option><option>Dispatched</option><option>Delivered</option><option>Cancelled</option></select>
-          <button class="btn secondary" disabled>Export CSV</button>
+        <div class="toolbar admin-order-filters" role="group" aria-label="Filter and export orders">
+          <div class="searchbox"><span aria-hidden="true">⌕</span><input id="orderSearch" type="search" aria-label="Search orders" placeholder="Order number, name, phone…" autocomplete="off" disabled></div>
+          <label class="admin-filter-control">Fulfilment
+            <select id="orderStatusFilter" disabled><option value="">All fulfilment</option><option value="new">New</option><option value="sourcing">Sourcing</option><option value="packed">Packed</option><option value="dispatched">Dispatched</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>
+          </label>
+          <label class="admin-filter-control">Payment status
+            <select id="orderPaymentFilter" disabled><option value="">All payments</option><option value="cod_due">COD due</option><option value="awaiting_payment">Awaiting payment</option><option value="payment_submitted">Submitted</option><option value="payment_verified">Verified</option><option value="payment_rejected">Rejected</option><option value="refunded">Refunded</option></select>
+          </label>
+          <label class="admin-filter-control">Method
+            <select id="orderMethodFilter" disabled><option value="">All methods</option><option value="cod">Cash on delivery</option><option value="jazzcash">JazzCash</option><option value="bank_transfer">Bank transfer</option></select>
+          </label>
+          <label class="admin-filter-control">From
+            <input id="orderDateFrom" type="date" aria-label="Orders from date" disabled>
+          </label>
+          <label class="admin-filter-control">To
+            <input id="orderDateTo" type="date" aria-label="Orders through date" disabled>
+          </label>
+          <button type="button" class="btn secondary" id="orderResetFilters">Clear filters</button>
+          <button type="button" class="btn secondary" id="orderExportCsv" disabled>Export filtered CSV</button>
+          <p id="orderFilterFeedback" class="admin-order-filter-feedback" role="status" aria-live="polite"></p>
         </div>
         <div class="panel empty-backend">
           <div class="admin-loading"><div class="spinner"></div><h2>Loading orders…</h2></div>
@@ -271,7 +287,7 @@ setTimeout(function(){
 
       <section class="admin-view" id="view-products" data-title="Products" data-subtitle="Search, preview, edit, hide, archive and create catalogue items.">
         <div class="toolbar product-toolbar">
-          <div class="searchbox"><span>⌕</span><input id="productSearch" placeholder="Search name, category, pack…"></div>
+          <div class="searchbox"><span>⌕</span><input id="productSearch" type="search" aria-label="Search products by name, brand, slug, category, pack or tag" placeholder="Search name, brand, tag or pack…" autocomplete="off"></div>
           <select id="productCategory"><option value="">All categories</option></select>
           <select id="productVisibility"><option value="">All products</option><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="bundle">Chaska Boxes</option><option value="archived">Archived</option></select>
           <button class="btn" id="resetFiltersBtn" title="Clear search and catalogue filters">Reset</button>
@@ -360,7 +376,7 @@ setTimeout(function(){
 
       <!-- AI -->
       <section class="admin-view" id="view-agents" data-title="AI Agents" data-subtitle="Owner-controlled monitoring, drafts, diagnostics and approvals.">
-        <div class="panel"><h2>AI Agents — Owner Control Centre</h2><p class="muted">Observation only. All eight agents remain disabled by default. No automatic messages or publishing.</p><button id="agentsM05Refresh" class="btn secondary" type="button">Refresh Agent Status</button><p id="agentsM05Message" role="status" aria-live="polite">Select AI Agents to load diagnostics.</p></div>
+        <div class="panel"><h2>AI Agents — Owner Control Centre</h2><p class="muted">Eight owner-visible monitors are listed below. Status is based on real read-only signals; missing observations are not counted as working. Enabling automation, external messages and publishing requires a separate approved backend release.</p><button id="agentsM05Refresh" class="btn secondary" type="button">Refresh Agent Status</button><p id="agentsM05Message" role="status" aria-live="polite">Select AI Agents to load diagnostics.</p></div>
         <div id="agentsM05Readiness" class="agent-m05-grid"></div>
         <div id="agentsM05Signals" class="agent-m05-grid"></div>
         <div class="panel"><h2>Marketing proposals (review only)</h2><form id="agentsM05Propose" class="toolbar"><label>Public product ID <input id="agentsM05ProductId" type="number" min="1" step="1" required></label><label>Channel <select id="agentsM05Channel"><option value="social">Social</option><option value="email">Email draft</option><option value="whatsapp">WhatsApp draft</option></select></label><button class="btn primary" type="submit">Create review draft</button></form><p class="safe-note">Approving a draft does NOT send, publish, or create a marketing campaign.</p><div id="agentsM05Drafts" class="agent-m05-grid"></div></div>
@@ -481,6 +497,10 @@ setTimeout(function(){
           <section class="panel">
             <div class="panel-head"><div><h2>Footer Menu</h2></div><button class="btn secondary compact" id="addFooterNav">+ Add</button></div>
             <div id="footerNavList" class="section-manager"><p class="muted">Loading…</p></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><div><h2>Mobile Menu</h2><p>Manage mobile links independently.</p></div><button class="btn secondary compact" id="addMobileNav">+ Add</button></div>
+            <div id="mobileNavList" class="section-manager"><p class="muted">Loading…</p></div>
           </section>
         </div>
       </section>
@@ -643,6 +663,6 @@ setTimeout(function(){
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
 <script src="/admin-live.js?v=20261015-staff-signin-ux1" defer></script>
-<script src="/admin-agents.js?v=20261015-final-m05" defer></script>
+<script src="/admin-agents.js?v=20261015-az-audit" defer></script>
 </body>
 </html>

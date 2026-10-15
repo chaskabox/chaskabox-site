@@ -146,3 +146,37 @@ test('a single-name customer does not need an invented surname',()=>{
   const p={...payload(),idempotency_key:webcrypto.randomUUID()};p.customer.name='Ali';
   assert.equal(validateOrderPayload(p).ok,true);
 });
+
+test('server rejects over-limit combined duplicate product quantities',()=>{
+ const p={...payload(),idempotency_key:webcrypto.randomUUID(),items:[{product_id:1,qty:99},{product_id:1,qty:1}]};
+ assert.ok(validateOrderPayload(p).errors.some(x=>x.field==='items[1].qty'));
+ p.items=[{product_id:1,qty:40},{product_id:1,qty:59}];
+ assert.equal(validateOrderPayload(p).ok,true);
+ assert.equal(validateOrderPayload(p).value.items[0].qty,99);
+});
+test('checkout rejects malformed phones, control characters and incorrect country',()=>{
+ for(const phone of ['+abc923001234567','030test00000','+000123456789']){
+  let p={...payload(),idempotency_key:webcrypto.randomUUID()};p.customer.phone=phone;
+  assert.ok(validateOrderPayload(p).errors.some(x=>x.field==='customer.phone'),phone);
+ }
+ for(const city of ['Lahore123','A','Lahore\u0000']){
+  let p={...payload(),idempotency_key:webcrypto.randomUUID()};p.customer.city=city;
+  assert.ok(validateOrderPayload(p).errors.some(x=>x.field==='customer.city'),city);
+ }
+ const p={...payload(),idempotency_key:webcrypto.randomUUID()};p.customer.phone='+923001234567';
+ assert.equal(validateOrderPayload(p).ok,true);
+ assert.equal(validateOrderPayload(p).value.customer.phone,'+923001234567');
+});
+test('optional Pakistan postal code needs five digits and browser has corrected field focus',()=>{
+ const b=browser(checkout);checkoutForm(b);
+ b.node('f_postal').value='12abc';assert.equal(b.run('checkForm()'),false);
+ b.node('f_postal').value='34200';assert.equal(b.run('checkForm()'),true);
+ assert.match(checkout,/querySelector\('\[aria-invalid="true"\]'\)/);
+});
+test('checkout documents supported country and postal error',async()=>{
+ const html=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
+ const q=await readFile(new URL('../functions/api/checkout-quote.js',import.meta.url),'utf8');
+ assert.match(html,/Overseas shipping is not yet available/);
+ assert.match(html,/id="e_postal"/);
+ assert.match(q,/country.toLowerCase\(\)!=='pakistan'/);
+});

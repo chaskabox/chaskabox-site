@@ -952,3 +952,11 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
   .filtersheet,.sheetbackdrop,.cart-toast,.qty button,.cta,.addcart,.pdbtn,.checkoutbtn,.placebtn{transition:none!important}
   .cartcount.pop{animation:none!important}
 }
+
+/* A-Z checkout form polish: scoped focus, errors and delivery guidance. */
+.co-wrap .checkout-field-help{font-size:12px;line-height:1.55;color:#435575;margin:6px 0 9px;max-width:62ch}
+.co-wrap .field [aria-invalid="true"]{outline:2px solid #b91c1c;outline-offset:1px}
+.co-wrap .field :is(input,textarea,select):focus-visible{box-shadow:0 0 0 3px rgba(23,69,154,.15)}
+.co-wrap .field .err{font-size:12px;line-height:1.5}
+.co-wrap :is(button,a):focus-visible{outline:3px solid #1a4b99;outline-offset:2px}
+@media(max-width:480px){.co-wrap .field{min-width:0}.co-wrap .checkout-field-help{font-size:12px}}
