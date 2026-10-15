@@ -5,7 +5,7 @@ export const AGENTS=['orders','inventory','security','backups','support','seo','
 const ACTION={orders:'scan',inventory:'scan',security:'scan',backups:'scan',support:'summarize',seo:'scan',marketing:'summarize',analytics:'summarize'};
 export function cycleKey(agent,at=new Date()){
  if(!AGENTS.includes(agent)||!Number.isFinite(at.getTime()))throw Error('Invalid agent');
- return 'observe:'+agent+':'+at.toISOString().slice(0,10)+'T'+String(Math.floor(at.getUTCHours()/6)*6).padStart(2,'0');
+ return 'observe:'+agent+':'+at.toISOString().slice(0,10)+':'+String(Math.floor(at.getUTCHours()/6)*6).padStart(2,'0');
 }
 const quote=s=>"'"+String(s).replaceAll("'","''")+"'";
 export function evaluateRun(run,maxHours,now=Date.now()){
