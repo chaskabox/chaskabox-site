@@ -105,7 +105,37 @@ try{
   if(!permissions.public_rpc_denied||!permissions.private_tables_denied||permissions.products!==checks.products||permissions.orders!==checks.order_count||permissions.admin_roles!==recoveredAuth.admin_roles)throw Error('Agent preflight permission/data check failed');
   agentPreflight={scope:'M0-M04 applied only after restore verification in the disposable offline clone; not managed staging or real owner MFA',migrations:hashes,disabled_agents:8,read_only_rpcs_verified:true,client_rpc_and_table_access_denied:true,business_row_counts_preserved:true};
  }
- const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,agent_migration_preflight:agentPreflight,live_auth_provider_acceptance_verified:false};
+ let phase12Preflight=null;
+ if(e.PHASE12_MIGRATION_PREFLIGHT==='true'){
+  step='verify_phase12_offline_clone';
+  const target=JSON.parse(run('docker',['inspect',container]))[0];
+  if(target.HostConfig.NetworkMode!=='none'||Object.keys(target.HostConfig.PortBindings||{}).length||db('select current_database();','chaskabox_recovery').trim()!=='chaskabox_recovery')
+   throw Error('Phase12 migration test must run only in an offline restored clone');
+  const countsSQL="select json_build_object('products',(select count(*) from public.products),'orders',(select count(*) from public.orders),'admin_roles',(select count(*) from public.admin_roles));";
+  const before=JSON.parse(db(countsSQL,'chaskabox_recovery'));
+  if(before.products!==checks.products||before.orders!==checks.order_count||before.admin_roles!==recoveredAuth.admin_roles)
+   throw Error('Restored clone counts differ from archive evidence');
+  if(db("select to_regprocedure('public.agent_phase12_state()') is null;",'chaskabox_recovery').trim()!=='t')
+   throw Error('Phase12 preflight requires an unmodified pre-release clone');
+  if(db("select exists(select 1 from pg_namespace where nspname='chaskabox_agents');",'chaskabox_recovery').trim()!=='t')
+   throw Error('Restored archive lacks prerequisite M01 agent schema');
+  step='apply_phase12_migration_in_disposable_clone';
+  const script=await readFile(new URL('../database/migrations/20261015150000_phase12_owner_operations.sql',import.meta.url),'utf8');
+  db(script,'chaskabox_recovery');
+  step='verify_phase12_cloned_schema_permissions';
+  const state=JSON.parse(db('set role service_role;select public.agent_phase12_state();','chaskabox_recovery').trim().split('\n').at(-1));
+  const scan=JSON.parse(db('set role service_role;select public.agent_phase12_scan();','chaskabox_recovery').trim().split('\n').at(-1));
+  const permissions=JSON.parse(db("select json_build_object('client_rpc_denied',not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace cross join (values ('anon'),('authenticated')) r(role) where n.nspname='public' and p.proname in ('agent_phase12_state','agent_phase12_scan','agent_phase12_activate') and has_function_privilege(r.role,p.oid,'EXECUTE')),'private_schema_denied',not has_schema_privilege('anon','chaskabox_agents','USAGE') and not has_schema_privilege('authenticated','chaskabox_agents','USAGE'));",'chaskabox_recovery'));
+  const after=JSON.parse(db(countsSQL,'chaskabox_recovery'));
+  if(state.mode!=='observe_only'||state.activation?.length!==8||!state.activation.every(x=>x.mode==='observe')||
+   scan.mode!=='read_only_no_receipt'||!permissions.client_rpc_denied||!permissions.private_schema_denied||
+   JSON.stringify(before)!==JSON.stringify(after))throw Error('Phase12 restored-schema compatibility or authorization check failed');
+  phase12Preflight={scope:'Additive Phase12 migration on isolated offline restored production archive only; no production or staging writes',
+   sql_sha256:createHash('sha256').update(script).digest('hex'),
+   owners_agents_observe:state.activation.length,service_role_rpcs_verified:true,client_rpc_and_private_schema_denied:true,
+   preserved_product_order_and_admin_counts:true,no_outbound_actions:true};
+ }
+undefined const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,agent_migration_preflight:agentPreflight,phase12_migration_preflight:phase12Preflight,live_auth_provider_acceptance_verified:false};
  console.log(JSON.stringify(report));if(e.GITHUB_STEP_SUMMARY)await writeFile(e.GITHUB_STEP_SUMMARY,JSON.stringify(report,null,2)+'\n',{flag:'a'});
 }catch(error){console.error('Isolated recovery did not pass: '+step+'. No database rows, SQL, credentials or archive contents are logged.');process.exitCode=1;}
 finally{for(const name of [authContainer,container])try{execFileSync('docker',['rm','-f',name],{stdio:'ignore'});}catch{}await rm(root,{recursive:true,force:true});}
