@@ -13,6 +13,7 @@
   const article=element('article','', 'panel');article.append(element('h3',title));
   for(const [key,value] of rows){const p=element('p',key+': '+String(value));article.append(p);}
   node.append(article);
+  return article;
  }
  function renderMarketing(items){
   drafts.replaceChildren();
@@ -72,7 +73,9 @@
   const eight=['orders','inventory','security','backups','support','seo','marketing','analytics'];
   const observations=new Map([...(monitor?.agents||[]),...(insights?.agents||[])]
    .filter(x=>x&&typeof x.agent==='string').map(x=>[x.agent,x]));
-  const settings=new Map((state?.agents||[]).map(x=>[x.agent_key,x]));
+  const settings=new Map((state?.agents||[])
+   .filter(x=>x&&typeof (x.key??x.agent_key)==='string')
+   .map(x=>[x.key??x.agent_key,x])); // M01 health returns 'key', not 'agent_key'.
   for(const agentKey of eight){
    const current=settings.get(agentKey),reading=observations.get(agentKey);
    const status=reading?.state||reading?.status||'No observation evidence';
@@ -80,11 +83,15 @@
        !current?'Not configured':current.enabled===true?'Enabled (scheduler not verified)':'Disabled'],
      ['Agent mode',current?.mode||'Not reported'],
      ['Signals',status],
-     ['Data basis',reading?'Read-only runtime observation':
-        agentKey==='marketing'&&marketing?'Human review workflow':'No validated live signal']];
+     ['Data basis',reading&&(status==='ok'||status==='attention')?'Read-only validated aggregate':
+        agentKey==='marketing'&&marketing?'Human review workflow (no scheduled delivery)':'No validated live signal']];
    if(reading?.signals&&typeof reading.signals==='object')for(const [key,value] of Object.entries(reading.signals))
     data.push([key,typeof value==='object'?'Not comparable':value]);
-   block(signals,agentKey.toUpperCase()+' · '+status,data);
+   const card=block(signals,agentKey.toUpperCase()+' · '+status,data);
+   // Expose only normalized read-only flags to the companion workbench UI.
+   card.dataset.agent=agentKey;
+   card.dataset.activation=!state||!current?'unknown':current.enabled===true?'enabled':'disabled';
+   card.dataset.evidence=reading&&(status==='ok'||status==='attention')?'observed':'missing';
   }
   const submit=propose?.querySelector('button[type=submit]');
   if(submit)submit.disabled=!state||!marketing;

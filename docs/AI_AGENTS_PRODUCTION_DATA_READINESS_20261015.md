@@ -1,3 +1,14 @@
+## October 15 follow-up (newest verified state — overrides older snapshot above)
+- **Live production Supabase verified via connected project:** M01/M02/M03/M04 RPC functions and private agent settings are already present; migration list shows approved M00–M04 entries. The older "not applied" finding above is historical, not current.
+- All eight production agent_settings are **enabled=false** as of this check, job/event/alert totals are zero. PostgreSQL pg_cron schema not present. Do NOT label these agents "running".
+- **Connected Cloudflare Pages project verified:** latest production deployment succeeded on 2026-10-15 at 11:45 UTC, main commit `91a56145f0a195c43d5f7045a6b8e45d240bef32`. This supersedes the old production deployed SHA. Treat future main merges as potentially triggering Pages deployments; avoid multiple merges.
+- Draft PR #43 adds an owner read-only workbench and an **opt-in six-hour GitHub Actions observer** using already-present `SUPABASE_DB_URL` secret. Worker records only private agent observation receipts and only if setting `enabled=true`. GitHub Actions is a candidate scheduler, not an installed production service until main merge.
+- The observer **does not execute LLM inference**. Its eight named observers are deterministic aggregate checks and GitHub CI/backup/recovery receipts, not full Rakazo/OpenMuse agents. Do not claim paid/open-source frameworks are deployed.
+- AI-agent activation is blocked until: exact candidate CI/synthetic DB test green, fresh independent restore, owner AAL2 acceptance, release rollback and verified GitHub/Cloudflare settings. Product/admin panel business acceptance remains separate.
+- Supabase Security Advisor flagged four intentionally(?) exposed auth-related SECURITY DEFINER RPCs, disabled leaked-password protection, and RLS private tables without policies. Never blindly revoke auth RPC grants or add permissive policies; review each finding and its existing callers.
+- Production public-safe aggregates: 249 products, 106 visible, one visible product without image URL; public SEO columns missing title/description on all 106. The catalogue #186 pack mismatch still needs real manufacturer evidence. Marketing notifications and payment operations remain outside the agent-runner scope.
+- As before, preserve WAHA/WhatsApp state and do not enable external messages, autonomous publishing, or spend.
+
 # ChaskaBox M00–M05: production data-readiness and cutover (2026-10-15)
 
 ## Verified separation

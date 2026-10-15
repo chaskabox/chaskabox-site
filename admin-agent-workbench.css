@@ -1,0 +1,29 @@
+/* Owner AI Agent Workbench (isolated to the existing tab) */
+#view-agents .agent-workbench-toolbar{margin-top:14px;padding:20px}
+#view-agents .agent-workbench-heading{display:flex;justify-content:space-between;gap:18px;align-items:start}
+#view-agents .agent-workbench-heading h2{font-size:20px;margin:3px 0 6px;color:var(--navy)}
+#view-agents .agent-workbench-heading p{font-size:12px;line-height:1.6;margin:0;color:var(--muted);max-width:680px}
+#view-agents .agent-workbench-eyebrow{font-size:10px;font-weight:900;letter-spacing:.12em;color:#395ca2}
+#view-agents .agent-workbench-lock{display:inline-flex;align-items:center;background:#e9f3ee;color:#17603a;border:1px solid #bde6cf;border-radius:20px;padding:8px 11px;font-size:10px;font-weight:800;white-space:nowrap}
+#view-agents .agent-workbench-tools{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin-top:18px}
+#view-agents .agent-workbench-tools label{display:grid;gap:6px;font-weight:800;font-size:11px;margin:0;flex:1 1 220px;min-width:160px}
+#view-agents .agent-workbench-tools input,#view-agents .agent-workbench-tools select{font-size:13px;min-height:40px}
+#view-agents .agent-workbench-tools button{min-height:40px}
+#view-agents .agent-workbench-summary{font-size:12px;color:#354c66;line-height:1.65;margin-top:15px;padding:12px;background:#f4f7fc;border:1px solid #e2e9f4;border-radius:10px}
+#view-agents .agent-workbench-card{border-top:3px solid #a7bde0;transition:border-color .15s,box-shadow .15s;min-width:0}
+#view-agents .agent-workbench-card:hover{border-top-color:var(--navy);box-shadow:0 8px 24px rgba(23,45,83,.08)}
+#view-agents .agent-workbench-card[hidden]{display:none!important}
+#view-agents .agent-workbench-card h3{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#view-agents .agent-workbench-tag{font-size:9px;font-weight:850;letter-spacing:0;white-space:nowrap;border-radius:999px;padding:4px 8px;background:#fff4d7;color:#855700}
+#view-agents .agent-workbench-card[data-activation="enabled"] .agent-workbench-tag{background:#e4f2ff;color:#14558f}
+#view-agents .agent-workbench-card[data-activation="unknown"] .agent-workbench-tag{background:#f5e9ed;color:#88415a}
+#view-agents .agent-workbench-integrations{margin:16px 0 20px}
+#view-agents .agent-workbench-integrations-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:16px}
+#view-agents .agent-workbench-integrations-grid article{border:1px solid var(--border);border-radius:12px;padding:14px;background:#fafbfe}
+#view-agents .agent-workbench-integrations-grid h3{font-size:13px;margin:0}
+#view-agents .agent-workbench-integrations-grid a{color:#18487f;text-decoration:underline;text-underline-offset:3px}
+#view-agents .agent-workbench-integrations-grid p{font-size:11px;line-height:1.6;color:var(--muted);min-height:65px}
+#view-agents .agent-workbench-integrations-grid span{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#637593}
+#view-agents .agent-workbench-disclaimer{margin:14px 0 0;color:var(--muted);font-size:11px;line-height:1.6}
+@media(max-width:640px){#view-agents .agent-workbench-heading{flex-direction:column;gap:10px}#view-agents .agent-workbench-tools{display:grid;grid-template-columns:1fr}#view-agents .agent-workbench-tools label{min-width:0;width:100%}#view-agents .agent-workbench-tools button{width:100%}}
+@media(prefers-reduced-motion:reduce){#view-agents .agent-workbench-card{transition:none}}
