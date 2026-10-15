@@ -1058,10 +1058,17 @@
         </div>`).join('');
       listEl.querySelectorAll('[data-edit-cat]').forEach(b=>b.onclick=()=>openCategoryEditor(b.dataset.editCat));
       listEl.querySelectorAll('[data-toggle-cat]').forEach(b=>b.onclick=async()=>{
+        if(b.disabled)return;
         const id=b.dataset.toggleCat;
         const cat=categoriesCache.find(x=>String(x.id)===id);
-        await api(`/api/admin/categories/${id}`,{method:'PATCH',body:{is_visible:!cat.is_visible}});
-        toast(cat.is_visible?'Category hidden':'Category visible'); loadCategories();
+        if(!cat)return toast('Category no longer exists; refresh and retry.');
+        b.disabled=true;
+        try{
+          await api(`/api/admin/categories/${encodeURIComponent(id)}`,{method:'PATCH',body:{is_visible:!cat.is_visible}});
+          toast(cat.is_visible?'Category hidden':'Category visible');
+          await loadCategories();
+        }catch(e){toast('Category visibility was not changed: '+e.message);}
+        finally{b.disabled=false;}
       });
     }catch(e){listEl.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
@@ -1081,8 +1088,10 @@
     $('#catHomepage').checked=c?.show_on_homepage!==false;
     $('#catHideEmpty').checked=c?.hide_if_empty!==false;
     $('#categoryEditorTitle').textContent=c?'Edit '+c.name:'New category';
-    $('#deleteCategoryBtn').style.display=c?'':'none';
-    $('#deleteCategoryBtn').onclick=()=>deleteCategory(c.id,c.name);
+    const mayDelete=Boolean(c)&&roleAllows('owner','manager');
+    $('#deleteCategoryBtn').hidden=!mayDelete;
+    $('#deleteCategoryBtn').style.display=mayDelete?'':'none';
+    $('#deleteCategoryBtn').onclick=mayDelete?()=>deleteCategory(c.id,c.name):null;
     $('#categoryEditor').classList.add('open');
     $('#categoryEditor').setAttribute('aria-hidden','false');
   }
@@ -1091,11 +1100,16 @@
     $('#categoryEditor').setAttribute('aria-hidden','true');
   }
   async function deleteCategory(id,name){
-    if(!confirm(`Delete category "${name}"? Products will NOT be deleted.`)) return;
+    if(!roleAllows('owner','manager'))return toast('Only Owners or Managers can delete categories.');
+    if(!confirm(`Delete category "${name}"? Products will NOT be deleted.`))return;
+    const button=$('#deleteCategoryBtn');
+    if(button?.disabled)return;
+    if(button)button.disabled=true;
     try{
-      await api(`/api/admin/categories/${id}`,{method:'DELETE'});
-      toast('Category deleted'); closeCategoryEditor(); loadCategories();
-    }catch(e){toast(e.message);}
+      await api(`/api/admin/categories/${encodeURIComponent(id)}`,{method:'DELETE'});
+      toast('Category deleted');closeCategoryEditor();await loadCategories();
+    }catch(e){toast('Category delete failed: '+e.message);}
+    finally{if(button)button.disabled=false;}
   }
 
   async function openAdminOperation(kind,endpoint,method,defaults,reload){
@@ -1230,8 +1244,8 @@
         fl.innerHTML=fails.length?fails.map(f=>`<div class="box-product-row"><div style="flex:1"><h4>Order ${esc(f.order_id||'—')}</h4><small>${esc(f.target)} · ${esc(f.status)} · ${esc(f.last_error||f.delivery_status)}</small></div></div>`).join(''):'<p class="muted">No recorded issues in the new queue. Check consumer status and historical jobs above.</p>';
       }
     }catch(e){toast(e.message);}
-    $('#refreshNotifStatus')?.addEventListener('click',loadNotifications,{once:true});
-    $('#refreshTemplates')?.addEventListener('click',loadTemplates);
+    if($('#refreshNotifStatus'))$('#refreshNotifStatus').onclick=loadNotifications;
+    if($('#refreshTemplates'))$('#refreshTemplates').onclick=loadTemplates;
     loadTemplates();
   }
 
@@ -1259,7 +1273,7 @@
         <div><b>Branch:</b> ${esc(h.deployment?.branch||'unknown')}</div>
         <div><b>Checked:</b> ${esc(h.timestamp||'')}</div></div>`;
     }catch(e){ if(grid) grid.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`; }
-    $('#refreshHealth')?.addEventListener('click',loadHealth,{once:true});
+    if($('#refreshHealth'))$('#refreshHealth').onclick=loadHealth;
   }
 
   // ============ AI CENTER ============
@@ -1298,24 +1312,35 @@
           <div class="box-actions">
             ${b.id?`<button class="btn secondary compact" data-edit-brand="${b.id}">✏️ Edit</button>
             <button class="btn secondary compact" data-toggle-brand="${b.id}">${b.is_visible?'👁️ Hide':'👁️ Show'}</button>
-            <button class="btn danger compact" data-del-brand="${b.id}">🗑️ Delete</button>`:`
+            ${roleAllows('owner')?`<button class="btn danger compact" data-del-brand="${b.id}">🗑️ Delete</button>`:''}`:`
             <button class="btn primary compact" data-add-brand="${esc(b.name)}">+ Add brand</button>`}
           </div>
         </div>`).join('');
       listEl.querySelectorAll('[data-toggle-brand]').forEach(btn=>btn.onclick=async()=>{
+        if(btn.disabled)return;
         const id=btn.dataset.toggleBrand;
         const b=brands.find(x=>String(x.id)===String(id));
-        await api(`/api/admin/brands/${id}`,{method:'PATCH',body:{is_visible:!b.is_visible}});
-        toast(b.is_visible?'Brand hidden':'Brand visible'); loadBrands();
+        if(!b)return toast('Brand no longer exists; refresh and retry.');
+        btn.disabled=true;
+        try{
+          await api(`/api/admin/brands/${encodeURIComponent(id)}`,{method:'PATCH',body:{is_visible:!b.is_visible}});
+          toast(b.is_visible?'Brand hidden':'Brand visible');await loadBrands();
+        }catch(e){toast('Brand visibility was not changed: '+e.message);}
+        finally{btn.disabled=false;}
       });
       listEl.querySelectorAll('[data-add-brand]').forEach(btn=>btn.onclick=()=>openBrandEditor(null,[],btn.dataset.addBrand));
       listEl.querySelectorAll('[data-edit-brand]').forEach(btn=>btn.onclick=()=>openBrandEditor(btn.dataset.editBrand, brands));
       listEl.querySelectorAll('[data-del-brand]').forEach(btn=>btn.onclick=async()=>{
+        if(!roleAllows('owner'))return toast('Only Owners can delete brands.');
+        if(btn.disabled)return;
         const id=btn.dataset.delBrand;
         const b=brands.find(x=>String(x.id)===String(id));
         if(!confirm(`Delete brand "${b?b.name:id}"? Products will NOT be deleted, only the brand entry.`))return;
-        await api(`/api/admin/brands/${id}`,{method:'DELETE'});
-        toast('Brand deleted'); loadBrands();
+        btn.disabled=true;
+        try{await api(`/api/admin/brands/${encodeURIComponent(id)}`,{method:'DELETE'});
+          toast('Brand deleted');await loadBrands();}
+        catch(e){toast('Brand delete failed: '+e.message);}
+        finally{btn.disabled=false;}
       });
     }catch(e){listEl.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }

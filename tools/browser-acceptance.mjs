@@ -370,6 +370,52 @@ try{
   results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
   await context.close();
  }
+ // Owner/Manager/Content category and brand actions must match backend role gates.
+ for(const role of ['owner','manager','content']){
+  const {context,page}=await contextFor(1440,role);
+  const category={id:'00000000-0000-4000-8000-000000000051',name:'Synthetic category',slug:'synthetic-category',is_visible:true,show_on_homepage:false,hide_if_empty:true};
+  const brand={id:'00000000-0000-4000-8000-000000000052',name:'Synthetic brand',slug:'synthetic-brand',is_visible:true};
+  const writes=[];
+  const respond=(route,value,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(value)});
+  await context.route('**/api/admin/categories',route=>{
+   if(route.request().method()==='POST'){
+    const payload=route.request().postDataJSON();writes.push({method:'POST',payload});
+    return respond(route,{category:{...category,...payload}},201);
+   }
+   return respond(route,{categories:[category]});
+  });
+  await context.route('**/api/admin/categories/*',route=>{
+   writes.push({method:route.request().method()});
+   return respond(route,{error:{message:'Synthetic storage unavailable'}},503);
+  });
+  await context.route('**/api/admin/brands',route=>respond(route,{brands:[brand]}));
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="categories"]').click();
+  await page.locator('[data-edit-cat]').waitFor();
+  await page.locator('[data-edit-cat]').click();
+  const canCategoryDelete=await page.locator('#deleteCategoryBtn').isVisible();
+  results.interactions.push({case:role+' category delete control respects server role policy',
+   pass:canCategoryDelete===(role!=='content')});
+  await page.locator('[data-close-cat-modal]').first().click();
+  // A content editor must still be allowed to create a draft category.
+  if(role==='content'){
+   await page.locator('#addCategoryBtn').click();
+   await page.locator('#catName').fill('Synthetic new category');
+   await page.locator('#categoryForm button[type=submit]').click();
+   await page.waitForFunction(()=>!document.getElementById('categoryEditor').classList.contains('open'));
+   results.interactions.push({case:'content category create safely reaches protected POST API',
+    pass:writes.length===1&&writes[0].method==='POST'&&writes[0].payload.name==='Synthetic new category'});
+  }
+  if(role!=='content'){
+   await page.locator('[data-view="brands"]').click();
+   await page.locator('[data-del-brand]').first().waitFor({state:role==='owner'?'visible':'hidden',timeout:8000}).catch(()=>{});
+   const canBrandDelete=await page.locator('[data-del-brand]').count()>0;
+   results.interactions.push({case:role+' brand delete control respects owner-only API policy',
+    pass:canBrandDelete===(role==='owner')});
+  }
+  await context.close();
+ }
  // Navigation reorder must roll back safely if the protected API rejects a save.
  {
   const {context,page}=await contextFor(1440,'owner');let failing=true,patches=0;
