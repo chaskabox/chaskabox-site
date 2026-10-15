@@ -385,11 +385,15 @@ try{
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
   await page.locator('[data-view="navigation"]').click();
+  // allTextContents() does not wait for async panel load; capture only after rows exist.
+  await page.locator('#headerNavList .nav-row').first().waitFor({state:'visible'});
   const original=await page.locator('#headerNavList .nav-row b').allTextContents();
   await page.locator('#headerNavList [data-nav-down="0"]').click();
   await page.waitForFunction(()=>document.getElementById('adminToast')?.textContent.includes('original menu restored'));
+  const restoredOrder=await page.locator('#headerNavList .nav-row b').allTextContents();
   results.interactions.push({case:'admin menu reorder failure visibly reverts unsaved changes',pass:
-   JSON.stringify(original)===JSON.stringify(await page.locator('#headerNavList .nav-row b').allTextContents())&&patches===1});
+   JSON.stringify(original)===JSON.stringify(restoredOrder)&&patches===1,
+   evidence:{initialCount:original.length,restoredCount:restoredOrder.length,patches}});
   failing=false;
   await page.locator('#headerNavList [data-nav-down="0"]').click();
   await page.waitForFunction(()=>[...document.querySelectorAll('#headerNavList .nav-row b')].map(e=>e.textContent).join(',')==='About,Shop');
