@@ -1,0 +1,38 @@
+name: ChaskaBox AI read-only observation cycle
+on:
+  schedule:
+    - cron: '15 0,6,12,18 * * *' # Every six hours UTC, after approved merge only
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: chaskabox-agent-observation
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+      - name: Install PostgreSQL client from pinned repository
+        run: bash tools/install-pg17-client.sh server
+      - name: Run budget-limited observations (only DB-enabled agents)
+        if: github.event_name == 'schedule'
+        run: node tools/agent-observe-cycle.mjs --commit-observations
+      - name: Manual audit only (no database writes)
+        if: github.event_name == 'workflow_dispatch'
+        run: node tools/agent-observe-cycle.mjs
+      - name: Report an incomplete cycle
+        if: failure()
+        run: echo '::error::Read-only agent cycle failed. Verify scheduler, private database connectivity and source health. Do not claim agents healthy.'
