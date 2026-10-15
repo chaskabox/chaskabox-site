@@ -49,8 +49,51 @@
     const challenge=$('#liveAdminMfa');if(challenge)challenge.hidden=true;
     const mfaOverlay=$('#liveAdminMfa');if(mfaOverlay)mfaOverlay.hidden=true;
     let el=$('#liveAdminLogin'); if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);} el.hidden=false;
-    el.innerHTML=`<form class="live-login-card" id="liveLoginForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Staff sign in</h1><p>${esc(message)}</p><label>Email<input id="liveEmail" type="email" autocomplete="username" required></label><label>Password<input id="livePassword" type="password" autocomplete="current-password" required></label><div id="liveLoginError" class="live-error" hidden></div><div id="liveLoginMsg" class="live-msg" hidden></div><button class="btn primary" type="submit">Sign in</button><a href="#" id="forgotPwLink" class="text-btn">Forgot password?</a><a href="/" class="text-btn">← Storefront</a></form>`;
-    $('#liveLoginForm').onsubmit=async e=>{e.preventDefault();const err=$('#liveLoginError');err.hidden=true;try{if(!(await ensureClient()))throw new Error('Supabase public configuration unavailable');const res=await SB.auth.signInWithPassword({email:$('#liveEmail').value.trim(),password:$('#livePassword').value});if(res.error)throw res.error;session=res.data.session;const ready=await bootAuthenticated();if(ready)el.hidden=true;}catch(x){err.textContent=x.message||'Sign-in failed';err.hidden=false;}};
+    el.innerHTML=`<form class="live-login-card staff-login-card" id="liveLoginForm" aria-labelledby="staffLoginHeading">
+      <div class="staff-login-brand"><img src="/images/logo-navy.png" alt="ChaskaBox"><div class="staff-login-brandname">CHASKABOX<small>ADMIN CONSOLE</small></div></div>
+      <div class="staff-login-shield" aria-hidden="true">✓</div>
+      <div class="staff-login-eyebrow"><span>SECURE STAFF ACCESS</span><span>STEP 1 OF 2</span></div>
+      <h1 id="staffLoginHeading">Staff sign in</h1>
+      <p class="staff-login-intro">${esc(message)}</p>
+      <div class="staff-login-fields">
+        <label for="liveEmail" class="staff-login-field-label">Work email</label>
+        <input id="liveEmail" name="email" type="email" autocomplete="username" inputmode="email" spellcheck="false" autocapitalize="off" placeholder="name@company.com" required>
+        <div class="staff-login-password-row"><label for="livePassword" class="staff-login-field-label">Password</label><a href="#" id="forgotPwLink">Forgot password?</a></div>
+        <div class="staff-login-password-wrap"><input id="livePassword" name="password" type="password" autocomplete="current-password" required><button id="livePasswordToggle" type="button" aria-label="Show password" aria-pressed="false">Show</button></div>
+      </div>
+      <div id="liveLoginError" class="live-error staff-login-message" role="alert" hidden></div>
+      <div id="liveLoginMsg" class="live-msg staff-login-message" role="status" hidden></div>
+      <button class="btn primary staff-login-submit" id="liveLoginSubmit" type="submit">Sign in securely <span aria-hidden="true">→</span></button>
+      <div class="staff-login-footer"><span><span aria-hidden="true">◈</span> Authorized staff only</span><a href="/">← Back to storefront</a></div>
+      </form>`;
+    const passwordInput=$('#livePassword'),passwordToggle=$('#livePasswordToggle');
+    passwordToggle.onclick=()=>{
+      const showing=passwordInput.type==='password';
+      passwordInput.type=showing?'text':'password';
+      passwordToggle.textContent=showing?'Hide':'Show';
+      passwordToggle.setAttribute('aria-pressed',String(showing));
+      passwordToggle.setAttribute('aria-label',showing?'Hide password':'Show password');
+    };
+    $('#liveLoginForm').onsubmit=async e=>{
+      e.preventDefault();
+      const err=$('#liveLoginError'),submit=$('#liveLoginSubmit');
+      if(submit.disabled)return;
+      err.hidden=true;submit.disabled=true;submit.textContent='Signing in…';
+      try{
+        if(!(await ensureClient()))throw new Error('Supabase public configuration unavailable');
+        const res=await SB.auth.signInWithPassword({email:$('#liveEmail').value.trim(),password:$('#livePassword').value});
+        if(res.error)throw res.error;
+        session=res.data.session;
+        const ready=await bootAuthenticated();
+        if(ready)el.hidden=true;
+      }catch(x){
+        err.textContent=x.message||'Sign-in failed';
+        err.hidden=false;
+      }finally{
+        submit.disabled=false;
+        submit.innerHTML='Sign in securely <span aria-hidden="true">→</span>';
+      }
+    };
     $('#forgotPwLink').onclick=async e=>{e.preventDefault();const err=$('#liveLoginError');const msg=$('#liveLoginMsg');err.hidden=true;msg.hidden=true;const email=$('#liveEmail').value.trim();if(!email){err.textContent='Enter your email above first';err.hidden=false;return;}try{if(!(await ensureClient()))throw new Error('Supabase unavailable');const {error}=await SB.auth.resetPasswordForEmail(email,{redirectTo:location.origin+'/admin/'});if(error)throw error;msg.textContent='Reset link sent to '+email+'. Check your inbox.';msg.hidden=false;}catch(x){err.textContent=x.message||'Reset failed';err.hidden=false;}};
   }
   async function getMe(){ return await api('/api/admin/me'); }
