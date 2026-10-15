@@ -432,7 +432,7 @@ try{
   const canCategoryDelete=await page.locator('#deleteCategoryBtn').isVisible();
   results.interactions.push({case:role+' category delete control respects server role policy',
    pass:canCategoryDelete===(role!=='content')});
-  await page.locator('#categoryEditor button[data-close-cat-modal]').click();
+  await page.locator('#categoryEditor .modal-head button[data-close-cat-modal]').click();
   // A content editor must still be allowed to create a draft category.
   if(role==='content'){
    await page.locator('#addCategoryBtn').click();
