@@ -142,6 +142,29 @@ try{
  }
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){const {context,page}=await contextFor(width);for(const route of routes)await inspect(page,route,width);await context.close();}
+ // Signed-out staff sign-in visual and keyboard acceptance using local synthetic Auth only.
+ for(const width of [320,390,1440]){
+  const {context,page}=await contextFor(width);
+  await page.goto(base+'/admin/',{waitUntil:'domcontentloaded'});
+  await page.locator('#liveLoginForm').waitFor({state:'visible',timeout:12000});
+  const form=page.locator('#liveLoginForm');
+  if(await form.getAttribute('class')!=='live-login-card staff-login-card')throw Error('Staff sign-in card style missing');
+  if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Staff sign-in horizontal overflow '+width);
+  const pwd=page.locator('#livePassword'),toggle=page.locator('#livePasswordToggle');
+  if(await pwd.getAttribute('autocomplete')!=='current-password'||await page.locator('#liveEmail').getAttribute('autocomplete')!=='username')throw Error('Password-manager autofill disrupted');
+  await page.locator('#liveEmail').fill('staff@example.invalid');
+  await pwd.fill('fixture-password');
+  await toggle.click();
+  if(await pwd.getAttribute('type')!=='text'||await pwd.inputValue()!=='fixture-password')throw Error('Show password toggle failed');
+  await toggle.click();
+  if(await pwd.getAttribute('type')!=='password'||await toggle.getAttribute('aria-pressed')!=='false')throw Error('Hide password toggle failed');
+  const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
+  const issues=axe.violations.filter(v=>['serious','critical'].includes(v.impact));
+  if(issues.length)throw Error('Staff sign-in accessibility issue '+JSON.stringify(issues.map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary})).slice(0,6)}))));
+  results.interactions.push({case:'staff sign-in professional form and password toggle / '+width,pass:true});
+  if(width===390)await page.screenshot({path:path.join(output,'staff-signin-390.png'),fullPage:true});
+  await context.close();
+ }
  // Real cart/checkout DOM, with synthetic catalogue and quote data only.
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){
   const {context,page}=await contextFor(width);let orders=0;
