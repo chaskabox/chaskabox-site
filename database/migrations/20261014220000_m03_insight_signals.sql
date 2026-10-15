@@ -22,7 +22,7 @@ AS $fn$
    WHERE created_at>=now()-interval '30 days'
    AND fulfilment_status<>'cancelled' AND payment_status<>'refunded'
    AND ((payment_method='cod' AND fulfilment_status='delivered')
-     OR (payment_method<>'cod' AND payment_status='payment_verified'))
+     OR (payment_method IN ('jazzcash','bank_transfer') AND payment_status='payment_verified'))
   ),
   'checkout_started_30d',(SELECT count(*) FROM public.funnel_events
       WHERE created_at>=now()-interval '30 days' AND event='checkout_started'),
