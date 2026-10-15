@@ -98,6 +98,7 @@ test('CMS settings preserve the header announcement spans and respect reduced mo
  assert.doesNotMatch(runtime,/\.promo'\)\.forEach\(el=>el\.textContent=/);
  assert.match(runtime,/window\.ChaskaPromo\?\.setText/);
  assert.match(css,/prefers-reduced-motion:reduce/);
+ assert.match(css,/\.promo\[hidden\]\{display:none!important\}/);
 });
 test('rotating owner-set promo text shows on desktop/mobile and stops while hidden',()=>{
  const b=browser();

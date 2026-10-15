@@ -317,6 +317,7 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 
 /* ---------- promo rotation ---------- */
 .promo{min-height:34px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.promo[hidden]{display:none!important}
 .promo-desktop,.promo-mobile{transition:opacity .24s ease,transform .24s ease}
 .promo .fading{opacity:0;transform:translateY(-4px)}
 @media(prefers-reduced-motion:reduce){
