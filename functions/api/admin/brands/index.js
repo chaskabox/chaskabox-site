@@ -47,14 +47,34 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
 export const onRequestPost = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const body = await readJson(context.request);
   for(const key of ['is_visible','show_on_homepage','hide_if_empty','is_enabled','is_external','is_active'])if(body[key]!==undefined&&typeof body[key]!=='boolean')httpError(`${key} must be boolean`,400,'invalid_field');
+  const optionalText=(name,max=2000)=>{
+    if(body[name]===undefined||body[name]===null)return null;
+    if(typeof body[name]!=='string')httpError(name+' must be text',400,'invalid_field');
+    const value=body[name].trim();
+    if(value.length>max)httpError(name+' exceeds '+max+' characters',400,'invalid_field');
+    return value||null;
+  };
+  const ids=body.featured_product_ids;
+  if(ids!==undefined && (!Array.isArray(ids)||ids.length>50||
+      ids.some(x=>!Number.isSafeInteger(x)||x<=0)))httpError('Invalid featured product ids',400,'invalid_field');
+  const sortOrder=Number(body.sort_order??0);
+  if(!Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>1000000)httpError('Invalid sort order',400,'invalid_field');
   const name = String(body.name || '').trim();
-  if (!name) httpError('Brand name required', 400, 'invalid');
+  if (!name || name.length>160) httpError('Brand name must be 1–160 characters',400,'invalid');
 
   const row = {
     name,
     slug: body.slug ? slugify(body.slug) : slugify(name),
     logo_url: body.logo_url || null,
-    description: body.description || null,
+    description: optionalText('description'),
+    hero_image_url: optionalText('hero_image_url',500),
+    short_description: optionalText('short_description',160),
+    long_description: optionalText('long_description'),
+    seo_title: optionalText('seo_title',160),
+    seo_description: optionalText('seo_description',320),
+    og_image_url: optionalText('og_image_url',500),
+    featured_product_ids: ids||[],
+    sort_order: sortOrder,
     is_visible: body.is_visible !== false,
     position: Number(body.position || 0),
   };

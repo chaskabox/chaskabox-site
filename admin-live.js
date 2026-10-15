@@ -1053,10 +1053,7 @@
     $('#refreshCategories')?.addEventListener('click',()=>loadCategories());
     $('#addCategoryBtn')?.addEventListener('click',()=>openCategoryEditor(null));
     $('#refreshBrands')?.addEventListener('click',()=>loadBrands());
-    $('#addBrandBtn')?.addEventListener('click',()=>{
-      const name=prompt('Brand name:'); if(!name?.trim()) return;
-      api('/api/admin/brands',{method:'POST',body:{name:name.trim()}}).then(()=>{toast('Brand added');loadBrands();}).catch(e=>toast(e.message));
-    });
+    $('#addBrandBtn')?.addEventListener('click',()=>openBrandEditor(null,[]));
     $('#refreshResolutions')?.addEventListener('click',()=>loadResolutions());
     $('#refreshAnalytics')?.addEventListener('click',()=>loadAnalytics());
     initBackup();
@@ -1251,11 +1248,7 @@
         await api(`/api/admin/brands/${id}`,{method:'PATCH',body:{is_visible:!b.is_visible}});
         toast(b.is_visible?'Brand hidden':'Brand visible'); loadBrands();
       });
-      listEl.querySelectorAll('[data-add-brand]').forEach(btn=>btn.onclick=async()=>{
-        const name=btn.dataset.addBrand;
-        await api('/api/admin/brands',{method:'POST',body:{name}});
-        toast('Brand added'); loadBrands();
-      });
+      listEl.querySelectorAll('[data-add-brand]').forEach(btn=>btn.onclick=()=>openBrandEditor(null,[],btn.dataset.addBrand));
       listEl.querySelectorAll('[data-edit-brand]').forEach(btn=>btn.onclick=()=>openBrandEditor(btn.dataset.editBrand, brands));
       listEl.querySelectorAll('[data-del-brand]').forEach(btn=>btn.onclick=async()=>{
         const id=btn.dataset.delBrand;
@@ -1266,14 +1259,16 @@
       });
     }catch(e){listEl.innerHTML=`<p class="muted">Failed: ${esc(e.message)}</p>`;}
   }
-  function openBrandEditor(id, brands){
-    const b=(brands||[]).find(x=>String(x.id)===String(id)); if(!b) return;
+  function openBrandEditor(id, brands=[], initialName=''){
+    const creating=id===null||id===undefined;
+    const b=creating?{name:initialName,slug:'',is_visible:false,featured_product_ids:[]}:brands.find(x=>String(x.id)===String(id));
+    if(!b) return;
     let modal=$('#brandEditorModal');
     if(!modal){modal=document.createElement('div');modal.id='brandEditorModal';modal.className='admin-modal';document.body.appendChild(modal);}
     modal.classList.add('open');
     const featIds=(b.featured_product_ids||[]).join(', ');
     modal.innerHTML=`<div class="modal-backdrop" data-close-brand></div>
-    <section class="admin-modal-card"><div class="modal-head"><div><small>BRAND</small><h2>${esc(b.name)} — Edit</h2></div><button class="icon-btn" data-close-brand>×</button></div>
+    <section class="admin-modal-card"><div class="modal-head"><div><small>BRAND</small><h2>${creating?'Add a brand':esc(b.name)+' — Edit'}</h2></div><button class="icon-btn" data-close-brand>×</button></div>
     <div style="padding:18px;display:grid;gap:14px">
       <div class="form-two">
         <label>Brand name<input id="beName" value="${esc(b.name||'')}"></label>
@@ -1325,7 +1320,7 @@
     modal.querySelector('#beLogoFile').onchange=e=>uploadFile(e.target.files[0],'logo');
     modal.querySelector('#beHeroFile').onchange=e=>uploadFile(e.target.files[0],'hero');
     modal.querySelector('#beAiDesc').onclick=async()=>{
-      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_description',context:{brand:b.name}}});
+      try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_description',context:{brand:val('#beName')||b.name}}});
       const t=r.draft||'';if(t){modal.querySelector('#beLong').value=t;toast('Description generated — review before saving');}}catch(e){toast(e.message)}};
     modal.querySelector('#beAiSeo').onclick=async()=>{
       try{toast('Generating…');const r=await api('/api/admin/ai',{method:'POST',body:{task:'brand_seo',context:{brand:b.name}}});
@@ -1357,8 +1352,12 @@
     modal.querySelector('#beSave').onclick=async()=>{
       const body=collectBrandBody(true);
       if(!body.name){toast('Brand name required');return;}
-      try{await api(`/api/admin/brands/${id}`,{method:'PATCH',body});toast('Brand updated');
-        modal.classList.remove('open');loadBrands();}catch(e){toast(e.message)}
+      try{
+        if(creating) await api('/api/admin/brands',{method:'POST',body});
+        else await api(`/api/admin/brands/${id}`,{method:'PATCH',body});
+        toast(creating?'Brand created and published':'Brand updated');
+        modal.classList.remove('open');loadBrands();
+      }catch(e){toast('Brand save failed: '+e.message)}
     };
   }
 

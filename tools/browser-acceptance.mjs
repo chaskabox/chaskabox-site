@@ -370,6 +370,31 @@ try{
   results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
   await context.close();
  }
+ // New brand's full CMS editor must create with all values; no prompt or real writes.
+ {
+  const {context,page}=await contextFor(1440,'owner');
+  let created=null;const requests=[];
+  await context.route('**/api/admin/brands',route=>{
+   const method=route.request().method();
+   if(method==='POST'){
+    const payload=route.request().postDataJSON();requests.push(payload);
+    created={id:115,name:payload.name,slug:payload.slug||'synthetic-owner-brand',is_visible:payload.is_visible,description:payload.long_description};
+    return route.fulfill({status:201,contentType:'application/json',body:JSON.stringify({brand:created})});
+   }
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({brands:created?[created]:[]})});
+  });
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="brands"]').click();
+  await page.locator('#addBrandBtn').click();await page.locator('#beName').waitFor();
+  await page.locator('#beName').fill('Synthetic owner brand');
+  await page.locator('#beShort').fill('Small batch fixture');
+  await page.locator('#beSeoTitle').fill('Synthetic brand SEO title');
+  await page.locator('#beLong').fill('Synthetic owner-authored brand description');
+  await page.locator('#beSave').click();
+  await page.getByText('Synthetic owner brand',{exact:false}).first().waitFor();
+  results.interactions.push({case:'brand create editor saves name, SEO and description via protected API',pass:requests.length===1&&requests[0].name==='Synthetic owner brand'&&requests[0].seo_title==='Synthetic brand SEO title'&&requests[0].short_description==='Small batch fixture'&&requests[0].long_description==='Synthetic owner-authored brand description'&&requests[0].is_visible===true});
+  await context.close();
+ }
  // Exercise operational UI writes only against intercepted, synthetic records.
  {
   const {context,page}=await contextFor(1440,'owner');page.removeAllListeners('dialog');page.on('dialog',d=>d.accept());
