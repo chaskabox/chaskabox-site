@@ -252,14 +252,74 @@
     });
   }
 
+  function collectOrderFilters(){
+    const q=$('#orderSearch')?.value?.trim()||'';
+    const status=$('#orderStatusFilter')?.value||'';
+    const payment=$('#orderPaymentFilter')?.value||'';
+    const method=$('#orderMethodFilter')?.value||'';
+    const from=$('#orderDateFrom')?.value||'';
+    const to=$('#orderDateTo')?.value||'';
+    if(from&&to&&from>to)throw new Error('From date must be on or before To date.');
+    const sp=new URLSearchParams();
+    if(q)sp.set('q',q);
+    if(status)sp.set('fulfilment_status',status);
+    if(payment)sp.set('payment_status',payment);
+    if(method)sp.set('method',method);
+    if(from)sp.set('date_from',from);
+    if(to)sp.set('date_to',to);
+    return sp;
+  }
   function wireOrderFilters(){
-    const q=$('#orderSearch'),f=$('#orderStatusFilter'); if(q){q.disabled=false;q.addEventListener('input',debounce(loadOrders,250));} if(f){f.disabled=false;f.innerHTML='<option value="">All fulfilment statuses</option><option value="new">New</option><option value="sourcing">Sourcing</option><option value="packed">Packed</option><option value="dispatched">Dispatched</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option>';f.addEventListener('change',loadOrders);}
-    const exportBtn=$('#view-orders .toolbar .btn.secondary'); if(exportBtn){exportBtn.disabled=false;exportBtn.onclick=async()=>{try{const t=await token();const r=await fetch('/api/admin/orders/export.csv',{headers:{Authorization:`Bearer ${t}`}});if(!r.ok)throw new Error('Export failed');const blob=await r.blob();const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='chaskabox-orders.csv';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}catch(e){toast(e.message)}}}
+    const q=$('#orderSearch');
+    if(q){q.disabled=false;q.addEventListener('input',debounce(()=>loadOrders(1),250));}
+    for(const id of ['orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
+      const el=$('#'+id);
+      if(el){el.disabled=false;el.addEventListener('change',()=>loadOrders(1));}
+    }
+    $('#orderResetFilters')?.addEventListener('click',()=>{
+      for(const id of ['orderSearch','orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
+        const el=$('#'+id);if(el)el.value='';
+      }
+      loadOrders(1);
+    });
+    const exportBtn=$('#orderExportCsv');
+    if(exportBtn){
+      const allowed=roleAllows('owner','manager');
+      exportBtn.hidden=!allowed;
+      exportBtn.disabled=!allowed;
+      exportBtn.onclick=async()=>{
+        if(!allowed)return;
+        const feedback=$('#orderFilterFeedback');
+        try{
+          const filters=collectOrderFilters();
+          if(feedback)feedback.textContent='';
+          exportBtn.disabled=true;exportBtn.textContent='Exporting…';
+          const t=await token();
+          const url='/api/admin/orders/export.csv'+(filters.size?'?'+filters:'');
+          const r=await fetch(url,{headers:{Authorization:`Bearer ${t}`}});
+          if(!r.ok)throw new Error('CSV export unavailable ('+r.status+'). Narrow the date range or retry.');
+          const blob=await r.blob();
+          const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='chaskabox-orders.csv';a.click();
+          setTimeout(()=>URL.revokeObjectURL(u),1000);
+          if(feedback)feedback.textContent='Filtered export prepared.';
+        }catch(e){if(feedback)feedback.textContent=e.message;toast(e.message);}
+        finally{exportBtn.disabled=false;exportBtn.textContent='Export filtered CSV';}
+      };
+    }
   }
   function debounce(fn,ms){let t;return()=>{clearTimeout(t);t=setTimeout(fn,ms)}}
+  let orderRequestSequence=0;
   async function loadOrders(page=1){
-    const q=$('#orderSearch')?.value?.trim()||'', status=$('#orderStatusFilter')?.value||''; const sp=new URLSearchParams({per_page:'50',page:String(page)}); if(q)sp.set('q',q);if(status)sp.set('fulfilment_status',status);
-    const data=await api('/api/admin/orders?'+sp);orders=data.orders||[];
+    const feedback=$('#orderFilterFeedback');
+    let filters;
+    try{filters=collectOrderFilters();if(feedback)feedback.textContent='';}
+    catch(e){if(feedback)feedback.textContent=e.message;return;}
+    const sp=new URLSearchParams({per_page:'50',page:String(Number.isSafeInteger(page)&&page>0?page:1)});
+    for(const [k,v] of filters)sp.set(k,v);
+    const sequence=++orderRequestSequence;
+    const data=await api('/api/admin/orders?'+sp);
+    if(sequence!==orderRequestSequence)return;
+    orders=data.orders||[];
     const target=$('#view-orders .empty-backend')||$('#view-orders .live-table-wrap')?.parentElement||$('#orderListWrap');
     if(!target) return;
     target.classList.remove('empty-backend'); target.innerHTML=orders.length?`<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Order</th><th>Customer</th><th>Payment</th><th>Fulfilment</th><th>Total</th><th></th></tr></thead><tbody>${orders.map(o=>`<tr><td><b>${esc(o.order_number)}</b><small>${fmtDate(o.created_at)}</small></td><td>${esc(o.customer_name)}<small>${esc(o.customer_phone)}</small></td><td><span class="status-pill">${esc(o.payment_status)}</span><small>${esc(o.payment_method)}</small></td><td><span class="status-pill ${esc(o.fulfilment_status)}">${esc(o.fulfilment_status)}</span></td><td><b>${money(o.total)}</b></td><td><button class="btn secondary compact" data-order="${esc(o.id)}">Manage</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-mini">No matching orders.</div>';

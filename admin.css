@@ -306,3 +306,14 @@ html,body{overflow-x:clip}
 @media(prefers-reduced-motion:reduce){
  .staff-login-card *, .staff-login-card *::before,.staff-login-card *::after{animation:none!important;transition:none!important}
 }
+
+/* Owner order filters: explicit labels, responsive date inputs, clear status. */
+.admin-order-filters{align-items:end;gap:10px}
+.admin-order-filters .searchbox{align-self:end;min-width:235px;min-height:43px}
+.admin-order-filters .admin-filter-control{display:grid;gap:5px;font-size:11px;font-weight:800;color:#354b74;min-width:116px}
+.admin-order-filters .admin-filter-control :is(select,input){min-height:43px;width:100%;min-width:0;padding:9px 10px;border:1px solid #ccd7e9;border-radius:10px;background:#fff;color:#1b2b4b;font-size:12px}
+.admin-order-filters :is(select,input,button):focus-visible{outline:3px solid #2b60ad;outline-offset:2px}
+.admin-order-filter-feedback{flex-basis:100%;font-size:12px;color:#8a3140;margin:0;min-height:0}
+.admin-order-filter-feedback:empty{display:none}
+.admin-order-filters #orderExportCsv[hidden]{display:none!important}
+@media(max-width:700px){.admin-order-filters .searchbox{flex:1 1 100%}.admin-order-filters .admin-filter-control{flex:1 1 140px}}

@@ -133,10 +133,26 @@ setTimeout(function(){
 
       <!-- ORDERS -->
       <section class="admin-view" id="view-orders" data-title="Orders" data-subtitle="Manage fulfilment, payment verification and customer communication.">
-        <div class="toolbar">
-          <div class="searchbox"><span>⌕</span><input id="orderSearch" placeholder="Search order, customer, phone…" disabled></div>
-          <select id="orderStatusFilter" disabled><option>All statuses</option><option>New</option><option>Awaiting payment</option><option>Payment submitted</option><option>Payment verified</option><option>Sourcing</option><option>Packed</option><option>Dispatched</option><option>Delivered</option><option>Cancelled</option></select>
-          <button class="btn secondary" disabled>Export CSV</button>
+        <div class="toolbar admin-order-filters" role="group" aria-label="Filter and export orders">
+          <div class="searchbox"><span aria-hidden="true">⌕</span><input id="orderSearch" type="search" aria-label="Search orders" placeholder="Order number, name, phone…" autocomplete="off" disabled></div>
+          <label class="admin-filter-control">Fulfilment
+            <select id="orderStatusFilter" disabled><option value="">All fulfilment</option><option value="new">New</option><option value="sourcing">Sourcing</option><option value="packed">Packed</option><option value="dispatched">Dispatched</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>
+          </label>
+          <label class="admin-filter-control">Payment status
+            <select id="orderPaymentFilter" disabled><option value="">All payments</option><option value="cod_due">COD due</option><option value="awaiting_payment">Awaiting payment</option><option value="payment_submitted">Submitted</option><option value="payment_verified">Verified</option><option value="payment_rejected">Rejected</option><option value="refunded">Refunded</option></select>
+          </label>
+          <label class="admin-filter-control">Method
+            <select id="orderMethodFilter" disabled><option value="">All methods</option><option value="cod">Cash on delivery</option><option value="jazzcash">JazzCash</option><option value="bank_transfer">Bank transfer</option></select>
+          </label>
+          <label class="admin-filter-control">From
+            <input id="orderDateFrom" type="date" aria-label="Orders from date" disabled>
+          </label>
+          <label class="admin-filter-control">To
+            <input id="orderDateTo" type="date" aria-label="Orders through date" disabled>
+          </label>
+          <button type="button" class="btn secondary" id="orderResetFilters">Clear filters</button>
+          <button type="button" class="btn secondary" id="orderExportCsv" disabled>Export filtered CSV</button>
+          <p id="orderFilterFeedback" class="admin-order-filter-feedback" role="status" aria-live="polite"></p>
         </div>
         <div class="panel empty-backend">
           <div class="admin-loading"><div class="spinner"></div><h2>Loading orders…</h2></div>
