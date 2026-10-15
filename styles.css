@@ -315,10 +315,14 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 .cartcount.pop{animation:cpop .4s ease}
 @keyframes cpop{0%{transform:scale(1)}40%{transform:scale(1.55)}100%{transform:scale(1)}}
 
-/* ---------- promo rotation ---------- */
-.promo{min-height:34px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+/* ---------- promo rotation and always-visible header stack ---------- */
+/* Keep the announcement and header together while scrolling.  The promo can
+   still be hidden by the owner's CMS, in which case the header returns to 0. */
+:root{--sticky-promo-height:36px}
+.promo{position:sticky;top:0;z-index:51;height:var(--sticky-promo-height);min-height:var(--sticky-promo-height);padding:6px 12px;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap}
+.promo:not([hidden]) + header{top:var(--sticky-promo-height)}
 .promo[hidden]{display:none!important}
-.promo-desktop,.promo-mobile{transition:opacity .24s ease,transform .24s ease}
+.promo-desktop,.promo-mobile{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;transition:opacity .24s ease,transform .24s ease}
 .promo .fading{opacity:0;transform:translateY(-4px)}
 @media(prefers-reduced-motion:reduce){
   .promo-desktop,.promo-mobile{transition:none}

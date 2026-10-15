@@ -22,7 +22,11 @@ jobs:
       - name: Production mobile Lighthouse baseline
         run: |
           mkdir -p perf-results
-          npx --yes lighthouse@12.8.2 https://chaskabox.online/ --chrome-flags="--headless --no-sandbox --disable-dev-shm-usage" --only-categories=performance,seo --output=json --output-path=perf-results/prod-home.json --quiet
+          # Lighthouse's default system Chrome fails to expose a debugging port on
+          # the GitHub runner. Reuse the pinned Chromium installed by Playwright.
+          export CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "playwright-core"; console.log(chromium.executablePath())')"
+          test -x "$CHROME_PATH"
+          npx --yes lighthouse@12.8.2 https://chaskabox.online/ --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance,seo --output=json --output-path=perf-results/prod-home.json --quiet
       - name: Report LCP, CLS shifts, blocking resources and large assets
         if: always()
         run: node tools/performance-audit-summary.mjs perf-results/prod-home.json
