@@ -47,7 +47,7 @@ export function eligibleProducts(rows,query) {
 export function rankProducts(rows,query,semantic=[]) {
   const vectorScores=new Map(semantic.filter(p=>Number(p.similarity)>=.4).map(p=>[String(p.id),Number(p.similarity)]));
   return eligibleProducts(rows,query).map(p=>({...p,_score:lexicalScore(p,query),_semantic:vectorScores.get(String(p.id))||0}))
-    .filter(p=>!words(query).length||p._score>0)
+    .filter(p=>!words(query).length||p._score>0||p._semantic>0)
     .sort((a,b)=>b._score-a._score||b._semantic-a._semantic||Number(a.price)-Number(b.price)||Number(a.id)-Number(b.id))
     .slice(0,8).map(({_score,_semantic,...p})=>p);
 }
