@@ -172,6 +172,8 @@ try{
   await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
   const motion=await page.evaluate(()=>({sheet:getComputedStyle(document.getElementById('filterSheet')).transitionDuration,badge:getComputedStyle(document.querySelector('.cartcount')).animationName}));
   if(motion.sheet!=='0s'||motion.badge!=='none')throw Error('Shopping controls ignored reduced motion');
+  await page.getByRole('searchbox',{name:'Search products',exact:true}).fill('gum');
+  if(await page.locator('#headerSearch').inputValue()!=='gum')throw Error('Header retained a stale search');
   results.interactions.push({case:'filter sheet and bag badge respect reduced motion / '+width,pass:true});
   await context.close();
  }
@@ -235,6 +237,9 @@ try{
  results.interactions.push({case:'occasion adds one of each current pack atomically',pass:await page.evaluate(()=>{const bag=JSON.parse(localStorage.getItem('chaskabox-cart'));return [69,76,156].every(id=>bag[id]===1);})});
  await page.evaluate(()=>localStorage.setItem('chaskabox-cart',JSON.stringify({69:99})));await page.locator('#addOccasion').click();await page.waitForFunction(()=>document.getElementById('occasionStatus')?.textContent.includes('Reduce the quantity'));
  results.interactions.push({case:'occasion quantity cap retains the original bag',pass:await page.evaluate(()=>localStorage.getItem('chaskabox-cart')===JSON.stringify({69:99}))});
+ await page.evaluate(()=>localStorage.setItem('chaskabox-cart',JSON.stringify(Object.fromEntries(Array.from({length:49},(_,i)=>[i+1,1])))));
+ await page.locator('#addOccasion').click();await page.waitForFunction(()=>document.getElementById('occasionStatus')?.textContent.includes('50 different snacks'));
+ results.interactions.push({case:'occasion distinct-item cap retains the original bag atomically',pass:await page.evaluate(()=>Object.keys(JSON.parse(localStorage.getItem('chaskabox-cart'))).length===49)});
  await context.close();
  // Credibility controls use local synthetic fixtures, never real reviews or media.
  {

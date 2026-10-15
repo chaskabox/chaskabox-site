@@ -8,6 +8,7 @@
   let bag=JSON.parse(localStorage.getItem('chaskabox-cart')||'{}');if(!bag||Array.isArray(bag)||typeof bag!=='object')throw Error('Please review your bag first.');
   const next={};for(const [key,value] of Object.entries(bag)){if(!/^\d+$/.test(key)||!Number.isSafeInteger(value)||value<1||value>99)throw Error('Please review your bag first.');next[key]=value;}
   for(const id of ids){const current=next[id]||0;if(current>=99)throw Error('Reduce the quantity of this pack in your bag first.');next[id]=current+1;}
+  if(Object.keys(next).length>50)throw Error('Your bag can contain up to 50 different snacks. Please review your bag first.');
   localStorage.setItem('chaskabox-cart',JSON.stringify(next));status.innerHTML='Packs added. <a href="/cart/">Review your Bag</a>';button.textContent='Add these packs again';
  }catch(error){status.textContent=error.message||'Could not update your bag. Please try again.';}finally{button.disabled=false;}});
 })();
