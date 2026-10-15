@@ -335,7 +335,7 @@ try{
  // Actual M05 controls, synthetic API only: never publish, send or enable agents.
  {
   const {context,page}=await contextFor(1440,'owner');page.removeAllListeners('dialog');page.on('dialog',d=>d.accept());
-  let draft=null,failProposal=true,releaseDecision;const writes=[];
+  let draft=null,failProposal=true,releaseDecision;const writes=[];const opsAgents=['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent=>({agent,enabled:false,mode:'observe'}));
   const decisionGate=new Promise(resolve=>releaseDecision=resolve);
   const ok=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
   await context.route('**/api/admin/agents/**',async route=>{
@@ -348,11 +348,17 @@ try{
      return ok(route,{draft,published:false,sent:false});
     }
     if(body.operation==='decide'){await decisionGate;draft.decision=body.decision;return ok(route,{draft,published:false,sent:false});}
+    if(kind==='operations'&&body.action==='activate'){
+     const item=opsAgents.find(x=>x.agent===body.agent);if(!item||item.agent==='marketing')throw Error('Unsafe agent activation');
+     item.enabled=body.enabled;return ok(route,{activation:{agent:item.agent,enabled:item.enabled,mode:'observe'},no_external_actions:true});
+    }
+    if(kind==='operations'&&body.action==='scan')return ok(route,{saved:false,notifications_sent:false,scan:{mode:'read_only_no_receipt',orders:{stale_new_orders:0},inventory:{visible_unavailable:0},insights:{seo:{missing_seo_title:0}}}});
     throw Error('Unexpected synthetic agent write');
    }
    if(kind==='status')return ok(route,{agents:['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent_key=>({agent_key,enabled:false})),pending_jobs:0,pending_approvals:0});
    if(kind==='preview'||kind==='insights')return ok(route,{agents:[]});
    if(kind==='marketing')return ok(route,{drafts:draft?[draft]:[]});
+   if(kind==='operations')return ok(route,{activation:opsAgents,observations:[],alerts:[]});
    throw Error('Unexpected synthetic agent route');
   });
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
@@ -368,6 +374,14 @@ try{
   const pairedDisabled=await page.getByRole('button',{name:'Reject draft',exact:true}).isDisabled();releaseDecision();
   await page.waitForFunction(()=>document.getElementById('agentsM05Drafts')?.textContent.includes('approved'));
   results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
+  await page.waitForFunction(()=>document.getElementById('agentsPhase12Status')?.textContent.includes('No open saved alerts'));
+  results.interactions.push({case:'owner operations panel has seven controlled toggles and locked marketing',pass:await page.locator('#agentsPhase12Operations button').count()===9&&await page.locator('#agentsPhase12Operations').innerText().then(x=>x.includes('MARKETING — OFF'))});
+  await page.locator('#agentsPhase12Operations button').filter({hasText:'Enable safe monitoring'}).first().click();
+  await page.waitForFunction(()=>document.getElementById('agentsPhase12Operations')?.textContent.includes('ORDERS — ON'));
+  results.interactions.push({case:'owner operations controls update one read-only agent',pass:writes.filter(w=>w.action==='activate').length===1&&opsAgents.find(x=>x.agent==='orders').enabled===true&&opsAgents.find(x=>x.agent==='marketing').enabled===false});
+  await page.locator('#agentsPhase12Operations button').filter({hasText:'Run read-only scan'}).click();
+  await page.waitForFunction(()=>document.getElementById('agentsPhase12Status')?.textContent.includes('Read-only scan done'));
+  results.interactions.push({case:'on-demand scan returns safe read-only aggregates without saved receipt',pass:writes.filter(w=>w.action==='scan').length===1});
   await context.close();
  }
  // Header/Footer/Mobile links must be creatable/editable by the owner without SQL.
