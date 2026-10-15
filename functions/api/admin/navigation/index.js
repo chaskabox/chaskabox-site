@@ -52,7 +52,7 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
   if(!Number.isSafeInteger(position)||position<0||position>100000)httpError('Invalid menu position',400,'invalid_position');
   const row={
     location,label,url,parent_id:null,position,
-    is_external:/^https:///i.test(url),
+    is_external:url.toLowerCase().startsWith('https://'),
     is_enabled:body.is_enabled!==false,
   };
   const created = await cmsMutate(context,user,[{table:'navigation_menus',op:'insert',data:row}]);
@@ -79,7 +79,7 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (
     if(it.is_enabled!==undefined){if(typeof it.is_enabled!=='boolean')httpError('is_enabled must be boolean',400,'invalid');data.is_enabled=it.is_enabled;}
     if(it.label!==undefined)data.label=navLabel(it.label);
     if(it.location!==undefined)data.location=navLocation(it.location);
-    if(it.url!==undefined){data.url=safeNavTarget(it.url);data.is_external=/^https:///i.test(data.url);}
+    if(it.url!==undefined){data.url=safeNavTarget(it.url);data.is_external=data.url.toLowerCase().startsWith('https://');}
     if(!Object.keys(data).length)httpError('Navigation change required',400,'invalid');
     operations.push({table:'navigation_menus',op:'update',id,data});
   }
