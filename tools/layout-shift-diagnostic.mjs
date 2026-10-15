@@ -1,10 +1,10 @@
 import { chromium } from 'playwright-core';
 const browser=await chromium.launch({headless:true,args:['--no-sandbox','--disable-dev-shm-usage']});
-const targets=[
- {url:'https://chaskabox.online/',mode:'production'},
- {url:'https://perf-mobile-home-asap-202610.chaskabox-site.pages.dev/',mode:'preview'},
- {url:'https://perf-mobile-home-asap-202610.chaskabox-site.pages.dev/',mode:'preview-with-live-public-data'},
-];
+const targets=[{url:'https://chaskabox.online/',mode:'production'}];
+if(process.env.PREVIEW_BASE_URL){
+ const url=new URL('/',process.env.PREVIEW_BASE_URL).href;
+ targets.push({url,mode:'preview'},{url,mode:'preview-with-live-public-data'});
+}
 for(const {url,mode} of targets){
  const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1,isMobile:true,hasTouch:true});
  await page.addInitScript(()=>{

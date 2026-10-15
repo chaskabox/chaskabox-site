@@ -2,6 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {validateMediaAssignment,onRequestPost} from '../functions/api/admin/media/[id]/assign-product.js';
+import {onRequestPatch as homepagePatch} from '../functions/api/admin/homepage/index.js';
 
 const uuid='00000000-0000-4000-8000-000000000001';
 const user='00000000-0000-4000-8000-000000000002';
@@ -33,6 +34,19 @@ test('media assignment requires valid UUID and a positive integer product id',()
  assert.deepEqual(validateMediaAssignment({mediaId:uuid,productId:186}),{mediaId:uuid,productId:186});
  for(const id of [-1,0,1.5,'186',null])assert.throws(()=>validateMediaAssignment({mediaId:uuid,productId:id}),e=>e instanceof Response&&e.status===400);
  assert.throws(()=>validateMediaAssignment({mediaId:'oops',productId:186}),e=>e instanceof Response&&e.status===400);
+});
+test('packing video draft is validated before the audited homepage transaction and requires MFA',async()=>{
+ const make=(url,aal='aal2')=>{const ctx=context(186,'owner',aal);ctx.request=new Request(ctx.request.url,{method:'PATCH',headers:ctx.request.headers,body:JSON.stringify({sections:[{section_key:'how_it_works',draft_config:{packing_video_url:url,product_ids:[39],button_text:'Preserved'}}]})});return ctx;};
+ await mock(async calls=>{
+  const response=await homepagePatch(make('https://youtu.be/abcdefghijk'));assert.equal(response.status,200);
+  const transaction=calls.find(c=>c.path.endsWith('/admin_cms_transaction'));
+  assert.equal(transaction.body.p_operations[0].data.draft_config.button_text,'Preserved');
+  assert.equal(transaction.body.p_operations[0].data.draft_config.packing_video_url,'https://youtu.be/abcdefghijk');
+ });
+ for(const url of ['javascript:alert(1)','https://youtube.com.evil.invalid/watch?v=abcdefghijk'])await mock(async calls=>{
+  assert.equal((await homepagePatch(make(url))).status,400);assert.equal(calls.some(c=>c.path.endsWith('/admin_cms_transaction')),false);
+ });
+ await mock(async calls=>{assert.equal((await homepagePatch(make('', 'aal1'))).status,403);assert.equal(calls.some(c=>c.path.endsWith('/admin_cms_transaction')),false);});
 });
 test('media assignment changes only primary image through audited single-product mutation',async()=>{
  await mock(async calls=>{

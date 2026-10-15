@@ -27,7 +27,8 @@ async function loadProducts(){
   }
   throw lastError||new Error('Could not load product catalogue');
 }
-function activeProducts(){return PRODUCTS.filter(p=>p.active!==false&&p.stockState!=='unavailable');}
+function publicProducts(){return PRODUCTS.filter(p=>p.active!==false);}
+function activeProducts(){return publicProducts().filter(p=>p.stockState!=='unavailable');}
 
 /* ---------- delivery date estimate (4-7 days) ---------- */
 function deliveryRange(){
@@ -61,6 +62,7 @@ function cardHTML(p,priority){
   const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BOX':''}</div>`:'';
   const href=productHref(p.id);
   const fan=bundleFanHTML(p);
+  const unavailable=p.stockState==='unavailable';
   return `<article class="card${p.bundle?' bundle-card':''}">${badge}${typeof wishBtnHTML==='function'?wishBtnHTML(p):''}
     <a class="pimg" href="${href}">${fan}${img}</a>
     <div class="pbody">
@@ -68,7 +70,7 @@ function cardHTML(p,priority){
       <a class="pname" href="${href}">${esc(p.name)}</a>
       <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
-      <button class="addcart" ${p.stockState==='unavailable'?'disabled':''} aria-label="Add to Bag ${fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">Add to Bag</span><span class="addcart-price">${fmt(p.price)}</span></button>
+      <button class="addcart" ${unavailable?'disabled':''} aria-label="${unavailable?'Currently unavailable':'Add to Bag '+fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">${unavailable?'Currently unavailable':'Add to Bag'}</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
 }
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
@@ -215,7 +217,7 @@ function brandSlug(name){
   return String(name||'').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'brand';
 }
 function filterPanelHTML(){
-  const all=activeProducts();
+  const all=publicProducts();
   const brands=[...new Set(all.map(p=>getBrand(p)))].sort();
   const packs=[...new Set(all.map(p=>p.pack).filter(Boolean))].sort();
   const maxP=Math.max(...all.map(p=>p.price),1000);
@@ -295,7 +297,7 @@ function toggleBrand(el){
   renderShopList();
 }
 function filteredShop(){
-  let list=activeProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
+  let list=publicProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
   if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>category?category.product_ids.includes(Number(p.id)):(cat==='Bundles'?p.bundle:p.category===cat));}
   if(badge)list=list.filter(p=>p.badge===badge);
   if(q){const n=q.toLowerCase();list=list.filter(p=>(p.name+' '+(p.pack||'')).toLowerCase().includes(n));}
@@ -519,6 +521,10 @@ function pdQty(d){const e=$('#pdqty');e.textContent=Math.max(1,+e.textContent+d)
 let STORE_CONFIG={settings:{},sections:[]},HOME_PREVIEW_ROWS=null;
 window.addEventListener('message',event=>{if(event.source!==window.parent||window.parent===window||event.origin!==location.origin||!new URLSearchParams(location.search).has('cms_preview')||event.data?.type!=='CHASKABOX_HOME_PREVIEW'||!Array.isArray(event.data.sections)||event.data.sections.length>20)return;HOME_PREVIEW_ROWS=event.data.sections;STORE_CONFIG.sections=HOME_PREVIEW_ROWS;if(document.getElementById('catTiles')){renderHomeContent();applyHomeCms();}});
 async function loadStorefrontConfig(){
+  if(window.loadStorefrontManifest){
+    try{const data=await window.loadStorefrontManifest();STORE_CONFIG=HOME_PREVIEW_ROWS?{...data,sections:HOME_PREVIEW_ROWS}:data;window.applyStorefrontManifest?.(STORE_CONFIG);}catch{}
+    return STORE_CONFIG;
+  }
   try{const seed=JSON.parse(document.getElementById('current-storefront-config')?.textContent||'null');if(seed&&typeof seed==='object'&&!Array.isArray(seed)&&Array.isArray(seed.categories)){STORE_CONFIG=seed;if(HOME_PREVIEW_ROWS)STORE_CONFIG.sections=HOME_PREVIEW_ROWS;window.applyStorefrontManifest?.(STORE_CONFIG);return STORE_CONFIG;}}catch{}
   try{const r=await fetch('/api/storefront-config',{cache:'no-cache'});if(r.ok){STORE_CONFIG=await r.json();if(HOME_PREVIEW_ROWS)STORE_CONFIG.sections=HOME_PREVIEW_ROWS;window.applyStorefrontManifest?.(STORE_CONFIG);}}catch(e){}
   return STORE_CONFIG;
@@ -555,6 +561,7 @@ function applyHomeCms(){
   }
 
   window.applyStorefrontManifest?.(STORE_CONFIG);
+  renderPackingVideo();
 }
 /* ---------- views ---------- */
 function showView(v){
@@ -1396,31 +1403,25 @@ function initPromo(){
   el.textContent=promoItems()[0];
 }
 
-/* ---------- packing video (Market Fresh section) ----------
-   Rameez: apni packing video ka path/link yahan dalo.
-   - MP4 file:   'videos/packing.mp4'            (file repo ke "videos" folder mein rakho)
-   - YouTube:    'https://www.youtube.com/embed/VIDEO_ID'
-   - Khaali '':  video section hidden rahega. */
-const PACKING_VIDEO = '';
-function renderPackingVideo(){
+/* Original packing video: published How it works configuration, loaded on request. */
+let packingVideoRender=0;
+async function renderPackingVideo(){
   const box=document.getElementById('packingVideoBox');
   if(!box) return;
-  const v=(PACKING_VIDEO||'').trim();
-  if(!v){ const wrap=box.closest('.freshvideo'); if(wrap) wrap.hidden=true; box.innerHTML=''; return; }
-  const wrap=box.closest('.freshvideo'); if(wrap) wrap.hidden=false;
-  if(/\.mp4(\?|$)/i.test(v)){
-    box.innerHTML='<video class="fv-frame" controls preload="metadata" playsinline src="'+esc(v)+'">'
-      +'Aapka browser video support nahi karta.</video>';
-  }else if(/youtu(\.be|be\.com)/i.test(v)){
-    let src=v;
-    if(/watch\?v=/.test(v)) src=v.replace('watch?v=','embed/');
-    if(/youtu\.be\//.test(v)) src=v.replace('youtu.be/','www.youtube.com/embed/');
-    box.innerHTML='<iframe class="fv-frame" src="'+esc(src)+'" title="Packing video" frameborder="0" '
-      +'allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
-  }else{
-    // unknown format — treat as direct video file
-    box.innerHTML='<video class="fv-frame" controls preload="metadata" playsinline src="'+esc(v)+'"></video>';
-  }
+  const seq=++packingVideoRender,wrap=box.closest('.freshvideo');
+  if(wrap)wrap.hidden=true;box.innerHTML='';
+  const section=(STORE_CONFIG.sections||[]).find(s=>s.section_key==='how_it_works');
+  const raw=section?.config?.packing_video_url;
+  if(section?.enabled===false||!raw)return;
+  try{
+    const {packingVideoSource}=await import('/packing-video.js?v=20261014-final-readiness');const video=packingVideoSource(raw);
+    if(seq!==packingVideoRender||!video)return;
+    if(wrap)wrap.hidden=false;
+    box.innerHTML='<button class="cta" type="button" data-load-packing-video>Show packing video</button><p class="fv-sub">Video loads when you choose to watch.</p>';
+    box.querySelector('[data-load-packing-video]').onclick=()=>{
+      box.innerHTML=video.type==='youtube'?'<iframe class="fv-frame" src="'+esc(video.src)+'" title="ChaskaBox original packing video" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe>':'<video class="fv-frame" controls preload="none" playsinline src="'+esc(video.src)+'">Your browser does not support this video.</video>';
+    };
+  }catch{if(seq===packingVideoRender){box.innerHTML='';if(wrap)wrap.hidden=true;}}
 }
 
 /* ---------- animations: scroll reveals, hero tilt ---------- */
@@ -1545,6 +1546,12 @@ document.addEventListener('keydown',event=>{
 });
 
 /* ---------- init ---------- */
+function hasStoredAccountSession(){
+  // Inspect storage key names only; the Auth SDK still validates any session.
+  // Fresh guests need no Auth download until they choose account/sign-in.
+  try{for(let i=0;i<localStorage.length;i++)if(/^sb-[a-z0-9]+-auth-token$/.test(localStorage.key(i)||''))return true;}catch{}
+  return false;
+}
 document.addEventListener('DOMContentLoaded',async()=>{
   // Render the initial HTML immediately. Slow catalogue/config APIs must not
   // block the primary hero from being interactive or present to assistive tech.
@@ -1568,8 +1575,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
   if(typeof initAccount==='function'){
     const authStart=()=>initAccount().catch(e=>console.warn('account init',e));
     if(location.pathname==='/account/' || location.hash.includes('type=recovery')) authStart();
-    else if(typeof requestIdleCallback==='function') requestIdleCallback(authStart,{timeout:3500});
-    else setTimeout(authStart,2500);
+    else if(hasStoredAccountSession()){
+      if(typeof requestIdleCallback==='function') requestIdleCallback(authStart,{timeout:3500});
+      else setTimeout(authStart,2500);
+    }
   }
   observeReveals();
 });

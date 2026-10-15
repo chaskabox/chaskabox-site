@@ -86,7 +86,26 @@ try{
  try{auth=JSON.parse(run('docker',['run','--rm','--network','container:'+container,'--env-file',path.join(root,'auth.env'),'-v',root+':/recovery:ro',nodeImage,'node','/recovery/auth-acceptance.mjs']).trim());}
  catch(error){const logs=run('docker',['logs',authContainer]);console.error(JSON.stringify({auth_startup_signals:{migration_error:/migration.*(fail|error)/i.test(logs),database_permission_denied:/permission denied/i.test(logs),database_authentication_failed:/password authentication failed/i.test(logs),missing_configuration:/required|missing/i.test(logs)},sqlstates:[...new Set(logs.match(/SQLSTATE [A-Z0-9]{5}/g)||[])]}));throw error;}
  const afterAuth=JSON.parse(db(authCountsSQL,'chaskabox_recovery'));if(afterAuth.users!==recoveredAuth.users+1||afterAuth.verified_factors!==recoveredAuth.verified_factors||afterAuth.admin_roles!==recoveredAuth.admin_roles)throw Error('Recovered Auth metadata unexpectedly changed');
- const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,live_auth_provider_acceptance_verified:false};
+ let agentPreflight=null;
+ if(e.AGENT_MIGRATION_PREFLIGHT==='true'){
+  step='verify_agent_preflight_isolation';
+  const target=JSON.parse(run('docker',['inspect',container]))[0];
+  if(target.HostConfig.NetworkMode!=='none'||Object.keys(target.HostConfig.PortBindings||{}).length||db('select current_database();','chaskabox_recovery').trim()!=='chaskabox_recovery')throw Error('Agent preflight requires the offline restored clone');
+  if(db("select exists(select 1 from pg_namespace where nspname='chaskabox_agents');",'chaskabox_recovery').trim()!=='f')throw Error('Clone already contains agents; migration replay needs an explicit upgrade plan');
+  step='replay_agent_migrations_in_offline_clone';
+  const files=['20261014170000_m0_internal_table_grants.sql','20261014200000_m01_agent_infrastructure.sql','20261014210000_m02_monitoring_snapshots.sql','20261014220000_m03_insight_signals.sql','20261014230000_m04_marketing_draft_approvals.sql'];
+  const hashes=[];
+  for(const file of files){const sql=await readFile(new URL('../database/migrations/'+file,import.meta.url),'utf8');db(sql,'chaskabox_recovery');hashes.push({file,sha256:createHash('sha256').update(sql).digest('hex')});}
+  step='verify_agent_migrations_on_recovered_schema';
+  const health=JSON.parse(db('set role service_role;select public.agent_m01_health();','chaskabox_recovery').trim().split('\n').at(-1));
+  if(health.agents?.length!==8||health.agents.some(a=>a.enabled!==false))throw Error('Agent defaults are not disabled');
+  // Execute the actual read-only RPCs against recovered schema, logging no rows.
+  db('set role service_role;select public.agent_m02_order_signals();select public.agent_m02_inventory_signals();select public.agent_m03_insight_signals();select public.agent_m04_list();','chaskabox_recovery');
+  const permissions=JSON.parse(db("select json_build_object('public_rpc_denied',not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace cross join (values ('anon'),('authenticated')) r(role) where n.nspname='public' and p.proname like 'agent_m0%' and has_function_privilege(r.role,p.oid,'EXECUTE')),'private_tables_denied',not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace cross join (values ('anon'),('authenticated')) r(role) where n.nspname='chaskabox_agents' and c.relkind='r' and has_table_privilege(r.role,c.oid,'SELECT')),'products',(select count(*) from public.products),'orders',(select count(*) from public.orders),'admin_roles',(select count(*) from public.admin_roles));",'chaskabox_recovery'));
+  if(!permissions.public_rpc_denied||!permissions.private_tables_denied||permissions.products!==checks.products||permissions.orders!==checks.order_count||permissions.admin_roles!==recoveredAuth.admin_roles)throw Error('Agent preflight permission/data check failed');
+  agentPreflight={scope:'M0-M04 applied only after restore verification in the disposable offline clone; not managed staging or real owner MFA',migrations:hashes,disabled_agents:8,read_only_rpcs_verified:true,client_rpc_and_table_access_denied:true,business_row_counts_preserved:true};
+ }
+ const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,agent_migration_preflight:agentPreflight,live_auth_provider_acceptance_verified:false};
  console.log(JSON.stringify(report));if(e.GITHUB_STEP_SUMMARY)await writeFile(e.GITHUB_STEP_SUMMARY,JSON.stringify(report,null,2)+'\n',{flag:'a'});
 }catch(error){console.error('Isolated recovery did not pass: '+step+'. No database rows, SQL, credentials or archive contents are logged.');process.exitCode=1;}
 finally{for(const name of [authContainer,container])try{execFileSync('docker',['rm','-f',name],{stdio:'ignore'});}catch{}await rm(root,{recursive:true,force:true});}

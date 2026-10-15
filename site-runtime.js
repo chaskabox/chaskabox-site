@@ -7,6 +7,23 @@
 (() => {
   'use strict';
   const safeUrl=v=>typeof v==='string'&&/^(\/[^/]|\/$|https:\/\/|mailto:|tel:|#)[^\s"'<>]*$/.test(v);
+  // Share one public manifest read with app.js and use the server seed on
+  // catalogue pages. A failed read can be retried without caching an outage.
+  let manifestRead=null;
+  window.loadStorefrontManifest=function(){
+    if(manifestRead)return manifestRead;
+    manifestRead=(async()=>{
+      let seed=null;
+      try{seed=JSON.parse(document.getElementById('current-storefront-config')?.textContent||'null');}catch{}
+      if(seed&&typeof seed==='object'&&!Array.isArray(seed)&&Array.isArray(seed.categories))return seed;
+      const response=await fetch('/api/storefront-config',{cache:'no-cache'});
+      if(!response.ok)throw Error('Store settings unavailable');
+      const data=await response.json();
+      if(!data||typeof data!=='object'||Array.isArray(data))throw Error('Invalid store settings');
+      return data;
+    })().catch(error=>{manifestRead=null;throw error;});
+    return manifestRead;
+  };
   const logoSelector='.logo img,.logo-img', defaultLogo='/images/logo-navy.png';
   function setLogo(img,src){
     if(src===defaultLogo){img.srcset='/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w';img.sizes='210px';}
@@ -98,7 +115,7 @@
   }
   async function run(){
     try{
-      const r=await fetch('/api/storefront-config',{cache:'no-cache'});if(!r.ok)return;const d=await r.json();const s=d?.settings||{};window.applyStorefrontManifest(d);
+      const d=await window.loadStorefrontManifest();const s=d?.settings||{};window.applyStorefrontManifest(d);
       const phone=String(s.support_whatsapp||DEFAULT_PHONE).trim(), email=String(s.support_email||DEFAULT_EMAIL).trim(), address=String(s.store_address||DEFAULT_ADDRESS).trim(), promo=String(s.promo_text||'').trim();
       if(promo)document.querySelectorAll('.promo').forEach(el=>el.textContent=promo);
       replaceText(DEFAULT_PHONE,phone);replaceText(DEFAULT_EMAIL,email);replaceText(DEFAULT_ADDRESS,address);replaceCommerceText(s);

@@ -118,6 +118,22 @@ async function inspect(page,route,width,role){
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ // The bridge and application must share the public config request; SSR pages
+ // must hydrate the supplied manifest rather than fetching it again.
+ for(const [route,expected] of [['/',1],['/shop/',0]]){
+  const {context,page}=await contextFor(390);let manifestRequests=0;const sdkRequests=[];
+  page.on('request',request=>{if(new URL(request.url()).pathname==='/api/storefront-config')manifestRequests++;if(request.url().includes('/@supabase/supabase-js@'))sdkRequests.push(request.url());});
+  await page.goto(base+route,{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
+  await page.waitForTimeout(250);
+  if(manifestRequests!==expected)throw Error('Unexpected manifest requests for '+route+': '+manifestRequests);
+  results.interactions.push({case:route==='/'?'home application and runtime share one manifest request':'shop hydrates the server manifest without an extra config request',pass:true});
+  if(route==='/'){
+   await page.waitForTimeout(4000);
+   results.interactions.push({case:'fresh guest home does not load Auth SDK while idle',pass:sdkRequests.length===0});
+  }
+  await context.close();
+ }
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){const {context,page}=await contextFor(width);for(const route of routes)await inspect(page,route,width);await context.close();}
  // Reproduce the live legacy logo setting and prove branding survives errors.
@@ -181,7 +197,129 @@ try{
  await page.evaluate(()=>localStorage.setItem('chaskabox-cart',JSON.stringify({69:99})));await page.locator('#addOccasion').click();await page.waitForFunction(()=>document.getElementById('occasionStatus')?.textContent.includes('Reduce the quantity'));
  results.interactions.push({case:'occasion quantity cap retains the original bag',pass:await page.evaluate(()=>localStorage.getItem('chaskabox-cart')===JSON.stringify({69:99}))});
  await context.close();
- if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});if(role==='owner'){attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;}await context.close();}
+ // Credibility controls use local synthetic fixtures, never real reviews or media.
+ {
+  const {context,page}=await contextFor(390);let failReviews=true,videoRequests=0;
+  await context.route('**/api/reviews?*',route=>route.fulfill({status:failReviews?503:200,contentType:'application/json',body:JSON.stringify({count:2,avg_rating:3,reviews:[{id:1,rating:2,review_text:'Synthetic guest review',verified_purchase:false},{id:2,rating:4,review_text:'Synthetic delivered purchase',verified_purchase:true}]})}));
+  await page.goto(base+'/product/39/');await page.getByRole('button',{name:'Retry reviews',exact:true}).waitFor();failReviews=false;await page.getByRole('button',{name:'Retry reviews',exact:true}).click();await page.locator('.rw-summary').waitFor();
+  results.interactions.push({case:'review retry restores honest guest and verified-purchase labels',pass:(await page.locator('.rw-summary').innerText()).includes('2 reviews')&&await page.locator('.rw-verified').count()===1&&await page.locator('.rw-rate input:checked').count()===0});
+  await context.route('**/api/storefront-config',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({...manifest,sections:[{section_key:'how_it_works',enabled:true,config:{packing_video_url:'https://youtu.be/abcdefghijk'}}]})}));
+  await context.route('https://www.youtube-nocookie.com/**',route=>{videoRequests++;return route.fulfill({status:200,contentType:'text/html',body:'<p>Synthetic player</p>'});});
+  await page.goto(base+'/');await page.locator('[data-load-packing-video]').waitFor();
+  const deferred=videoRequests===0&&await page.locator('#packingVideoBox iframe').count()===0;
+  await page.locator('[data-load-packing-video]').click();await page.locator('#packingVideoBox iframe').waitFor();
+  results.interactions.push({case:'packing video waits for visitor choice and uses the restricted player',pass:deferred&&await page.locator('#packingVideoBox iframe').getAttribute('src')==='https://www.youtube-nocookie.com/embed/abcdefghijk'});
+  await context.close();
+ }
+ {
+  const {context,page}=await contextFor(1440,'owner');let review={id:1,product_id:39,rating:3,review_text:'Synthetic approved review',moderation_status:'approved',verified_purchase:false,created_at:'2026-10-14T00:00:00Z'};
+  await context.route('**/api/admin/reviews?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({reviews:[review],page:1,total:1,total_pages:1})}));
+  await context.route('**/api/admin/reviews/1',route=>{review={...review,moderation_status:route.request().postDataJSON().action==='reject'?'rejected':'approved'};return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({review})});});
+  const section={section_key:'how_it_works',enabled:true,position:6,heading:'How it works',config:{button_text:'Preserved'},draft_config:null};
+  await context.route('**/api/admin/homepage',route=>{if(route.request().method()==='PATCH')section.draft_config=route.request().postDataJSON().sections[0].draft_config;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
+  await context.route('**/api/admin/homepage/publish',route=>{section.config={...section.draft_config};return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
+  await context.route('**/api/admin/media?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({processor_available:true,monthly_app_limit:1000,media:[{id:'00000000-0000-4000-8000-000000000010',url:'/images/logo-navy.png',bucket:'product-media',object_path:'synthetic.webp',state:'active',size_bytes:100}],page:1,total:1,total_pages:1})}));
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="reviews"]').click();await page.getByRole('button',{name:'Unpublish',exact:true}).click();await page.locator('#view-reviews').getByText(/rejected/).waitFor();
+  results.interactions.push({case:'owner can unpublish an approved review without deleting its record',pass:review.moderation_status==='rejected'&&await page.locator('#view-reviews [data-review-action="approve"]').count()===1});
+  await page.locator('[data-view="homepage"]').click();await page.locator('#homePackingVideo').waitFor();await page.locator('#homePackingVideo').fill('https://youtu.be/abcdefghijk');const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage'&&r.request().method()==='PATCH');await page.locator('#homeSave').click();await saved;await page.waitForFunction(()=>document.getElementById('homePackingVideo')?.value==='https://youtu.be/abcdefghijk');
+  results.interactions.push({case:'admin packing-video draft retains other section configuration before publish',pass:section.draft_config?.packing_video_url==='https://youtu.be/abcdefghijk'&&section.draft_config?.button_text==='Preserved'&&!section.config.packing_video_url});
+  const published=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage/publish');await page.locator('#homePublish').click();await published;
+  results.interactions.push({case:'packing video becomes published only after an explicit owner action',pass:section.config.packing_video_url==='https://youtu.be/abcdefghijk'&&section.config.button_text==='Preserved'});
+  await page.locator('[data-view="media"]').click();await page.waitForFunction(()=>typeof document.getElementById('mediaUpload')?.onchange==='function');
+  results.interactions.push({case:'media assignment and upload handlers initialize for original photos',pass:await page.locator('[data-assign-media]').evaluate(e=>typeof e.onclick==='function')&&await page.locator('[data-delete-media]').evaluate(e=>typeof e.onclick==='function')&&!await page.locator('#mediaUpload').isDisabled()});
+  await context.close();
+ }
+ if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){
+  const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);
+  results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});
+  if(role==='owner'){attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;}
+  else results.interactions.push({case:role+' cannot see owner AI agent controls',pass:!await page.locator('[data-view="agents"]').isVisible()});
+  await context.close();
+ }
+ // Actual M05 controls, synthetic API only: never publish, send or enable agents.
+ {
+  const {context,page}=await contextFor(1440,'owner');page.removeAllListeners('dialog');page.on('dialog',d=>d.accept());
+  let draft=null,failProposal=true,releaseDecision;const writes=[];
+  const decisionGate=new Promise(resolve=>releaseDecision=resolve);
+  const ok=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
+  await context.route('**/api/admin/agents/**',async route=>{
+   const request=route.request(),kind=new URL(request.url()).pathname.split('/').at(-1);
+   if(request.method()==='POST'){
+    const body=request.postDataJSON();writes.push(body);
+    if(body.operation==='propose'){
+     if(failProposal){failProposal=false;return ok(route,{error:{message:'Synthetic proposal outage'}},503);}
+     draft={id:'00000000-0000-4000-8000-000000000071',headline:'Synthetic <img onerror=alert(1)> draft',draft_text:'Synthetic review text',channel:body.channel,decision:'pending'};
+     return ok(route,{draft,published:false,sent:false});
+    }
+    if(body.operation==='decide'){await decisionGate;draft.decision=body.decision;return ok(route,{draft,published:false,sent:false});}
+    throw Error('Unexpected synthetic agent write');
+   }
+   if(kind==='status')return ok(route,{agents:['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent_key=>({agent_key,enabled:false})),pending_jobs:0,pending_approvals:0});
+   if(kind==='preview'||kind==='insights')return ok(route,{agents:[]});
+   if(kind==='marketing')return ok(route,{drafts:draft?[draft]:[]});
+   throw Error('Unexpected synthetic agent route');
+  });
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="agents"]').click();await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('diagnostics updated'));
+  results.interactions.push({case:'owner agent view shows eight configured and zero enabled agents',pass:(await page.locator('#agentsM05Readiness').innerText()).includes('Configured agents: 8')&&(await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')});
+  await page.locator('#agentsM05ProductId').fill('5');await page.locator('#agentsM05Propose button[type="submit"]').click();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('Synthetic proposal outage'));
+  results.interactions.push({case:'agent draft failure retains product input and restores submit',pass:await page.locator('#agentsM05ProductId').inputValue()==='5'&&!await page.locator('#agentsM05Propose button[type="submit"]').isDisabled()});
+  await page.locator('#agentsM05Propose button[type="submit"]').click();await page.getByRole('button',{name:'Approve draft',exact:true}).waitFor();
+  results.interactions.push({case:'marketing draft is shown as literal text without injected HTML',pass:(await page.locator('#agentsM05Drafts').innerText()).includes('<img onerror=alert(1)>')&&await page.locator('#agentsM05Drafts img').count()===0});
+  await page.getByRole('button',{name:'Approve draft',exact:true}).click();
+  await page.waitForFunction(()=>[...document.querySelectorAll('#agentsM05Drafts button')].every(b=>b.disabled));
+  const pairedDisabled=await page.getByRole('button',{name:'Reject draft',exact:true}).isDisabled();releaseDecision();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Drafts')?.textContent.includes('approved'));
+  results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
+  await context.close();
+ }
+ // Exercise operational UI writes only against intercepted, synthetic records.
+ {
+  const {context,page}=await contextFor(1440,'owner');page.removeAllListeners('dialog');page.on('dialog',d=>d.accept());
+  const orderId='00000000-0000-4000-8000-000000000021',customerId='00000000-0000-4000-8000-000000000022';
+  let order={id:orderId,order_number:'CB-SYNTHETIC-ACCEPTANCE',customer_name:'Synthetic acceptance customer',customer_phone:'03000000000',customer_address:'Synthetic address',customer_city:'Fixture city',payment_method:'jazzcash',payment_status:'payment_submitted',transaction_reference:'SYNTHETIC-REF',fulfilment_status:'new',total:600,subtotal:300,delivery_fee:300,created_at:'2026-10-14T00:00:00Z',updated_at:'2026-10-14T00:00:00Z'};
+  let product={...products.find(p=>p.id===39),id:39,name:'Synthetic editor snack',description:'Synthetic pack description',price:300,old_price:null,visibility:'visible',stock_state:'sourced_after_order',tags:[]};
+  let failPayment=true,failBulk=true;const statusWrites=[],paymentWrites=[],bulkWrites=[],productWrites=[];
+  const ok=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
+  await context.route('**/api/admin/orders?*',r=>ok(r,{orders:[order],page:1,total:1,total_pages:1}));
+  await context.route('**/api/admin/orders/'+orderId,r=>ok(r,{order,items:[{product_name:'Synthetic editor snack',pack:'Fixture pack',quantity:1,line_total:300}],history:[]}));
+  await context.route('**/api/admin/orders/'+orderId+'/status',r=>{const body=r.request().postDataJSON();statusWrites.push(body);order={...order,fulfilment_status:body.fulfilment_status,updated_at:'2026-10-14T00:01:00Z'};return ok(r,{order});});
+  await context.route('**/api/admin/orders/'+orderId+'/payment/verify',r=>{const body=r.request().postDataJSON();paymentWrites.push(body);if(failPayment)return ok(r,{error:{message:'Synthetic payment outage'}},503);order={...order,payment_status:'payment_verified',updated_at:'2026-10-14T00:02:00Z'};return ok(r,{order});});
+  await context.route('**/api/admin/products?*',r=>ok(r,{products:[{...product,image_url:product.img}],page:1,total:1,total_pages:1}));
+  await context.route('**/api/admin/products/39',r=>{const body=r.request().postDataJSON();productWrites.push(body);product={...product,...body};return ok(r,{product});});
+  await context.route('**/api/admin/products/bulk',r=>{const body=r.request().postDataJSON();bulkWrites.push(body);if(failBulk)return ok(r,{error:{message:'Synthetic bulk outage'}},503);product={...product,visibility:'hidden'};return ok(r,{changed:1,skipped:0});});
+  const customer={id:customerId,name:'Synthetic acceptance customer',phone:'03000000000',email:'synthetic@example.invalid',order_count:1,lifetime_spend:600};
+  await context.route('**/api/admin/customers?*',r=>ok(r,{customers:[customer],page:1,total:1,total_pages:1}));
+  await context.route('**/api/admin/customers/'+customerId+'?*',r=>ok(r,{customer,orders:[order],page:1,total:1,total_pages:1}));
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="orders"]').click();await page.getByRole('button',{name:'Manage',exact:true}).click();
+  const changed=page.waitForResponse(r=>r.url().endsWith('/status'));await page.locator('#liveOrderModal [data-status="sourcing"]').click();await changed;await page.waitForFunction(()=>!document.getElementById('liveOrderModal')?.classList.contains('open'));
+  results.interactions.push({case:'order status control submits the current version and refreshes after success',pass:order.fulfilment_status==='sourcing'&&statusWrites.length===1&&statusWrites[0].expected_updated_at==='2026-10-14T00:00:00Z'});
+  await page.getByRole('button',{name:'Manage',exact:true}).click();await page.locator('#liveOrderModal [data-status="cancelled"]').click();await page.locator('.order-decision-dialog').getByRole('button',{name:'Cancel',exact:true}).click();
+  results.interactions.push({case:'cancel decision dismissed by staff leaves the order unchanged',pass:statusWrites.length===1&&order.fulfilment_status==='sourcing'});
+  await page.locator('#liveOrderModal [data-pay="verified"]').click();await page.locator('.order-decision-dialog').getByRole('button',{name:'Confirm',exact:true}).click();
+  results.interactions.push({case:'payment review requires evidence before making a request',pass:paymentWrites.length===0&&await page.locator('.order-decision-dialog textarea').evaluate(e=>!e.validity.valid)});
+  await page.locator('.order-decision-dialog textarea').fill('Synthetic receiving-account evidence');const failed=page.waitForResponse(r=>r.url().endsWith('/payment/verify'));await page.locator('.order-decision-dialog').getByRole('button',{name:'Confirm',exact:true}).click();await failed;await page.waitForFunction(()=>document.getElementById('adminToast')?.textContent.includes('Synthetic payment outage'));
+  await page.locator('#liveOrderModal [data-pay="verified"]').waitFor();
+  results.interactions.push({case:'payment save outage retains pending status and offers a usable retry',pass:order.payment_status==='payment_submitted'&&!await page.locator('#liveOrderModal [data-pay="verified"]').isDisabled()});
+  failPayment=false;await page.locator('#liveOrderModal [data-pay="verified"]').click();await page.locator('.order-decision-dialog textarea').fill('Synthetic receiving-account evidence');const approved=page.waitForResponse(r=>r.url().endsWith('/payment/verify'));await page.locator('.order-decision-dialog').getByRole('button',{name:'Confirm',exact:true}).click();await approved;await page.waitForFunction(()=>!document.getElementById('liveOrderModal')?.classList.contains('open'));
+  results.interactions.push({case:'payment retry records an explicit decision with evidence and current version',pass:order.payment_status==='payment_verified'&&paymentWrites.length===2&&paymentWrites[1].note==='Synthetic receiving-account evidence'&&paymentWrites[1].expected_updated_at==='2026-10-14T00:01:00Z'});
+  await page.locator('[data-view="products"]').click();await page.locator('[data-live-edit="39"]').click();await page.locator('#editName').fill('Synthetic editor snack saved');const edited=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/products/39');await page.locator('#productForm').evaluate(e=>e.requestSubmit());await edited;await page.waitForFunction(()=>!document.getElementById('productEditor')?.classList.contains('open'));
+  results.interactions.push({case:'product edit opens, hydrates fields and saves to the protected endpoint',pass:productWrites.length===1&&product.name==='Synthetic editor snack saved'&&productWrites[0].description==='Synthetic pack description'});
+  await page.locator('[data-live-select="39"]').check();await page.waitForFunction(()=>document.getElementById('bulkCount')?.textContent.startsWith('1 selected'));
+  const bulkFailed=page.waitForResponse(r=>r.url().endsWith('/products/bulk'));await page.locator('#bulkBar [data-bulk="hide"]').click();await bulkFailed;await page.waitForFunction(()=>document.getElementById('bulkFeedback')?.textContent.includes('Not saved'));
+  results.interactions.push({case:'bulk write failure retains selection and restores controls for retry',pass:product.visibility==='visible'&&await page.locator('[data-live-select="39"]').isChecked()&&!await page.locator('#bulkBar [data-bulk="hide"]').isDisabled()});
+  failBulk=false;const bulkSaved=page.waitForResponse(r=>r.url().endsWith('/products/bulk'));await page.locator('#bulkBar [data-bulk="hide"]').click();await bulkSaved;await page.waitForFunction(()=>document.getElementById('bulkFeedback')?.textContent.includes('1 updated'));
+  results.interactions.push({case:'bulk retry updates only selected products and clears selection on success',pass:product.visibility==='hidden'&&bulkWrites.length===2&&bulkWrites[1].ids.length===1&&bulkWrites[1].ids[0]===39&&!await page.locator('[data-live-select="39"]').isChecked()});
+  await page.locator('[data-view="customers"]').click();await page.getByRole('button',{name:'Synthetic acceptance customer',exact:true}).click();await page.getByRole('button',{name:'Back to customers',exact:true}).waitFor();
+  const detail=(await page.locator('#view-customers').innerText()).includes('CB-SYNTHETIC-ACCEPTANCE');await page.getByRole('button',{name:'Back to customers',exact:true}).click();await page.locator('#customerSearch').waitFor();
+  results.interactions.push({case:'customer detail and back navigation show matching synthetic order history',pass:detail&&await page.locator('[data-customer]').count()===1});
+  await page.locator('[data-view="boxes"]').click();await page.locator('#previewBoxBtn').click();await page.locator('[data-add-box="39"]').click();await page.locator('#boxPrice').fill('299');await page.locator('#previewBoxBtn').click();await page.locator('#boxDraftPreview').waitFor();
+  results.interactions.push({case:'box preview handles the selected product list without saving a box',pass:(await page.locator('#boxDraftPreview').innerText()).includes('Synthetic editor snack')&&(await page.locator('#boxDraftPreview').innerText()).includes('Nothing has been saved or published')});
+  await context.close();
+ }
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));globalThis.fetch=originalFetch;await writeFile(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));}
 console.log(JSON.stringify({pages:results.cases.length,interactions:results.interactions,errors:results.errors}));
 if(results.cases.some(c=>c.status!==200||c.overflow||c.duplicatePromo||c.violations.length)||results.interactions.some(c=>!c.pass)||results.errors.length)process.exitCode=1;

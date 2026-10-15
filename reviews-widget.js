@@ -47,11 +47,11 @@
   function formHTML(productId) {
     return `<form class="rw-form" data-rw-form="${esc(productId)}">
       <h3>Write a review</h3>
-      <p class="rw-note">Reviews are published after moderation. Only real reviews — no fakes, ever.</p>
+      <p class="rw-note">Share your own experience. Your rating and review text will be public if approved. Please leave out phone numbers, addresses and order details. <a href="/privacy-policy/">Privacy policy</a></p>
       <div class="rw-field">
         <label>Your rating</label>
         <div class="rw-rate" role="radiogroup" aria-label="Rating">
-          ${[5, 4, 3, 2, 1].map(n => `<label><input type="radio" name="rating" value="${n}" ${n === 5 ? 'checked' : ''} required><span>${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span></label>`).join('')}
+          ${[5, 4, 3, 2, 1].map(n => `<label><input type="radio" name="rating" value="${n}" required><span>${'★'.repeat(n)}${'☆'.repeat(5 - n)}</span></label>`).join('')}
         </div>
       </div>
       <div class="rw-field">
@@ -118,7 +118,7 @@
       } else {
         html += `<div class="rw-summary">${stars(data.avg_rating)}
           <b>${esc(data.avg_rating)} / 5</b>
-          <span>· ${data.count} verified review${data.count === 1 ? '' : 's'}</span>
+          <span>· ${esc(data.count)} review${data.count === 1 ? '' : 's'}</span>
         </div>`;
         html += '<div class="rw-list">' + reviews.map(reviewHTML).join('') + '</div>';
       }
@@ -130,7 +130,8 @@
       const form = root.querySelector('[data-rw-form]');
       if (form) form.addEventListener('submit', e => { e.preventDefault(); submitReview(form, productId); });
     } catch (e) {
-      root.innerHTML = '<section class="rw-wrap"><h2>Customer reviews</h2><p class="rw-error">Reviews are temporarily unavailable.</p></section>';
+      root.innerHTML = '<section class="rw-wrap"><h2>Customer reviews</h2><p class="rw-error" role="status">Reviews are temporarily unavailable.</p><button type="button" class="cta" data-rw-retry>Retry reviews</button></section>';
+      root.querySelector('[data-rw-retry]')?.addEventListener('click',()=>mount(root,productId));
     }
   }
 

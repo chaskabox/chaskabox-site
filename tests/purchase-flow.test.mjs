@@ -9,6 +9,7 @@ import { onRequestGet as loyaltyGet, onRequestPost as loyaltyPost } from '../fun
 
 const checkout = await readFile(new URL('../checkout.js',import.meta.url),'utf8');
 const storefront = await readFile(new URL('../app.js',import.meta.url),'utf8');
+const fallbackCatalogue=JSON.parse(await readFile(new URL('../products.json',import.meta.url),'utf8'));
 function browser(source, storage=new Map()) {
   const nodes=new Map(), scrolls=[];
   function element(){return {value:'',checked:false,hidden:false,disabled:false,textContent:'',innerHTML:'',style:{setProperty(){},removeProperty(){}},dataset:{},children:[],classList:{add(){},remove(){},toggle(){},contains(){return false;}},addEventListener(){},setAttribute(){},querySelector(){return null;},querySelectorAll(){return [];},appendChild(x){this.children.push(x);},scrollIntoView(){},focus(){},remove(){}};}
@@ -27,6 +28,32 @@ function browser(source, storage=new Map()) {
   return {context,node,storage,scrolls,run:code=>vm.runInContext(code,context)};
 }
 const payload=()=>({items:[{product_id:1,qty:2}],customer:{name:'Ali Ahmed',phone:'03000000000',email:'a@mail.com',address:'Fixture Street 123',city:'Lahore',country:'Pakistan'},payment_method:'cod',transaction_reference:'',customer_note:'',turnstile_token:'first'});
+test('an API outage fallback retains the unconfirmed Family Pack ordering hold',async()=>{
+  const b=browser(storefront);const requested=[];
+  b.context.fetch=async path=>{requested.push(path);return path==='/api/products'?new Response('Outage',{status:503}):Response.json(fallbackCatalogue);};
+  await b.run('loadProducts()');
+  assert.deepEqual(requested,['/api/products','/products.json']);
+  const p=b.run('PRODUCTS.find(p=>p.id===269)');
+  assert.equal(p.stockState,'unavailable');assert.equal(p.price,2039);assert.equal(p.img,null);assert.equal(p.badge,'');
+  assert.equal(p.pack,'Contents under review');assert.doesNotMatch(p.desc,/One of each|Bundle pack with:/);
+  assert.match(b.run('cardHTML(PRODUCTS.find(p=>p.id===269))'),/disabled aria-label="Currently unavailable/);
+});
+test('shop keeps unavailable public packs discoverable with a disabled status, excluding hidden packs and recommendations',()=>{
+  const b=browser(storefront);
+  b.run("PRODUCTS=[{id:1,name:'Available pack',pack:'Pack of 12',price:200,stockState:'in_stock'},{id:269,name:'Family Pack',category:'Bundles',pack:'Contents under review',price:2039,stockState:'unavailable',bundle:true},{id:179,name:'Hidden pack',pack:'Pack of 12',price:199,active:false}];");
+  assert.equal(b.run('filteredShop().length'),2);
+  assert.equal(b.run('activeProducts().length'),1);
+  b.run("shopState.q='Family';");assert.equal(b.run('filteredShop()[0].id'),269);
+  assert.match(b.run('filterPanelHTML()'),/Contents under review/);
+  const html=b.run('cardHTML(PRODUCTS[1])');
+  assert.match(html,/disabled aria-label="Currently unavailable — Family Pack"/);
+  assert.match(html,/>Currently unavailable<\/span>/);
+  assert.doesNotMatch(html,/>Add to Bag<\/span>/);
+  assert.match(b.run('cardHTML(PRODUCTS[0])'),/>Add to Bag<\/span>/);
+  let notice='';b.context.toast=message=>{notice=message;};
+  b.run('CART={};addToCart(269,1);');assert.equal(b.run('Object.keys(CART).length'),0);
+  assert.match(notice,/unavailable/);
+});
 function checkoutForm(b){
   const values={f_fname:'Ali',f_lname:'Ahmed',f_name:'Ali Ahmed',f_phone:'03000000000',f_ccode:'+92',f_email:'a@mail.com',f_addr:'Fixture Street 123',f_city:'Lahore',f_country:'Pakistan',f_reference:'',f_note:''};
   for(const [id,value] of Object.entries(values))b.node(id).value=value;

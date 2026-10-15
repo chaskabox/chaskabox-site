@@ -27,13 +27,13 @@
      btn.type='button';
      btn.onclick=async()=>{
       if(!window.confirm('Record '+decision+' decision? This does NOT publish or send.'))return;
-      btn.disabled=true;
+      const controls=[...card.querySelectorAll('button')];controls.forEach(b=>b.disabled=true);
       try{
        await api('/api/admin/agents/marketing',{method:'POST',
         body:{operation:'decide',draft_id:item.id,decision}});
        show(message,'Decision saved. Nothing published or sent.');
        await refresh();
-      }catch(e){show(message,e.message||'Approval unavailable');btn.disabled=false;}
+      }catch(e){show(message,e.message||'Approval unavailable');controls.forEach(b=>b.disabled=false);}
      };card.append(btn);
     }
    }
