@@ -45,7 +45,7 @@ export function completionSql(agent,state,at=new Date()){
 const snapshotSql="SELECT jsonb_build_object('settings',(SELECT coalesce(jsonb_agg(jsonb_build_object('key',agent_key,'enabled',enabled,'mode',mode)),'[]'::jsonb) FROM chaskabox_agents.agent_settings),'orders',public.agent_m02_order_signals(),'inventory',public.agent_m02_inventory_signals(),'insights',public.agent_m03_insight_signals(),'pending_drafts',(SELECT count(*) FROM chaskabox_agents.marketing_drafts WHERE decision='pending'))::text;";
 function psql(sql){
  const secret=process.env.SUPABASE_DB_URL;
- if(!secret||!/^postgres(?:ql)?:\\/\\//.test(secret))throw Error('Database secret unavailable');
+ if(!secret||!(secret.startsWith('postgres://')||secret.startsWith('postgresql://')))throw Error('Database secret unavailable');
  const result=spawnSync('psql',['-X','-qAt','-v','ON_ERROR_STOP=1','--dbname',secret],{input:sql,encoding:'utf8',timeout:30000,maxBuffer:100000});
  if(result.error||result.status!==0)throw Error('Database operation failed (secrets suppressed)');
  return result.stdout.trim();
