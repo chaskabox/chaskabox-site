@@ -316,8 +316,14 @@ footer{background:var(--brand);color:#fff;margin-top:40px}
 @keyframes cpop{0%{transform:scale(1)}40%{transform:scale(1.55)}100%{transform:scale(1)}}
 
 /* ---------- promo rotation ---------- */
-#promoMsg{transition:opacity .35s ease}
-#promoMsg.fading{opacity:0}
+.promo{min-height:34px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.promo[hidden]{display:none!important}
+.promo-desktop,.promo-mobile{transition:opacity .24s ease,transform .24s ease}
+.promo .fading{opacity:0;transform:translateY(-4px)}
+@media(prefers-reduced-motion:reduce){
+  .promo-desktop,.promo-mobile{transition:none}
+  .promo .fading{opacity:1;transform:none}
+}
 
 /* ---------- scroll reveals ---------- */
 .reveal{opacity:1;transform:none;transition:opacity .24s ease,transform .24s ease}
