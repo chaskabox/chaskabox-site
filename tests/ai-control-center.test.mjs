@@ -15,3 +15,14 @@ test('AI control center displays every agent independently without fabricating h
  assert.doesNotMatch(src,/fetch\(['"]https:\/\/api\.(?:resend|waha)/i);
  assert.match(html,/missing observations are not counted as working/);
 });
+
+test('AI diagnostics survive one endpoint outage without falsely confirming enabled states',async()=>{
+ const source=await readFile(new URL('../admin-agents.js',import.meta.url),'utf8');
+ assert.match(source,/Promise\.allSettled/);
+ assert.match(source,/refreshSequence/);
+ assert.match(source,/Unknown — status endpoint unavailable/);
+ assert.match(source,/Partial diagnostics/);
+ assert.match(source,/Marketing drafts unavailable/);
+ assert.match(source,/submit\.disabled=!state\|\|!marketing/);
+ assert.doesNotMatch(source,/Promise\.all\(\[\s*api\('\/api\/admin\/agents\/status'/);
+});

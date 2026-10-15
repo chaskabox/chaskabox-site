@@ -370,6 +370,44 @@ try{
   results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
   await context.close();
  }
+ // Partial-read outage must retain actual activation state and not invent healthy agent signals.
+ {
+  const {context,page}=await contextFor(390,'owner');
+  let down=true, statusDown=false;
+  const respond=(route,payload,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(payload)});
+  await context.route('**/api/admin/agents/**',route=>{
+   const key=new URL(route.request().url()).pathname.split('/').at(-1);
+   if(route.request().method()!=='GET')throw Error('Unexpected agent mutation during outage drill');
+   if(key==='status'&&statusDown)return respond(route,{error:{message:'Synthetic status outage'}},503);
+   if(key==='status')return respond(route,{agents:['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent_key=>({agent_key,mode:'observe',enabled:false})),pending_jobs:0,pending_approvals:0});
+   if(key==='preview')return respond(route,{agents:[{agent:'orders',state:'attention',signals:{stale_new_orders:2}}]});
+   if(key==='insights'&&down)return respond(route,{error:{message:'Synthetic insight outage'}},503);
+   if(key==='marketing'&&down)return respond(route,{error:{message:'Synthetic draft outage'}},503);
+   if(key==='insights')return respond(route,{agents:[]});
+   if(key==='marketing')return respond(route,{drafts:[]});
+   throw Error('Unexpected agent endpoint '+key);
+  });
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="agents"]').click();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('Partial diagnostics'));
+  const stillVisible=(await page.locator('#agentsM05Readiness').innerText()).includes('Configured agents: 8')&&
+   (await page.locator('#agentsM05Signals').innerText()).includes('ORDERS · attention')&&
+   await page.locator('#agentsM05Signals article').count()===8;
+  const locked=await page.locator('#agentsM05Propose button[type="submit"]').isDisabled();
+  results.interactions.push({case:'partial AI outage shows all eight and keeps healthy claims bounded',pass:stillVisible&&locked});
+  statusDown=true;await page.locator('#agentsM05Refresh').click();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Readiness')?.textContent.includes('Unknown — status endpoint unavailable'));
+  results.interactions.push({case:'agent status outage cannot fabricate zero enabled or configured agents',pass:
+   !(await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')&&
+   await page.locator('#agentsM05Propose button[type="submit"]').isDisabled()});
+  down=false;statusDown=false;await page.locator('#agentsM05Refresh').click();
+  await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('diagnostics updated'));
+  results.interactions.push({case:'AI diagnostics recover after endpoint outage without agent activation',pass:
+   !await page.locator('#agentsM05Propose button[type="submit"]').isDisabled()&&
+   (await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')});
+  await context.close();
+ }
  // New brand's full CMS editor must create with all values; no prompt or real writes.
  {
   const {context,page}=await contextFor(1440,'owner');

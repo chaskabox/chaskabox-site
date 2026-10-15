@@ -61,3 +61,8 @@ Date: 15 October 2026 | Branch: `improve/final-az-audit-20261015` | **One produc
 6. Read-only verify canonical deployed SHA, no new real orders/notifications; owner performs approved S4 sign-off.
 
 **Current limitation:** This inventory is structured evidence gathering, not a guarantee every page, form, JavaScript flow, provider or owner action is fully operational. Do not claim S4/S5 from mocked tests.
+## AI owner controls: partial-failure hardening
+- Client-side diagnostics now fetch four owner+MFA endpoints independently; a failure in optional monitoring, insight, or marketing reads never blanks valid activation data.
+- A failed activation/status endpoint is reported as **Unknown**, never **0 enabled**.
+- All eight cards remain visible with unavailable evidence plainly distinguished; failed marketing reads lock the local proposal form until a successful refresh.
+- Synthetic Chromium acceptance tests cover partial diagnostic outage, status outage and recovery. No autonomous agent, provider send or scheduler was enabled. Independent staging schema parity and owner sign-off remain blockers.
