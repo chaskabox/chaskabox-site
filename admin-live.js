@@ -1186,6 +1186,7 @@
         el.innerHTML=items.length?items.map((i,idx)=>`
           <div class="nav-row" data-id="${esc(i.id)}"><span class="drag">⋮⋮</span><b>${esc(i.label)}</b><em>${esc(i.url)}</em>
           <span class="nav-move"><button data-nav-up="${idx}" aria-label="Move up" title="Move up">↑</button><button data-nav-down="${idx}" aria-label="Move down" title="Move down">↓</button></span>
+          <button data-nav-edit="${esc(i.id)}" aria-label="Edit ${esc(i.label)}">Edit</button>
           <button data-nav-toggle="${esc(i.id)}" aria-label="Toggle enabled">${i.is_enabled?'✓':'✗'}</button></div>`).join('')
           :'<p class="muted">No items. Click + Add.</p>';
       };
@@ -1203,13 +1204,72 @@
         catch(e){render(previous,'#'+el.id);toast('Reorder failed; original menu restored: '+e.message);}
         finally{el._navSaving=false;}
       };
-      render(nav.header,'#headerNavList'); render(nav.footer,'#footerNavList');
+      render(nav.header,'#headerNavList');
+      render(nav.footer,'#footerNavList');
+      render(nav.mobile,'#mobileNavList');
+      // Use a real, accessible form rather than an inert button or prompt().
+      const openNavEditor=(item=null,defaultLocation='header')=>{
+        if(document.querySelector('[data-nav-editor]'))return;
+        const existing=Boolean(item);
+        const dialog=document.createElement('dialog');
+        dialog.className='admin-ops-dialog';dialog.dataset.navEditor='true';
+        dialog.innerHTML=`<form id="navEditForm" novalidate>
+          <h2>${existing?'Edit menu link':'Add menu link'}</h2>
+          <p class="muted">Menus publish to the storefront after saving. Choose an internal path or a secure external URL.</p>
+          <label class="admin-ops-field">Label<input id="navEditLabel" required maxlength="100"></label>
+          <label class="admin-ops-field">Destination URL<input id="navEditUrl" required maxlength="500" placeholder="/shop/ or https://example.com"></label>
+          <label class="admin-ops-field">Menu location<select id="navEditLocation"><option value="header">Header</option><option value="footer">Footer</option><option value="mobile">Mobile</option></select></label>
+          <label class="admin-ops-field">Enabled <input type="checkbox" id="navEditEnabled"></label>
+          <p id="navEditError" role="alert" class="admin-ops-error" hidden></p>
+          <div class="admin-ops-actions"><button class="btn secondary" type="button" id="navEditCancel">Cancel</button><button class="btn primary" type="submit" id="navEditSave">Save menu link</button></div>
+        </form>`;
+        document.body.append(dialog);
+        const close=()=>{dialog.close?.();dialog.remove();};
+        dialog.querySelector('#navEditCancel').onclick=close;
+        dialog.oncancel=e=>{e.preventDefault();close();};
+        const val=id=>dialog.querySelector(id);
+        val('#navEditLabel').value=item?.label||'';
+        val('#navEditUrl').value=item?.url||'/';
+        val('#navEditLocation').value=item?.location||defaultLocation;
+        val('#navEditEnabled').checked=item?.is_enabled!==false;
+        val('#navEditForm').onsubmit=async e=>{
+          e.preventDefault();
+          const label=val('#navEditLabel').value.trim(),url=val('#navEditUrl').value.trim();
+          const location=val('#navEditLocation').value,error=val('#navEditError'),save=val('#navEditSave');
+          error.hidden=true;
+          if(label.length<1||label.length>100||!(/^(\/(?!\/)|https:\/\/|mailto:|tel:|#[a-z0-9_.-]*$)/i.test(url))||/\s/.test(url)){
+            error.textContent='Enter a label and a safe /path, HTTPS, email or telephone URL.';
+            error.hidden=false;return;
+          }
+          save.disabled=true;
+          try{
+            const data={label,url,location,is_enabled:val('#navEditEnabled').checked};
+            if(existing)await api('/api/admin/navigation',{method:'PATCH',body:{items:[{id:item.id,...data}]}});
+            else await api('/api/admin/navigation',{method:'POST',body:{...data,position:(nav[location]||[]).length+1}});
+            close();toast(existing?'Menu link updated':'Menu link added');
+            await loadNavigation();
+          }catch(err){error.textContent='Menu save failed: '+err.message;error.hidden=false;}
+          finally{if(save.isConnected)save.disabled=false;}
+        };
+        dialog.showModal?.();
+        val('#navEditLabel').focus();
+      };
+      for(const [id,location] of [['addHeaderNav','header'],['addFooterNav','footer'],['addMobileNav','mobile']]){
+        const button=$('#'+id);
+        if(button)button.onclick=()=>openNavEditor(null,location);
+      }
       const navView=$('#view-navigation');
       if(navView && !navView._navWired){
         navView._navWired=true;
         navView.addEventListener('click',async(e)=>{
-          const up=e.target.closest('[data-nav-up]'), down=e.target.closest('[data-nav-down]'), tog=e.target.closest('[data-nav-toggle]');
-          if(up){ const el=up.closest('.nav-row').parentElement; move(el,Number(up.dataset.navUp),-1); }
+          const up=e.target.closest('[data-nav-up]'), down=e.target.closest('[data-nav-down]'),
+            tog=e.target.closest('[data-nav-toggle]'), edit=e.target.closest('[data-nav-edit]');
+          if(edit){
+            const list=edit.closest('.nav-row')?.parentElement;
+            const item=(list?._navItems||[]).find(x=>String(x.id)===edit.dataset.navEdit);
+            if(item)openNavEditor(item,item.location);
+          }
+          else if(up){ const el=up.closest('.nav-row').parentElement; move(el,Number(up.dataset.navUp),-1); }
           else if(down){ const el=down.closest('.nav-row').parentElement; move(el,Number(down.dataset.navDown),1); }
           else if(tog){
             const el=tog.closest('.nav-row').parentElement;

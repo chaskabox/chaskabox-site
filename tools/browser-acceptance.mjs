@@ -370,6 +370,41 @@ try{
   results.interactions.push({case:'approval disables both decisions and records one review-only action',pass:pairedDisabled&&writes.filter(w=>w.operation==='decide').length===1&&draft.decision==='approved'});
   await context.close();
  }
+ // Header/Footer/Mobile links must be creatable/editable by the owner without SQL.
+ {
+  const {context,page}=await contextFor(1440,'owner');
+  const items=[{id:'00000000-0000-4000-8000-000000000081',location:'header',label:'Shop',url:'/shop/',position:1,is_enabled:true}];
+  let posts=0,patches=0;
+  const reply=(route,data,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(data)});
+  await context.route('**/api/admin/navigation',route=>{
+   const method=route.request().method();
+   if(method==='POST'){const item={id:'00000000-0000-4000-8000-000000000082',...route.request().postDataJSON()};
+    items.push(item);posts++;return reply(route,{item},201);}
+   if(method==='PATCH'){for(const update of route.request().postDataJSON().items){const item=items.find(i=>i.id===update.id);if(item)Object.assign(item,update);}patches++;return reply(route,{ok:true,updated:1});}
+   return reply(route,{navigation:{header:items.filter(i=>i.location==='header'),footer:items.filter(i=>i.location==='footer'),mobile:items.filter(i=>i.location==='mobile')}});
+  });
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await page.locator('[data-view="navigation"]').click();
+  await page.locator('#headerNavList [data-nav-edit]').first().waitFor();
+  await page.locator('#addMobileNav').click();
+  await page.locator('#navEditLabel').fill('My mobile offers');
+  await page.locator('#navEditUrl').fill('javascript:alert(1)');
+  await page.locator('#navEditSave').click();
+  const rejected=await page.locator('#navEditError').isVisible()&&posts===0;
+  await page.locator('#navEditUrl').fill('/shop/');
+  await page.locator('#navEditSave').click();
+  await page.locator('#mobileNavList [data-nav-edit]').first().waitFor();
+  results.interactions.push({case:'owner can create mobile navigation item and unsafe URL is rejected',
+    pass:rejected&&posts===1&&items[1].location==='mobile'&&items[1].label==='My mobile offers'});
+  await page.locator('#mobileNavList [data-nav-edit]').first().click();
+  await page.locator('#navEditLabel').fill('Daily snacks');
+  await page.locator('#navEditSave').click();
+  await page.locator('#mobileNavList').getByText('Daily snacks',{exact:true}).waitFor();
+  results.interactions.push({case:'owner edits mobile navigation item via audited PATCH',pass:
+    patches===1&&items[1].label==='Daily snacks'});
+  await context.close();
+ }
  // Owner/Manager/Content category and brand actions must match backend role gates.
  for(const role of ['owner','manager','content']){
   const {context,page}=await contextFor(1440,role);
