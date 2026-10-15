@@ -19,6 +19,20 @@ test('hero candidates and cards accept existing photos and reject absent local p
  const b=browser();assert.equal(b.run("hasPhoto({img:'images/p27.webp'})"),true);assert.equal(b.run("hasPhoto({img:'images/p999999.webp'})"),false);assert.equal(b.run("hasPhoto({img:'https://fixture.invalid/upload.png'})"),true);
  assert.match(b.run("cardHTML({id:1,name:'Fixture',price:1,img:'images/p999999.webp'})"),/Photo<br>coming soon/);
 });
+test('all bag controls respect the checkout quantity and distinct-item limits',()=>{
+ const b=browser();b.ctx.fetch=()=>Promise.resolve({});
+ b.run("PRODUCTS=Array.from({length:51},(_,i)=>({id:i+1,name:'Snack '+(i+1),price:100}));saveCart=()=>{};renderCartPage=()=>{};openDrawer=()=>{};popBadge=()=>{};toast=()=>{};CART={1:99};addToCart(1);chQty(1,1);setCartPageQty(1,100);");
+ assert.equal(b.run('CART[1]'),99);
+ b.run('setCartPageQty(1,98);addToCart(1);');assert.equal(b.run('CART[1]'),99);
+ b.run('setCartPageQty(1,0);');assert.equal(b.run('Object.keys(CART).length'),0);
+ b.run('CART=Object.fromEntries(Array.from({length:50},(_,i)=>[i+1,1]));addToCart(51);');assert.equal(b.run('Object.keys(CART).length'),50);
+ b.node('pdqty').textContent='99';b.node('mqty').textContent='99';b.run('pdQty(1);mQty(1);');assert.equal(Number(b.node('pdqty').textContent),99);assert.equal(Number(b.node('mqty').textContent),99);
+});
+test('bag delivery progress follows saved thresholds including free delivery from zero',()=>{
+ const b=browser();b.run("PRODUCTS=[{id:1,name:'Snack',price:100}];CART={1:2};STORE_CONFIG={settings:{prepaid_free_delivery_threshold_pkr:300,cod_delivery_fee_pkr:250,prepaid_delivery_fee_pkr:150}};animateProgressIn=()=>{};renderDrawer();");
+ assert.match(b.node('dfoot').innerHTML,/Rs\. 100 more/);assert.match(b.node('dfoot').innerHTML,/data-progress="67"/);assert.match(b.node('dfoot').innerHTML,/Rs\. 250/);assert.match(b.node('dfoot').innerHTML,/Rs\. 150/);
+ b.run('STORE_CONFIG.settings.prepaid_free_delivery_threshold_pkr=0;renderDrawer();');assert.match(b.node('dfoot').innerHTML,/data-progress="100"/);assert.match(b.node('dfoot').innerHTML,/FREE prepaid delivery unlocked/);assert.ok(!b.node('dfoot').innerHTML.includes('NaN'));
+});
 test('reveal content remains visible without an observer and when motion preference changes',()=>{
  const fallback=browser();fallback.run('initReveals();observeReveals();');assert.ok(fallback.node('reveal').classList.contains('in'));assert.equal(fallback.node('html').classList.contains('motion-reveals'),false);
  const b=browser({observer:true});b.run('initReveals();');assert.equal(b.node('html').classList.contains('motion-reveals'),true);b.node('heroCollage').style.transform='rotateX(2deg)';b.media.matches=true;b.media.changed();assert.ok(b.ctx.disconnected);assert.ok(b.node('reveal').classList.contains('in'));assert.equal(b.node('heroCollage').style.transform,'');
@@ -35,8 +49,14 @@ test('submitted and edited searches survive refresh and clearing removes stale q
  const b=browser();b.run('route=()=>{};');
  b.node('headerSearch').value='bubble & gum';b.run('submitHeaderSearch();');assert.equal(b.history.at(-1),'/shop/?q=bubble%20%26%20gum');
  b.node('homeSearch').value='imli?';b.run('submitHomeSearch();');assert.equal(b.history.at(-1),'/shop/?q=imli%3F');
- b.ctx.location.search='?brand=Candyland&q=old';b.ctx.location.hash='#results';b.run("queueShopSearch('Bubble');");assert.equal(b.history.at(-1),'/shop/?brand=Candyland&q=Bubble#results');
- b.run('renderShopContent=()=>{};clearAllFilters();');assert.equal(b.history.at(-1),'/shop/#results');
+ b.ctx.location.search='?brand=Candyland&q=old';b.ctx.location.hash='#results';b.run("queueShopSearch('Bubble');");assert.equal(b.history.at(-1),'/shop/?brand=Candyland&q=Bubble#results');assert.equal(b.node('headerSearch').value,'Bubble');
+ b.run('renderShopContent=()=>{};clearAllFilters();');assert.equal(b.history.at(-1),'/shop/#results');assert.equal(b.node('headerSearch').value,'');
+});
+test('unassigned ChaskaBox mixed boxes share their brand filter while explicit brands are retained',()=>{
+ const b=browser();
+ assert.equal(b.run("getBrand({name:'ChaskaBox Family Pack',bundle:true,brand:''})"),'ChaskaBox');
+ assert.equal(b.run("getBrand({name:'ChaskaBox Kids Bundle',bundle:true,brand:'Fixture Brand'})"),'Fixture Brand');
+ assert.equal(b.run("getBrand({name:'Mayfair | Snack',brand:''})"),'Mayfair');
 });
 test('late retention initialization preserves the photo-eligible native weekly-pick link',()=>{
  const b=browser();b.run("PRODUCTS=[{id:5,name:'Missing photo',category:'Snacks',price:1,img:'images/p999999.webp',badge:'Bestseller'},{id:27,name:'Fixture snack',category:'Snacks',price:10,img:'images/p27.webp'}];renderHomeContent();");

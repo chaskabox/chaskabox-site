@@ -19,7 +19,7 @@ export async function onRequestGet(context){
   html=html.replace(/<main\b[^>]*>[\s\S]*?<\/main>/i,main);
   const schema={'@context':'https://schema.org','@type':'CollectionPage',name:copy.name,url:SITE+path,mainEntity:{'@type':'ItemList',numberOfItems:rows.length,itemListElement:rows.map((p,i)=>({'@type':'ListItem',position:i+1,url:SITE+'/product/'+p.id+'/',name:p.name}))}};
   html=withSeo(html,{title:copy.title,description:copy.description,path,noindex:rows.length===0,schemas:[organizationSchema(),schema],seed:'<script type="application/json" id="occasion-selection">'+safeJson({ids:copy.ids})+'</script>'});
-  html=html.replace('</body>','<script src="/occasion-runtime.js?v=20261014-final" defer></script></body>');
+  html=html.replace('</body>','<script src="/occasion-runtime.js?v=20261015-shopping-recheck" defer></script></body>');
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store'}});
  }catch{return catalogueUnavailable();}
 }

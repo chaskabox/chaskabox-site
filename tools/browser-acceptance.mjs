@@ -50,6 +50,12 @@ const server=createServer(async(req,res)=>{try{
   if(p==='/api/brands'){const brand=brands.find(b=>b.slug===u.searchParams.get('slug'));return json(res,u.searchParams.has('slug')?{brand}:{brands});}
   if(p==='/api/brand-products'){const brand=brands.find(b=>b.slug===u.searchParams.get('slug'));return json(res,{brand:brand?.name,products:products.filter(p=>brandName(p)===brand?.name)});}
   if(p==='/api/reviews')return json(res,{reviews:[],summary:{count:0,average:0},total:0});
+  if(p==='/api/checkout-quote'){
+   let body='';for await(const chunk of req)body+=chunk;
+   const order=JSON.parse(body),subtotal=order.items.reduce((sum,i)=>sum+products.find(p=>p.id===i.product_id).price*i.qty,0);
+   const delivery_fee=order.payment_method==='cod'?settings.cod_delivery_fee_pkr:subtotal>=settings.prepaid_free_delivery_threshold_pkr?0:settings.prepaid_delivery_fee_pkr;
+   return json(res,{quote:{subtotal,delivery_fee,discount:0,total:subtotal+delivery_fee}});
+  }
   if(p==='/api/admin/me')return json(res,{role,user:{id:'00000000-0000-4000-8000-000000000001',email:'synthetic@example.invalid'},mfa:{required:true,aal:'aal2'},capabilities:role==='owner'?['*']:[]});
   if(p==='/api/admin/products')return json(res,{products:products.map(p=>({...p,image_url:p.img,description:p.desc,visibility:'visible',stock_state:p.stockState})),page:1,total:products.length,total_pages:1});
   if(p==='/api/admin/orders')return json(res,{orders:[],total:0,total_pages:1,page:1});
@@ -77,7 +83,7 @@ const server=createServer(async(req,res)=>{try{
   res.writeHead(response.status,{'Content-Type':'text/html'});return res.end((await response.text()).replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
  }
  if(/\.\.|(^|\/)\./.test(p)){res.writeHead(403);return res.end('Forbidden');}
- const assetPath=p==='/admin/'?'/admin.html':/^\/brand\/[^/]+\/$/.test(p)?'/brand/index.html':p;
+ const assetPath=p==='/cart/'?'/index.html':p==='/admin/'?'/admin.html':/^\/brand\/[^/]+\/$/.test(p)?'/brand/index.html':p;
  let file=path.join(root,decodeURIComponent(assetPath));if((await stat(file).catch(()=>null))?.isDirectory())file=path.join(file,'index.html');
  if(!/\.(html|css|js|json|png|webp|svg|mp4)$/.test(file)){res.writeHead(404);return res.end('Not found');}
  let data=await readFile(file);if(file.endsWith('.html'))data=Buffer.from(data.toString().replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
@@ -136,6 +142,41 @@ try{
  }
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){const {context,page}=await contextFor(width);for(const route of routes)await inspect(page,route,width);await context.close();}
+ // Real cart/checkout DOM, with synthetic catalogue and quote data only.
+ for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){
+  const {context,page}=await contextFor(width);let orders=0;
+  page.on('request',r=>{if(new URL(r.url()).pathname==='/api/orders')orders++;});
+  await page.goto(base+'/shop/',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
+  await page.evaluate(()=>{CART={39:98};saveCart();});
+  await inspect(page,'/cart/',width);
+  await page.getByRole('button',{name:'Increase',exact:true}).click();
+  if(await page.getByRole('button',{name:'Increase',exact:true}).isEnabled())throw Error('Cart quantity exceeds checkout limit');
+  if(await page.evaluate(()=>JSON.parse(localStorage.getItem('chaskabox-cart'))[39])!==99)throw Error('Cart limit changed stored quantity');
+  await page.getByRole('button',{name:'Open shopping bag'}).click();
+  if(await page.locator('#drawer button[aria-label^="Increase "]').isEnabled())throw Error('Drawer increment is not capped');
+  await page.getByRole('button',{name:'Close shopping bag'}).click();
+  results.interactions.push({case:'cart and drawer cap quantity at 99 / '+width,pass:true});
+  await inspect(page,'/checkout.html',width);
+  await page.getByLabel('City *',{exact:true}).fill('Lahore');
+  await page.waitForFunction(()=>document.getElementById('quoteStatus')?.textContent==='Total confirmed for Lahore.');
+  const fmt=n=>'Rs. '+n.toLocaleString('en-PK');
+  const subtotal=99*products.find(p=>p.id===39).price;
+  if(await page.locator('#s_tot').innerText()!==fmt(subtotal+300))throw Error('COD quote total mismatch');
+  await page.locator('input[value="jazzcash"]').check();
+  await page.waitForFunction(()=>document.getElementById('quoteStatus')?.textContent==='Total confirmed for Lahore.');
+  if(await page.locator('#s_tot').innerText()!==fmt(subtotal))throw Error('Prepaid quote total mismatch');
+  if(orders)throw Error('Browser check attempted an order');
+  results.interactions.push({case:'checkout shows COD/prepaid totals without submitting / '+width,pass:true});
+  await page.goto(base+'/shop/',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
+  const motion=await page.evaluate(()=>({sheet:getComputedStyle(document.getElementById('filterSheet')).transitionDuration,badge:getComputedStyle(document.querySelector('.cartcount')).animationName}));
+  if(motion.sheet!=='0s'||motion.badge!=='none')throw Error('Shopping controls ignored reduced motion');
+  await page.getByRole('searchbox',{name:'Search products',exact:true}).fill('gum');
+  if(await page.locator('#headerSearch').inputValue()!=='gum')throw Error('Header retained a stale search');
+  results.interactions.push({case:'filter sheet and bag badge respect reduced motion / '+width,pass:true});
+  await context.close();
+ }
  // Reproduce the live legacy logo setting and prove branding survives errors.
  {
   const {context,page}=await contextFor(390);
@@ -196,6 +237,9 @@ try{
  results.interactions.push({case:'occasion adds one of each current pack atomically',pass:await page.evaluate(()=>{const bag=JSON.parse(localStorage.getItem('chaskabox-cart'));return [69,76,156].every(id=>bag[id]===1);})});
  await page.evaluate(()=>localStorage.setItem('chaskabox-cart',JSON.stringify({69:99})));await page.locator('#addOccasion').click();await page.waitForFunction(()=>document.getElementById('occasionStatus')?.textContent.includes('Reduce the quantity'));
  results.interactions.push({case:'occasion quantity cap retains the original bag',pass:await page.evaluate(()=>localStorage.getItem('chaskabox-cart')===JSON.stringify({69:99}))});
+ await page.evaluate(()=>localStorage.setItem('chaskabox-cart',JSON.stringify(Object.fromEntries(Array.from({length:49},(_,i)=>[i+1,1])))));
+ await page.locator('#addOccasion').click();await page.waitForFunction(()=>document.getElementById('occasionStatus')?.textContent.includes('50 different snacks'));
+ results.interactions.push({case:'occasion distinct-item cap retains the original bag atomically',pass:await page.evaluate(()=>Object.keys(JSON.parse(localStorage.getItem('chaskabox-cart'))).length===49)});
  await context.close();
  // Credibility controls use local synthetic fixtures, never real reviews or media.
  {
