@@ -181,6 +181,19 @@ try{
   await page.getByRole('button',{name:'Close shopping bag'}).click();
   results.interactions.push({case:'cart and drawer cap quantity at 99 / '+width,pass:true});
   await inspect(page,'/checkout.html',width);
+  // Visual regression: new branded header, 2-step progress and a non-default coupon CTA.
+  const checkoutVisual=await page.evaluate(()=>{
+   const intro=document.querySelector('.checkout-intro'),coupon=document.querySelector('#applyCoupon'),
+    grid=document.querySelector('.co-grid'),total=document.querySelector('.checkout-totals .sumrow.total');
+   const btn=getComputedStyle(coupon),summary=getComputedStyle(document.querySelector('.checkout-summary-heading'));
+   return {intro:!!intro,progress:!!document.querySelector('.checkout-progress'),
+    couponStyled:btn.borderRadius!=='0px'&&btn.minHeight==='45px',
+    summaryBranded:summary.backgroundColor!=='rgba(0, 0, 0, 0)'&&summary.backgroundColor!=='rgb(255, 255, 255)',
+    total:!!total,columns:getComputedStyle(grid).gridTemplateColumns,overflow:document.documentElement.scrollWidth>innerWidth+1};
+  });
+  if(!checkoutVisual.intro||!checkoutVisual.progress||!checkoutVisual.couponStyled||!checkoutVisual.summaryBranded||!checkoutVisual.total||checkoutVisual.overflow)throw Error('Checkout visual audit failed '+JSON.stringify({width,checkoutVisual}));
+  results.interactions.push({case:'premium checkout visually styled / '+width,pass:true});
+  if(width===390||width===1440)await page.screenshot({path:path.join(output,'premium-checkout-'+width+'.png'),fullPage:true});
   await page.getByLabel('City *',{exact:true}).fill('Lahore');
   await page.waitForFunction(()=>document.getElementById('quoteStatus')?.textContent==='Total confirmed for Lahore.');
   const fmt=n=>'Rs. '+n.toLocaleString('en-PK');

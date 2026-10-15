@@ -6,23 +6,36 @@
 <title>Checkout — ChaskaBox</title>
 <meta name="robots" content="noindex, follow">
 <link rel="stylesheet" href="/styles.css?v=20261015-az-validated">
+<link rel="stylesheet" href="/checkout-ui.css?v=20261015-premium-v1">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
-<body>
+<body class="checkout-page">
 <div class="promo">🔒 Encrypted connection · COD, JazzCash &amp; Bank Transfer</div>
 <header><div class="hwrap">
   <a class="logo" href="/"><img src="/images/logo-navy.png" srcset="/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w" sizes="210px" alt="ChaskaBox" class="logo-img" width="1624" height="776"></a>
-  <span style="margin-left:auto;font-size:13px;color:var(--muted)">Step 2 of 2 — Checkout</span>
+  <div class="checkout-header-status" aria-label="Secure checkout, step 2 of 2"><span class="checkout-header-status-dot" aria-hidden="true"></span><span>Secure checkout</span><b>Step 2 of 2</b></div>
 </div></header>
 
 <main class="co-wrap" id="coMain">
-  <h1 class="checkout-title">Checkout 🧾</h1>
+  <section class="checkout-intro" aria-labelledby="checkoutTitle">
+  <div class="checkout-intro-copy">
+    <p class="checkout-kicker">CHASKABOX &nbsp; / &nbsp; EASY CHECKOUT</p>
+    <h1 class="checkout-title" id="checkoutTitle">Almost there<span class="checkout-title-period">.</span></h1>
+    <p class="checkout-lead">Review your details, choose a payment method, and you're ready to order.</p>
+  </div>
+  <nav class="checkout-progress" aria-label="Checkout progress">
+    <span class="checkout-progress-item complete"><span class="checkout-progress-circle" aria-hidden="true">✓</span><span>Shopping bag</span></span>
+    <span class="checkout-progress-line" aria-hidden="true"></span>
+    <span class="checkout-progress-item current" aria-current="step"><span class="checkout-progress-circle" aria-hidden="true">2</span><span>Delivery &amp; payment</span></span>
+  </nav>
+</section>
+<div class="checkout-guest-note"><span class="checkout-guest-icon" aria-hidden="true">✓</span><span><strong>Guest checkout</strong> — No account needed. Your total is verified before you place the order.</span></div>
   <div id="orderError" class="order-error" role="alert" hidden></div>
   <div class="co-grid">
     <div>
       <section class="co-card" aria-labelledby="detailsTitle">
-        <h2 id="detailsTitle" class="co-step-title">1 · Your Details</h2>
+        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">01</span><div><h2 id="detailsTitle" class="co-step-title">Delivery details</h2><p>Where should we deliver your snacks?</p></div></div>
         <div class="field"><label for="f_country">Delivery country</label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help">We currently deliver within Pakistan only. Overseas shipping is not yet available.</p><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
         <div class="form-two">
           <div class="field"><label for="f_fname">First Name *</label><input id="f_fname" name="first_name" autocomplete="given-name" placeholder="e.g. Ahmed"><div class="err" id="e_fname">Enter first name</div></div>
@@ -43,7 +56,7 @@
       </section>
 
       <section class="co-card" style="margin-top:16px" aria-labelledby="paymentTitle">
-        <h2 id="paymentTitle" class="co-step-title">2 · Payment Method</h2>
+        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">02</span><div><h2 id="paymentTitle" class="co-step-title">Payment method</h2><p>Pick the way you'd like to pay.</p></div></div>
         <fieldset class="payment-fieldset">
           <legend class="sr-only">Choose a payment method</legend>
 
@@ -91,7 +104,7 @@
       </section>
 
       <section class="co-card" style="margin-top:16px" aria-labelledby="extrasTitle">
-        <h2 id="extrasTitle" class="co-step-title">3 · Extras</h2>
+        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">03</span><div><h2 id="extrasTitle" class="co-step-title">A little extra</h2><p>Optional requests for your order.</p></div></div>
         <label class="payopt" id="videoOpt">
           <input type="checkbox" id="f_video">
           <span><b>🎬 Request a packing video <span class="free">FREE</span></b><small>If operations allow, Rameez will send a short packing clip on WhatsApp. This is a request, not a guaranteed service.</small></span>
@@ -101,17 +114,25 @@
 
     <div>
       <section class="co-card order-summary-card" aria-labelledby="summaryTitle">
-        <h2 id="summaryTitle" class="co-step-title">Order Summary</h2>
+        <div class="checkout-summary-heading"><div><p class="checkout-summary-kicker">YOUR BAG</p><h2 id="summaryTitle" class="co-step-title">Order summary</h2></div><span class="checkout-summary-lock" aria-hidden="true">✓</span></div>
         <div id="coItems"></div>
-        <div style="margin-top:10px">
-          <label for="f_coupon">Coupon (optional)</label><div class="field"><input id="f_coupon" maxlength="32" autocomplete="off" placeholder="Coupon code"><button type="button" class="btn secondary" id="applyCoupon">Apply</button></div><p id="quoteStatus" role="status" aria-live="polite">Enter your city to confirm delivery and total.</p><div class="sumrow"><span>Discount</span><span id="s_discount">Rs. 0</span></div><div class="sumrow"><span>Subtotal</span><span id="s_sub">Rs. 0</span></div>
-          <div class="sumrow"><span>Delivery</span><span id="s_del">Rs. 0</span></div>
-          <div class="sumrow total"><span>Total</span><span id="s_tot">Rs. 0</span></div>
+        <div class="checkout-summary-body">
+          <div class="checkout-coupon">
+            <label for="f_coupon">Have a promo code? <span class="optional">(optional)</span></label>
+            <div class="checkout-coupon-row"><input id="f_coupon" maxlength="32" autocomplete="off" placeholder="Enter your code"><button type="button" id="applyCoupon">Apply code</button></div>
+          </div>
+          <p id="quoteStatus" class="checkout-quote-status" role="status" aria-live="polite">Enter your city to confirm your final total.</p>
+          <div class="checkout-totals">
+            <div class="sumrow"><span>Subtotal</span><span id="s_sub">Rs. 0</span></div>
+            <div class="sumrow"><span>Discount</span><span id="s_discount">Rs. 0</span></div>
+            <div class="sumrow"><span>Delivery</span><span id="s_del">Rs. 0</span></div>
+            <div class="sumrow total"><span>Order total</span><strong id="s_tot">Rs. 0</strong></div>
+          </div>
         </div>
         <div class="hint" id="freeHint" hidden></div>
-        <div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light"></div>
-        <button class="placebtn" id="placeBtn" type="button" disabled>Place Order →</button>
-        <div class="checkout-trust">🔒 Encrypted connection · 4–7 day nationwide delivery · Need help? WhatsApp 0332-0005381</div>
+        <div class="checkout-verification"><p class="checkout-verification-title"><span aria-hidden="true">◈</span> Bot protection</p><div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light"></div><p class="checkout-verification-help">Verification unavailable? Try refreshing, or disable blockers for this site. We cannot accept orders without required security checks.</p></div>
+        <button class="placebtn" id="placeBtn" type="button" disabled>Place order <span aria-hidden="true">→</span></button>
+        <div class="checkout-trust"><span aria-hidden="true">✓</span> Secure checkout <span class="checkout-trust-divider" aria-hidden="true">·</span> Final pricing checked before order</div>
         <p class="checkout-policy">By placing your order, you agree to our <a href="/terms/">Terms</a>, <a href="/shipping-policy/">Shipping Policy</a> and <a href="/refund-policy/">Refund &amp; Resolution Policy</a>.</p>
       </section>
     </div>
