@@ -66,4 +66,3 @@ Job evidence reports:
   that revised filter, and final reviewed release should pin/test final SHA.
 - This is strong **backup/restore acceptance**, not Supabase staging parity
   or production deployment authorization.
-
