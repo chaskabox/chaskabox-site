@@ -360,7 +360,7 @@ setTimeout(function(){
 
       <!-- AI -->
       <section class="admin-view" id="view-agents" data-title="AI Agents" data-subtitle="Owner-controlled monitoring, drafts, diagnostics and approvals.">
-        <div class="panel"><h2>AI Agents — Owner Control Centre</h2><p class="muted">Observation only. All eight agents remain disabled by default. No automatic messages or publishing.</p><button id="agentsM05Refresh" class="btn secondary" type="button">Refresh Agent Status</button><p id="agentsM05Message" role="status" aria-live="polite">Select AI Agents to load diagnostics.</p></div>
+        <div class="panel"><h2>AI Agents — Owner Control Centre</h2><p class="muted">Eight owner-visible monitors are listed below. Status is based on real read-only signals; missing observations are not counted as working. Enabling automation, external messages and publishing requires a separate approved backend release.</p><button id="agentsM05Refresh" class="btn secondary" type="button">Refresh Agent Status</button><p id="agentsM05Message" role="status" aria-live="polite">Select AI Agents to load diagnostics.</p></div>
         <div id="agentsM05Readiness" class="agent-m05-grid"></div>
         <div id="agentsM05Signals" class="agent-m05-grid"></div>
         <div class="panel"><h2>Marketing proposals (review only)</h2><form id="agentsM05Propose" class="toolbar"><label>Public product ID <input id="agentsM05ProductId" type="number" min="1" step="1" required></label><label>Channel <select id="agentsM05Channel"><option value="social">Social</option><option value="email">Email draft</option><option value="whatsapp">WhatsApp draft</option></select></label><button class="btn primary" type="submit">Create review draft</button></form><p class="safe-note">Approving a draft does NOT send, publish, or create a marketing campaign.</p><div id="agentsM05Drafts" class="agent-m05-grid"></div></div>
@@ -643,6 +643,6 @@ setTimeout(function(){
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
 <script src="/admin-live.js?v=20261015-staff-signin-ux1" defer></script>
-<script src="/admin-agents.js?v=20261015-final-m05" defer></script>
+<script src="/admin-agents.js?v=20261015-az-audit" defer></script>
 </body>
 </html>

@@ -57,11 +57,23 @@
     ['Configured agents',(state.agents||[]).length],
     ['Enabled agents',(state.agents||[]).filter(x=>x.enabled).length]
    ]);
-   for(const a of monitor.agents||[]){
-    block(signals,a.agent+' — '+a.state,Object.entries(a.signals||{}));
-   }
-   for(const a of insights.agents||[]){
-    block(signals,a.agent+' — '+a.status,Object.entries(a.signals||{}));
+   // Show every configured agent, including those with no current observation.
+   // Never substitute a green "working" badge for missing or stale evidence.
+   const eight=['orders','inventory','security','backups','support','seo','marketing','analytics'];
+   const observations=new Map([...(monitor.agents||[]),...(insights.agents||[])]
+    .filter(x=>x&&typeof x.agent==='string').map(x=>[x.agent,x]));
+   const settings=new Map((state.agents||[]).map(x=>[x.agent_key,x]));
+   for(const agentKey of eight){
+    const current=settings.get(agentKey),reading=observations.get(agentKey);
+    const status=reading?.state||reading?.status||
+      (agentKey==='marketing'?'Review-only drafts':'No observation evidence');
+    const data=[['Activation',current?.enabled?'Enabled (verify scheduler separately)':'Disabled'],
+      ['Agent mode',current?.mode||'Not reported'],
+      ['Signals',status],
+      ['Data basis',reading?'Read-only runtime observation':agentKey==='marketing'?'Human review workflow':'No validated live signal']];
+    if(reading?.signals&&typeof reading.signals==='object')for(const [key,value] of Object.entries(reading.signals))
+     data.push([key,typeof value==='object'?'Not comparable':value]);
+    block(signals,agentKey.toUpperCase()+' · '+status,data);
    }
    renderMarketing(marketing.drafts);
    show(message,'Read-only diagnostics updated. No live jobs started.');
