@@ -12,3 +12,15 @@ test('checkout is visibly restructured and uses a checkout-only style layer',asy
  assert.match(page,/data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf"/);
  assert.match(page,/Overseas shipping is not yet available/);
 });
+test('real Turnstile stays server-verified while compact mode protects extra-small viewports',async()=>{
+ const html=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
+ const js=await readFile(new URL('../checkout.js',import.meta.url),'utf8');
+ assert.match(html,/turnstile\/v0\/api\.js" defer/);
+ assert.match(html,/data-size="flexible"/);
+ assert.match(js,/max-width: 360px/);
+ assert.match(js,/dataset\.size/);
+ assert.doesNotMatch(js,/TURNSTILE_SECRET_KEY/);
+ assert.match(html,/Edit shopping bag/);
+ assert.match(html,/Estimated total/);
+ assert.match(js,/Verified total/);
+});

@@ -6,9 +6,9 @@
 <title>Checkout — ChaskaBox</title>
 <meta name="robots" content="noindex, follow">
 <link rel="stylesheet" href="/styles.css?v=20261015-az-validated">
-<link rel="stylesheet" href="/checkout-ui.css?v=20261015-premium-v1">
+<link rel="stylesheet" href="/checkout-ui.css?v=20261015-premium-v2">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
 </head>
 <body class="checkout-page">
 <div class="promo">🔒 Encrypted connection · COD, JazzCash &amp; Bank Transfer</div>
@@ -29,6 +29,7 @@
     <span class="checkout-progress-line" aria-hidden="true"></span>
     <span class="checkout-progress-item current" aria-current="step"><span class="checkout-progress-circle" aria-hidden="true">2</span><span>Delivery &amp; payment</span></span>
   </nav>
+  <a class="checkout-back-link" href="/cart/">← Edit shopping bag</a>
 </section>
 <div class="checkout-guest-note"><span class="checkout-guest-icon" aria-hidden="true">✓</span><span><strong>Guest checkout</strong> — No account needed. Your total is verified before you place the order.</span></div>
   <div id="orderError" class="order-error" role="alert" hidden></div>
@@ -126,11 +127,11 @@
             <div class="sumrow"><span>Subtotal</span><span id="s_sub">Rs. 0</span></div>
             <div class="sumrow"><span>Discount</span><span id="s_discount">Rs. 0</span></div>
             <div class="sumrow"><span>Delivery</span><span id="s_del">Rs. 0</span></div>
-            <div class="sumrow total"><span>Order total</span><strong id="s_tot">Rs. 0</strong></div>
+            <div class="sumrow total"><span id="checkoutTotalLabel">Estimated total</span><strong id="s_tot">Rs. 0</strong></div>
           </div>
         </div>
         <div class="hint" id="freeHint" hidden></div>
-        <div class="checkout-verification"><p class="checkout-verification-title"><span aria-hidden="true">◈</span> Bot protection</p><div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light"></div><p class="checkout-verification-help">Verification unavailable? Try refreshing, or disable blockers for this site. We cannot accept orders without required security checks.</p></div>
+        <div class="checkout-verification"><p class="checkout-verification-title"><span aria-hidden="true">◈</span> Bot protection</p><div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light" data-size="flexible"></div><p class="checkout-verification-help">Verification unavailable? Try refreshing, or disable blockers for this site. We cannot accept orders without required security checks.</p></div>
         <button class="placebtn" id="placeBtn" type="button" disabled>Place order <span aria-hidden="true">→</span></button>
         <div class="checkout-trust"><span aria-hidden="true">✓</span> Secure checkout <span class="checkout-trust-divider" aria-hidden="true">·</span> Final pricing checked before order</div>
         <p class="checkout-policy">By placing your order, you agree to our <a href="/terms/">Terms</a>, <a href="/shipping-policy/">Shipping Policy</a> and <a href="/refund-policy/">Refund &amp; Resolution Policy</a>.</p>
@@ -163,7 +164,7 @@
 <script src="/supabase-config.js?v=4"></script>
 <script src="/analytics.js?v=1"></script>
 <script src="/account.js?v=20261012-release?v=1"></script>
-<script src="/checkout.js?v=20261015-az-validated"></script>
+<script src="/checkout.js?v=20261015-az-responsive-turnstile"></script>
 <div class="modal" id="acctmodal" role="dialog" aria-modal="true" aria-label="Account sign in" aria-hidden="true" onclick="if(event.target===this)closeAuthModal()">
   <div class="mbox acctbox"><button class="mclose" onclick="closeAuthModal()">✕</button><div id="abody"></div></div>
 </div>

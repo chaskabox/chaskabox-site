@@ -174,7 +174,9 @@ async function refreshQuote(){
  if(!r.ok||!data.quote)throw new Error(data.error?.message||'Could not confirm your total. Please retry.');
  if(seq!==quoteSequence)throw new Error('Delivery details changed. Confirm the total again.');
  const q=data.quote;$('#s_sub').textContent=fmt(q.subtotal);$('#s_del').textContent=fmt(q.delivery_fee);$('#s_tot').textContent=fmt(q.total);if($('#s_discount'))$('#s_discount').textContent=fmt(q.discount);
- if($('#quoteStatus'))$('#quoteStatus').textContent='Total confirmed for '+city+'.';if($('#freeHint'))$('#freeHint').hidden=true;
+ if($('#quoteStatus'))$('#quoteStatus').textContent='Total confirmed for '+city+'.';
+ if($('#checkoutTotalLabel'))$('#checkoutTotalLabel').textContent='Verified total';
+ if($('#freeHint'))$('#freeHint').hidden=true;
  return q;
 }
 
@@ -190,6 +192,7 @@ function renderSummary() {
   $('#s_sub').textContent = fmt(sub);
   $('#s_del').innerHTML = del === 0 ? '<span class="free">FREE</span>' : fmt(del);
   $('#s_tot').textContent = fmt(sub + del);
+  if($('#checkoutTotalLabel'))$('#checkoutTotalLabel').textContent='Estimated total';
   scheduleQuote();
   const hint = $('#freeHint');
   if (!hint) return;
@@ -599,3 +602,9 @@ function populateCountries(){
 }
 document.addEventListener('DOMContentLoaded',populateCountryCodes);
 document.addEventListener('DOMContentLoaded',populateCountries);
+
+// Select the compact challenge on extra narrow screens BEFORE the deferred
+// Turnstile script scans the markup. Never bypass or mock server Siteverify.
+const checkoutTurnstileElement=document.querySelector('.cf-turnstile');
+if(checkoutTurnstileElement && typeof window.matchMedia==='function')
+ checkoutTurnstileElement.dataset.size=window.matchMedia('(max-width: 360px)').matches?'compact':'flexible';
