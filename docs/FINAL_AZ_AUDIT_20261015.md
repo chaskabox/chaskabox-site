@@ -12,7 +12,7 @@ Date: 15 October 2026 | Branch: `improve/final-az-audit-20261015` | **One produc
 ### What we can verify without mutating real customer data
 - 804 tracked repository files (last base snapshot); JavaScript syntax and native PostgreSQL test workflows.
 - Site-wide static HTML forms/local asset references, duplicate IDs, and local script URL inventory (run `node tools/a-z-surface-audit.mjs --json`).
-- 24 admin navigation/panel IDs align; **S0 only**. Browser CI has mocked workflows for selected panes, not 24 real S4 acceptances.
+- 25 admin navigation/panel IDs align (Dashboard + 24 other sections); **S0 only**. Browser CI has mocked workflows for selected panes, not 25 real S4 acceptances.
 - Checkout authoritative API pricing and idempotency, Pakistan-only delivery, server/browser address and quantity validation.
 - Protected admin role/owner AAL2 MFA, database migrations, recovery tests, 8 AI agent definitions.
 - AI agents today are **not eight autonomous jobs**. Eight are configured, disabled, observe mode; dashboard shows read-only diagnostics and review-only marketing drafts. Don't call them enabled until owner gates and scheduler/quotas/provider acceptance exist.

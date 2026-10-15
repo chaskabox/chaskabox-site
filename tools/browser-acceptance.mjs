@@ -304,7 +304,7 @@ try{
    // One synthetic navigation pass over every owner-facing panel; source wiring
    // only. This does not replace authenticated persistence/provider acceptance.
    const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
-   if(panelKeys.length!==24)throw Error('Expected 24 owner panel navigation targets, got '+panelKeys.length);
+   if(panelKeys.length!==25)throw Error('Expected Dashboard plus 24 owner panel targets, got '+panelKeys.length);
    for(const key of panelKeys){
     await page.locator('.admin-nav-btn[data-view="'+key+'"]').click();
     const target=page.locator('#view-'+key);

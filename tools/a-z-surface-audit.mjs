@@ -33,8 +33,8 @@ for(const file of files){
  reports.push({page:path,forms:countForms,fields:countInputs,labels:countLabels,scripts:list.length,missingAssets:broken,duplicateIds:[...new Set(repeats)]});
 }
 const admin=await readFile(join(root,'admin.html'),'utf8');
-const nav=[...admin.matchAll(/class="admin-nav-btn"[^>]*data-view="([^"]+)"/g)].map(m=>m[1]);
-const views=[...admin.matchAll(/class="admin-view"[^>]*id="view-([^"]+)"/g)].map(m=>m[1]);
+const nav=[...admin.matchAll(/class="[^"]*\badmin-nav-btn\b[^"]*"[^>]*data-view="([^"]+)"/g)].map(m=>m[1]);
+const views=[...admin.matchAll(/class="[^"]*\badmin-view\b[^"]*"[^>]*id="view-([^"]+)"/g)].map(m=>m[1]);
 const missingAdmin=nav.filter(n=>!views.includes(n)),orphanedAdmin=views.filter(n=>!nav.includes(n));
 const report={sourceOnly:true,warning:'Static links/forms do not certify live authenticated saves, backend authorization, provider sends or real purchases.',pages:files.length,forms,fields:inputs,labels,scripts,duplicateIds,missingLocalAssets:missingScripts,admin:{buttons:nav.length,views:views.length,missingAdmin,orphanedAdmin},byPage:reports};
 if(process.argv.includes('--json'))console.log(JSON.stringify(report,null,2));
