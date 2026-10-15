@@ -946,6 +946,8 @@ a.cat .ci{transition:transform .2s ease,box-shadow .2s ease}
 .fbottom a{display:inline-flex;align-items:center;min-height:44px;padding:6px 8px}
 
 /* Respect motion preferences in mobile shopping overlays and bag feedback. */
+#coMain .availability-note,#coMain .payopt small{color:#4b5563}
+#coMain .free{color:#15803d}
 @media(prefers-reduced-motion:reduce){
   .filtersheet,.sheetbackdrop,.cart-toast,.qty button,.cta,.addcart,.pdbtn,.checkoutbtn,.placebtn{transition:none!important}
   .cartcount.pop{animation:none!important}
