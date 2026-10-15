@@ -87,3 +87,32 @@ test('hidden, missing and invalid product routes fail closed with actual 404 res
 test('product backend outage returns 503 instead of stale success or hidden-product leakage',async()=>{
  const original=globalThis.fetch;try{globalThis.fetch=async()=>new Response('{}',{status:503});const r=await onRequestGet(context());assert.equal(r.status,503);assert.equal(r.headers.get('Cache-Control'),'no-store');assert.match(await r.text(),/temporarily unavailable/);}finally{globalThis.fetch=original;}
 });
+
+test('CMS settings preserve the header announcement spans and respect reduced motion',async()=>{
+ const runtime=await readFile(new URL('../site-runtime.js',import.meta.url),'utf8');
+ const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
+ const css=await readFile(new URL('../styles.css',import.meta.url),'utf8');
+ assert.match(html,/class="promo" aria-live="off"/);
+ assert.match(html,/class="promo-desktop"/);
+ assert.match(html,/id="promoMsg"/);
+ assert.doesNotMatch(runtime,/\.promo'\)\.forEach\(el=>el\.textContent=/);
+ assert.match(runtime,/window\.ChaskaPromo\?\.setText/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
+});
+test('rotating owner-set promo text shows on desktop/mobile and stops while hidden',()=>{
+ const b=browser();
+ let tick=null;b.ctx.setInterval=fn=>{tick=fn;return 1;};
+ b.ctx.clearInterval=()=>{};
+ b.ctx.setTimeout=fn=>{fn();return 0;};
+ const oldQuery=b.ctx.document.querySelector;
+ b.ctx.document.querySelector=s=>s==='.promo'?b.node('promo'):oldQuery(s);
+ b.node('promo').querySelector=s=>s==='.promo-desktop'?b.node('promoDesktop'):null;
+ b.run("STORE_CONFIG={theme:{},settings:{promo_text:'Original sealed packs · Pakistan-wide delivery · COD + prepaid'}};initPromo();");
+ assert.equal(b.node('promoDesktop').textContent,'Original sealed packs');
+ assert.equal(b.node('promoMsg').textContent,'Original sealed packs');
+ assert.equal(typeof tick,'function');
+ tick();assert.equal(b.node('promoDesktop').textContent,'Pakistan-wide delivery');
+ assert.equal(b.node('promoMsg').textContent,'Pakistan-wide delivery');
+ b.node('promo').hidden=true;tick();assert.equal(b.node('promoDesktop').textContent,'Pakistan-wide delivery');
+ b.node('promo').hidden=false;b.media.matches=true;tick();assert.equal(b.node('promoDesktop').textContent,'Pakistan-wide delivery');
+});

@@ -25,6 +25,18 @@
     return manifestRead;
   };
   const logoSelector='.logo img,.logo-img', defaultLogo='/images/logo-navy.png';
+  // Preserve the responsive child spans: replacing .promo textContent destroys them.
+  function applyPromoCopy(raw){
+    const text=String(raw||'').trim();
+    if(!text)return;
+    if(window.ChaskaPromo?.setText){window.ChaskaPromo.setText(text);return;}
+    document.querySelectorAll('.promo').forEach(banner=>{
+      for(const selector of ['.promo-desktop','.promo-mobile']){
+        const child=banner.querySelector(selector);
+        if(child)child.textContent=text;
+      }
+    });
+  }
   function setLogo(img,src){
     if(src===defaultLogo){img.srcset='/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w';img.sizes='210px';}
     else{img.removeAttribute('srcset');img.removeAttribute('sizes');}
@@ -62,7 +74,8 @@
     });
     if(safeUrl(t.favicon_url)){const link=document.querySelector('link[rel="icon"]');if(link)link.href=t.favicon_url;}
     const section=(d.sections||[]).find(s=>s.section_key==='announcement_bar');
-    document.querySelectorAll('.promo').forEach(el=>{el.hidden=t.announcement_enabled==='false'||section?.enabled===false;if(t.announcement_text)el.textContent=t.announcement_text;});
+    document.querySelectorAll('.promo').forEach(el=>{el.hidden=t.announcement_enabled==='false'||section?.enabled===false;});
+    if(t.announcement_text)applyPromoCopy(t.announcement_text);
   };
   // Broken product image -> placeholder (capture phase catches <img> errors)
   document.addEventListener('error', function (e) {
@@ -117,7 +130,7 @@
     try{
       const d=await window.loadStorefrontManifest();const s=d?.settings||{};window.applyStorefrontManifest(d);
       const phone=String(s.support_whatsapp||DEFAULT_PHONE).trim(), email=String(s.support_email||DEFAULT_EMAIL).trim(), address=String(s.store_address||DEFAULT_ADDRESS).trim(), promo=String(s.promo_text||'').trim();
-      if(promo)document.querySelectorAll('.promo').forEach(el=>el.textContent=promo);
+      if(promo||d?.theme?.announcement_text)applyPromoCopy(d?.theme?.announcement_text||promo);
       replaceText(DEFAULT_PHONE,phone);replaceText(DEFAULT_EMAIL,email);replaceText(DEFAULT_ADDRESS,address);replaceCommerceText(s);
       document.querySelectorAll('a[href^="mailto:"]').forEach(a=>{if(/chaskabox\.mzg@gmail\.com/i.test(a.getAttribute('href')||''))a.href='mailto:'+email});
       document.querySelectorAll('a[href*="wa.me/923320005381"]').forEach(a=>a.href='https://wa.me/'+phoneDigits(phone));

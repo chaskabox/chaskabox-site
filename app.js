@@ -1412,13 +1412,35 @@ async function askAIFree(){
   }finally{inp.disabled=false;inp.focus();body.scrollTop=body.scrollHeight;}
 }
 
-/* ---------- promo rotation ---------- */
+/* ---------- accessible header promo rotation ---------- */
 function promoItems(){return ['Original sealed packs',`🚚 ${fallbackDeliveryEstimate()} nationwide delivery`,'💰 COD + prepaid options','🎁 Chaska Boxes for easy gifting'];}
-let promoIdx=0;
+let promoIdx=0,promoTimer=null,promoSource='';
 function initPromo(){
-  const el=document.getElementById('promoMsg');
-  if(!el) return;
-  el.textContent=promoItems()[0];
+  const banner=document.querySelector('.promo');
+  const desktop=banner?.querySelector('.promo-desktop'),mobile=document.getElementById('promoMsg');
+  if(!banner||!desktop||!mobile)return;
+  const spans=[desktop,mobile];
+  function setText(raw){
+    const text=String(raw||'').trim();
+    if(text===promoSource&&promoTimer!==null)return;
+    promoSource=text;promoIdx=0;
+    let messages=text?text.split(/\s*[·•|]\s*/).map(s=>s.trim()).filter(Boolean):promoItems();
+    if(!messages.length)messages=promoItems();
+    messages=messages.slice(0,6);
+    spans.forEach(el=>{el.classList.remove('fading');el.textContent=messages[0];});
+    if(promoTimer!==null){clearInterval(promoTimer);promoTimer=null;}
+    if(messages.length<2)return;
+    promoTimer=setInterval(()=>{
+      if(banner.hidden||document.hidden||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+      spans.forEach(el=>el.classList.add('fading'));
+      setTimeout(()=>{
+        promoIdx=(promoIdx+1)%messages.length;
+        spans.forEach(el=>{el.textContent=messages[promoIdx];el.classList.remove('fading');});
+      },240);
+    },4200);
+  }
+  window.ChaskaPromo={setText};
+  setText(STORE_CONFIG?.theme?.announcement_text||STORE_CONFIG?.settings?.promo_text||'');
 }
 
 /* Original packing video: published How it works configuration, loaded on request. */
@@ -1575,12 +1597,13 @@ document.addEventListener('DOMContentLoaded',async()=>{
   // block the primary hero from being interactive or present to assistive tech.
   // Dynamic lists still populate when both background fetches settle.
   fixMobileHeader();
+  initPromo(); // Independent of the catalogue/API loading.
   loadCart();
   try{await Promise.all([loadProducts(),loadStorefrontConfig().catch(()=>{})]);}
   catch{const view=document.getElementById('view-home');if(view){view.hidden=false;view.style.display='block';view.innerHTML='<section class="section"><h1>Catalogue unavailable</h1><p>Please try again in a moment.</p><button class="cta" id="catalogueRetry">Retry</button></section>';document.getElementById('catalogueRetry').onclick=()=>location.reload();}return;}
   updateBadge();updateWishCount();
   checkAbandonedCart();
-  initReveals(); initTilt(); initCardTilt(); initPromo(); renderPackingVideo();
+  initReveals(); initTilt(); initCardTilt(); renderPackingVideo();
   renderHeaderDropdowns();
   /* premium header: deeper shadow once scrolled */
   (function(){const h=document.querySelector('header');if(!h)return;
