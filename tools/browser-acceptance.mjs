@@ -300,7 +300,20 @@ try{
  if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){
   const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);
   results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});
-  if(role==='owner'){attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;}
+  if(role==='owner'){
+   // One synthetic navigation pass over every owner-facing panel; source wiring
+   // only. This does not replace authenticated persistence/provider acceptance.
+   const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
+   if(panelKeys.length!==24)throw Error('Expected 24 owner panel navigation targets, got '+panelKeys.length);
+   for(const key of panelKeys){
+    await page.locator('.admin-nav-btn[data-view="'+key+'"]').click();
+    const target=page.locator('#view-'+key);
+    const visible=await target.isVisible();
+    results.interactions.push({case:'owner opens admin panel: '+key,pass:visible});
+    if(!visible)throw Error('Admin navigation does not open '+key);
+   }
+   attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;
+  }
   else results.interactions.push({case:role+' cannot see owner AI agent controls',pass:!await page.locator('[data-view="agents"]').isVisible()});
   await context.close();
  }
