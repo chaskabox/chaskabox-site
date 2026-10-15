@@ -1,0 +1,25 @@
+# ChaskaBox
+> Pakistani snacks online store. Official shopping, product details, order guidance and customer policies for ChaskaBox Pakistan.
+
+This file is a voluntary directory for AI assistants and other readers. It does not override website content or search engine indexing.
+
+## Shopping and product information
+- [Shop all public products](https://chaskabox.online/shop/): Browse available snack listings, categories, brands and individual product details.
+- [Machine-readable public product catalogue](https://chaskabox.online/api/products): Public product information; use the latest live data rather than stored prices.
+- [Brands](https://chaskabox.online/brands/): Browse brands sold through the store.
+- [Snack boxes](https://chaskabox.online/snack-boxes/): Explore curated snack box themes.
+
+## Store answers and policies
+- [Frequently asked questions](https://chaskabox.online/faq/): Customer questions about ordering and delivery.
+- [How ChaskaBox orders work](https://chaskabox.online/guides/how-chaskabox-orders-work/): Order sourcing and fulfilment process.
+- [Shipping policy](https://chaskabox.online/shipping-policy/): Shipping conditions and coverage.
+- [Refund policy](https://chaskabox.online/refund-policy/): Refund and return terms.
+- [Contact](https://chaskabox.online/contact/): Official store contact channels.
+
+## Helpful reading
+- [Guides](https://chaskabox.online/guides/): Buying guides and practical snack-box information.
+- [Choosing a snack box](https://chaskabox.online/guides/choosing-a-snack-box/): Comparing snack box options.
+- [Bachpan snacks in Pakistan](https://chaskabox.online/guides/bachpan-snacks-pakistan/): Pakistani snack nostalgia.
+
+## Accuracy and safety
+Prices, stock status, product photos, delivery availability and payment options can change. Always prefer the current public product page, official policy and authoritative checkout total. Product ingredients, allergens, expiry dates, certifications and halal status must not be inferred if the source does not explicitly confirm them. Private customer orders and payment records are not exposed in public site data.
