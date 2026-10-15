@@ -88,3 +88,68 @@
  const nav=document.querySelector('.admin-nav-btn[data-view="agents"]');
  nav?.addEventListener('click',()=>{void refresh();});
 })();
+
+/* Phase 1+2 operational controls are strictly owner/MFA backed.
+   Marketing cannot be activated here; no customer/marketing sends are possible. */
+(()=>{
+ 'use strict';
+ const root=document.getElementById('view-agents');if(!root)return;
+ const api=(path,options)=>window.chaskaAdminApi(path,options);
+ const panel=document.createElement('section');panel.className='panel';
+ const heading=document.createElement('h2');heading.textContent='Phase 1 + 2 — Agent Operations';
+ const note=document.createElement('p');note.textContent='Monitoring runs every 6 hours after deployment and activation. Read-only observations, no messages, billing or marketing automation.';
+ const status=document.createElement('p');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+ const refresh=document.createElement('button');refresh.type='button';refresh.className='btn secondary';refresh.textContent='Refresh saved alerts';
+ const scan=document.createElement('button');scan.type='button';scan.className='btn secondary';scan.textContent='Run safe scan now';
+ const grid=document.createElement('div');grid.className='agent-m05-grid';
+ const make=(tag,str)=>{const e=document.createElement(tag);e.textContent=String(str||'');return e;};
+ panel.append(heading,note,refresh,scan,status,grid);root.append(panel);
+ async function load(){
+  status.textContent='Loading saved agent observations...';grid.replaceChildren();
+  try{
+   const v=await api('/api/admin/agents/operations');
+   const last=new Map((v.observations||[]).map(x=>[x.agent,x]));
+   for(const a of v.activation||[]){
+    const tile=make('div','');tile.className='panel';
+    tile.append(make('h3',a.agent+' — '+(a.enabled?'ON':'OFF')));
+    if(a.agent==='marketing'){
+     tile.append(make('p','Phase 3 — activation locked'));grid.append(tile);continue;
+    }
+    const saved=last.get(a.agent);
+    tile.append(make('p',saved?
+     'Last scan: '+saved.state+' | '+new Date(saved.checked_at).toLocaleString():'Not yet scanned'));
+    if(saved){for(const item of saved.alerts||[])tile.append(make('p',item.code));}
+    const toggle=make('button',a.enabled?'Disable agent':'Enable safe observation');
+    toggle.className='btn secondary';toggle.type='button';
+    toggle.onclick=async()=>{
+     toggle.disabled=true;
+     try{
+      await api('/api/admin/agents/operations',{method:'POST',
+       body:{action:'activate',agent:a.agent,enabled:!a.enabled}});
+      await load();
+     }catch(e){status.textContent=e?.message||'Activation failed';toggle.disabled=false;}
+    };
+    tile.append(toggle);grid.append(tile);
+   }
+   const open=v.alerts||[];
+   status.textContent=(open.length?open.length+' active saved alert(s). ':'No active saved alerts. ')+
+    'Customer notification delivery disabled.';
+   for(const a of open){
+    const alert=make('p',a.agent+': '+a.title+' ('+a.severity+')');
+    alert.setAttribute('role','alert');panel.append(alert);
+    alert.className='agent-phase12-alert';
+   }
+  }catch(e){status.textContent=e?.message||'Operational status unavailable';}
+ }
+ function clearAlerts(){panel.querySelectorAll('.agent-phase12-alert').forEach(el=>el.remove());}
+ refresh.onclick=()=>{clearAlerts();void load();};
+ scan.onclick=async()=>{
+  scan.disabled=true;status.textContent='Scanning safe aggregate signals...';
+  try{await api('/api/admin/agents/operations',{method:'POST',body:{action:'scan'}});
+   clearAlerts();await load();
+  }catch(e){status.textContent=e?.message||'Scan unavailable';}
+  finally{scan.disabled=false;}
+ };
+ const nav=document.querySelector('.admin-nav-btn[data-view="agents"]');
+ nav?.addEventListener('click',()=>{clearAlerts();void load();});
+})();
