@@ -27,6 +27,8 @@ jobs:
           "$RUNNER_TEMP/actionlint" -shellcheck='' -pyflakes='' .github/workflows/*.yml
       - run: bash tools/install-pg17-client.sh server
       - run: npm run check
+      - name: Inventory every static page, form, script and admin navigation target
+        run: node tools/a-z-surface-audit.mjs
       - run: npm test
       - run: npm run build:functions
       - run: npm run build:notifications
