@@ -147,7 +147,7 @@ try{
       notice:document.getElementById('securityNotice')?.textContent?.slice(0,180),
       sdk:!!window.supabase,loaded:!!window.chaskaAdminBooted,
       scripts:[...document.scripts].filter(x=>x.src.includes('admin')).map(x=>({url:new URL(x.src).pathname,loaded:performance.getEntriesByName(x.src).length}))
-    })),JSON.stringify(results.errors.slice(-8)));
+    }))),JSON.stringify(results.errors.slice(-8)));
     throw error;
   }
   await openAdminPanel(page,'preview');
