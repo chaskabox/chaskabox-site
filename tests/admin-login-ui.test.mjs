@@ -16,7 +16,7 @@ test('Staff login keeps password autofill and server-side MFA gateway',async()=>
  assert.match(source,/window\.chaskaAdminMfa\.gate\(SB/);
  assert.match(source,/id="forgotPwLink"/);
  assert.match(source,/SB\.auth\.resetPasswordForEmail/);
- assert.match(html,/admin-live\.js\?v=20261015-staff-signin-ux1/);
+ assert.match(html,/<script src="\/admin-live\.js\?v=[a-zA-Z0-9-]+" defer><\/script>/);
 });
 test('Staff UI CSS is scoped and responsive',async()=>{
  const css=await readFile(new URL('../admin.css',import.meta.url),'utf8');
