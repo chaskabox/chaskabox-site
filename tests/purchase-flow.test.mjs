@@ -180,3 +180,32 @@ test('checkout documents supported country and postal error',async()=>{
  assert.match(html,/id="e_postal"/);
  assert.match(q,/country.toLowerCase\(\)!=='pakistan'/);
 });
+
+test('guided checkout enforces delivery validation and review requires a server quote',async()=>{
+ const b=browser(checkout);
+ b.run('showCheckoutStep(1,false)');
+ assert.equal(b.node('checkoutDeliveryStep').hidden,false);
+ assert.equal(b.node('checkoutPaymentStep').hidden,true);
+ await b.run('goToCheckoutStep(2)');
+ assert.equal(b.run('checkoutStep'),1,'Cannot enter payment with missing delivery details');
+ checkoutForm(b);
+ await b.run('goToCheckoutStep(2)');
+ assert.equal(b.run('checkoutStep'),2);
+ b.run("setPay('jazzcash')");
+ await b.run('goToCheckoutStep(3)');
+ assert.equal(b.run('checkoutStep'),2,'Prepaid requires a transaction reference');
+ b.node('f_reference').value='REF-FIXTURE-123';
+ b.context.fetch=async path=>{
+   if(path==='/api/checkout-quote')return Response.json({quote:{subtotal:400,discount:0,delivery_fee:300,total:700}});
+   throw Error('No orders should be submitted by step navigation');
+ };
+ await b.run('goToCheckoutStep(3)');
+ assert.equal(b.run('checkoutStep'),3);
+ assert.equal(b.node('checkoutVerification').hidden,false);
+ assert.equal(b.node('placeBtn').hidden,false);
+ assert.equal(b.node('reviewName').textContent,'Ali Ahmed');
+ assert.equal(b.node('reviewPayment').textContent,'JazzCash (Advance)');
+ await b.run('goToCheckoutStep(1)');
+ assert.equal(b.node('checkoutPaymentStep').hidden,true);
+ assert.equal(b.node('f_addr').value,'Fixture Street 123','Navigation must retain customer edits');
+});
