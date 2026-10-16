@@ -998,8 +998,33 @@
     }catch(e){listEl.innerHTML=`<p class="muted">Failed to load: ${esc(e.message)}</p>`;}
   }
 
+  // Cloudflare Pages branch previews deliberately have no Supabase credentials.
+  // Never present real password fields on these unconfigured design-review hosts.
+  // The live, MFA-protected owner login remains at the canonical production site.
+  function isDesignPreviewHost(){
+    return /^[a-z0-9-]+\\.chaskabox-site\\.pages\\.dev$/i.test(location.hostname);
+  }
+  function showDesignPreviewGate(){
+    hideBoot();
+    const mfa=$('#liveAdminMfa');if(mfa)mfa.hidden=true;
+    let el=$('#liveAdminLogin');
+    if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);}
+    el.hidden=false;
+    el.innerHTML=`<section class="live-login-card staff-login-card" aria-labelledby="staffLoginHeading">
+      <div class="staff-login-brand"><img src="/images/logo-navy.png" alt="ChaskaBox"><div class="staff-login-brandname">CHASKABOX<small>ADMIN CONSOLE V4</small></div></div>
+      <div class="staff-login-shield" aria-hidden="true">✓</div>
+      <div class="staff-login-eyebrow"><span>SAFE DESIGN PREVIEW</span><span>NO LIVE DATA</span></div>
+      <h1 id="staffLoginHeading">Preview without signing in</h1>
+      <p class="staff-login-intro">This preview has no staging Supabase connection. For your security, staff passwords and MFA are not accepted here.</p>
+      <p class="staff-login-message" role="status">Design review uses synthetic sample data. Real orders, settings and messages stay protected.</p>
+      <p><a class="btn primary staff-login-submit" href="/admin-v4-demo.html">Explore Admin V4 demo →</a></p>
+      <p style="text-align:center;margin-top:16px"><a href="https://chaskabox.online/admin.html">Open secure production admin sign-in</a></p>
+      <div class="staff-login-footer"><span>◈ No account credentials required</span><a href="/">← Back to storefront</a></div>
+    </section>`;
+  }
   const recoveryHint=location.hash.includes('type=recovery');
   async function init(){
+    if(isDesignPreviewHost()){showDesignPreviewGate();return;}
     // Safety net: never leave the console stuck on "Verifying admin session…".
     setTimeout(()=>{ if(!bootDone) showBootError('Session check is taking too long. Please reload and try again.'); }, 25000);
     if(!(await ensureClient())){showLogin('Public Supabase configuration could not be loaded.');return;}
