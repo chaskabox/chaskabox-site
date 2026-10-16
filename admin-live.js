@@ -282,7 +282,7 @@
       else if(!status&&payment==='payment_submitted')view='payment_submitted';
       else if(status==='dispatched'&&!payment)view='dispatched';
     }
-    $('[data-order-view]').forEach(button=>{
+    $$('[data-order-view]').forEach(button=>{
       const active=button.dataset.orderView===view;
       button.setAttribute('aria-pressed',String(active));
     });
@@ -307,7 +307,7 @@
       loadOrders(1);
     });
     // Presets set existing secured API query parameters; no writes or message sends.
-    $('[data-order-view]').forEach(button=>{
+    $$('[data-order-view]').forEach(button=>{
       button.disabled=false;
       button.addEventListener('click',()=>{
         for(const id of ['orderSearch','orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
