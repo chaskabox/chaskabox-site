@@ -361,7 +361,7 @@ html,body{overflow-x:clip}
 .admin-shell .admin-sidebar-foot #adminSidebarSignOut{display:none!important}
 .admin-shell .admin-topbar{min-height:87px;background:rgba(255,255,255,.97);padding:15px clamp(18px,2vw,32px);gap:16px;border-color:var(--v4-hairline)}
 .admin-page-heading{min-width:0}
-.admin-page-eyebrow{display:block;font-size:10px;font-weight:850;letter-spacing:.105em;color:#6e7e94;margin-bottom:4px}
+.admin-page-eyebrow{display:block;font-size:10px;font-weight:850;letter-spacing:.105em;color:#4c607f;margin-bottom:4px}
 .admin-shell .admin-topbar h1{font-size:clamp(21px,2vw,26px);letter-spacing:-.03em;line-height:1.17}
 .admin-shell .admin-topbar p{font-size:12px;line-height:1.45;margin-top:4px}
 .admin-shell .admin-top-actions{gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
