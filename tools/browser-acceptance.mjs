@@ -131,6 +131,10 @@ try{
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
   if(hostWidth<900)await page.locator('#sidebarToggle').click();
+  // The V4 sidebar uses native disclosures; open the relevant group as a
+  // user would before selecting Site Preview.
+  const previewGroup=page.locator('details.admin-nav-group').filter({has:page.locator('[data-view="preview"]')});
+  if(!(await previewGroup.evaluate(node=>node.open)))await previewGroup.locator('summary').click();
   await page.locator('[data-view="preview"]').click();
   await page.locator('#sitePreview').waitFor({state:'visible'});
   for(const [device,width] of [['Desktop',null],['Tablet',768],['Mobile',390]]){
