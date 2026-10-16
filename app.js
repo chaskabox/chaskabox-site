@@ -1107,7 +1107,7 @@ function route(){
   } else if(path.startsWith('/brand/')){
     const slug = path.replace('/brand/', '').replace(/\/$/, '') || new URLSearchParams(location.search).get('slug') || '';
     renderBrandRoute(slug);
-  } else if(path === '/cart/'){
+  } else if(path === '/cart/' || path === '/bag/'){
     renderCartRoute();
   } else if(path === '/account/'){
     renderAccountRoute();
