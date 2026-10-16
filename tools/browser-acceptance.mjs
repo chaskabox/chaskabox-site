@@ -97,6 +97,16 @@ const results={method:'Actual local source with synthetic API/Auth fixtures; not
 async function contextFor(width,role){const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});if(role)await context.addCookies([{name:'qa_role',value:role,url:base}]);await context.route('https://**/*',async route=>route.request().url().includes('/@supabase/supabase-js@')
  ?route.fulfill({status:200,contentType:'text/javascript',body:'('+fakeSdk.toString()+')();'})
  :route.request().url().startsWith('https://chaskabox.online/images/')?(async()=>{const r=await originalFetch(base+new URL(route.request().url()).pathname);return route.fulfill({status:r.status,headers:Object.fromEntries(r.headers),body:Buffer.from(await r.arrayBuffer())});})():route.fulfill({status:200,contentType:'text/plain',body:''}));const page=await context.newPage();page.on('pageerror',e=>results.errors.push(e.stack));page.on('dialog',d=>d.dismiss());return {context,page};}
+async function openAdminPanel(page,key){
+ const button=page.locator('.admin-nav-btn[data-view="'+key+'"]');
+ const toggle=page.locator('#sidebarToggle');
+ if(await toggle.isVisible()&&!(await page.locator('#adminSidebar').evaluate(el=>el.classList.contains('open'))))
+  await toggle.click();
+ const disclosure=button.locator('xpath=ancestor::details[1]');
+ if(await disclosure.count()&&!(await disclosure.evaluate(el=>el.open)))
+  await disclosure.locator('summary').click();
+ await button.click();
+}
 async function inspect(page,route,width,role){
  const response=await page.goto(base+route,{waitUntil:'domcontentloaded'});
  if(route==='/admin/'){
@@ -130,12 +140,7 @@ try{
   const {context,page}=await contextFor(hostWidth,'owner');
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  if(hostWidth<900)await page.locator('#sidebarToggle').click();
-  // The V4 sidebar uses native disclosures; open the relevant group as a
-  // user would before selecting Site Preview.
-  const previewGroup=page.locator('details.admin-nav-group').filter({has:page.locator('[data-view="preview"]')});
-  if(!(await previewGroup.evaluate(node=>node.open)))await previewGroup.locator('summary').click();
-  await page.locator('[data-view="preview"]').click();
+  await openAdminPanel(page,'preview');
   await page.locator('#sitePreview').waitFor({state:'visible'});
   for(const [device,width] of [['Desktop',null],['Tablet',768],['Mobile',390]]){
    await page.locator('.viewport-switch').getByRole('button',{name:device,exact:true}).click();
@@ -342,13 +347,13 @@ try{
   await context.route('**/api/admin/homepage/publish',route=>{section.config={...section.draft_config};return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
   await context.route('**/api/admin/media?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({processor_available:true,monthly_app_limit:1000,media:[{id:'00000000-0000-4000-8000-000000000010',url:'/images/logo-navy.png',bucket:'product-media',object_path:'synthetic.webp',state:'active',size_bytes:100}],page:1,total:1,total_pages:1})}));
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="reviews"]').click();await page.getByRole('button',{name:'Unpublish',exact:true}).click();await page.locator('#view-reviews').getByText(/rejected/).waitFor();
+  await openAdminPanel(page,'reviews');await page.getByRole('button',{name:'Unpublish',exact:true}).click();await page.locator('#view-reviews').getByText(/rejected/).waitFor();
   results.interactions.push({case:'owner can unpublish an approved review without deleting its record',pass:review.moderation_status==='rejected'&&await page.locator('#view-reviews [data-review-action="approve"]').count()===1});
-  await page.locator('[data-view="homepage"]').click();await page.locator('#homePackingVideo').waitFor();await page.locator('#homePackingVideo').fill('https://youtu.be/abcdefghijk');const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage'&&r.request().method()==='PATCH');await page.locator('#homeSave').click();await saved;await page.waitForFunction(()=>document.getElementById('homePackingVideo')?.value==='https://youtu.be/abcdefghijk');
+  await openAdminPanel(page,'homepage');await page.locator('#homePackingVideo').waitFor();await page.locator('#homePackingVideo').fill('https://youtu.be/abcdefghijk');const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage'&&r.request().method()==='PATCH');await page.locator('#homeSave').click();await saved;await page.waitForFunction(()=>document.getElementById('homePackingVideo')?.value==='https://youtu.be/abcdefghijk');
   results.interactions.push({case:'admin packing-video draft retains other section configuration before publish',pass:section.draft_config?.packing_video_url==='https://youtu.be/abcdefghijk'&&section.draft_config?.button_text==='Preserved'&&!section.config.packing_video_url});
   const published=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage/publish');await page.locator('#homePublish').click();await published;
   results.interactions.push({case:'packing video becomes published only after an explicit owner action',pass:section.config.packing_video_url==='https://youtu.be/abcdefghijk'&&section.config.button_text==='Preserved'});
-  await page.locator('[data-view="media"]').click();await page.waitForFunction(()=>typeof document.getElementById('mediaUpload')?.onchange==='function');
+  await openAdminPanel(page,'media');await page.waitForFunction(()=>typeof document.getElementById('mediaUpload')?.onchange==='function');
   results.interactions.push({case:'media assignment and upload handlers initialize for original photos',pass:await page.locator('[data-assign-media]').evaluate(e=>typeof e.onclick==='function')&&await page.locator('[data-delete-media]').evaluate(e=>typeof e.onclick==='function')&&!await page.locator('#mediaUpload').isDisabled()});
   await context.close();
  }
@@ -361,13 +366,13 @@ try{
    const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
    if(panelKeys.length!==25)throw Error('Expected Dashboard plus 24 owner panel targets, got '+panelKeys.length);
    for(const key of panelKeys){
-    await page.locator('.admin-nav-btn[data-view="'+key+'"]').click();
+    await openAdminPanel(page,key);
     const target=page.locator('#view-'+key);
     const visible=await target.isVisible();
     results.interactions.push({case:'owner opens admin panel: '+key,pass:visible});
     if(!visible)throw Error('Admin navigation does not open '+key);
    }
-   attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;
+   attentionError=true;await openAdminPanel(page,'analytics');await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;
   }
   else results.interactions.push({case:role+' cannot see owner AI agent controls',pass:!await page.locator('[data-view="agents"]').isVisible()});
   await context.close();
@@ -402,7 +407,7 @@ try{
    throw Error('Unexpected synthetic agent route');
   });
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="agents"]').click();await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('diagnostics updated'));
+  await openAdminPanel(page,'agents');await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('diagnostics updated'));
   results.interactions.push({case:'owner agent view shows eight configured and zero enabled agents',pass:(await page.locator('#agentsM05Readiness').innerText()).includes('Configured agents: 8')&&(await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')});
   await page.locator('#agentsM05ProductId').fill('5');await page.locator('#agentsM05Propose button[type="submit"]').click();
   await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('Synthetic proposal outage'));
@@ -439,7 +444,7 @@ try{
   });
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="navigation"]').click();
+  await openAdminPanel(page,'navigation');
   await page.locator('#headerNavList [data-nav-edit]').first().waitFor();
   await page.locator('#addMobileNav').click();
   await page.locator('#navEditLabel').fill('My mobile offers');
@@ -480,7 +485,7 @@ try{
   await context.route('**/api/admin/brands',route=>respond(route,{brands:[brand]}));
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="categories"]').click();
+  await openAdminPanel(page,'categories');
   await page.locator('[data-edit-cat]').waitFor();
   await page.locator('[data-edit-cat]').click();
   const canCategoryDelete=await page.locator('#deleteCategoryBtn').isVisible();
@@ -497,7 +502,7 @@ try{
     pass:writes.length===1&&writes[0].method==='POST'&&writes[0].payload.name==='Synthetic new category'});
   }
   if(role!=='content'){
-   await page.locator('[data-view="brands"]').click();
+   await openAdminPanel(page,'brands');
    await page.locator('[data-del-brand]').first().waitFor({state:role==='owner'?'visible':'hidden',timeout:8000}).catch(()=>{});
    const canBrandDelete=await page.locator('[data-del-brand]').count()>0;
    results.interactions.push({case:role+' brand delete control respects owner-only API policy',
@@ -519,7 +524,7 @@ try{
   });
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="navigation"]').click();
+  await openAdminPanel(page,'navigation');
   // allTextContents() does not wait for async panel load; capture only after rows exist.
   await page.locator('#headerNavList .nav-row').first().waitFor({state:'visible'});
   const original=await page.locator('#headerNavList .nav-row b').allTextContents();
@@ -556,7 +561,7 @@ try{
   });
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="agents"]').click();
+  await openAdminPanel(page,'agents');
   await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('Partial diagnostics'));
   const stillVisible=(await page.locator('#agentsM05Readiness').innerText()).includes('Configured agents: 8')&&
    (await page.locator('#agentsM05Signals').innerText()).includes('ORDERS · attention')&&
@@ -589,7 +594,7 @@ try{
    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({brands:created?[created]:[]})});
   });
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="brands"]').click();
+  await openAdminPanel(page,'brands');
   await page.locator('#addBrandBtn').click();await page.locator('#beName').waitFor();
   await page.locator('#beName').fill('Synthetic owner brand');
   await page.locator('#beShort').fill('Small batch fixture');
@@ -619,7 +624,7 @@ try{
   await context.route('**/api/admin/customers?*',r=>ok(r,{customers:[customer],page:1,total:1,total_pages:1}));
   await context.route('**/api/admin/customers/'+customerId+'?*',r=>ok(r,{customer,orders:[order],page:1,total:1,total_pages:1}));
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="orders"]').click();
+  await openAdminPanel(page,'orders');
   const requestedOrderUrls=[];
   page.on('request',r=>{if(new URL(r.url()).pathname==='/api/admin/orders')requestedOrderUrls.push(new URL(r.url()));});
   await page.locator('#orderStatusFilter').selectOption('dispatched');
@@ -648,7 +653,7 @@ try{
   results.interactions.push({case:'payment save outage retains pending status and offers a usable retry',pass:order.payment_status==='payment_submitted'&&!await page.locator('#liveOrderModal [data-pay="verified"]').isDisabled()});
   failPayment=false;await page.locator('#liveOrderModal [data-pay="verified"]').click();await page.locator('.order-decision-dialog textarea').fill('Synthetic receiving-account evidence');const approved=page.waitForResponse(r=>r.url().endsWith('/payment/verify'));await page.locator('.order-decision-dialog').getByRole('button',{name:'Confirm',exact:true}).click();await approved;await page.waitForFunction(()=>!document.getElementById('liveOrderModal')?.classList.contains('open'));
   results.interactions.push({case:'payment retry records an explicit decision with evidence and current version',pass:order.payment_status==='payment_verified'&&paymentWrites.length===2&&paymentWrites[1].note==='Synthetic receiving-account evidence'&&paymentWrites[1].expected_updated_at==='2026-10-14T00:01:00Z'});
-  await page.locator('[data-view="products"]').click();
+  await openAdminPanel(page,'products');
   for(const query of ['FixtureBrandOnly','fixture-tag-unique','fixture-slug-only']){
    await page.locator('#productSearch').fill(query);
    await page.locator('[data-live-edit="39"]').waitFor({state:'visible'});
@@ -662,10 +667,10 @@ try{
   results.interactions.push({case:'bulk write failure retains selection and restores controls for retry',pass:product.visibility==='visible'&&await page.locator('[data-live-select="39"]').isChecked()&&!await page.locator('#bulkBar [data-bulk="hide"]').isDisabled()});
   failBulk=false;const bulkSaved=page.waitForResponse(r=>r.url().endsWith('/products/bulk'));await page.locator('#bulkBar [data-bulk="hide"]').click();await bulkSaved;await page.waitForFunction(()=>document.getElementById('bulkFeedback')?.textContent.includes('1 updated'));
   results.interactions.push({case:'bulk retry updates only selected products and clears selection on success',pass:product.visibility==='hidden'&&bulkWrites.length===2&&bulkWrites[1].ids.length===1&&bulkWrites[1].ids[0]===39&&!await page.locator('[data-live-select="39"]').isChecked()});
-  await page.locator('[data-view="customers"]').click();await page.getByRole('button',{name:'Synthetic acceptance customer',exact:true}).click();await page.getByRole('button',{name:'Back to customers',exact:true}).waitFor();
+  await openAdminPanel(page,'customers');await page.getByRole('button',{name:'Synthetic acceptance customer',exact:true}).click();await page.getByRole('button',{name:'Back to customers',exact:true}).waitFor();
   const detail=(await page.locator('#view-customers').innerText()).includes('CB-SYNTHETIC-ACCEPTANCE');await page.getByRole('button',{name:'Back to customers',exact:true}).click();await page.locator('#customerSearch').waitFor();
   results.interactions.push({case:'customer detail and back navigation show matching synthetic order history',pass:detail&&await page.locator('[data-customer]').count()===1});
-  await page.locator('[data-view="boxes"]').click();await page.locator('#previewBoxBtn').click();await page.locator('[data-add-box="39"]').click();await page.locator('#boxPrice').fill('299');await page.locator('#previewBoxBtn').click();await page.locator('#boxDraftPreview').waitFor();
+  await openAdminPanel(page,'boxes');await page.locator('#previewBoxBtn').click();await page.locator('[data-add-box="39"]').click();await page.locator('#boxPrice').fill('299');await page.locator('#previewBoxBtn').click();await page.locator('#boxDraftPreview').waitFor();
   results.interactions.push({case:'box preview handles the selected product list without saving a box',pass:(await page.locator('#boxDraftPreview').innerText()).includes('Synthetic editor snack')&&(await page.locator('#boxDraftPreview').innerText()).includes('Nothing has been saved or published')});
   await context.close();
  }
