@@ -210,3 +210,12 @@
  .checkout-page .checkout-step-hint{text-align:center;max-width:none}
  .checkout-page .checkout-back-btn{width:100%}
 }
+
+/* Very small screens keep numbered steps readable without horizontal overflow. */
+@media(max-width:360px){
+ .checkout-page .checkout-progress{justify-content:center;gap:8px}
+ .checkout-page .checkout-progress-item>span:last-child{display:none}
+ .checkout-page .checkout-progress-circle{width:30px;height:30px}
+ .checkout-page .checkout-progress-line{width:auto;max-width:54px;flex:1}
+ .checkout-page button.checkout-progress-item{min-width:42px;justify-content:center}
+}
