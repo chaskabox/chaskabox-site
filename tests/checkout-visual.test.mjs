@@ -11,6 +11,11 @@ test('checkout is visibly restructured and uses a checkout-only style layer',asy
  assert.match(page,/id="f_reference"/);
  assert.match(page,/data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf"/);
  assert.match(page,/Overseas shipping is not yet available/);
+ const phoneInput=page.match(/<input\\b[^>]*\\bid="f_phone"[^>]*>/)?.[0];
+ assert.ok(phoneInput,'Checkout must expose a phone field');
+ assert.match(phoneInput,/placeholder="03XXXXXXXXX"/,'Use a neutral Pakistani mobile placeholder');
+ assert.doesNotMatch(phoneInput,/\\bvalue="/,'Never publish a personal phone in the default form');
+ assert.match(phoneInput,/autocomplete="tel-national"/,'Preserve browser phone autofill');
 });
 test('real Turnstile stays server-verified while compact mode protects extra-small viewports',async()=>{
  const html=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
