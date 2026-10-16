@@ -674,6 +674,42 @@ try{
   results.interactions.push({case:'box preview handles the selected product list without saving a box',pass:(await page.locator('#boxDraftPreview').innerText()).includes('Synthetic editor snack')&&(await page.locator('#boxDraftPreview').innerText()).includes('Nothing has been saved or published')});
   await context.close();
  }
+
+  // V4 controls use only synthetic fixtures and never write real data.
+  {
+    const {context,page}=await contextFor(1440,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('#adminCommandOpen').click();
+    await page.locator('#adminCommandDialog[open]').waitFor();
+    await page.locator('#adminCommandSearch').fill('notifications');
+    const matches=await page.locator('#adminCommandResults button').count();
+    await page.locator('#adminCommandSearch').press('Enter');
+    const navigated=await page.locator('#view-notifications').evaluate(el=>el.classList.contains('active'));
+    results.interactions.push({case:'V4 command search navigates synthetic panels',pass:matches===1&&navigated});
+    await page.locator('#adminDensityToggle').click();
+    const compact=await page.locator('.demo-admin-shell').evaluate(el=>el.classList.contains('admin-density-compact'));
+    await page.reload();
+    const persisted=await page.locator('.demo-admin-shell').evaluate(el=>el.classList.contains('admin-density-compact'));
+    results.interactions.push({case:'V4 density preference survives refresh locally',pass:compact&&persisted});
+    await page.keyboard.press('Control+k');
+    await page.locator('#adminCommandDialog[open]').waitFor();
+    await page.keyboard.press('Escape');
+    const closed=!(await page.locator('#adminCommandDialog').evaluate(el=>el.open));
+    results.interactions.push({case:'V4 keyboard shortcut and Escape close launcher',pass:closed});
+    await context.close();
+  }
+  {
+    const {context,page}=await contextFor(390,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('#sidebarToggle').click();
+    await page.locator('#adminSidebar.open').waitFor();
+    await page.locator('#adminNavGroups details[data-group="storefront"] summary').click();
+    await page.locator('[data-view="preview"]').click();
+    const navigated=await page.locator('#view-preview').evaluate(el=>el.classList.contains('active'));
+    const closed=!(await page.locator('#adminSidebar').evaluate(el=>el.classList.contains('open')));
+    results.interactions.push({case:'V4 mobile demo drawer navigates and closes',pass:navigated&&closed});
+    await context.close();
+  }
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));globalThis.fetch=originalFetch;await writeFile(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));}
 console.log(JSON.stringify({pages:results.cases.length,interactions:results.interactions,errors:results.errors}));
 if(results.cases.some(c=>c.status!==200||c.overflow||c.duplicatePromo||c.violations.length)||results.interactions.some(c=>!c.pass)||results.errors.length)process.exitCode=1;
