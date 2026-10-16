@@ -32,3 +32,26 @@ Owner should compare the demo on 390px mobile and desktop (desktop keyboard Ctrl
 ## What we did not infer
 
 Public UX studies do not validate any claims about ChaskaBox's sales, products, warehouse inventory, current order counts, staffing or conversion improvements. Demo figures are synthetic, not external customer research.
+
+## Second external-source and live-storefront review (16 October 2026)
+
+- Public store homepage at https://chaskabox.online/ returned HTTP 200 and initial HTML contained 105 public product links when checked. Subsequent `/shop/` and `/admin.html` live browser requests hit Cloudflare rendering API rate limits, **so those paths were not independently visually rechecked** in this pass.
+- [Shopify Polaris Index Table](https://shopify.dev/docs/api/app-home/v1.0/patterns/compositions/index-table) explicitly describes search, filtering, sorting, selection, pagination and bulk actions for large merchant lists. ChaskaBox Orders already had six protected filters and CSV export; adding another destructive bulk action would duplicate or increase risk. We added **preconfigured one-click GET-only order views** instead.
+- [Baymard filter UX](https://baymard.com/blog/ecommerce-filter-ui) advocates visible applied filters and straightforward reset; its original test population concerns customer storefronts, **not validated admin productivity gains**. V4 now makes the chosen order preset visible, offers reset, and displays catalogue quality/sort state and truthful counts.
+- [W3C WCAG 2.2 target size](https://www.w3.org/WAI/WCAG22/Understanding/target-size-minimum) documents AA minimum 24×24 CSS pixels or defined exceptions. This V4 uses 40px+ controls, visible focus indicators, keyboard modal operation and responsive sizing.
+- [W3C Focus Not Obscured](https://www.w3.org/WAI/WCAG22/Understanding/focus-not-obscured-minimum) describes how sticky interfaces can obscure keyboard targets; a native `<dialog>` and an accessible mobile sidebar remain test gates.
+
+### Missing operator controls implemented in this pass
+
+1. **Order quick views** — All, New, Payment review, Dispatched. The existing server-side `GET /api/admin/orders` handles these filters. No messages, checkout changes or payment decisions are triggered by selecting a preset. Filters can still be combined manually; a separate status element says when a custom combination is active.
+2. **Product quality filters** — Missing image and missing SEO title/description. This lets staff identify catalogue gaps without publishing or modifying products.
+3. **Product sorting** — Recently updated, Name A–Z/Z–A and Price low–high/high–low. The current Admin API loads up to **1,000 products per page**; the currently reported catalogue is below this limit. Filters and sort are explicitly labeled **page-scoped** if the catalogue later spans multiple pages, rather than falsely presenting results as global.
+4. **Role-safe dashboard navigation** — prevent navigation shortcuts from showing staff role-hidden panels; server auth remains authoritative, not a substitute for this UI guard.
+5. **Safe sample-data demo** — reproduce functioning order presets and catalogue quality/sort UI without connecting Supabase or showing any actual customers.
+
+### Known follow-up versus falsely completed features
+
+- Server-wide sorting/filtering across more than 1,000 products is not implemented; backend needs a dedicated whitelist-sorted, paginated search contract with regression tests before promising global results.
+- Bulk actions continue to use existing owner/manager/content capabilities and confirmations; no additional mass state-changing control is activated.
+- Owner acceptance of authenticated Orders/Products, real payments and notification delivery remains separate from synthetic browser acceptance.
+
