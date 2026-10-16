@@ -627,6 +627,12 @@ try{
   await openAdminPanel(page,'orders');
   const requestedOrderUrls=[];
   page.on('request',r=>{if(new URL(r.url()).pathname==='/api/admin/orders')requestedOrderUrls.push(new URL(r.url()));});
+  await page.locator('[data-order-view="payment_submitted"]').click();
+  await page.waitForFunction(()=>document.getElementById('orderActiveView')?.textContent.includes('submitted payments'));
+  const presetQuery=requestedOrderUrls.at(-1);
+  results.interactions.push({case:'V4 payment review preset triggers existing protected order GET filter',pass:presetQuery?.searchParams.get('payment_status')==='payment_submitted'&&!presetQuery.searchParams.get('fulfilment_status')});
+  await page.locator('[data-order-view="all"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-order-view="all"]')?.getAttribute('aria-pressed')==='true');
   await page.locator('#orderStatusFilter').selectOption('dispatched');
   await page.waitForFunction(()=>document.getElementById('orderStatusFilter')?.value==='dispatched');
   await page.waitForTimeout(300);
@@ -654,6 +660,12 @@ try{
   failPayment=false;await page.locator('#liveOrderModal [data-pay="verified"]').click();await page.locator('.order-decision-dialog textarea').fill('Synthetic receiving-account evidence');const approved=page.waitForResponse(r=>r.url().endsWith('/payment/verify'));await page.locator('.order-decision-dialog').getByRole('button',{name:'Confirm',exact:true}).click();await approved;await page.waitForFunction(()=>!document.getElementById('liveOrderModal')?.classList.contains('open'));
   results.interactions.push({case:'payment retry records an explicit decision with evidence and current version',pass:order.payment_status==='payment_verified'&&paymentWrites.length===2&&paymentWrites[1].note==='Synthetic receiving-account evidence'&&paymentWrites[1].expected_updated_at==='2026-10-14T00:01:00Z'});
   await openAdminPanel(page,'products');
+  await page.locator('#productSort').selectOption('price_asc');
+  await page.locator('#productQuality').selectOption('missing_seo');
+  const qualityContext=await page.locator('#productResultCount').innerText();
+  results.interactions.push({case:'V4 catalogue sort and quality filters explicitly label current page scope',pass:qualityContext.includes('loaded on page')&&await page.locator('#productSort').inputValue()==='price_asc'});
+  await page.locator('#resetFiltersBtn').click();
+  await page.waitForFunction(()=>document.getElementById('productQuality')?.value===''&&document.getElementById('productSort')?.value==='recent');
   for(const query of ['FixtureBrandOnly','fixture-tag-unique','fixture-slug-only']){
    await page.locator('#productSearch').fill(query);
    await page.locator('[data-live-edit="39"]').waitFor({state:'visible'});
@@ -696,6 +708,18 @@ try{
     await page.keyboard.press('Escape');
     const closed=!(await page.locator('#adminCommandDialog').evaluate(el=>el.open));
     results.interactions.push({case:'V4 keyboard shortcut and Escape close launcher',pass:closed});
+    await page.locator('[data-view="orders"]').click();
+    await page.locator('[data-demo-order-view="payment_submitted"]').click();
+    const visibleOrders=await page.locator('.demo-order-row:visible').count();
+    await page.locator('[data-demo-order-view="all"]').click();
+    results.interactions.push({case:'V4 synthetic quick order views filter and reset sample rows',pass:visibleOrders===1&&await page.locator('.demo-order-row:visible').count()===3});
+    await page.locator('[data-view="products"]').click();
+    await page.locator('#demoProductQuality').selectOption('missing_image');
+    const onlyMissing=await page.locator('.demo-product-row:visible').count();
+    await page.locator('#demoProductQuality').selectOption('');
+    await page.locator('#demoProductSort').selectOption('price_desc');
+    const firstSample=await page.locator('.demo-product-row:visible').first().getAttribute('data-demo-name');
+    results.interactions.push({case:'V4 synthetic catalogue quality and price sorting operate locally',pass:onlyMissing===1&&firstSample==='Chaska Mix'});
     await context.close();
   }
   {
