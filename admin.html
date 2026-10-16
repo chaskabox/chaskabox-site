@@ -117,6 +117,8 @@ setTimeout(function(){
         <p id="viewSubtitle">Store health, catalogue and order overview.</p>
       </div>
       <div class="admin-top-actions">
+        <button class="btn secondary admin-tools-button" type="button" id="adminCommandOpen" title="Quick switch (Ctrl or Command + K)" aria-haspopup="dialog">⌕ Find panel <kbd>⌘K</kbd></button>
+        <button class="btn secondary admin-tools-button" type="button" id="adminDensityToggle" aria-pressed="false">☰ Compact: Off</button>
         <button class="btn secondary" id="globalPreviewBtn">Preview site</button>
         <button class="btn primary" id="quickAddProductBtn">+ Add product</button>
         <span id="adminCurrentAccount" class="admin-current-account" hidden></span>
@@ -137,6 +139,15 @@ setTimeout(function(){
           <article class="metric-card"><span class="metric-icon">▤</span><div><small>Open Orders</small><strong id="metricOrders">—</strong><em>live after sign-in</em></div></article>
           <article class="metric-card"><span class="metric-icon">Rs.</span><div><small>Recognized sales</small><strong id="metricRevenue">—</strong><em>verified prepaid + delivered COD</em></div></article>
         </div>
+        <section class="panel admin-attention-panel" aria-labelledby="adminAttentionTitle">
+          <div class="panel-head"><div><h2 id="adminAttentionTitle">Operations &amp; review</h2><p>Jump to live records before taking action. These links are navigation, not status reports.</p></div></div>
+          <div class="admin-attention-actions">
+            <button type="button" data-jump="orders"><strong>Review orders</strong><small>Verify fulfilment and payment status</small><span aria-hidden="true">→</span></button>
+            <button type="button" data-jump="products"><strong>Check products</strong><small>Review visibility, content and pricing</small><span aria-hidden="true">→</span></button>
+            <button type="button" data-jump="notifications"><strong>Delivery evidence</strong><small>Check confirmed, pending and blocked messages</small><span aria-hidden="true">→</span></button>
+            <button type="button" data-jump="health"><strong>System health</strong><small>Inspect current monitoring and warnings</small><span aria-hidden="true">→</span></button>
+          </div>
+        </section>
 
         <div class="admin-grid two">
           <section class="panel">
@@ -730,6 +741,7 @@ setTimeout(function(){
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=4"></script>
 <script src="/admin.js?v=20261016-admin-v4-shell1" defer></script>
+<script src="/admin-v4-tools.js?v=20261016-v4-actions1" defer></script>
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
 <script src="/admin-live.js?v=20261016-preview-safe-demo-1" defer></script>
