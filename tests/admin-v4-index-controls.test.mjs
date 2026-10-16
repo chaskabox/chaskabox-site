@@ -40,6 +40,7 @@ test('Product quality & sort are page-scoped with truthfully labeled result coun
 });
 test('Shortcuts never reveal role-hidden Admin panels',()=>{
  const ui=read('admin.js');
+ assert.match(ui,/const allowedNav=\$\$\('\.admin-nav-btn'\)\.find/,'role navigation must query all buttons');
  assert.match(ui,/allowedNav\.hidden\|\|allowedNav\.style\.display==='none'/);
  assert.match(ui,/getAttribute\('aria-hidden'\)==='true'/);
 });
