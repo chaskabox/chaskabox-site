@@ -240,7 +240,7 @@ try{
   await page.getByLabel('First Name *').fill('Ali');
   await page.getByLabel('Phone Number *').fill('03000000000');
   await page.getByLabel('Email Address *').fill('ali@example.invalid');
-  await page.getByLabel('Address *').fill('Fixture Street 123, Lahore');
+  await page.locator('#f_addr').fill('Fixture Street 123, Lahore');
   await page.locator('#toPaymentBtn').click();
   if(!await page.locator('#checkoutPaymentStep').isVisible()||await page.locator('#checkoutDeliveryStep').isVisible())
     throw Error('Checkout failed to advance from delivery to payment');
