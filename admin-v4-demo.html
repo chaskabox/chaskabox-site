@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<title>Admin Console V4 | Safe Design Demo | ChaskaBox</title>
+<link rel="stylesheet" href="/admin.css?v=20261016-admin-v4-shell1">
+<link rel="stylesheet" href="/admin-v4-demo.css?v=1">
+<script src="/admin-v4-demo.js?v=1" defer></script>
+</head>
+<body>
+<div class="admin-shell demo-admin-shell">
+  <aside class="admin-sidebar" id="adminSidebar" aria-label="Demo navigation">
+    <a class="admin-brand" href="https://chaskabox.online/" target="_blank" rel="noopener"><img src="/images/logo-navy.png" alt="ChaskaBox"><span>Admin V4 Demo</span></a>
+    <div class="admin-nav-search"><label for="adminNavSearch">Find a panel</label><div class="admin-nav-search-field"><span aria-hidden="true">⌕</span><input type="search" id="adminNavSearch" placeholder="Search 25 panels…" autocomplete="off" aria-controls="adminNavGroups"></div></div>
+    <nav class="admin-nav" id="adminNavGroups" aria-label="Admin sections">
+      <details class="admin-nav-group" data-group="overview" open>
+        <summary><span>Overview</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="commerce" open>
+        <summary><span>Orders & customers</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
+          <button class="admin-nav-btn" data-view="resolutions"><span>🛠️</span> Refunds & Issues</button>
+          <button class="admin-nav-btn" data-view="coupons"><span>🎟️</span> Coupons</button>
+          <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
+          <button class="admin-nav-btn" data-view="customers"><span>♙</span> Customers</button>
+          <button class="admin-nav-btn" data-view="reviews"><span>★</span> Reviews</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="catalogue" open>
+        <summary><span>Catalogue & products</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
+          <button class="admin-nav-btn" data-view="categories"><span>📁</span> Categories</button>
+          <button class="admin-nav-btn" data-view="brands"><span>🏷️</span> Brands</button>
+          <button class="admin-nav-btn" data-view="boxes"><span>📦</span> Chaska Box Builder</button>
+          <button class="admin-nav-btn" data-view="backup"><span>💾</span> Catalogue Snapshot</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="storefront">
+        <summary><span>Storefront & media</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="homepage"><span>⌂</span> Homepage Builder</button>
+          <button class="admin-nav-btn" data-view="navigation"><span>🧭</span> Navigation</button>
+          <button class="admin-nav-btn" data-view="theme"><span>🎨</span> Theme Studio</button>
+          <button class="admin-nav-btn" data-view="studio"><span>🎨</span> Image Studio</button>
+          <button class="admin-nav-btn" data-view="media"><span>▣</span> Media Library</button>
+          <button class="admin-nav-btn" data-view="preview"><span>◉</span> Site Preview</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="intelligence">
+        <summary><span>Insights & AI</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="analytics"><span>📊</span> Analytics</button>
+          <button class="admin-nav-btn" data-view="agents"><span>🤖</span> AI Agents</button>
+          <button class="admin-nav-btn" data-view="assistant"><span>✦</span> AI Center</button>
+          <button class="admin-nav-btn" data-view="health"><span>💚</span> System Health</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="management">
+        <summary><span>Operations & access</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="notifications"><span>🔔</span> Notifications</button>
+          <button class="admin-nav-btn" data-view="settings"><span>⚙</span> Store Settings</button>
+          <button class="admin-nav-btn" data-view="security"><span>🔐</span> Team &amp; Security</button>
+        </div>
+      </details>
+      <p id="adminNavEmpty" class="admin-nav-empty" role="status" hidden>No matching panels available.</p>
+    </nav>
+    <div class="admin-sidebar-foot"><p class="demo-sidebar-note">DESIGN DEMO<br><small>Sample data only · No live access</small></p>
+      <a href="https://chaskabox.online/admin.html">Open secure live admin →</a></div>
+  </aside>
+  <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
+  <div class="admin-main">
+    <header class="admin-topbar">
+      <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-controls="adminSidebar" aria-expanded="false" aria-label="Open demo navigation">☰</button>
+      <div class="admin-page-heading">
+        <span class="admin-page-eyebrow">CHASKABOX / DESIGN DEMO</span>
+        <h1 id="viewTitle">Dashboard</h1><p id="viewSubtitle">Explore V4 interface and grouped navigation without signing in.</p>
+      </div>
+      <div class="admin-top-actions"><a class="btn secondary" href="https://chaskabox.online/" target="_blank" rel="noopener">Preview site</a><a class="btn primary" href="https://chaskabox.online/admin.html">Secure admin sign-in</a></div>
+    </header>
+    <main class="admin-content">
+      <div class="security-notice demo-safe-notice" role="status"><strong>SYNTHETIC DESIGN PREVIEW:</strong> All figures are illustrative. No Supabase session, payment, order or notification is accessed. Buttons do not save or send.</div>
+      <section class="admin-view active" id="view-dashboard" data-title="Dashboard" data-subtitle="Sample business overview — not real store metrics.">
+        <div class="metric-grid">
+          <article class="metric-card"><span class="metric-icon">◫</span><div><small>Products</small><strong>120</strong><em>illustrative items</em></div></article>
+          <article class="metric-card"><span class="metric-icon">📦</span><div><small>Chaska Boxes</small><strong>8</strong><em>illustrative boxes</em></div></article>
+          <article class="metric-card"><span class="metric-icon">▤</span><div><small>Open Orders</small><strong>3</strong><em>not real orders</em></div></article>
+          <article class="metric-card"><span class="metric-icon">Rs.</span><div><small>Recognized sales</small><strong>—</strong><em>not connected to payments</em></div></article>
+        </div>
+        <div class="admin-grid two">
+          <section class="panel"><div class="panel-head"><div><h2>Quick actions</h2><p>Explore where controls will be located.</p></div></div>
+            <div class="quick-actions">
+              <button type="button" data-jump="products">＋ Products</button><button type="button" data-jump="boxes">📦 Chaska Boxes</button>
+              <button type="button" data-jump="orders">▤ Orders</button><button type="button" data-jump="homepage">⌂ Homepage</button>
+              <button type="button" data-jump="preview">◉ Store Preview</button><button type="button" data-jump="notifications">♧ Notifications</button>
+            </div>
+          </section>
+          <section class="panel"><div class="panel-head"><div><h2>Design readiness</h2><p>Preview capabilities, not production health.</p></div></div>
+            <ul class="readiness-list">
+              <li class="done"><span>✓</span><div><b>25 admin panel entries</b><small>Searchable in six collapsible groups</small></div></li>
+              <li class="done"><span>✓</span><div><b>Mobile navigation drawer</b><small>Responsive and keyboard operable</small></div></li>
+              <li class="done"><span>✓</span><div><b>Improved typography</b><small>Clear focus and larger controls</small></div></li>
+              <li class="done"><span>✓</span><div><b>Existing secure owner sign-in</b><small>Available on production site only</small></div></li>
+            </ul>
+            <p class="readiness-disclaimer">Do not interpret these illustrative checkmarks as real payment or messaging status.</p>
+          </section>
+        </div>
+        <section class="panel"><div class="panel-head"><div><h2>Sample catalogue snapshot</h2><p>Demonstration layout, no real products loaded.</p></div></div>
+          <div class="category-bars">
+            <div class="catbar"><span>Snacks &amp; Nimco</span><span class="demo-chart-track"><i style="width:78%"></i></span><span>Example</span></div>
+            <div class="catbar"><span>Chocolate &amp; Candy</span><span class="demo-chart-track"><i style="width:49%"></i></span><span>Example</span></div>
+            <div class="catbar"><span>Chews &amp; Gums</span><span class="demo-chart-track"><i style="width:35%"></i></span><span>Example</span></div>
+          </div>
+        </section>
+      </section>
+      <section class="admin-view" id="view-orders" data-title="Orders" data-subtitle="Order search, filters and fulfilment tools">
+  <div class="panel"><div class="panel-head"><div><h2>Orders</h2><p>Order search, filters and fulfilment tools</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-resolutions" data-title="Refunds & Issues" data-subtitle="Resolution and review workflow">
+  <div class="panel"><div class="panel-head"><div><h2>Refunds & Issues</h2><p>Resolution and review workflow</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-coupons" data-title="Coupons" data-subtitle="Promotion and offer management">
+  <div class="panel"><div class="panel-head"><div><h2>Coupons</h2><p>Promotion and offer management</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-shipping" data-title="Shipping" data-subtitle="Delivery rules and rates">
+  <div class="panel"><div class="panel-head"><div><h2>Shipping</h2><p>Delivery rules and rates</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-customers" data-title="Customers" data-subtitle="Customer lookup and support">
+  <div class="panel"><div class="panel-head"><div><h2>Customers</h2><p>Customer lookup and support</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-reviews" data-title="Reviews" data-subtitle="Moderation and feedback">
+  <div class="panel"><div class="panel-head"><div><h2>Reviews</h2><p>Moderation and feedback</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-products" data-title="Products" data-subtitle="Product catalogue editing and visibility">
+  <div class="panel"><div class="panel-head"><div><h2>Products</h2><p>Product catalogue editing and visibility</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-categories" data-title="Categories" data-subtitle="Category configuration">
+  <div class="panel"><div class="panel-head"><div><h2>Categories</h2><p>Category configuration</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-brands" data-title="Brands" data-subtitle="Brand catalogue">
+  <div class="panel"><div class="panel-head"><div><h2>Brands</h2><p>Brand catalogue</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-boxes" data-title="Chaska Box Builder" data-subtitle="Bundle composition">
+  <div class="panel"><div class="panel-head"><div><h2>Chaska Box Builder</h2><p>Bundle composition</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-backup" data-title="Catalogue Snapshot" data-subtitle="Export and recovery controls">
+  <div class="panel"><div class="panel-head"><div><h2>Catalogue Snapshot</h2><p>Export and recovery controls</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-homepage" data-title="Homepage Builder" data-subtitle="Banner, sections and merchandising">
+  <div class="panel"><div class="panel-head"><div><h2>Homepage Builder</h2><p>Banner, sections and merchandising</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-navigation" data-title="Navigation" data-subtitle="Storefront menus and links">
+  <div class="panel"><div class="panel-head"><div><h2>Navigation</h2><p>Storefront menus and links</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-theme" data-title="Theme Studio" data-subtitle="Colors and typography">
+  <div class="panel"><div class="panel-head"><div><h2>Theme Studio</h2><p>Colors and typography</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-studio" data-title="Image Studio" data-subtitle="Image editing and upload previews">
+  <div class="panel"><div class="panel-head"><div><h2>Image Studio</h2><p>Image editing and upload previews</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-media" data-title="Media Library" data-subtitle="Asset organization">
+  <div class="panel"><div class="panel-head"><div><h2>Media Library</h2><p>Asset organization</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-preview" data-title="Site Preview" data-subtitle="Customer storefront comparison">
+  <div class="panel"><div class="panel-head"><div><h2>Site Preview</h2><p>Customer storefront comparison</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-analytics" data-title="Analytics" data-subtitle="Reports and business metrics">
+  <div class="panel"><div class="panel-head"><div><h2>Analytics</h2><p>Reports and business metrics</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-agents" data-title="AI Agents" data-subtitle="Observation and execution receipts">
+  <div class="panel"><div class="panel-head"><div><h2>AI Agents</h2><p>Observation and execution receipts</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-assistant" data-title="Admin Copilot" data-subtitle="AI-assisted admin suggestions">
+  <div class="panel"><div class="panel-head"><div><h2>Admin Copilot</h2><p>AI-assisted admin suggestions</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-health" data-title="System Health" data-subtitle="Monitoring and audit signals">
+  <div class="panel"><div class="panel-head"><div><h2>System Health</h2><p>Monitoring and audit signals</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-notifications" data-title="Notification Center" data-subtitle="Read-only delivery audit and channel health">
+  <div class="panel"><div class="panel-head"><div><h2>Notification Center</h2><p>Read-only delivery audit and channel health</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-settings" data-title="Store Settings" data-subtitle="Site configuration">
+  <div class="panel"><div class="panel-head"><div><h2>Store Settings</h2><p>Site configuration</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+<section class="admin-view" id="view-security" data-title="Team & Security" data-subtitle="Authenticated roles and MFA">
+  <div class="panel"><div class="panel-head"><div><h2>Team & Security</h2><p>Authenticated roles and MFA</p></div></div>
+  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  </div></section>
+    </main>
+  </div>
+</div>
+</body></html>
