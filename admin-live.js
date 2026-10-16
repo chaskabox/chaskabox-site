@@ -1002,7 +1002,7 @@
   // Never present real password fields on these unconfigured design-review hosts.
   // The live, MFA-protected owner login remains at the canonical production site.
   function isDesignPreviewHost(){
-    return /^[a-z0-9-]+\\.chaskabox-site\\.pages\\.dev$/i.test(location.hostname);
+    return /^[a-z0-9-]+\.chaskabox-site\.pages\.dev$/i.test(location.hostname);
   }
   function showDesignPreviewGate(){
     hideBoot();
