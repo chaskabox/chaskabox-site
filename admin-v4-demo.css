@@ -20,3 +20,17 @@
 .demo-admin-shell .admin-nav-btn:focus-visible,.demo-admin-shell summary:focus-visible,.demo-admin-shell .btn:focus-visible{outline:3px solid #3a65ae;outline-offset:2px}
 @media(max-width:900px){.demo-admin-shell .admin-sidebar{z-index:41}}
 @media(max-width:600px){.demo-admin-shell .admin-top-actions>a:first-child{display:none}.demo-admin-shell .admin-top-actions .btn{font-size:11px}}
+
+.demo-product-controls{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:14px 0}
+.demo-product-controls label{display:grid;gap:5px;font-size:12px;font-weight:750;color:#314969;flex:1 1 180px}
+.demo-product-controls select,.demo-product-controls button{min-height:42px;border:1px solid #c7d5e9;border-radius:10px;padding:8px 12px;background:#fff;color:#203a62}
+.demo-product-controls button{font-weight:700}
+.demo-product-controls select:focus-visible,.demo-product-controls button:focus-visible{outline:3px solid #4273bd;outline-offset:2px}
+#demoOrderResult,#demoProductResult{font-size:12px;color:#4c5e7c;margin:9px 0}
+.demo-order-row,.demo-product-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 12px;padding:16px;border-bottom:1px solid #e1e8f4;align-items:center}
+.demo-order-row:last-child,.demo-product-row:last-child{border-bottom:0}
+.demo-order-row strong,.demo-product-row strong{font-size:13px;color:#1d3358}
+.demo-order-row span,.demo-product-row span{font-size:12px;color:#3e5b86}
+.demo-order-row small,.demo-product-row small{grid-column:1/-1;font-size:11px;color:#66758a}
+.demo-order-row[hidden],.demo-product-row[hidden]{display:none!important}
+@media(max-width:600px){.demo-order-row,.demo-product-row{grid-template-columns:1fr}.demo-order-row span,.demo-product-row span{text-align:left}}
