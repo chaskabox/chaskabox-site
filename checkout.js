@@ -11,6 +11,7 @@ const PAYMENT_LABELS = {
 let PRODUCTS = [], CART = {}, PAY = 'cod', placingOrder = false;
 let PAYMENT_ENABLED = {cod:true,jazzcash:true,bank_transfer:true};
 let checkoutStep = 1, furthestCheckoutStep = 1, checkoutNavigating = false;
+let checkoutTurnstileWidgetId = null;
 const $ = s => document.querySelector(s);
 const fmt = n => 'Rs. ' + Number(n).toLocaleString('en-PK');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -48,7 +49,25 @@ async function checkoutIdempotencyKey(payload) {
   return pendingCheckoutIntent.key;
 }
 function clearCheckoutIntent(){pendingCheckoutIntent=null;try{localStorage.removeItem(CHECKOUT_INTENT_KEY);}catch{}}
-function resetCheckoutBotCheck(){try{if(typeof turnstile!=='undefined')turnstile.reset();}catch{}}
+function resetCheckoutBotCheck(){
+  try{if(typeof turnstile!=='undefined')turnstile.reset(checkoutTurnstileWidgetId ?? undefined);}catch{}
+}
+function renderCheckoutBotCheck(){
+  if(checkoutTurnstileWidgetId!==null || typeof turnstile==='undefined' || typeof turnstile.render!=='function')return;
+  const widget=document.querySelector('.cf-turnstile');
+  if(!widget)return;
+  try{
+    checkoutTurnstileWidgetId=turnstile.render(widget,{
+      sitekey:widget.dataset.sitekey,
+      theme:'light',
+      size:widget.dataset.size||'flexible'
+    });
+  }catch{
+    const note=document.querySelector('.checkout-verification-help');
+    if(note)note.textContent='Security verification could not load. Refresh this page before placing an order.';
+  }
+}
+function checkoutTurnstileReady(){if(checkoutStep===3)renderCheckoutBotCheck();}
 
 async function init() {
   try {
@@ -332,7 +351,7 @@ function showCheckoutStep(step, moveFocus=true) {
   if(header) header.textContent='Step '+step+' of 3';
   const announce=document.getElementById('checkoutStepAnnounce');
   if(announce) announce.textContent='Step '+step+' of 3: '+label;
-  if(step===3) updateCheckoutReview();
+  if(step===3){updateCheckoutReview();renderCheckoutBotCheck();}
   if(moveFocus){
     const headingNode=document.getElementById(step===1?'detailsTitle':step===2?'paymentTitle':'reviewTitle');
     if(headingNode){headingNode.setAttribute('tabindex','-1');headingNode.focus();}
@@ -535,7 +554,7 @@ async function placeOrder() {
   } else {
     phone = _ph.full;
   }
-  const turnstileToken = (typeof turnstile !== 'undefined' && turnstile.getResponse) ? turnstile.getResponse() : '';
+  const turnstileToken = (typeof turnstile !== 'undefined' && turnstile.getResponse) ? turnstile.getResponse(checkoutTurnstileWidgetId ?? undefined) : '';
 
   // Build server-authoritative API payload (contract §4).
   // Prices/totals are IGNORED by the server — it recalculates from the DB.
