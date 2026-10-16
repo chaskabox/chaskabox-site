@@ -6,36 +6,39 @@
 <title>Checkout — ChaskaBox</title>
 <meta name="robots" content="noindex, follow">
 <link rel="stylesheet" href="/styles.css?v=20261015-az-validated">
-<link rel="stylesheet" href="/checkout-ui.css?v=20261015-premium-v2">
+<link rel="stylesheet" href="/checkout-ui.css?v=20261016-guided-v3">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" defer></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=checkoutTurnstileReady" defer></script>
 </head>
 <body class="checkout-page">
 <div class="promo">🔒 Encrypted connection · COD, JazzCash &amp; Bank Transfer</div>
 <header><div class="hwrap">
   <a class="logo" href="/"><img src="/images/logo-navy.png" srcset="/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w" sizes="210px" alt="ChaskaBox" class="logo-img" width="1624" height="776"></a>
-  <div class="checkout-header-status" aria-label="Secure checkout, step 2 of 2"><span class="checkout-header-status-dot" aria-hidden="true"></span><span>Secure checkout</span><b>Step 2 of 2</b></div>
+  <div class="checkout-header-status" aria-label="Secure checkout"><span class="checkout-header-status-dot" aria-hidden="true"></span><span>Secure checkout</span><b id="checkoutHeaderStep">Step 1 of 3</b></div>
 </div></header>
 
 <main class="co-wrap" id="coMain">
   <section class="checkout-intro" aria-labelledby="checkoutTitle">
   <div class="checkout-intro-copy">
     <p class="checkout-kicker">CHASKABOX &nbsp; / &nbsp; EASY CHECKOUT</p>
-    <h1 class="checkout-title" id="checkoutTitle">Almost there<span class="checkout-title-period">.</span></h1>
-    <p class="checkout-lead">Review your details, choose a payment method, and you're ready to order.</p>
+    <h1 class="checkout-title" id="checkoutTitle">Your delivery<span class="checkout-title-period">.</span></h1>
+    <p class="checkout-lead" id="checkoutLead">Three simple steps to your ChaskaBox delivery. No account required.</p>
   </div>
-  <nav class="checkout-progress" aria-label="Checkout progress">
-    <span class="checkout-progress-item complete"><span class="checkout-progress-circle" aria-hidden="true">✓</span><span>Shopping bag</span></span>
+  <nav class="checkout-progress" aria-label="Checkout steps">
+    <button type="button" class="checkout-progress-item current" data-checkout-nav="1" aria-label="Step 1: Delivery details" aria-current="step"><span class="checkout-progress-circle" aria-hidden="true">1</span><span>Delivery</span></button>
     <span class="checkout-progress-line" aria-hidden="true"></span>
-    <span class="checkout-progress-item current" aria-current="step"><span class="checkout-progress-circle" aria-hidden="true">2</span><span>Delivery &amp; payment</span></span>
+    <button type="button" class="checkout-progress-item" data-checkout-nav="2" aria-label="Step 2: Payment method" disabled><span class="checkout-progress-circle" aria-hidden="true">2</span><span>Payment</span></button>
+    <span class="checkout-progress-line" aria-hidden="true"></span>
+    <button type="button" class="checkout-progress-item" data-checkout-nav="3" aria-label="Step 3: Final review" disabled><span class="checkout-progress-circle" aria-hidden="true">3</span><span>Review</span></button>
   </nav>
+  <span class="sr-only" id="checkoutStepAnnounce" role="status" aria-live="polite">Step 1 of 3: Delivery details</span>
   <a class="checkout-back-link" href="/cart/">← Edit shopping bag</a>
 </section>
 <div class="checkout-guest-note"><span class="checkout-guest-icon" aria-hidden="true">✓</span><span><strong>Guest checkout</strong> — No account needed. Your total is verified before you place the order.</span></div>
   <div id="orderError" class="order-error" role="alert" hidden></div>
   <div class="co-grid">
     <div>
-      <section class="co-card" aria-labelledby="detailsTitle">
+      <section class="co-card" id="checkoutDeliveryStep" aria-labelledby="detailsTitle">
         <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">01</span><div><h2 id="detailsTitle" class="co-step-title">Delivery details</h2><p>Where should we deliver your snacks?</p></div></div>
         <div class="field"><label for="f_country">Delivery country</label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help">We currently deliver within Pakistan only. Overseas shipping is not yet available.</p><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
         <div class="form-two">
@@ -54,9 +57,10 @@
         <div class="field checkbox-field"><label><input type="checkbox" id="f_saveinfo"> Save this information for next time</label></div>
         <div class="field"><label for="f_note">Order Note <span class="optional">(optional)</span></label><textarea id="f_note" name="note" rows="2" maxlength="300" placeholder="e.g. Call before delivery, gift note, do not substitute..."></textarea></div>
         <div class="availability-note">If any snack becomes unavailable after you order, ChaskaBox will contact you before removing or substituting it.</div>
+        <div class="checkout-step-actions"><span class="checkout-step-hint">Your details stay here when you go back.</span><button id="toPaymentBtn" type="button" class="checkout-next-btn">Continue to payment <span aria-hidden="true">→</span></button></div>
       </section>
 
-      <section class="co-card" style="margin-top:16px" aria-labelledby="paymentTitle">
+      <section class="co-card" id="checkoutPaymentStep" hidden aria-labelledby="paymentTitle">
         <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">02</span><div><h2 id="paymentTitle" class="co-step-title">Payment method</h2><p>Pick the way you'd like to pay.</p></div></div>
         <fieldset class="payment-fieldset">
           <legend class="sr-only">Choose a payment method</legend>
@@ -104,12 +108,20 @@
         </fieldset>
       </section>
 
-      <section class="co-card" style="margin-top:16px" aria-labelledby="extrasTitle">
+      <section class="co-card" id="checkoutExtrasStep" hidden aria-labelledby="extrasTitle">
         <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">03</span><div><h2 id="extrasTitle" class="co-step-title">A little extra</h2><p>Optional requests for your order.</p></div></div>
         <label class="payopt" id="videoOpt">
           <input type="checkbox" id="f_video">
           <span><b>🎬 Request a packing video <span class="free">FREE</span></b><small>If operations allow, Rameez will send a short packing clip on WhatsApp. This is a request, not a guaranteed service.</small></span>
         </label>
+        <div class="checkout-step-actions"><button type="button" id="backDeliveryBtn" class="checkout-back-btn">← Delivery details</button><button id="toReviewBtn" type="button" class="checkout-next-btn">Review my order <span aria-hidden="true">→</span></button></div>
+      </section>
+      <section class="co-card checkout-review-card" id="checkoutReviewStep" hidden aria-labelledby="reviewTitle">
+        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">03</span><div><h2 id="reviewTitle" class="co-step-title">Review &amp; confirm</h2><p>Make sure everything looks right before placing your order.</p></div></div>
+        <div class="checkout-review-block"><div class="checkout-review-block-title"><h3>Delivery details</h3><button type="button" id="editDeliveryBtn" class="checkout-edit-btn">Edit</button></div><p id="reviewName"></p><p id="reviewPhone"></p><p id="reviewEmail"></p><p id="reviewAddress"></p></div>
+        <div class="checkout-review-block"><div class="checkout-review-block-title"><h3>Payment method</h3><button type="button" id="editPaymentBtn" class="checkout-edit-btn">Edit</button></div><p id="reviewPayment"></p><p id="reviewPaymentStatus" class="checkout-review-note"></p></div>
+        <p class="checkout-review-reminder">Please verify the final total in the order summary. Your order is placed only when you press “Place order”.</p>
+        <div class="checkout-step-actions"><button type="button" id="backPaymentBtn" class="checkout-back-btn">← Payment method</button><span class="checkout-step-hint">Final confirmation is in your order summary.</span></div>
       </section>
     </div>
 
@@ -131,10 +143,10 @@
           </div>
         </div>
         <div class="hint" id="freeHint" hidden></div>
-        <div class="checkout-verification"><p class="checkout-verification-title"><span aria-hidden="true">◈</span> Bot protection</p><div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light" data-size="flexible"></div><p class="checkout-verification-help">Verification unavailable? Try refreshing, or disable blockers for this site. We cannot accept orders without required security checks.</p></div>
-        <button class="placebtn" id="placeBtn" type="button" disabled>Place order <span aria-hidden="true">→</span></button>
+        <div class="checkout-verification" id="checkoutVerification" hidden><p class="checkout-verification-title"><span aria-hidden="true">◈</span> Bot protection</p><div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light" data-size="flexible"></div><p class="checkout-verification-help">Verification unavailable? Try refreshing, or disable blockers for this site. We cannot accept orders without required security checks.</p></div>
+        <button class="placebtn" id="placeBtn" type="button" hidden disabled>Place order <span aria-hidden="true">→</span></button>
         <div class="checkout-trust"><span aria-hidden="true">✓</span> Secure checkout <span class="checkout-trust-divider" aria-hidden="true">·</span> Final pricing checked before order</div>
-        <p class="checkout-policy">By placing your order, you agree to our <a href="/terms/">Terms</a>, <a href="/shipping-policy/">Shipping Policy</a> and <a href="/refund-policy/">Refund &amp; Resolution Policy</a>.</p>
+        <p class="checkout-policy" id="checkoutPolicy" hidden>By placing your order, you agree to our <a href="/terms/">Terms</a>, <a href="/shipping-policy/">Shipping Policy</a> and <a href="/refund-policy/">Refund &amp; Resolution Policy</a>.</p>
       </section>
     </div>
   </div>
@@ -164,7 +176,7 @@
 <script src="/supabase-config.js?v=4"></script>
 <script src="/analytics.js?v=1"></script>
 <script src="/account.js?v=20261012-release?v=1"></script>
-<script src="/checkout.js?v=20261015-az-responsive-turnstile"></script>
+<script src="/checkout.js?v=20261016-guided-v3"></script>
 <div class="modal" id="acctmodal" role="dialog" aria-modal="true" aria-label="Account sign in" aria-hidden="true" onclick="if(event.target===this)closeAuthModal()">
   <div class="mbox acctbox"><button class="mclose" onclick="closeAuthModal()">✕</button><div id="abody"></div></div>
 </div>

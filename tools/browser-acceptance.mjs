@@ -237,9 +237,26 @@ try{
   const fmt=n=>'Rs. '+n.toLocaleString('en-PK');
   const subtotal=99*products.find(p=>p.id===39).price;
   if(await page.locator('#s_tot').innerText()!==fmt(subtotal+300))throw Error('COD quote total mismatch');
+  await page.getByLabel('First Name *').fill('Ali');
+  await page.getByLabel('Phone Number *').fill('03000000000');
+  await page.getByLabel('Email Address *').fill('ali@example.invalid');
+  await page.locator('#f_addr').fill('Fixture Street 123, Lahore');
+  await page.locator('#toPaymentBtn').click();
+  if(!await page.locator('#checkoutPaymentStep').isVisible()||await page.locator('#checkoutDeliveryStep').isVisible())
+    throw Error('Checkout failed to advance from delivery to payment');
   await page.locator('input[value="jazzcash"]').check();
   await page.waitForFunction(()=>document.getElementById('quoteStatus')?.textContent==='Total confirmed for Lahore.');
   if(await page.locator('#s_tot').innerText()!==fmt(subtotal))throw Error('Prepaid quote total mismatch');
+  await page.locator('#f_reference').fill('QA-TRANSFER-1234');
+  await page.locator('#toReviewBtn').click();
+  await page.locator('#checkoutReviewStep').waitFor({state:'visible'});
+  if(!await page.locator('#placeBtn').isVisible()||await page.locator('#checkoutPaymentStep').isVisible())
+    throw Error('Checkout failed to reveal review and final order control');
+  if(await page.locator('#reviewPayment').innerText()!=='JazzCash (Advance)')
+    throw Error('Final review lost the chosen payment method');
+  await page.locator('#editDeliveryBtn').click();
+  if(!await page.locator('#checkoutDeliveryStep').isVisible()||await page.locator('#f_addr').inputValue()!=='Fixture Street 123, Lahore')
+    throw Error('Edit delivery lost the previous address');
   if(orders)throw Error('Browser check attempted an order');
   results.interactions.push({case:'checkout shows COD/prepaid totals without submitting / '+width,pass:true});
   await page.goto(base+'/shop/',{waitUntil:'domcontentloaded'});

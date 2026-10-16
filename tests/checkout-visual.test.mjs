@@ -2,7 +2,7 @@ import{test}from'node:test';import assert from'node:assert/strict';import{readFi
 test('checkout is visibly restructured and uses a checkout-only style layer',async()=>{
  const page=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
  const css=await readFile(new URL('../checkout-ui.css',import.meta.url),'utf8');
- for(const s of ['class="checkout-page"','checkout-intro','checkout-progress','checkout-guest-note','checkout-section-heading','checkout-summary-heading','checkout-coupon-row','checkout-totals','checkout-verification','checkout-ui.css?v=20261015-premium-v2'])assert.ok(page.includes(s),s);
+ for(const s of ['class="checkout-page"','checkout-intro','checkout-progress','checkout-guest-note','checkout-section-heading','checkout-summary-heading','checkout-coupon-row','checkout-totals','checkout-verification','checkout-ui.css?v=20261016-guided-v3'])assert.ok(page.includes(s),s);
  assert.match(css,/\.checkout-page \.checkout-coupon-row button/);
  assert.match(css,/#coMain\.co-wrap\{max-width:1216px/);
  assert.match(css,/@media\(max-width:400px\)/);
@@ -20,12 +20,33 @@ test('checkout is visibly restructured and uses a checkout-only style layer',asy
 test('real Turnstile stays server-verified while compact mode protects extra-small viewports',async()=>{
  const html=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
  const js=await readFile(new URL('../checkout.js',import.meta.url),'utf8');
- assert.match(html,/turnstile\/v0\/api\.js" defer/);
+ assert.match(html,/turnstile\/v0\/api\.js\?render=explicit&amp;onload=checkoutTurnstileReady" defer/);
  assert.match(html,/data-size="flexible"/);
+ assert.match(js,/renderCheckoutBotCheck/);
+ assert.match(js,/turnstile\.render\(widget/);
+ assert.match(js,/getResponse\(checkoutTurnstileWidgetId/);
  assert.match(js,/max-width: 360px/);
  assert.match(js,/dataset\.size/);
  assert.doesNotMatch(js,/TURNSTILE_SECRET_KEY/);
  assert.match(html,/Edit shopping bag/);
  assert.match(html,/Estimated total/);
  assert.match(js,/Verified total/);
+});
+
+test('guided checkout has accessible separate delivery, payment and review stages',async()=>{
+ const html=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
+ const js=await readFile(new URL('../checkout.js',import.meta.url),'utf8');
+ const css=await readFile(new URL('../checkout-ui.css',import.meta.url),'utf8');
+ for(const id of ['checkoutDeliveryStep','checkoutPaymentStep','checkoutExtrasStep','checkoutReviewStep','toPaymentBtn','toReviewBtn','editDeliveryBtn','editPaymentBtn','backDeliveryBtn','backPaymentBtn','checkoutVerification','checkoutStepAnnounce']){
+   assert.match(html,new RegExp('id="'+id+'"'),id);
+ }
+ assert.match(html,/id="checkoutPaymentStep" hidden/);
+ assert.match(html,/id="checkoutReviewStep" hidden/);
+ assert.match(html,/id="placeBtn" type="button" hidden disabled/);
+ assert.match(html,/checkout\.js\?v=20261016-guided-v3/);
+ assert.match(css,/\.checkout-page \[hidden\]\{display:none!important\}/);
+ assert.match(js,/function checkForm\(scope = 'all'\)/);
+ assert.match(js,/await refreshQuote\(\);\s*showCheckoutStep\(3\)/);
+ assert.match(js,/\.textContent=value/);
+ assert.match(js,/if\(step===3\)\{updateCheckoutReview\(\);renderCheckoutBotCheck\(\);\}/);
 });
