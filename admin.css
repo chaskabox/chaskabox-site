@@ -53,7 +53,9 @@
 /* Global: no horizontal page overflow, media never bleeds */
 html,body{overflow-x:clip}
 .admin-shell,.admin-main,.admin-content{min-width:0}
-.admin-content img,.admin-content video,.admin-content iframe{max-width:100%;height:auto}
+.admin-content img,.admin-content video{max-width:100%;height:auto}
+/* Preserve each preview iframe's viewport height; auto resets it to 150px. */
+.admin-content iframe{max-width:100%}
 .admin-modal-card{overflow-x:hidden}
 
 /* ---------- Tablet: <=1023px ---------- */
