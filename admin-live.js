@@ -1289,6 +1289,7 @@
 
   // ============ NOTIFICATIONS ============
   let notificationHistorySeq=0;
+  let notificationStatusSeq=0;
   let notificationHistoryPage=1;
   let notificationEnabledChannels=[];
   let notificationChannelsVerified=false;
@@ -1344,23 +1345,41 @@
     }
   }
   async function loadNotifications(){
+    const seq=++notificationStatusSeq;
+    const st=$('#notifServiceStatus'), ob=$('#notifOutboxStats'), fl=$('#notifFailures');
+    // A refreshing or failed status query must not leave old green health
+    // labels or previous channel entitlements visible as current evidence.
+    notificationEnabledChannels=[];
+    notificationChannelsVerified=false;
+    if(st){st.setAttribute('aria-busy','true');st.innerHTML='<p class="muted" role="status">Checking worker and delivery status… No provider result is confirmed yet.</p>';}
     try{
       const d=await api('/api/admin/notifications');
-      const st=$('#notifServiceStatus'), state=d.dispatch||{};
+      if(seq!==notificationStatusSeq)return;
+      if(!d || typeof d!=='object')throw new Error('Invalid notification status response');
+      const state=d.dispatch||{};
       notificationEnabledChannels=Array.isArray(state.configured_targets)?state.configured_targets:[];
       notificationChannelsVerified=Array.isArray(state.configured_targets);
       if(st)st.innerHTML=`<div style="display:grid;gap:8px"><div><b>Queue consumer:</b> ${esc(d.worker_status||'unknown')}</div><div><b>Last completed:</b> ${state.last_completed_at?esc(fmtDate(state.last_completed_at)):'No heartbeat recorded'}</div><div><b>Enabled channels:</b> ${esc((state.configured_targets||[]).join(', ')||'None confirmed')}</div><small class="muted">Channel configuration comes from the consumer heartbeat. Provider availability is not probed here.</small></div>`;
-      const ob=$('#notifOutboxStats'), p=d.provider_results||{};
+      const p=d.provider_results||{};
       if(ob){const o=d.owner_outbox||{},c=d.customer_outbox||{};
         const queue=(title,q)=>`<div><b>${title}:</b> ${q.pending||0} pending · ${q.processing||0} processing · ${q.retry||0} retry · ${q.blocked||0} blocked · ${q.uncertain||0} uncertain · ${q.dead||0} dead</div>`;
         const legacy=q=>Object.values(q||{}).reduce((n,v)=>n+Number(v),0);
         ob.innerHTML=`<div style="display:grid;gap:8px;font-size:12px">${queue('Owner alerts',o)}${queue('Customer updates',c)}<div><b>Provider results:</b> ${p.accepted||0} accepted · ${p.delivered||0} confirmed delivered · ${p.delivery_failed||0} delivery failed · ${p.complaints||0} complaints · ${p.unconfirmed||0} awaiting confirmation</div><div><b>Historical review:</b> ${legacy(d.legacy_owner)} old owner jobs · ${legacy(d.legacy_customer)} old customer jobs · ${d.excluded_before_cutoff||0} before activation cutoff</div><div>${d.inactive_channel_pending||0} jobs on inactive channels</div><small class="muted">${esc(d.note||'Provider acceptance does not confirm delivery.')}</small></div>`;
       }
-      const fl=$('#notifFailures');
       if(fl){const fails=d.recent_failures||[];
         fl.innerHTML=fails.length?fails.map(f=>`<div class="box-product-row"><div style="flex:1"><h4>Order ${esc(f.order_id||'—')}</h4><small>${esc(f.target)} · ${esc(f.status)} · ${esc(f.last_error||f.delivery_status)}</small></div></div>`).join(''):'<p class="muted">No recorded issues in the new queue. Check consumer status and historical jobs above.</p>';
       }
-    }catch(e){toast(e.message);}
+    }catch(e){
+      if(seq!==notificationStatusSeq)return;
+      notificationEnabledChannels=[];
+      notificationChannelsVerified=false;
+      if(st)st.innerHTML='<p role="alert"><b>Notification status unavailable.</b> Worker health and enabled channels cannot be verified. No message was sent. Refresh to retry.</p>';
+      if(ob)ob.innerHTML='<p role="status">Queue and delivery totals unavailable — do not assume messages were delivered.</p>';
+      if(fl)fl.innerHTML='<p role="status">Review records unavailable until the status service recovers.</p>';
+      toast('Notification status unavailable: '+(e.message||'Please retry'));
+    }finally{
+      if(seq===notificationStatusSeq)st?.removeAttribute('aria-busy');
+    }
     if($('#refreshNotifStatus'))$('#refreshNotifStatus').onclick=loadNotifications;
     if($('#refreshTemplates'))$('#refreshTemplates').onclick=loadTemplates;
     if($('#refreshNotifHistory'))$('#refreshNotifHistory').onclick=()=>loadNotificationHistory(notificationHistoryPage);

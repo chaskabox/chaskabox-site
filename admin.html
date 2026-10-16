@@ -589,11 +589,11 @@ setTimeout(function(){
         <p class="safe-note" style="margin-top:12px">Theme changes apply to the storefront after saving. Preview shows changes without saving.</p>
       </section>
 
-      <section class="admin-view" id="view-notifications" data-title="Notification Center" data-subtitle="Resend email, WhatsApp/WAHA status, outbox queue and retry.">
+      <section class="admin-view" id="view-notifications" data-title="Notification Center" data-subtitle="Read-only delivery evidence, channel health and message templates.">
         <div class="admin-grid two">
           <section class="panel">
             <div class="panel-head"><div><h2>Service Status</h2></div><button class="btn secondary compact" id="refreshNotifStatus">↻ Refresh</button></div>
-            <div id="notifServiceStatus"><p class="muted">Loading…</p></div>
+            <div id="notifServiceStatus" aria-live="polite"><p class="muted">Loading…</p></div>
           </section>
           <section class="panel">
             <div class="panel-head"><div><h2>Outbox Queue</h2><p>Owner + customer notifications</p></div></div>
@@ -732,7 +732,7 @@ setTimeout(function(){
 <script src="/admin.js?v=20261016-admin-v4-shell1" defer></script>
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
-<script src="/admin-live.js?v=20261016-notification-center-1" defer></script>
+<script src="/admin-live.js?v=20261016-notif-health-failclosed-1" defer></script>
 <script src="/admin-agents.js?v=20261015-phase12-operations" defer></script>
  <script src="/admin-agent-workbench.js?v=20261015-agent-workbench1" defer></script>
 </body>
