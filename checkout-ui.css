@@ -169,3 +169,44 @@
  .checkout-page .checkout-verification .cf-turnstile{width:150px;min-height:140px;margin-inline:auto}
  .checkout-page .checkout-verification{overflow:visible}
 }
+
+/* Guided delivery > payment > review wizard. No new checkout endpoints. */
+.checkout-page [hidden]{display:none!important}
+.checkout-page .checkout-progress{align-items:center;flex-wrap:nowrap;gap:9px}
+.checkout-page button.checkout-progress-item{appearance:none;border:0;background:transparent;cursor:pointer;padding:6px 4px;border-radius:10px;font:inherit}
+.checkout-page button.checkout-progress-item:disabled{cursor:not-allowed;opacity:.55}
+.checkout-page button.checkout-progress-item:focus-visible{outline:3px solid #28569b;outline-offset:2px}
+.checkout-page .checkout-progress-item.complete{color:#17734d}
+.checkout-page .checkout-progress-item.complete .checkout-progress-circle{background:#e6f4eb;color:#17734d;border-color:#b9dfc6}
+.checkout-page .checkout-step-actions{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:25px;padding-top:21px;border-top:1px solid #e8edf6;flex-wrap:wrap}
+.checkout-page .checkout-step-hint{font-size:12px;line-height:1.55;color:#64738e;max-width:250px}
+.checkout-page .checkout-next-btn{background:#192f62;border:1px solid #192f62;border-radius:11px;color:#fff;min-height:48px;padding:12px 20px;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 8px 17px rgba(23,46,95,.13)}
+.checkout-page .checkout-next-btn:hover:not(:disabled){background:#294b8c}
+.checkout-page .checkout-next-btn:disabled{opacity:.6;cursor:wait}
+.checkout-page .checkout-back-btn,.checkout-page .checkout-edit-btn{border:1px solid #cad7e9;background:#fff;color:#204679;border-radius:9px;min-height:42px;padding:10px 13px;font-weight:750;font-size:12px;cursor:pointer}
+.checkout-page .checkout-edit-btn{min-height:36px}
+.checkout-page :is(.checkout-next-btn,.checkout-back-btn,.checkout-edit-btn):focus-visible{outline:3px solid #2b64b1;outline-offset:3px}
+.checkout-page .checkout-review-card .checkout-review-block{background:#f8fafd;border:1px solid #e5ecf6;border-radius:13px;padding:18px;margin-bottom:15px}
+.checkout-page .checkout-review-block-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+.checkout-page .checkout-review-block-title h3{font-size:15px;margin:0;color:#1a315d}
+.checkout-page .checkout-review-block p{margin:7px 0;line-height:1.5;color:#455875;overflow-wrap:anywhere;font-size:13px}
+.checkout-page .checkout-review-block p:first-of-type{font-weight:800;color:#193360}
+.checkout-page .checkout-review-block p.checkout-review-note{font-size:12px;color:#546983}
+.checkout-page .checkout-review-reminder{padding:12px 14px;border-left:3px solid #e2ab2d;background:#fff9e9;border-radius:8px;color:#4e5f79;font-size:12px;line-height:1.6}
+@media(max-width:760px){
+ .checkout-page .checkout-progress{justify-content:space-between;gap:5px}
+ .checkout-page .checkout-progress-line{flex:1;min-width:8px;width:auto;max-width:34px}
+ .checkout-page .checkout-progress-item{font-size:11px;gap:6px}
+ .checkout-page .checkout-progress-circle{width:28px;height:28px;flex:none}
+ .checkout-page .checkout-step-actions{align-items:stretch}
+ .checkout-page .checkout-next-btn{flex:1;min-width:165px}
+}
+@media(max-width:400px){
+ .checkout-page .checkout-progress{gap:3px}
+ .checkout-page button.checkout-progress-item{padding:4px 0}
+ .checkout-page .checkout-progress-item{font-size:10px}
+ .checkout-page .checkout-progress-circle{width:25px;height:25px}
+ .checkout-page .checkout-step-actions{flex-direction:column-reverse;align-items:stretch}
+ .checkout-page .checkout-step-hint{text-align:center;max-width:none}
+ .checkout-page .checkout-back-btn{width:100%}
+}
