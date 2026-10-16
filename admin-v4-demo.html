@@ -7,6 +7,7 @@
 <link rel="stylesheet" href="/admin.css?v=20261016-admin-v4-shell1">
 <link rel="stylesheet" href="/admin-v4-demo.css?v=1">
 <script src="/admin-v4-demo.js?v=1" defer></script>
+<script src="/admin-v4-tools.js?v=20261016-v4-actions1" defer></script>
 </head>
 <body>
 <div class="admin-shell demo-admin-shell">
@@ -82,7 +83,7 @@
         <span class="admin-page-eyebrow">CHASKABOX / DESIGN DEMO</span>
         <h1 id="viewTitle">Dashboard</h1><p id="viewSubtitle">Explore V4 interface and grouped navigation without signing in.</p>
       </div>
-      <div class="admin-top-actions"><a class="btn secondary" href="https://chaskabox.online/" target="_blank" rel="noopener">Preview site</a><a class="btn primary" href="https://chaskabox.online/admin.html">Secure admin sign-in</a></div>
+      <div class="admin-top-actions"><button class="btn secondary admin-tools-button" type="button" id="adminCommandOpen" title="Quick switch (Ctrl or Command + K)" aria-haspopup="dialog">⌕ Find panel <kbd>⌘K</kbd></button><button class="btn secondary admin-tools-button" type="button" id="adminDensityToggle" aria-pressed="false">☰ Compact: Off</button><a class="btn secondary" href="https://chaskabox.online/" target="_blank" rel="noopener">Preview site</a><a class="btn primary" href="https://chaskabox.online/admin.html">Secure admin sign-in</a></div>
     </header>
     <main class="admin-content">
       <div class="security-notice demo-safe-notice" role="status"><strong>SYNTHETIC DESIGN PREVIEW:</strong> All figures are illustrative. No Supabase session, payment, order or notification is accessed. Buttons do not save or send.</div>
@@ -93,6 +94,15 @@
           <article class="metric-card"><span class="metric-icon">▤</span><div><small>Open Orders</small><strong>3</strong><em>not real orders</em></div></article>
           <article class="metric-card"><span class="metric-icon">Rs.</span><div><small>Recognized sales</small><strong>—</strong><em>not connected to payments</em></div></article>
         </div>
+        <section class="panel admin-attention-panel" aria-labelledby="adminAttentionTitle">
+          <div class="panel-head"><div><h2 id="adminAttentionTitle">Operations &amp; review</h2><p>Sample navigation only — no actual alerts or customer data.</p></div></div>
+          <div class="admin-attention-actions">
+            <button type="button" data-jump="orders"><strong>Review orders</strong><small>Illustrative order workbench</small><span aria-hidden="true">→</span></button>
+            <button type="button" data-jump="products"><strong>Check products</strong><small>Sample catalogue controls</small><span aria-hidden="true">→</span></button>
+            <button type="button" data-jump="notifications"><strong>Delivery evidence</strong><small>Sample notification monitoring</small><span aria-hidden="true">→</span></button>
+            <button type="button" data-jump="health"><strong>System health</strong><small>Example health panel</small><span aria-hidden="true">→</span></button>
+          </div>
+        </section>
         <div class="admin-grid two">
           <section class="panel"><div class="panel-head"><div><h2>Quick actions</h2><p>Explore where controls will be located.</p></div></div>
             <div class="quick-actions">
