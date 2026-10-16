@@ -56,6 +56,39 @@
   document.addEventListener('keydown',event=>{
     if(event.key==='Escape' && sidebar?.classList.contains('open'))closeDrawer();
   });
+  // Purely synthetic demos of protected-list controls. No provider requests.
+  const orderChoices=all('[data-demo-order-view]'),orderRows=all('.demo-order-row');
+  orderChoices.forEach(b=>b.addEventListener('click',()=>{
+    const preset=b.dataset.demoOrderView;
+    orderChoices.forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    let count=0;
+    orderRows.forEach(row=>{
+      const show=preset==='all'||(preset==='payment_submitted'?row.dataset.demoPayment==='payment_submitted':row.dataset.demoFulfilment===preset);
+      row.hidden=!show;if(show)count++;
+    });
+    const status=one('#demoOrderResult');
+    if(status)status.textContent=count+' matching synthetic example '+(count===1?'order':'orders');
+  }));
+  const sampleCards=all('.demo-product-row'),sampleList=one('#demoProductsList'),quality=one('#demoProductQuality'),sort=one('#demoProductSort');
+  const updateSampleProducts=()=>{
+    if(!sampleList)return;
+    const filter=quality?.value||'',order=sort?.value||'name_asc';
+    const rows=sampleCards.filter(row=>{
+      return filter==='missing_image'?row.dataset.demoImage==='no':filter==='missing_seo'?row.dataset.demoSeo==='no':true;
+    });
+    const name=(a,b)=>a.dataset.demoName.localeCompare(b.dataset.demoName,'en',{sensitivity:'base'});
+    const price=(a,b)=>Number(a.dataset.demoPrice)-Number(b.dataset.demoPrice);
+    rows.sort((a,b)=>order==='name_desc'?name(b,a):order==='price_asc'?price(a,b):order==='price_desc'?price(b,a):name(a,b));
+    sampleCards.forEach(row=>{row.hidden=!rows.includes(row)});
+    rows.forEach(row=>sampleList.append(row));
+    const status=one('#demoProductResult');if(status)status.textContent=rows.length+' of '+sampleCards.length+' synthetic products displayed';
+  };
+  quality?.addEventListener('change',updateSampleProducts);
+  sort?.addEventListener('change',updateSampleProducts);
+  one('#demoProductReset')?.addEventListener('click',()=>{
+    if(quality)quality.value='';if(sort)sort.value='name_asc';updateSampleProducts();
+  });
+  updateSampleProducts();
   const first = one('.admin-nav-btn.active');
   if (first) first.setAttribute('aria-current','page');
 })();
