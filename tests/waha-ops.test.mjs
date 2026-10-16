@@ -30,3 +30,17 @@ test('WAHA resilience override targets native ARM and deliberate-stop-safe resta
   assert.match(overlay, /ports:\s*!override\s*\n\s*-\s*["\x27]?127\.0\.0\.1:3001:3000/);
   assert.doesNotMatch(overlay, /\b(?:volumes|env_file):/);
 });
+
+
+test('One-time WAHA launch script is syntax valid, backs up data, and keeps WAHA localhost only', () => {
+  const launch = readFileSync(new URL('../ops/waha/deploy-local-oci.sh', import.meta.url), 'utf8');
+  const result = spawnSync('bash', ['-n'], { input: launch, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(launch, /waha-private-backups/);
+  assert.match(launch, /curl -fsSL/);
+  assert.match(launch, /s\.get\("restart"\)=="unless-stopped"/);
+  assert.match(launch, /127\.0\.0\.1","3001","3000"/);
+  assert.match(launch, /\|\| fail 'Config validation failed; WAHA has NOT been started\.'/);
+  assert.doesNotMatch(launch, /\bdocker\s+(?:system\s+prune|volume\s+rm|rm\s+-f)\b/);
+  assert.doesNotMatch(launch, /\bpm2\s+(?:stop|restart|delete|kill)\b/);
+});
