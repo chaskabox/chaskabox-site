@@ -139,7 +139,17 @@ try{
  for(const hostWidth of [1440,390]){
   const {context,page}=await contextFor(hostWidth,'owner');
   await page.goto(base+'/admin/');
-  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  try{await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none',undefined,{timeout:12000});}
+  catch(error){
+    console.error('V4_ADMIN_BOOT_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>({
+      boot:document.getElementById('adminBoot')?.outerHTML?.slice(0,500),
+      login:document.getElementById('liveAdminLogin')?.outerHTML?.slice(0,330),
+      notice:document.getElementById('securityNotice')?.textContent?.slice(0,180),
+      sdk:!!window.supabase,loaded:!!window.chaskaAdminBooted,
+      scripts:[...document.scripts].filter(x=>x.src.includes('admin')).map(x=>({url:new URL(x.src).pathname,loaded:performance.getEntriesByName(x.src).length}))
+    })),JSON.stringify(results.errors.slice(-8)));
+    throw error;
+  }
   await openAdminPanel(page,'preview');
   await page.locator('#sitePreview').waitFor({state:'visible'});
   for(const [device,width] of [['Desktop',null],['Tablet',768],['Mobile',390]]){
