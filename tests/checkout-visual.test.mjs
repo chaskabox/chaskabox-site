@@ -48,5 +48,5 @@ test('guided checkout has accessible separate delivery, payment and review stage
  assert.match(js,/function checkForm\(scope = 'all'\)/);
  assert.match(js,/await refreshQuote\(\);\s*showCheckoutStep\(3\)/);
  assert.match(js,/\.textContent=value/);
- assert.match(js,/if\(step===3\) updateCheckoutReview\(\)/);
+ assert.match(js,/if\(step===3\)\{updateCheckoutReview\(\);renderCheckoutBotCheck\(\);\}/);
 });
