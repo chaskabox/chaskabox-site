@@ -10,6 +10,8 @@ const PAYMENT_LABELS = {
 };
 let PRODUCTS = [], CART = {}, PAY = 'cod', placingOrder = false;
 let PAYMENT_ENABLED = {cod:true,jazzcash:true,bank_transfer:true};
+let checkoutStep = 1, furthestCheckoutStep = 1, checkoutNavigating = false;
+let checkoutTurnstileWidgetId = null;
 const $ = s => document.querySelector(s);
 const fmt = n => 'Rs. ' + Number(n).toLocaleString('en-PK');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -47,7 +49,25 @@ async function checkoutIdempotencyKey(payload) {
   return pendingCheckoutIntent.key;
 }
 function clearCheckoutIntent(){pendingCheckoutIntent=null;try{localStorage.removeItem(CHECKOUT_INTENT_KEY);}catch{}}
-function resetCheckoutBotCheck(){try{if(typeof turnstile!=='undefined')turnstile.reset();}catch{}}
+function resetCheckoutBotCheck(){
+  try{if(typeof turnstile!=='undefined')turnstile.reset(checkoutTurnstileWidgetId ?? undefined);}catch{}
+}
+function renderCheckoutBotCheck(){
+  if(checkoutTurnstileWidgetId!==null || typeof turnstile==='undefined' || typeof turnstile.render!=='function')return;
+  const widget=document.querySelector('.cf-turnstile');
+  if(!widget)return;
+  try{
+    checkoutTurnstileWidgetId=turnstile.render(widget,{
+      sitekey:widget.dataset.sitekey,
+      theme:'light',
+      size:widget.dataset.size||'flexible'
+    });
+  }catch{
+    const note=document.querySelector('.checkout-verification-help');
+    if(note)note.textContent='Security verification could not load. Refresh this page before placing an order.';
+  }
+}
+function checkoutTurnstileReady(){if(checkoutStep===3)renderCheckoutBotCheck();}
 
 async function init() {
   try {
@@ -89,6 +109,15 @@ async function init() {
     radio.addEventListener('change', e => setPay(e.target.value));
   });
   $('#placeBtn')?.addEventListener('click', placeOrder);
+  $('#toPaymentBtn')?.addEventListener('click',()=>goToCheckoutStep(2));
+  $('#toReviewBtn')?.addEventListener('click',()=>goToCheckoutStep(3));
+  $('#backDeliveryBtn')?.addEventListener('click',()=>goToCheckoutStep(1));
+  $('#backPaymentBtn')?.addEventListener('click',()=>goToCheckoutStep(2));
+  $('#editDeliveryBtn')?.addEventListener('click',()=>goToCheckoutStep(1));
+  $('#editPaymentBtn')?.addEventListener('click',()=>goToCheckoutStep(2));
+  document.querySelectorAll('[data-checkout-nav]').forEach(button=>{
+    button.addEventListener('click',()=>goToCheckoutStep(Number(button.dataset.checkoutNav)));
+  });
   $('#f_city')?.addEventListener('input',()=>scheduleQuote());
   $('#f_coupon')?.addEventListener('input',()=>scheduleQuote());
   $('#applyCoupon')?.addEventListener('click',()=>refreshQuote().catch(e=>{if($('#quoteStatus'))$('#quoteStatus').textContent=e.message}));
@@ -99,6 +128,7 @@ async function init() {
   if (fv) fv.addEventListener('change', () => $('#videoOpt').classList.toggle('sel', fv.checked));
 
   renderSummary();
+  showCheckoutStep(1,false);
   // prefillFromAccount removed - autofillCustomerDetails handles it
   // Init completed: enable Place Order (it starts disabled in HTML).
   // applyPaymentAvailability() may have disabled it when no payment method
@@ -251,7 +281,7 @@ function validEmail(v) {
   return email.length<=254 && local.length<=64 && /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
-function checkForm() {
+function checkForm(scope = 'all') {
   let ok = true;
   // Combine first + last into full name for backend compat
   const fname = ($('#f_fname')?.value || '').trim();
@@ -259,7 +289,7 @@ function checkForm() {
   const fullName = (fname + ' ' + lname).trim();
   const nameInput = $('#f_name');
   if(nameInput) nameInput.value = fullName;
-  const need = [
+  const need = scope === 'payment' ? [] : [
     ['f_fname','e_fname',v=>v.trim().length>0 && fullName.length>=3 && fullName.length<=100],
     ['f_lname','e_lname',v=>v.trim().length<=100],
     ['f_phone','e_phone',validPhone],
@@ -275,12 +305,104 @@ function checkForm() {
     if ($('#'+f)) { $('#'+f).setAttribute('aria-invalid', good ? 'false' : 'true'); $('#'+f).setAttribute('aria-describedby', e); }
     if(!good) ok=false;
   });
-  if (isPrepaid()) {
+  if (scope !== 'delivery' && isPrepaid()) {
     const refGood = ($('#f_reference')?.value || '').trim().length >= 4;
     if ($('#e_reference')) $('#e_reference').style.display = refGood ? 'none' : 'block';
+    if ($('#f_reference')) $('#f_reference').setAttribute('aria-invalid',refGood?'false':'true');
     if (!refGood) ok = false;
-  } else if ($('#e_reference')) $('#e_reference').style.display = 'none';
+  } else if (scope !== 'delivery' && $('#e_reference')) {
+    $('#e_reference').style.display = 'none';
+    $('#f_reference')?.setAttribute('aria-invalid','false');
+  }
   return ok;
+}
+
+
+/* Guided checkout: step changes never submit an order or retain new personal data. */
+function showCheckoutStep(step, moveFocus=true) {
+  if (![1,2,3].includes(step)) return;
+  checkoutStep = step;
+  furthestCheckoutStep = Math.max(furthestCheckoutStep,step);
+  const panels = {1:'checkoutDeliveryStep',2:'checkoutPaymentStep',3:'checkoutReviewStep'};
+  for(const [number,id] of Object.entries(panels)){
+    const panel=document.getElementById(id);
+    if(panel) panel.hidden=Number(number)!==step;
+  }
+  const extras=document.getElementById('checkoutExtrasStep');
+  if(extras) extras.hidden=step!==2;
+  for(const id of ['checkoutVerification','placeBtn','checkoutPolicy']){
+    const node=document.getElementById(id);
+    if(node) node.hidden=step!==3;
+  }
+  document.querySelectorAll('[data-checkout-nav]').forEach(button=>{
+    const number=Number(button.dataset.checkoutNav);
+    button.disabled=number>furthestCheckoutStep;
+    button.classList.toggle('current',number===step);
+    button.classList.toggle('complete',number<step);
+    button.setAttribute('aria-current',number===step?'step':'false');
+  });
+  const labels={1:['Your delivery','Enter where we should send your snacks.','Delivery details'],2:['Choose payment','Select a payment method that works for you.','Payment method'],3:['Final review','Check your details and confirmed total.','Review and confirm']};
+  const [heading,lead,label]=labels[step];
+  const title=document.getElementById('checkoutTitle');
+  if(title) title.textContent=heading+'.';
+  const intro=document.getElementById('checkoutLead');
+  if(intro) intro.textContent=lead;
+  const header=document.getElementById('checkoutHeaderStep');
+  if(header) header.textContent='Step '+step+' of 3';
+  const announce=document.getElementById('checkoutStepAnnounce');
+  if(announce) announce.textContent='Step '+step+' of 3: '+label;
+  if(step===3){updateCheckoutReview();renderCheckoutBotCheck();}
+  if(moveFocus){
+    const headingNode=document.getElementById(step===1?'detailsTitle':step===2?'paymentTitle':'reviewTitle');
+    if(headingNode){headingNode.setAttribute('tabindex','-1');headingNode.focus();}
+    window.scrollTo({top:0,behavior:'auto'});
+  }
+}
+function updateCheckoutReview(){
+  const values={
+    reviewName:[($('#f_fname')?.value||'').trim(),($('#f_lname')?.value||'').trim()].filter(Boolean).join(' '),
+    reviewPhone:($('#f_phone')?.value||'').trim(),
+    reviewEmail:($('#f_email')?.value||'').trim(),
+    reviewAddress:[($('#f_addr')?.value||'').trim(),($('#f_city')?.value||'').trim(),($('#f_postal')?.value||'').trim(), 'Pakistan'].filter(Boolean).join(', '),
+    reviewPayment:PAYMENT_LABELS[PAY]||'Payment method not selected',
+    reviewPaymentStatus:isPrepaid()?'Payment reference provided. Awaiting verification after your order is placed.':'Pay when your order arrives.'
+  };
+  for(const [id,value] of Object.entries(values)){
+    const node=document.getElementById(id);
+    if(node) node.textContent=value;
+  }
+}
+async function goToCheckoutStep(target){
+  if(checkoutNavigating || placingOrder || ![1,2,3].includes(target) || target===checkoutStep) return;
+  clearOrderError();
+  if(target<checkoutStep){showCheckoutStep(target);return;}
+  if(!Object.values(PAYMENT_ENABLED).some(Boolean)){
+    showOrderError('Checkout is temporarily unavailable. Please contact ChaskaBox.');
+    return;
+  }
+  if(!checkForm('delivery')){
+    showCheckoutStep(1);
+    document.querySelector('[aria-invalid="true"]')?.focus?.();
+    return;
+  }
+  if(target===2){showCheckoutStep(2);return;}
+  if(!checkForm('payment')){
+    showCheckoutStep(2);
+    document.querySelector('[aria-invalid="true"]')?.focus?.();
+    return;
+  }
+  checkoutNavigating=true;
+  const next=document.getElementById('toReviewBtn');
+  if(next){next.disabled=true;next.textContent='Confirming total…';}
+  try{
+    await refreshQuote();
+    showCheckoutStep(3);
+  }catch(e){
+    showOrderError(e.message||'Could not verify your order total. Please retry.');
+  }finally{
+    checkoutNavigating=false;
+    if(next){next.disabled=false;next.textContent='Review my order →';}
+  }
 }
 
 function orderNo() {
@@ -432,7 +554,7 @@ async function placeOrder() {
   } else {
     phone = _ph.full;
   }
-  const turnstileToken = (typeof turnstile !== 'undefined' && turnstile.getResponse) ? turnstile.getResponse() : '';
+  const turnstileToken = (typeof turnstile !== 'undefined' && turnstile.getResponse) ? turnstile.getResponse(checkoutTurnstileWidgetId ?? undefined) : '';
 
   // Build server-authoritative API payload (contract §4).
   // Prices/totals are IGNORED by the server — it recalculates from the DB.
