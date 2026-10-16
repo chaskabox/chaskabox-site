@@ -417,3 +417,44 @@ html,body{overflow-x:clip}
 @media(prefers-reduced-motion:reduce){
  .admin-shell .admin-nav-btn,.admin-shell .admin-group-chevron,.admin-shell .admin-nav-search-field{transition:none}
 }
+
+/* Admin V4 research pass: keyboard launcher, comfortable density and review workbench. */
+.admin-shell .admin-tools-button{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;min-height:40px}
+.admin-shell .admin-tools-button kbd{border:1px solid #d8e1f0;background:#f5f7fc;padding:2px 5px;border-radius:5px;font:inherit;font-size:10px}
+.admin-attention-panel{margin-bottom:18px}
+.admin-attention-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.admin-attention-actions button{display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 1fr;gap:4px 5px;text-align:left;border:1px solid #d9e3f0;background:#f8fbff;border-radius:13px;padding:15px 13px;min-height:96px;color:#233454}
+.admin-attention-actions button:hover{background:#edf4ff;border-color:#96b3e5}
+.admin-attention-actions button:focus-visible{outline:3px solid #4273bd;outline-offset:2px}
+.admin-attention-actions strong{font-size:13px;line-height:1.4}
+.admin-attention-actions small{grid-column:1;font-size:11px;line-height:1.5;color:#53647d;font-weight:500}
+.admin-attention-actions button>span{grid-column:2;grid-row:1/3;font-size:20px;color:#355a9c;align-self:center}
+.admin-command-dialog{width:min(540px,calc(100vw - 28px));max-height:min(78vh,720px);border:1px solid #cad8eb;border-radius:17px;padding:0;box-shadow:0 28px 75px rgba(13,27,58,.28);background:#fff;color:#172a4b}
+.admin-command-dialog::backdrop{background:rgba(13,26,52,.57)}
+.admin-command-inner{padding:22px;display:grid;gap:11px}
+.admin-command-inner h2{font-size:20px;line-height:1.2;margin:0;letter-spacing:-.02em}
+.admin-command-inner p{font-size:12px;line-height:1.55;color:#536781;margin:0}
+.admin-command-inner label{font-size:13px;font-weight:800;color:#1a3258}
+.admin-command-inner input{width:100%;border:1px solid #afc0da;border-radius:10px;min-height:45px;padding:10px 12px;font-size:15px;color:#152947}
+.admin-command-inner input:focus-visible{outline:3px solid #4273bd;outline-offset:2px}
+.admin-command-results{max-height:min(45vh,350px);overflow-y:auto;display:grid;gap:4px;padding:4px}
+.admin-command-result{width:100%;min-height:52px;border:1px solid transparent;background:#f6f9fe;border-radius:10px;padding:9px 11px;display:flex;align-items:center;justify-content:space-between;gap:15px;color:#183254;text-align:left}
+.admin-command-result:hover{background:#eaf2ff;border-color:#b4c8e9}
+.admin-command-result:focus-visible,.admin-command-close:focus-visible{outline:3px solid #4273bd;outline-offset:2px}
+.admin-command-result strong{font-size:13px;line-height:1.3}
+.admin-command-result small{font-size:11px;color:#536680;text-align:right}
+.admin-command-status{font-size:11px!important;color:#586a83!important}
+.admin-command-close{justify-self:end;background:#fff;border:1px solid #cbd7e8;border-radius:10px;padding:9px 16px;min-height:40px;color:#1a325b;font-size:12px;font-weight:750}
+.admin-shell.admin-density-compact .panel{padding:14px}
+.admin-shell.admin-density-compact .metric-card{min-height:88px;padding:13px;gap:10px}
+.admin-shell.admin-density-compact .admin-content{padding-top:14px}
+.admin-shell.admin-density-compact .admin-attention-actions button{min-height:73px;padding:10px 12px}
+.admin-shell.admin-density-compact .admin-nav-group{padding:4px 0}
+.admin-shell.admin-density-compact .admin-nav-group-links{gap:1px;padding:2px 0 5px}
+.admin-shell.admin-density-compact .admin-nav-btn{min-height:40px;padding:7px 10px}
+.admin-shell.admin-density-compact .admin-grid.two{gap:12px}
+@media(max-width:1450px){.admin-attention-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:1120px){.admin-shell .admin-tools-button{font-size:11px;padding:8px 10px}.admin-shell .admin-tools-button kbd{display:none}}
+@media(max-width:700px){.admin-shell .admin-top-actions #adminDensityToggle{display:none}.admin-shell .admin-tools-button{min-width:40px}.admin-shell .admin-top-actions #adminCommandOpen{font-size:0;gap:0}.admin-shell .admin-top-actions #adminCommandOpen::before{content:'⌕';font-size:22px}.admin-attention-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.admin-attention-actions button{padding:11px;min-height:94px}.admin-command-inner{padding:17px}}
+@media(max-width:380px){.admin-attention-actions{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){.admin-command-dialog,.admin-command-result,.admin-attention-actions button{transition:none}}
