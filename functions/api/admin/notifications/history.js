@@ -3,7 +3,7 @@
  * No secrets, recipients, message bodies or provider payloads leave this route.
  * Sending, replaying and channel activation are intentionally NOT supported here.
  */
-import { withAdmin, sb, json, httpError } from '../../_lib/auth.js';
+import { withAdmin, sb, json, httpError } from '../_lib/auth.js';
 
 const TARGETS = new Set(['all', 'owner_email', 'owner_whatsapp', 'customer_whatsapp']);
 const VIEWS = new Set(['all', 'pending', 'review', 'accepted', 'delivered']);
