@@ -7,6 +7,7 @@ Known 2026-10-16 observations from the owner:
 - Docker daemon runs, but no containers, named volumes or Compose projects were running or registered.
 - Existing configuration: `/home/ubuntu/waha/docker-compose.yml` with service `waha`, image `devlikeapro/waha:latest`, forced `platform: linux/amd64`, ports and volumes declared (their *values* not yet inspected).
 - Cached image `devlikeapro/waha:latest` is `amd64`.
+- PM2 processes `wa-server` (on 127.0.0.1:3000) and `cf-tunnel` are online; `127.0.0.1:3001` was free. Do not stop or modify those services without inspecting their full role. The existing WAHA session bind directory exists but is empty.
 - Cloudflare Worker has WAHA credentials but only `owner_email` is enabled. The gateway points to an ephemeral trycloudflare tunnel; no persistent named tunnel was found. WhatsApp delivery remains disabled.
 
 ## Safety boundaries
@@ -46,11 +47,11 @@ Back up the actual *existing* session mount after inspecting its path; do not as
 
 ## 3. Proposed hardening, NOT yet applied
 
-See `compose.override.example.yml`. Apply an override only after these release gates pass:
+See `compose.override.example.yml`. It **requires Docker Compose >=2.24.4**, because the `ports: !override` directive must **replace**, not append to, the original public `0.0.0.0:3000` binding. Never apply a normal merge that keeps the original public binding. Apply an override only after these release gates pass:
 
 1. Confirm `/app/.sessions` is bind-mounted or backed by persistent storage; verify the location and snapshot it. Keep existing WAHA engine and namespace settings so previously paired sessions remain readable.
 2. Confirm API key and dashboard/password policy without printing them; verify local `/health` and authenticated session status.
-3. Confirm all published WAHA ports bind to `127.0.0.1` (or `::1`) or are otherwise protected behind a trusted proxy, firewall and access layer. **Compose overlay does not remove an already-public port.** Fix base port binding first, if necessary.
+3. Confirm merged Compose config publishes **only `127.0.0.1:3001` -> `3000`**, never `0.0.0.0:3000`. The overlay uses `!override` to replace the original exposure. Keep PM2 `wa-server` and `cf-tunnel` untouched.
 4. Use native `devlikeapro/waha:arm` for this aarch64 machine. Test pulled image architecture before switching; keep prior image/tag and session backup for rollback.
 5. Add `restart: unless-stopped`, bounded container logging, optional verified app-health check. Ensure Docker starts on boot via `systemctl is-enabled docker`; only enable it as an authorized separate action. A stopped/removed container that has **never been started** will not magically be resurrected by a restart policy.
 6. Create a *persistent named* Cloudflare Tunnel and DNS hostname instead of temporary `*.trycloudflare.com`; validate secure inbound access using the required WAHA API key. Do not make Dashboard/Swagger freely public.
@@ -68,3 +69,26 @@ sudo systemctl is-enabled docker
 ```
 
 **References:** [WAHA Docker install](https://waha.devlike.pro/blog/waha-on-docker/), [WAHA session storage](https://waha.devlike.pro/docs/how-to/storages/), [WAHA security](https://waha.devlike.pro/docs/how-to/security/), [WAHA observability](https://waha.devlike.pro/docs/how-to/observability/), [Docker restart policy](https://docs.docker.com/reference/compose-file/services/#restart).
+
+## PM2-discovery fast route (current host)
+
+`pm2 list` has confirmed a long-running `wa-server` on port 3000 and a `cf-tunnel` process. They are not WAHA Docker containers. **Do not restart either**, and do not assume the tunnel already targets the new WAHA port. Inspect their purpose and align proxy/tunnel routing separately after WAHA works locally on 3001. To prepare an additive override while preserving the original settings:
+
+```bash
+sudo docker compose version
+sudo ss -lntp | grep ':3001 ' || echo 'Port 3001 available'
+cd /home/ubuntu/waha
+sudo install -d -m 700 /home/ubuntu/waha-private-backups
+sudo cp -p docker-compose.yml /home/ubuntu/waha-private-backups/docker-compose.yml.before-arm
+sudo test ! -f .env || sudo cp -p .env /home/ubuntu/waha-private-backups/waha.env.before-arm
+sudo chmod 600 /home/ubuntu/waha-private-backups/*
+curl -fsSL -o compose.oci.override.yml https://raw.githubusercontent.com/chaskabox/chaskabox-site/ops/waha-oci-resilience-20261016/ops/waha/compose.override.example.yml
+```
+
+**Pre-start gate** (read-only, sanitizes and validates merged config; does not print env secrets):
+
+```bash
+sudo docker compose -f docker-compose.yml -f compose.oci.override.yml config --format json | python3 -c 'import json,sys; s=json.load(sys.stdin)["services"]["waha"]; ports=s.get("ports",[]); actual=[(str(p.get("host_ip")),str(p.get("published")),str(p.get("target"))) for p in ports]; assert actual==[("127.0.0.1","3001","3000")], "Unsafe/incompatible port mapping: "+repr(actual); assert s.get("platform")=="linux/arm64"; assert s.get("restart")=="unless-stopped"; assert any(v.get("target")=="/app/.sessions" for v in s.get("volumes",[])); print("Pre-start gate PASSED: ARM64, local port 3001, session mount, restart")'
+```
+
+Do **not** start if this validation fails, if the `.env` has unexpected/missing values, or if available disk space is low. Successful pre-start gate does not prove actual WhatsApp session login or an authorized external tunnel connection. Only after reviewed/approved startup should the command use **both** Compose files (never original alone) to avoid re-exposing the public port.
