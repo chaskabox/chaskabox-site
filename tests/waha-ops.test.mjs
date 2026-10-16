@@ -27,5 +27,6 @@ test('WAHA resilience override targets native ARM and deliberate-stop-safe resta
   assert.match(overlay, /platform:\s*linux\/arm64/);
   assert.match(overlay, /restart:\s*unless-stopped/);
   assert.match(overlay, /max-size:\s*["']?10m/);
-  assert.doesNotMatch(overlay, /\b(?:ports|volumes|env_file):/);
+  assert.match(overlay, /ports:\s*!override\s*\n\s*-\s*["\x27]?127\.0\.0\.1:3001:3000/);
+  assert.doesNotMatch(overlay, /\b(?:volumes|env_file):/);
 });
