@@ -2,7 +2,8 @@
 # ChaskaBox / Oracle WAHA preflight. READ ONLY; never echo API keys or .env.
 set -Eeuo pipefail
 
-ROOT="\${1:-/home/ubuntu/waha}"
+ROOT="/home/ubuntu/waha"
+if [ "$#" -gt 0 ]; then ROOT="$1"; fi
 COMPOSE="$ROOT/docker-compose.yml"
 
 echo "== WAHA OCI preflight (read-only) =="
