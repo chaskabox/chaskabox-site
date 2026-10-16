@@ -35,7 +35,9 @@ if sudo test -f "$ROOT/.env"; then
   sudo cp -p "$ROOT/.env" "$BACKUP/waha.env.$STAMP"
 fi
 sudo tar -C "$ROOT" -czf "$BACKUP/sessions.$STAMP.tgz" .sessions
-sudo chmod 600 "$BACKUP"/*
+# Do not expand a root-only directory glob as the unprivileged SSH user.
+# Also secure snapshots left behind by earlier interrupted attempts.
+sudo find "$BACKUP" -maxdepth 1 -type f -exec chmod 600 {} +
 
 # Review only trusted, pinned GitHub file: a small add-on Compose overlay.
 curl -fsSL --max-time 20 -o "$OVERLAY.tmp" "$OVERRIDE_SOURCE" || fail 'Could not download reviewed Compose override'
