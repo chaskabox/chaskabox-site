@@ -203,6 +203,14 @@ setTimeout(function(){
           <button type="button" class="btn secondary" id="orderExportCsv" disabled>Export filtered CSV</button>
           <p id="orderFilterFeedback" class="admin-order-filter-feedback" role="status" aria-live="polite"></p>
         </div>
+        <div class="admin-quick-views" id="orderQuickViews" role="group" aria-label="Quick order filter views">
+          <span class="admin-quick-views-label">Quick views</span>
+          <button type="button" data-order-view="all" aria-pressed="true" disabled>All orders</button>
+          <button type="button" data-order-view="new" aria-pressed="false" disabled>New orders</button>
+          <button type="button" data-order-view="payment_submitted" aria-pressed="false" disabled>Payment review</button>
+          <button type="button" data-order-view="dispatched" aria-pressed="false" disabled>Dispatched</button>
+          <p id="orderActiveView" role="status" aria-live="polite">Load orders to use quick views.</p>
+        </div>
         <div class="panel empty-backend">
           <div class="admin-loading"><div class="spinner"></div><h2>Loading orders…</h2></div>
           <p>Approved staff can manage guest and account orders, payment verification, fulfilment, notification retries and audit history from this screen.</p>
@@ -339,12 +347,18 @@ setTimeout(function(){
           <div class="searchbox"><span>⌕</span><input id="productSearch" type="search" aria-label="Search products by name, brand, slug, category, pack or tag" placeholder="Search name, brand, tag or pack…" autocomplete="off"></div>
           <select id="productCategory"><option value="">All categories</option></select>
           <select id="productVisibility"><option value="">All products</option><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="bundle">Chaska Boxes</option><option value="archived">Archived</option></select>
+          <label class="admin-filter-control">Quality
+            <select id="productQuality" aria-label="Filter products by catalogue completeness"><option value="">Any quality</option><option value="missing_image">Missing image</option><option value="missing_seo">Missing SEO metadata</option></select>
+          </label>
+          <label class="admin-filter-control">Sort current page
+            <select id="productSort" aria-label="Sort loaded products"><option value="recent">Recently updated</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option><option value="price_asc">Price low to high</option><option value="price_desc">Price high to low</option></select>
+          </label>
           <button class="btn" id="resetFiltersBtn" title="Clear search and catalogue filters">Reset</button>
           <button class="btn primary" id="addProductBtn">+ Add product</button>
         </div>
         <div class="bulkbar hidden" id="bulkBar"><b id="bulkCount">0 selected</b><button class="btn secondary" data-bulk="show">Show</button><button class="btn secondary" data-bulk="hide">Hide</button><button class="btn danger" data-bulk="archive">Archive</button><button class="btn secondary" data-bulk="restore">Restore archived</button><button class="text-btn" data-bulk="clear">Clear</button></div><p id="bulkFeedback" class="admin-action-feedback" role="status" aria-live="polite"></p>
         <div class="product-admin-grid" id="productAdminGrid"></div>
-        <div class="pagination-row"><span id="productResultCount"></span><button class="btn secondary" id="loadMoreProducts">Load more</button></div>
+        <div class="pagination-row"><span id="productResultCount" role="status" aria-live="polite"></span><button class="btn secondary" id="loadMoreProducts">Load more</button></div>
       </section>
 
       <!-- BOX BUILDER -->
