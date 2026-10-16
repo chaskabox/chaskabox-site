@@ -426,7 +426,7 @@ async function placeOrder() {
   let phone;
   if(_ph.ccode === '+92'){
     let d = phoneDigits($('#f_phone').value);
-    // Normalize: 3013085381 (10 digits) -> 03013085381 (11 digits)
+    // Normalize a 10-digit mobile number (missing its leading 0) to national format.
     if(d.length === 10 && d.startsWith('3')) d = '0' + d;
     phone = d;
   } else {
