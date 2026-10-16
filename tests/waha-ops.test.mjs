@@ -37,6 +37,10 @@ test('One-time WAHA launch script is syntax valid, backs up data, and keeps WAHA
   const result = spawnSync('bash', ['-n'], { input: launch, encoding: 'utf8' });
   assert.equal(result.status, 0, result.stderr);
   assert.match(launch, /waha-private-backups/);
+  // Regression: the backup directory is root-owned mode 700, so a glob
+  // expanded in the unprivileged calling shell will not find its files.
+  assert.match(launch, /sudo find "\$BACKUP" -maxdepth 1 -type f -exec chmod 600/);
+  assert.doesNotMatch(launch, /sudo chmod 600 "\$BACKUP"\/\*/);
   assert.match(launch, /curl -fsSL/);
   assert.match(launch, /s\.get\("restart"\)=="unless-stopped"/);
   assert.match(launch, /127\.0\.0\.1","3001","3000"/);
