@@ -24,3 +24,33 @@ test('history serializer retains delivery metadata and excludes message contents
   assert.equal(Object.hasOwn(item,'recipient'),false);
   assert.equal(safeDeliveryRow({last_error:'Not safe to show'}).error_code,'review_required');
 });
+
+test('history rejects unauthenticated, wrong-role and owner without MFA before reading ledger',async()=>{
+  const {onRequestGet}=await import('../functions/api/admin/notifications/history.js');
+  const original=globalThis.fetch;
+  const id='00000000-0000-4000-8000-000000000001';
+  const session='00000000-0000-4000-8000-000000000002';
+  let role='content',ledgerReads=0;
+  const getRequest=(aal)=>new Request('https://chaskabox.online/api/admin/notifications/history',{headers:{
+    Authorization:'Bearer fixture.'+Buffer.from(JSON.stringify({sub:id,aal,session_id:session})).toString('base64url')+'.verified'
+  }});
+  const ctx=request=>({request,env:{SUPABASE_URL:'https://db.example.invalid',SUPABASE_ANON_KEY:'public-fixture',SUPABASE_SERVICE_ROLE_KEY:'server-fixture'}});
+  try{
+    globalThis.fetch=async(address)=>{
+      const path=new URL(address).pathname;
+      if(path==='/auth/v1/user')return Response.json({id});
+      if(path==='/rest/v1/admin_roles')return Response.json([{role}]);
+      if(path==='/rest/v1/rpc/admin_session_check')return Response.json(true);
+      if(path==='/rest/v1/notification_deliveries'){ledgerReads++;return new Response('[]',{headers:{'Content-Range':'*/0'}});}
+      throw new Error('Unexpected fixture request');
+    };
+    assert.equal((await onRequestGet(ctx(new Request('https://chaskabox.online/api/admin/notifications/history')))).status,401);
+    assert.equal((await onRequestGet(ctx(getRequest('aal2')))).status,403);
+    role='owner';
+    assert.equal((await onRequestGet(ctx(getRequest('aal1')))).status,403);
+    const response=await onRequestGet(ctx(getRequest('aal2')));
+    assert.equal(response.status,200);
+    assert.equal((await response.json()).read_only,true);
+    assert.equal(ledgerReads,1);
+  }finally{globalThis.fetch=original;}
+});
