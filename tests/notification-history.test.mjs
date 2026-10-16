@@ -54,3 +54,16 @@ test('history rejects unauthenticated, wrong-role and owner without MFA before r
     assert.equal(ledgerReads,1);
   }finally{globalThis.fetch=original;}
 });
+
+test('notification interface is wired to the ledger and does not expose a bulk replay control',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const html=await readFile(new URL('../admin.html',import.meta.url),'utf8');
+  const client=await readFile(new URL('../admin-live.js',import.meta.url),'utf8');
+  assert.match(html,/id="notifHistoryTarget"/);
+  assert.match(html,/id="notifHistoryView"/);
+  assert.match(html,/id="notifHistoryRows"/);
+  assert.match(html,/admin-live\.js\?v=20261016-notification-center-1/);
+  assert.match(client,/async function loadNotificationHistory/);
+  assert.match(client,/\/api\/admin\/notifications\/history\?/);
+  assert.match(html,/No automatic replay/);
+});
