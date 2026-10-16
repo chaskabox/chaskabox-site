@@ -1,0 +1,22 @@
+
+/* Safe, synthetic V4 design preview. No production state or provider connections. */
+.demo-admin-shell .admin-sidebar-foot{padding-bottom:10px}
+.demo-sidebar-note{font-size:11px;font-weight:850;line-height:1.5;color:#233f72;background:#eff5ff;border:1px solid #d9e4fc;border-radius:10px;padding:12px;margin:0}
+.demo-sidebar-note small{font-size:11px;font-weight:600;color:#54647e}
+.demo-safe-notice{background:#ebf7f2!important;border-color:#bce3d0!important;color:#14583c!important;line-height:1.55}
+.demo-admin-shell .admin-nav-btn{cursor:pointer}
+.demo-admin-shell .btn{display:inline-flex;align-items:center;justify-content:center;white-space:normal;text-align:center}
+.demo-admin-shell .demo-notice{background:#f0f5ff;border:1px solid #dbe6fa;border-radius:11px;padding:13px;color:#334c73;font-size:13px;line-height:1.5}
+.demo-fake-table{margin:24px 0 8px;display:grid;gap:0;border:1px solid #e1e8f4;border-radius:12px;overflow:hidden}
+.demo-fake-row{display:flex;align-items:center;justify-content:space-between;gap:30px;padding:17px;background:#fff;border-bottom:1px solid #e1e8f4}
+.demo-fake-row:last-child{border-bottom:0}
+.demo-skeleton{display:inline-block;height:11px;background:linear-gradient(90deg,#ecf1f8,#e4ebf5);border-radius:6px}
+.demo-skeleton.wide{width:60%}.demo-skeleton.middle{width:45%}.demo-skeleton.narrow{width:17%}
+.demo-chart-track{display:block;height:9px;background:#e9eef6;border-radius:8px;overflow:hidden}
+.demo-chart-track i{display:block;height:100%;background:#263d76;border-radius:8px}
+.demo-admin-shell .admin-nav-group.nav-no-results{display:none!important}
+.demo-admin-shell .admin-nav-btn.nav-search-miss{display:none!important}
+.demo-admin-shell #adminNavEmpty[hidden]{display:none}
+.demo-admin-shell .admin-nav-btn:focus-visible,.demo-admin-shell summary:focus-visible,.demo-admin-shell .btn:focus-visible{outline:3px solid #3a65ae;outline-offset:2px}
+@media(max-width:900px){.demo-admin-shell .admin-sidebar{z-index:41}}
+@media(max-width:600px){.demo-admin-shell .admin-top-actions>a:first-child{display:none}.demo-admin-shell .admin-top-actions .btn{font-size:11px}}
