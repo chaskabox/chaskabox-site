@@ -124,6 +124,42 @@ async function inspect(page,route,width,role){
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ // A generic responsive-media rule must not collapse the preview iframe to
+ // the browser's 150px default. Exercise real layout and inner-page scrolling.
+ for(const hostWidth of [1440,390]){
+  const {context,page}=await contextFor(hostWidth,'owner');
+  await page.goto(base+'/admin/');
+  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  if(hostWidth<900)await page.locator('#sidebarToggle').click();
+  await page.locator('[data-view="preview"]').click();
+  await page.locator('#sitePreview').waitFor({state:'visible'});
+  for(const [device,width] of [['Desktop',null],['Tablet',768],['Mobile',390]]){
+   await page.locator('.viewport-switch').getByRole('button',{name:device,exact:true}).click();
+   await page.waitForFunction(target=>{
+    const wrap=document.getElementById('previewFrameWrap');
+    const stage=wrap.parentElement,style=getComputedStyle(stage);
+    const available=stage.clientWidth-parseFloat(style.paddingLeft)-parseFloat(style.paddingRight);
+    return Math.abs(wrap.getBoundingClientRect().width-Math.min(target||available,available))<2;
+   },width);
+   const layout=await page.locator('#sitePreview').evaluate(frame=>({
+    height:frame.getBoundingClientRect().height,
+    width:frame.getBoundingClientRect().width,
+    wrapWidth:frame.parentElement.getBoundingClientRect().width,
+    overflow:document.documentElement.scrollWidth>innerWidth+1
+   }));
+   results.interactions.push({case:`site preview ${device.toLowerCase()} retains full-height viewport at ${hostWidth}px`,pass:layout.height>=600&&layout.width<=layout.wrapWidth+1&&!layout.overflow,...layout});
+   if(hostWidth===1440)await page.screenshot({path:path.join(output,`admin-site-preview-${device.toLowerCase()}.png`),fullPage:false});
+  }
+  const preview=await (await page.locator('#sitePreview').elementHandle()).contentFrame();
+  await preview.waitForFunction(()=>document.documentElement.scrollHeight>innerHeight);
+  await preview.evaluate(()=>window.scrollTo(0,document.documentElement.scrollHeight));
+  await preview.waitForFunction(()=>scrollY>0);
+  results.interactions.push({case:`site preview scrolls through the storefront at ${hostWidth}px`,pass:await preview.evaluate(()=>scrollY>0&&innerHeight>=600)});
+  await page.locator('#refreshPreview').click();
+  await page.waitForFunction(()=>document.getElementById('sitePreview').contentDocument?.readyState==='complete');
+  results.interactions.push({case:`site preview refresh retains its viewport at ${hostWidth}px`,pass:await page.locator('#sitePreview').evaluate(frame=>frame.getBoundingClientRect().height>=600&&frame.src.includes('_adminpreview='))});
+  await context.close();
+ }
  // The bridge and application must share the public config request; SSR pages
  // must hydrate the supplied manifest rather than fetching it again.
  for(const [route,expected] of [['/',1],['/shop/',0]]){
