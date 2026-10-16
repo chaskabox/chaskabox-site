@@ -237,6 +237,13 @@ try{
   const fmt=n=>'Rs. '+n.toLocaleString('en-PK');
   const subtotal=99*products.find(p=>p.id===39).price;
   if(await page.locator('#s_tot').innerText()!==fmt(subtotal+300))throw Error('COD quote total mismatch');
+  await page.getByLabel('First Name *').fill('Ali');
+  await page.getByLabel('Phone Number *').fill('03000000000');
+  await page.getByLabel('Email Address *').fill('ali@example.invalid');
+  await page.getByLabel('Address *').fill('Fixture Street 123, Lahore');
+  await page.locator('#toPaymentBtn').click();
+  if(!await page.locator('#checkoutPaymentStep').isVisible()||await page.locator('#checkoutDeliveryStep').isVisible())
+    throw Error('Checkout failed to advance from delivery to payment');
   await page.locator('input[value="jazzcash"]').check();
   await page.waitForFunction(()=>document.getElementById('quoteStatus')?.textContent==='Total confirmed for Lahore.');
   if(await page.locator('#s_tot').innerText()!==fmt(subtotal))throw Error('Prepaid quote total mismatch');
