@@ -1291,6 +1291,7 @@
   let notificationHistorySeq=0;
   let notificationHistoryPage=1;
   let notificationEnabledChannels=[];
+  let notificationChannelsVerified=false;
   async function loadNotificationHistory(page=1){
     const el=$('#notifHistoryRows');
     if(!el)return;
@@ -1315,7 +1316,7 @@
       }else{
         const html=rows.map(n=>{
           const order=String(n.order_id||''),shortId=order?order.slice(0,8)+'…':'—';
-          const held=['pending','retry'].includes(n.status)&&!channels.has(n.target);
+          const held=notificationChannelsVerified&&['pending','retry'].includes(n.status)&&!channels.has(n.target);
           const sendState=held?'On hold (channel inactive)':String(n.status||'unknown').replaceAll('_',' ');
           const delivered=n.delivery_status==='delivered'?'Confirmed delivered':n.delivery_status==='unknown'?'Not confirmed':String(n.delivery_status||'Not confirmed').replaceAll('_',' ');
           const error=n.error_code?' · '+esc(n.error_code.replaceAll('_',' ')):'';
@@ -1347,6 +1348,7 @@
       const d=await api('/api/admin/notifications');
       const st=$('#notifServiceStatus'), state=d.dispatch||{};
       notificationEnabledChannels=Array.isArray(state.configured_targets)?state.configured_targets:[];
+      notificationChannelsVerified=Array.isArray(state.configured_targets);
       if(st)st.innerHTML=`<div style="display:grid;gap:8px"><div><b>Queue consumer:</b> ${esc(d.worker_status||'unknown')}</div><div><b>Last completed:</b> ${state.last_completed_at?esc(fmtDate(state.last_completed_at)):'No heartbeat recorded'}</div><div><b>Enabled channels:</b> ${esc((state.configured_targets||[]).join(', ')||'None confirmed')}</div><small class="muted">Channel configuration comes from the consumer heartbeat. Provider availability is not probed here.</small></div>`;
       const ob=$('#notifOutboxStats'), p=d.provider_results||{};
       if(ob){const o=d.owner_outbox||{},c=d.customer_outbox||{};
