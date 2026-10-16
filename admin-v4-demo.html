@@ -132,7 +132,19 @@
       <section class="admin-view" id="view-orders" data-title="Orders" data-subtitle="Order search, filters and fulfilment tools">
   <div class="panel"><div class="panel-head"><div><h2>Orders</h2><p>Order search, filters and fulfilment tools</p></div></div>
   <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
-  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  <div class="admin-quick-views" id="demoOrderQuickViews" role="group" aria-label="Filter example orders">
+    <span class="admin-quick-views-label">Quick views</span>
+    <button type="button" data-demo-order-view="all" aria-pressed="true">All orders</button>
+    <button type="button" data-demo-order-view="new" aria-pressed="false">New orders</button>
+    <button type="button" data-demo-order-view="payment_submitted" aria-pressed="false">Payment review</button>
+    <button type="button" data-demo-order-view="dispatched" aria-pressed="false">Dispatched</button>
+  </div>
+  <div id="demoOrderResult" role="status" aria-live="polite">3 synthetic example orders</div>
+  <div id="demoOrdersList" class="demo-fake-table">
+    <div class="demo-order-row" data-demo-fulfilment="new" data-demo-payment="cod_due"><strong>CB-EXAMPLE-001</strong><span>New · COD due</span><small>Illustrative record only</small></div>
+    <div class="demo-order-row" data-demo-fulfilment="sourcing" data-demo-payment="payment_submitted"><strong>CB-EXAMPLE-002</strong><span>Sourcing · Payment submitted</span><small>Illustrative record only</small></div>
+    <div class="demo-order-row" data-demo-fulfilment="dispatched" data-demo-payment="payment_verified"><strong>CB-EXAMPLE-003</strong><span>Dispatched · Verified</span><small>Illustrative record only</small></div>
+  </div>
   </div></section>
 <section class="admin-view" id="view-resolutions" data-title="Refunds & Issues" data-subtitle="Resolution and review workflow">
   <div class="panel"><div class="panel-head"><div><h2>Refunds & Issues</h2><p>Resolution and review workflow</p></div></div>
@@ -162,7 +174,18 @@
 <section class="admin-view" id="view-products" data-title="Products" data-subtitle="Product catalogue editing and visibility">
   <div class="panel"><div class="panel-head"><div><h2>Products</h2><p>Product catalogue editing and visibility</p></div></div>
   <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
-  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
+  <div class="demo-product-controls">
+    <label>Catalogue quality <select id="demoProductQuality"><option value="">All quality states</option><option value="missing_image">Missing image</option><option value="missing_seo">Missing SEO metadata</option></select></label>
+    <label>Sort sample products <select id="demoProductSort"><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option><option value="price_asc">Price low to high</option><option value="price_desc">Price high to low</option></select></label>
+    <button type="button" id="demoProductReset">Clear filters</button>
+  </div>
+  <p id="demoProductResult" role="status" aria-live="polite">Showing 4 sample products</p>
+  <div id="demoProductsList" class="demo-fake-table">
+    <div class="demo-product-row" data-demo-name="Mango Bites" data-demo-price="90" data-demo-image="yes" data-demo-seo="yes"><strong>Mango Bites</strong><span>Rs. 90</span><small>Example only</small></div>
+    <div class="demo-product-row" data-demo-name="Chocolate Wafer" data-demo-price="55" data-demo-image="yes" data-demo-seo="no"><strong>Chocolate Wafer</strong><span>Rs. 55</span><small>Example SEO missing</small></div>
+    <div class="demo-product-row" data-demo-name="Tangy Chew" data-demo-price="110" data-demo-image="no" data-demo-seo="yes"><strong>Tangy Chew</strong><span>Rs. 110</span><small>Example image missing</small></div>
+    <div class="demo-product-row" data-demo-name="Chaska Mix" data-demo-price="150" data-demo-image="yes" data-demo-seo="yes"><strong>Chaska Mix</strong><span>Rs. 150</span><small>Example only</small></div>
+  </div>
   </div></section>
 <section class="admin-view" id="view-categories" data-title="Categories" data-subtitle="Category configuration">
   <div class="panel"><div class="panel-head"><div><h2>Categories</h2><p>Category configuration</p></div></div>
