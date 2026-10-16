@@ -388,7 +388,7 @@ html,body{overflow-x:clip}
 .admin-shell .sidebar-toggle{min-height:41px;min-width:41px}
 @media(max-width:1180px){.admin-shell .admin-sidebar{flex-basis:256px;width:256px}.admin-shell .admin-topbar{min-height:77px}}
 @media(max-width:900px){
- .admin-shell .admin-sidebar{position:fixed;left:-285px;top:0;bottom:0;height:100dvh;width:272px;flex-basis:272px;z-index:31;box-shadow:none}
+ .admin-shell .admin-sidebar{position:fixed;left:-285px;top:0;bottom:0;height:100dvh;width:272px;flex-basis:272px;z-index:41;box-shadow:none}
  .admin-shell .admin-sidebar.open{left:0;box-shadow:18px 0 48px rgba(22,36,70,.22)}
  .admin-shell .admin-sidebar-foot #adminSidebarSignOut:not([hidden]){display:flex!important;justify-content:center}
  .admin-shell .admin-top-actions #adminSignOut:not([hidden]){display:none!important}
