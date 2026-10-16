@@ -109,7 +109,7 @@
   function showView(name){
     // UI affordance only; the backend remains the source of authorization.
     // Do not reveal panels hidden by the verified staff role through shortcuts.
-    const allowedNav=$('.admin-nav-btn').find(button=>button.dataset.view===name);
+    const allowedNav=Array.from(document.querySelectorAll('.admin-nav-btn')).find(button=>button.dataset.view===name);
     if(!allowedNav||allowedNav.hidden||allowedNav.style.display==='none'||allowedNav.getAttribute('aria-hidden')==='true')return;
     const search=$('#adminNavSearch');
     if(search?.value){search.value='';filterAdminNavigation();}
