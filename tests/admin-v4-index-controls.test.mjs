@@ -11,6 +11,7 @@ test('Admin Orders quick views rely on authenticated existing GET filters, never
  assert.match(html,/data-order-view="dispatched"/);
  assert.match(html,/id="orderActiveView" role="status" aria-live="polite"/);
  assert.match(js,/function syncOrderQuickViews\(/);
+ assert.equal((js.match(/\$\$\('\[data-order-view\]'\)\.forEach/g)||[]).length,2,'both order preset loops must use querySelectorAll');
  assert.match(js,/button\.dataset\.orderView==='payment_submitted'/);
  assert.match(js,/button\.dataset\.orderView==='dispatched'/);
  assert.match(js,/loadOrders\(1\)/);
