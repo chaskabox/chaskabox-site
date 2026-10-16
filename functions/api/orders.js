@@ -248,9 +248,13 @@ export async function onRequest(context) {
                 product_pack: it.pack,
               })),
             };
-            // Fire-and-forget: don't await, don't let failures affect the order response
-            sendOwnerWhatsApp(env, orderForNotify).catch(err =>
-              logError('orders:waha-notify', err)
+            // Fire-and-forget: don't await, don't let failures affect the order response.
+            // Registered with context.waitUntil so Cloudflare doesn't kill the
+            // isolate before the WhatsApp send completes.
+            context.waitUntil(
+              sendOwnerWhatsApp(env, orderForNotify).catch(err =>
+                logError('orders:waha-notify', err)
+              )
             );
           } catch (notifyErr) {
             logError('orders:waha-notify-setup', notifyErr);
