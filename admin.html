@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>ChaskaBox Admin Console</title>
-<link rel="stylesheet" href="/admin.css?v=20261016-preview-height1">
+<link rel="stylesheet" href="/admin.css?v=20261016-admin-v4-shell1">
  <link rel="stylesheet" href="/admin-agent-workbench.css?v=20261015-agent-workbench1">
 <style>.agent-m05-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:12px;margin:14px 0}.agent-m05-grid .panel h3{margin:0 0 8px;color:var(--navy);font-size:15px}.agent-m05-grid .panel p{overflow-wrap:anywhere;font-size:12px}.agent-m05-grid .panel button{margin:6px}</style>
 </head>
@@ -38,32 +38,67 @@ setTimeout(function(){
       <img src="/images/logo-navy.png" srcset="/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w" sizes="210px" alt="ChaskaBox" width="1624" height="776">
       <span>Admin Console</span>
     </a>
-    <nav class="admin-nav" aria-label="Admin sections">
-      <button class="admin-nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button>
-      <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
-      <button class="admin-nav-btn" data-view="resolutions"><span>🛠️</span> Refunds & Issues</button>
-      <button class="admin-nav-btn" data-view="coupons"><span>🎟️</span> Coupons</button>
-      <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
-      <button class="admin-nav-btn" data-view="analytics"><span>📊</span> Analytics</button>
-      <button class="admin-nav-btn" data-view="backup"><span>💾</span> Catalogue Snapshot</button>
-      <button class="admin-nav-btn" data-view="studio"><span>🎨</span> Image Studio</button>
-      <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
-      <button class="admin-nav-btn" data-view="categories"><span>📁</span> Categories</button>
-      <button class="admin-nav-btn" data-view="brands"><span>🏷️</span> Brands</button>
-      <button class="admin-nav-btn" data-view="boxes"><span>📦</span> Chaska Box Builder</button>
-      <button class="admin-nav-btn" data-view="homepage"><span>⌂</span> Homepage Builder</button>
-      <button class="admin-nav-btn" data-view="navigation"><span>🧭</span> Navigation</button>
-      <button class="admin-nav-btn" data-view="theme"><span>🎨</span> Theme Studio</button>
-      <button class="admin-nav-btn" data-view="customers"><span>♙</span> Customers</button>
-      <button class="admin-nav-btn" data-view="reviews"><span>★</span> Reviews</button>
-      <button class="admin-nav-btn" data-view="media"><span>▣</span> Media Library</button>
-      <button class="admin-nav-btn" data-view="notifications"><span>🔔</span> Notifications</button>
-      <button class="admin-nav-btn" data-view="agents"><span>🤖</span> AI Agents</button>
-      <button class="admin-nav-btn" data-view="assistant"><span>✦</span> AI Center</button>
-      <button class="admin-nav-btn" data-view="health"><span>💚</span> System Health</button>
-      <button class="admin-nav-btn" data-view="preview"><span>◉</span> Site Preview</button>
-      <button class="admin-nav-btn" data-view="settings"><span>⚙</span> Store Settings</button>
-      <button class="admin-nav-btn" data-view="security"><span>🔐</span> Team &amp; Security</button>
+    <div class="admin-nav-search">
+      <label for="adminNavSearch">Find a panel</label>
+      <div class="admin-nav-search-field"><span aria-hidden="true">⌕</span><input type="search" id="adminNavSearch" placeholder="Search panels…" autocomplete="off" aria-controls="adminNavGroups"></div>
+    </div>
+    <nav class="admin-nav" id="adminNavGroups" aria-label="Admin sections">
+      <details class="admin-nav-group" data-group="overview" open>
+        <summary><span>Overview</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="commerce" open>
+        <summary><span>Orders & customers</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
+          <button class="admin-nav-btn" data-view="resolutions"><span>🛠️</span> Refunds & Issues</button>
+          <button class="admin-nav-btn" data-view="coupons"><span>🎟️</span> Coupons</button>
+          <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
+          <button class="admin-nav-btn" data-view="customers"><span>♙</span> Customers</button>
+          <button class="admin-nav-btn" data-view="reviews"><span>★</span> Reviews</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="catalogue" open>
+        <summary><span>Catalogue & products</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
+          <button class="admin-nav-btn" data-view="categories"><span>📁</span> Categories</button>
+          <button class="admin-nav-btn" data-view="brands"><span>🏷️</span> Brands</button>
+          <button class="admin-nav-btn" data-view="boxes"><span>📦</span> Chaska Box Builder</button>
+          <button class="admin-nav-btn" data-view="backup"><span>💾</span> Catalogue Snapshot</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="storefront">
+        <summary><span>Storefront & media</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="homepage"><span>⌂</span> Homepage Builder</button>
+          <button class="admin-nav-btn" data-view="navigation"><span>🧭</span> Navigation</button>
+          <button class="admin-nav-btn" data-view="theme"><span>🎨</span> Theme Studio</button>
+          <button class="admin-nav-btn" data-view="studio"><span>🎨</span> Image Studio</button>
+          <button class="admin-nav-btn" data-view="media"><span>▣</span> Media Library</button>
+          <button class="admin-nav-btn" data-view="preview"><span>◉</span> Site Preview</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="intelligence">
+        <summary><span>Insights & AI</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="analytics"><span>📊</span> Analytics</button>
+          <button class="admin-nav-btn" data-view="agents"><span>🤖</span> AI Agents</button>
+          <button class="admin-nav-btn" data-view="assistant"><span>✦</span> AI Center</button>
+          <button class="admin-nav-btn" data-view="health"><span>💚</span> System Health</button>
+        </div>
+      </details>
+      <details class="admin-nav-group" data-group="management">
+        <summary><span>Operations & access</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="notifications"><span>🔔</span> Notifications</button>
+          <button class="admin-nav-btn" data-view="settings"><span>⚙</span> Store Settings</button>
+          <button class="admin-nav-btn" data-view="security"><span>🔐</span> Team &amp; Security</button>
+        </div>
+      </details>
+      <p id="adminNavEmpty" class="admin-nav-empty" role="status" hidden>No matching panels available.</p>
     </nav>
     <div class="admin-sidebar-foot">
       <div class="backend-state warning" id="backendState"><span></span><b>Authentication required</b><small>Sign in with an approved staff account</small></div>
@@ -75,8 +110,9 @@ setTimeout(function(){
 
   <div class="admin-main">
     <header class="admin-topbar">
-      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open admin navigation">☰</button>
-      <div>
+      <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open admin navigation" aria-controls="adminSidebar" aria-expanded="false">☰</button>
+      <div class="admin-page-heading">
+        <span class="admin-page-eyebrow">CHASKABOX / ADMIN WORKSPACE</span>
         <h1 id="viewTitle">Dashboard</h1>
         <p id="viewSubtitle">Store health, catalogue and order overview.</p>
       </div>
@@ -115,7 +151,7 @@ setTimeout(function(){
             </div>
           </section>
           <section class="panel">
-            <div class="panel-head"><div><h2>Store readiness</h2><p>Items required before scaling paid traffic.</p></div></div>
+            <div class="panel-head"><div><h2>Store readiness</h2><p>Configured features in this release; check System Health for live status.</p></div></div>
             <ul class="readiness-list">
               <li class="done"><span>✓</span><div><b>Frontend UX refresh</b><small>V3 polish implemented</small></div></li>
               <li class="done"><span>✓</span><div><b>Bank Transfer</b><small>Checkout UI integrated</small></div></li>
@@ -123,6 +159,7 @@ setTimeout(function(){
               <li class="done"><span>✓</span><div><b>Secure admin authorization</b><small>Supabase staff roles + server authorization implemented</small></div></li>
               <li class="done"><span>✓</span><div><b>Server-authoritative pricing</b><small>Atomic order RPC validates catalogue totals</small></div></li>
             </ul>
+            <p class="readiness-disclaimer">Checkmarks describe configured features; they are not live provider-health checks.</p>
           </section>
         </div>
 
@@ -692,7 +729,7 @@ setTimeout(function(){
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=4"></script>
-<script src="/admin.js?v=20261013-admin-controls-1" defer></script>
+<script src="/admin.js?v=20261016-admin-v4-shell1" defer></script>
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
 <script src="/admin-live.js?v=20261016-notification-center-1" defer></script>

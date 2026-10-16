@@ -319,3 +319,101 @@ html,body{overflow-x:clip}
 .admin-order-filter-feedback:empty{display:none}
 .admin-order-filters #orderExportCsv[hidden]{display:none!important}
 @media(max-width:700px){.admin-order-filters .searchbox{flex:1 1 100%}.admin-order-filters .admin-filter-control{flex:1 1 140px}}
+
+
+/* === Admin Console V4 / Phase 1: navigation, readability and workspace shell === */
+/* Scoped to the authenticated admin shell; staff login/MFA views remain unchanged. */
+.admin-shell{--v4-hairline:#dfe6f1;--v4-navy:#1a2b5c;--v4-muted:#53647c;--v4-accent:#3059a3;--v4-surface:#f6f8fc;background:var(--v4-surface)}
+.admin-shell .admin-sidebar{flex:0 0 272px;width:272px;padding:16px 13px;background:#fff;border-right:1px solid var(--v4-hairline);box-shadow:3px 0 16px rgba(22,44,80,.025);min-width:0}
+.admin-shell .admin-brand{padding:6px 10px 16px;gap:11px;border-bottom:0;font-size:16px;letter-spacing:-.015em}
+.admin-shell .admin-brand img{width:48px;height:44px;object-fit:contain}
+.admin-nav-search{padding:5px 7px 13px}
+.admin-nav-search label{display:block;color:#60718a;font-size:11px;letter-spacing:.075em;font-weight:800;text-transform:uppercase;margin:0 2px 7px}
+.admin-nav-search-field{display:flex;align-items:center;gap:8px;min-height:42px;border:1px solid #d6deec;border-radius:11px;padding:0 11px;background:#fafbfe;transition:box-shadow .15s,border-color .15s}
+.admin-nav-search-field:focus-within{border-color:var(--v4-accent);box-shadow:0 0 0 3px rgba(48,89,163,.12);background:#fff}
+.admin-nav-search-field>span{font-size:22px;color:#697993;line-height:1}
+.admin-nav-search-field input{width:100%;min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font-size:13px;padding:9px 0;min-height:40px}
+.admin-nav-search-field input::placeholder{color:#6d7d93}
+.admin-shell .admin-nav{display:block;overflow-y:auto;min-height:0;flex:1;padding:0 4px 14px;scrollbar-gutter:stable}
+.admin-nav-group{border-top:1px solid #eff2f7;padding:7px 0}
+.admin-nav-group:first-child{border-top:0}
+.admin-nav-group>summary{display:flex;align-items:center;justify-content:space-between;gap:9px;list-style:none;min-height:37px;border-radius:9px;padding:8px 11px;color:#60718b;font-size:11px;font-weight:900;letter-spacing:.085em;text-transform:uppercase;cursor:pointer;user-select:none}
+.admin-nav-group>summary::-webkit-details-marker{display:none}
+.admin-nav-group>summary:hover{background:#f3f6fb;color:var(--v4-navy)}
+.admin-nav-group>summary:focus-visible{outline:3px solid #4779cc;outline-offset:2px}
+.admin-group-chevron{font-size:17px;line-height:1;transition:transform .18s ease;color:#74829c}
+.admin-nav-group[open] .admin-group-chevron{transform:rotate(180deg)}
+.admin-nav-group-links{display:grid;gap:3px;padding:3px 0 8px}
+.admin-shell .admin-nav-btn{width:100%;min-width:0;min-height:43px;padding:9px 11px;border-radius:10px;color:#364760;font-size:13px;font-weight:700;letter-spacing:0;line-height:1.35;gap:10px;transition:background .14s,color .14s}
+.admin-shell .admin-nav-btn>span:first-child{width:22px;flex:0 0 22px;font-size:16px}
+.admin-shell .admin-nav-btn:hover{background:#eef3fc;color:var(--v4-navy)}
+.admin-shell .admin-nav-btn.active,.admin-shell .admin-nav-btn[aria-current="page"]{background:#e8efff;color:#182f67;font-weight:850;box-shadow:inset 3px 0 0 #315caf}
+.admin-shell .nav-count{font-size:11px;padding:3px 8px;background:#e6ecf7;color:#35537e}
+.admin-shell .admin-nav-btn:focus-visible{outline:3px solid #4779cc;outline-offset:1px}
+.admin-shell .admin-nav-btn[hidden],.admin-shell .admin-nav-btn.nav-search-miss,.admin-nav-group.nav-no-results{display:none!important}
+.admin-nav-empty{padding:12px;color:var(--v4-muted);font-size:13px;line-height:1.5}
+.admin-nav-empty[hidden]{display:none!important}
+.admin-shell .admin-sidebar-foot{padding:13px 4px 2px;gap:10px}
+.admin-shell .admin-sidebar-foot>a{font-size:12px;min-height:35px;display:flex;align-items:center;padding:0 9px}
+.admin-shell .backend-state{border-radius:11px;padding:10px}
+.admin-shell .backend-state b{font-size:12px}
+.admin-shell .backend-state small{font-size:11px;line-height:1.4}
+.admin-shell .admin-sidebar-foot #adminSidebarSignOut{display:none!important}
+.admin-shell .admin-topbar{min-height:87px;background:rgba(255,255,255,.97);padding:15px clamp(18px,2vw,32px);gap:16px;border-color:var(--v4-hairline)}
+.admin-page-heading{min-width:0}
+.admin-page-eyebrow{display:block;font-size:10px;font-weight:850;letter-spacing:.105em;color:#6e7e94;margin-bottom:4px}
+.admin-shell .admin-topbar h1{font-size:clamp(21px,2vw,26px);letter-spacing:-.03em;line-height:1.17}
+.admin-shell .admin-topbar p{font-size:12px;line-height:1.45;margin-top:4px}
+.admin-shell .admin-top-actions{gap:9px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.admin-shell .admin-current-account{max-width:200px;font-size:12px;color:#4d5c76}
+.admin-shell .btn{min-height:40px;font-size:12px;padding:10px 14px}
+.admin-shell .btn:focus-visible,.admin-shell .quick-actions button:focus-visible{outline:3px solid #4779cc;outline-offset:2px}
+.admin-shell .admin-content{max-width:1580px;padding:clamp(16px,2vw,28px)}
+.admin-shell .security-notice{border-radius:11px;font-size:12px;line-height:1.5;padding:11px 14px;margin-bottom:18px}
+.admin-shell .metric-grid{gap:14px;margin-bottom:18px}
+.admin-shell .metric-card{border-color:var(--v4-hairline);border-radius:16px;padding:20px;min-height:110px;gap:13px;box-shadow:0 6px 22px rgba(26,43,92,.035)}
+.admin-shell .metric-card small{font-size:12px;line-height:1.3;color:#4e6079}
+.admin-shell .metric-card strong{font-size:clamp(24px,2vw,30px);letter-spacing:-.025em}
+.admin-shell .metric-card em{font-size:11px;line-height:1.45}
+.admin-shell .metric-icon{width:44px;height:44px;flex:0 0 44px;border-radius:12px}
+.admin-shell .panel{border-color:var(--v4-hairline);border-radius:16px;padding:clamp(16px,1.6vw,22px);box-shadow:0 6px 23px rgba(26,43,92,.035)}
+.admin-shell .panel-head h2{font-size:16px;letter-spacing:-.015em}
+.admin-shell .panel-head p{font-size:12px;line-height:1.5;margin-top:4px}
+.admin-shell .quick-actions button{min-height:48px;font-size:12px;line-height:1.4;padding:12px 14px}
+.admin-shell .readiness-list{gap:13px}
+.admin-shell .readiness-list b{font-size:13px}
+.admin-shell .readiness-list small{font-size:11px;line-height:1.45}
+.admin-shell .readiness-disclaimer{font-size:11px;line-height:1.5;color:#566780;border-top:1px solid var(--v4-hairline);padding-top:12px;margin:13px 0 0}
+.admin-shell .catbar{font-size:12px}
+.admin-shell .sidebar-toggle{min-height:41px;min-width:41px}
+@media(max-width:1180px){.admin-shell .admin-sidebar{flex-basis:256px;width:256px}.admin-shell .admin-topbar{min-height:77px}}
+@media(max-width:900px){
+ .admin-shell .admin-sidebar{position:fixed;left:-285px;top:0;bottom:0;height:100dvh;width:272px;flex-basis:272px;z-index:31;box-shadow:none}
+ .admin-shell .admin-sidebar.open{left:0;box-shadow:18px 0 48px rgba(22,36,70,.22)}
+ .admin-shell .admin-sidebar-foot #adminSidebarSignOut:not([hidden]){display:flex!important;justify-content:center}
+ .admin-shell .admin-top-actions #adminSignOut:not([hidden]){display:none!important}
+ .admin-shell .admin-topbar{padding:12px 16px}
+ .admin-shell .admin-content{padding:16px}
+ .admin-shell .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:600px){
+ .admin-shell .admin-topbar{gap:10px}
+ .admin-shell .admin-topbar h1{font-size:21px}
+ .admin-shell .admin-top-actions{gap:6px}
+ .admin-shell .admin-top-actions #globalPreviewBtn{display:none}
+ .admin-shell .admin-top-actions .btn{min-height:39px;font-size:11px;padding:8px 10px}
+ .admin-shell .metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .admin-shell .metric-card{padding:13px;min-height:100px;gap:8px}
+ .admin-shell .metric-card strong{font-size:24px}
+ .admin-shell .metric-card em{font-size:10px}
+ .admin-shell .metric-icon{width:34px;height:34px;flex-basis:34px;font-size:15px}
+ .admin-shell .quick-actions{grid-template-columns:1fr}
+ .admin-shell .catbar{grid-template-columns:minmax(105px,1fr) minmax(75px,2fr) 35px}
+}
+@media(max-width:380px){
+ .admin-shell .metric-grid{grid-template-columns:1fr}
+ .admin-shell .admin-page-eyebrow{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .admin-shell .admin-nav-btn,.admin-shell .admin-group-chevron,.admin-shell .admin-nav-search-field{transition:none}
+}
