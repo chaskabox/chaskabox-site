@@ -20,7 +20,7 @@ ChaskaBox (https://chaskabox.online/) is a packaged-snack online store based in 
 ChaskaBox sources products **after** an order is received, checks sealed retail packs and quantities, and packs for dispatch. If an item cannot be sourced, support contacts the customer before substitution. A product being listed does not imply existing warehouse inventory.
 
 ## Shipping and payments
-Delivery is estimated at 4–7 days across Pakistan, not a guaranteed deadline. COD delivery currently costs Rs. 300. JazzCash or Bank Transfer prepaid orders of Rs. 5,000 or more currently qualify for free delivery; below that amount the current prepaid delivery charge is Rs. 300. Checkout and [shipping policy](https://chaskabox.online/shipping-policy/) give current terms. A payment screenshot does not independently confirm receipt of funds.
+Delivery across Pakistan is estimated at 4–7 days. It is an estimate, not a fixed delivery promise. COD delivery currently costs Rs. 300. JazzCash or Bank Transfer prepaid orders of Rs. 5,000 or more currently qualify for free delivery; below that amount the current prepaid delivery charge is Rs. 300. Checkout and [shipping policy](https://chaskabox.online/shipping-policy/) give current terms. A payment screenshot does not independently confirm receipt of funds.
 
 ## Questions and policies
 - [FAQ](https://chaskabox.online/faq/): Ordering and delivery guidance.
