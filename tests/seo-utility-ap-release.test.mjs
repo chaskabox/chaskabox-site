@@ -29,7 +29,7 @@ test('utility routes return noindex in first HTTP response and preserve SPA moun
 });
 
 test('static storefront shells do not advertise hidden Family Pack 269',()=>{
- const pages=['index.html','shop/index.html','bundles/index.html','brands/index.html','brand/index.html','faq/index.html',
+ const pages=['index.html','shop/index.html','bundles/index.html','brands/index.html','brand/index.html','faq/index.html','category/betel-nuts-and-pan-masala/index.html',
  'category/biscuits-and-wafers/index.html','category/bunties-and-cakes/index.html',
  'category/chews-and-gums/index.html','category/chocolates-and-candies/index.html',
  'category/imli-and-ice-lollies/index.html','category/jellies-and-marshmallow/index.html',
