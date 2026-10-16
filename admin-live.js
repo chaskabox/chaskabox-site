@@ -1288,10 +1288,67 @@
   }
 
   // ============ NOTIFICATIONS ============
+  let notificationHistorySeq=0;
+  let notificationHistoryPage=1;
+  let notificationEnabledChannels=[];
+  let notificationChannelsVerified=false;
+  async function loadNotificationHistory(page=1){
+    const el=$('#notifHistoryRows');
+    if(!el)return;
+    const view=$('#notifHistoryView')?.value||'all';
+    const target=$('#notifHistoryTarget')?.value||'all';
+    const seq=++notificationHistorySeq;
+    el.setAttribute('aria-busy','true');
+    el.innerHTML='<p class="muted">Loading delivery history…</p>';
+    const pageLabel=$('#notifHistoryPage');
+    const prev=$('#notifHistoryPrev'), next=$('#notifHistoryNext');
+    if(prev)prev.disabled=true;
+    if(next)next.disabled=true;
+    try{
+      const params=new URLSearchParams({view,target,page:String(page)});
+      const d=await api('/api/admin/notifications/history?'+params.toString());
+      if(seq!==notificationHistorySeq)return;
+      notificationHistoryPage=d.page;
+      const rows=Array.isArray(d.rows)?d.rows:[];
+      const channels=new Set(notificationEnabledChannels);
+      if(!rows.length){
+        el.innerHTML='<p class="muted">No events match these filters. This does not establish provider connectivity.</p>';
+      }else{
+        const html=rows.map(n=>{
+          const order=String(n.order_id||''),shortId=order?order.slice(0,8)+'…':'—';
+          const held=notificationChannelsVerified&&['pending','retry'].includes(n.status)&&!channels.has(n.target);
+          const sendState=held?'On hold (channel inactive)':String(n.status||'unknown').replaceAll('_',' ');
+          const delivered=n.delivery_status==='delivered'?'Confirmed delivered':n.delivery_status==='unknown'?'Not confirmed':String(n.delivery_status||'Not confirmed').replaceAll('_',' ');
+          const error=n.error_code?' · '+esc(n.error_code.replaceAll('_',' ')):'';
+          const attempted=Number.isInteger(n.attempts)&&n.attempts>=0?n.attempts:'—';
+          return `<tr>
+            <td><small>${esc(n.event_type||'Event')}</small><br><code title="${esc(order)}">${esc(shortId)}</code></td>
+            <td>${esc(n.target||'unknown')}</td>
+            <td><b>${esc(sendState)}</b><br><small>${esc(delivered)}${error}</small></td>
+            <td>${esc(attempted)}</td>
+            <td><small>${esc(n.updated_at?fmtDate(n.updated_at):'—')}</small></td>
+          </tr>`;
+        }).join('');
+        el.innerHTML='<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Event / order</th><th>Channel</th><th>Queue / delivery</th><th>Attempts</th><th>Updated</th></tr></thead><tbody>'+html+'</tbody></table></div>';
+      }
+      const pages=Number(d.pages)||0;
+      if(pageLabel)pageLabel.textContent='Page '+d.page+' / '+Math.max(pages,1)+' · '+(Number(d.total)||0)+' events';
+      if(prev)prev.disabled=d.page<=1;
+      if(next)next.disabled=d.page>=pages||d.page>=100;
+    }catch(error){
+      if(seq!==notificationHistorySeq)return;
+      el.innerHTML='<p role="alert">Could not load delivery history: '+esc(error.message||'Unknown error')+'. Refresh or try again.</p>';
+      if(pageLabel)pageLabel.textContent='History unavailable';
+    }finally{
+      if(seq===notificationHistorySeq)el.removeAttribute('aria-busy');
+    }
+  }
   async function loadNotifications(){
     try{
       const d=await api('/api/admin/notifications');
       const st=$('#notifServiceStatus'), state=d.dispatch||{};
+      notificationEnabledChannels=Array.isArray(state.configured_targets)?state.configured_targets:[];
+      notificationChannelsVerified=Array.isArray(state.configured_targets);
       if(st)st.innerHTML=`<div style="display:grid;gap:8px"><div><b>Queue consumer:</b> ${esc(d.worker_status||'unknown')}</div><div><b>Last completed:</b> ${state.last_completed_at?esc(fmtDate(state.last_completed_at)):'No heartbeat recorded'}</div><div><b>Enabled channels:</b> ${esc((state.configured_targets||[]).join(', ')||'None confirmed')}</div><small class="muted">Channel configuration comes from the consumer heartbeat. Provider availability is not probed here.</small></div>`;
       const ob=$('#notifOutboxStats'), p=d.provider_results||{};
       if(ob){const o=d.owner_outbox||{},c=d.customer_outbox||{};
@@ -1306,7 +1363,14 @@
     }catch(e){toast(e.message);}
     if($('#refreshNotifStatus'))$('#refreshNotifStatus').onclick=loadNotifications;
     if($('#refreshTemplates'))$('#refreshTemplates').onclick=loadTemplates;
+    if($('#refreshNotifHistory'))$('#refreshNotifHistory').onclick=()=>loadNotificationHistory(notificationHistoryPage);
+    for(const id of ['#notifHistoryView','#notifHistoryTarget']){
+      const select=$(id);if(select)select.onchange=()=>loadNotificationHistory(1);
+    }
+    if($('#notifHistoryPrev'))$('#notifHistoryPrev').onclick=()=>loadNotificationHistory(Math.max(1,notificationHistoryPage-1));
+    if($('#notifHistoryNext'))$('#notifHistoryNext').onclick=()=>loadNotificationHistory(notificationHistoryPage+1);
     loadTemplates();
+    await loadNotificationHistory(1);
   }
 
   // ============ SYSTEM HEALTH ============

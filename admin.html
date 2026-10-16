@@ -563,8 +563,40 @@ setTimeout(function(){
             <div id="notifOutboxStats"><p class="muted">Loading…</p></div>
           </section>
         </div>
+        <section class="panel" style="margin-top:16px" aria-labelledby="notifHistoryHeading">
+          <div class="panel-head"><div>
+            <h2 id="notifHistoryHeading">Delivery History</h2>
+            <p>Read-only audit ledger. Provider accepted is not the same as delivered. No automatic replay.</p>
+          </div><button class="btn secondary compact" type="button" id="refreshNotifHistory">↻ Refresh</button></div>
+          <div class="toolbar" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+            <label for="notifHistoryView">Status
+              <select id="notifHistoryView">
+                <option value="all">All events</option>
+                <option value="pending">Pending / processing / retry</option>
+                <option value="review">Needs review</option>
+                <option value="accepted">Provider accepted</option>
+                <option value="delivered">Delivery confirmed</option>
+              </select>
+            </label>
+            <label for="notifHistoryTarget">Channel
+              <select id="notifHistoryTarget">
+                <option value="all">All channels</option>
+                <option value="owner_email">Owner email</option>
+                <option value="owner_whatsapp">Owner WhatsApp</option>
+                <option value="customer_whatsapp">Customer WhatsApp</option>
+              </select>
+            </label>
+          </div>
+          <div id="notifHistoryRows" aria-live="polite"><p class="muted">Open Notifications to load delivery history.</p></div>
+          <div style="display:flex;align-items:center;gap:10px;justify-content:flex-end;margin-top:12px">
+            <button class="btn secondary compact" id="notifHistoryPrev" type="button" disabled>← Previous</button>
+            <span id="notifHistoryPage" aria-live="polite">Page 1</span>
+            <button class="btn secondary compact" id="notifHistoryNext" type="button" disabled>Next →</button>
+          </div>
+          <p class="safe-note" style="margin-top:12px">Disabled WhatsApp channels remain on hold. Old legacy queues are historical records; sending, enabling channels and bulk retries are not offered here.</p>
+        </section>
         <section class="panel" style="margin-top:16px">
-          <div class="panel-head"><div><h2>Recent Failures</h2><p>Failed notifications with retry option</p></div></div>
+          <div class="panel-head"><div><h2>Items Requiring Review</h2><p>Review errors and blocked events in their original order; retry only when independently safe.</p></div></div>
           <div id="notifFailures"><p class="muted">Loading…</p></div>
         </section>
         <section class="panel" style="margin-top:16px">
@@ -663,7 +695,7 @@ setTimeout(function(){
 <script src="/admin.js?v=20261013-admin-controls-1" defer></script>
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
-<script src="/admin-live.js?v=20261015-staff-signin-ux1" defer></script>
+<script src="/admin-live.js?v=20261016-notification-center-1" defer></script>
 <script src="/admin-agents.js?v=20261015-phase12-operations" defer></script>
  <script src="/admin-agent-workbench.js?v=20261015-agent-workbench1" defer></script>
 </body>
