@@ -8,6 +8,19 @@ import { withAdmin, sb, json, httpError } from '../_lib/auth.js';
 const TARGETS = new Set(['all', 'owner_email', 'owner_whatsapp', 'customer_whatsapp']);
 const VIEWS = new Set(['all', 'pending', 'review', 'accepted', 'delivered']);
 const FIELDS = 'id,order_id,target,event_type,status,delivery_status,attempts,created_at,updated_at,next_attempt_at,delivered_at,last_error';
+const SAFE_ERROR_CODES = new Set([
+  'event_expired_review_required',
+  'gateway_ownership_verification_required',
+  'template_disabled_or_wrong_channel',
+  'template_invalid',
+  'template_missing',
+  'recipient_phone_invalid',
+  'notification_order_missing',
+  'provider_endpoint_changed',
+  'provider_session_changed',
+  'provider_endpoint_invalid',
+  'notification_identity_invalid',
+]);
 
 export function notificationHistoryQuery(url) {
   const params = new URL(url).searchParams;
@@ -34,7 +47,7 @@ export function notificationHistoryQuery(url) {
 }
 
 export function safeDeliveryRow(row) {
-  const error = typeof row.last_error === 'string' && /^[a-z0-9_]{1,80}$/.test(row.last_error)
+  const error = SAFE_ERROR_CODES.has(row.last_error)
     ? row.last_error : row.last_error ? 'review_required' : null;
   return {
     id: row.id, order_id: row.order_id, target: row.target, event_type: row.event_type,
