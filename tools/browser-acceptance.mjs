@@ -151,7 +151,14 @@ try{
     throw error;
   }
   await openAdminPanel(page,'preview');
-  await page.locator('#sitePreview').waitFor({state:'visible'});
+  await page.waitForTimeout(250);
+  const previewDiagnostics=await page.evaluate(()=>{
+    const button=document.querySelector('.admin-nav-btn[data-view="preview"]');
+    const view=document.getElementById('view-preview'),frame=document.getElementById('sitePreview');
+    return {buttonHidden:button?.hidden,buttonDisplay:button?.style.display,buttonAriaHidden:button?.getAttribute('aria-hidden'),buttonActive:button?.classList.contains('active'),viewClass:view?.className,viewDisplay:view?getComputedStyle(view).display:null,frameDisplay:frame?getComputedStyle(frame).display:null,navCurrent:[...document.querySelectorAll('.admin-nav-btn.active')].map(x=>x.dataset.view)};
+  });
+  console.log('V4_PREVIEW_DIAGNOSTIC',JSON.stringify(previewDiagnostics));
+  await page.locator('#sitePreview').waitFor({state:'visible',timeout:6500});
   for(const [device,width] of [['Desktop',null],['Tablet',768],['Mobile',390]]){
    await page.locator('.viewport-switch').getByRole('button',{name:device,exact:true}).click();
    await page.waitForFunction(target=>{
