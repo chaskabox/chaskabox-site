@@ -172,3 +172,9 @@ body.reference-storefront{background:white;color:#152c4d}
 .cb-managed-nav{display:contents}
 
 .reference-storefront .mfilterbar{top:0}
+
+/* One menu trigger per layout, with a compact help control outside the card actions. */
+@media(min-width:761px){.reference-storefront .hwrap>.mnav-btn{display:none!important}}
+.reference-storefront .aifab{width:44px;height:44px;min-width:44px;padding:0;border-radius:50%;font-size:0;justify-content:center}
+.reference-storefront .aifab>*{display:none}
+.reference-storefront .aifab::before{content:'?';font-size:23px;font-weight:800}
