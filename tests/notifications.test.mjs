@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fixture, activate, order, rpc, env, router, actor } from './notification-fixture.mjs';
-import worker,{runNotifications,runOwnerWahaCanary,configureWahaWebhookOnce} from '../workers/notification-outbox.js';
+import worker,{runNotifications,runOwnerWahaCanary,configureWahaWebhookOnce,verifyWahaWebhookRecovery} from '../workers/notification-outbox.js';
 import { buildNotificationPayload,sendNotification,notificationConfig,notificationHealth,limitedText,privateRequest,providerReadiness,wahaAccessHeaders } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt,verifyResend,verifyWaha } from '../functions/api/_lib/notification-receipts.js';
 import { onRequestGet as adminNotifications } from '../functions/api/admin/notifications/index.js';
@@ -434,4 +434,39 @@ test('signed WAHA webhook setup refuses disconnected sessions and never changes 
  };
  assert.equal((await configureWahaWebhookOnce(env,fetcher)).status,'blocked');
  assert.equal(finished,1);assert.equal(puts,0);
+});
+
+test('read-only WAHA webhook verification records recovered WORKING session without PUT or sending',async()=>{
+ const env={WAHA_WEBHOOK_VERIFY_ENABLED:'true',WAHA_API_URL:'https://waha.chaskabox.online',WAHA_SESSION:'default',
+ WAHA_API_KEY:'test-key',WAHA_CF_ACCESS_CLIENT_ID:'test-id',WAHA_CF_ACCESS_CLIENT_SECRET:'test-secret',
+ WAHA_WEBHOOK_SECRET:'test-webhook-secret',SUPABASE_URL:'https://db.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-role'};
+ let gets=0,verified=0;
+ const fetcher=async(url,opts)=>{
+  if(url.endsWith('/api/sessions/default')){
+   assert.equal(opts.method,'GET'); gets++;
+   return Response.json({status:'WORKING',config:{webhooks:[{
+     url:'https://notify.chaskabox.online/webhooks/waha',
+     events:['message.ack'],hmac:{key:env.WAHA_WEBHOOK_SECRET},
+   }]}});}
+  if(url.endsWith('/rpc/waha_webhook_setup_verify')){
+   assert.equal(opts.method,'POST');verified++;
+   const body=JSON.parse(opts.body);assert.equal(body.p_session_status,'WORKING');
+   return Response.json(true);
+  }
+  throw Error('No other endpoints permitted in read-only health check: '+url);
+ };
+ assert.equal((await verifyWahaWebhookRecovery(env,fetcher)).status,'configured');
+ assert.equal(gets,1);assert.equal(verified,1);
+ assert.equal((await verifyWahaWebhookRecovery({...env,WAHA_WEBHOOK_VERIFY_ENABLED:'false'},fetcher)).status,'disabled');
+});
+test('read-only WAHA webhook verification does not record disconnected sessions',async()=>{
+ const env={WAHA_WEBHOOK_VERIFY_ENABLED:'true',WAHA_API_URL:'https://waha.chaskabox.online',WAHA_SESSION:'default',
+ WAHA_API_KEY:'test-key',WAHA_CF_ACCESS_CLIENT_ID:'test-id',WAHA_CF_ACCESS_CLIENT_SECRET:'test-secret',
+ WAHA_WEBHOOK_SECRET:'test-webhook-secret',SUPABASE_URL:'https://db.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-role'};
+ let calls=0;
+ const r=await verifyWahaWebhookRecovery(env,async(url,opts)=>{
+  calls++;assert.equal(opts.method,'GET');
+  return Response.json({status:'STARTING',config:{webhooks:[{url:'https://notify.chaskabox.online/webhooks/waha',events:['message.ack'] }]}});
+ });
+ assert.equal(r.status,'unverified');assert.equal(r.session_status,'STARTING');assert.equal(calls,1);
 });
