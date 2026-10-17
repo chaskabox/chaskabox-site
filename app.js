@@ -114,6 +114,23 @@ const BAND_COLORS={
   'Betel Nuts & Pan Masala':'#4e7d4e'
 };
 const CAT_ORDER=['Biscuits & Wafers','Bunties & Cakes','Chews & Gums','Chocolates & Candies','Imli & Ice Lollies','Jellies & Marshmallow','Snacks & Nimco','Betel Nuts & Pan Masala','Bundles'];
+function distinctBrandPicks(items,maxItems=10){
+  const buckets=new Map(),result=[];
+  for(const item of items){
+    const brand=getBrand(item).toLowerCase();
+    if(!buckets.has(brand))buckets.set(brand,[]);
+    buckets.get(brand).push(item);
+  }
+  while(result.length<maxItems){
+    let advanced=false;
+    for(const bucket of buckets.values()){
+      if(result.length===maxItems)break;
+      if(bucket.length){result.push(bucket.shift());advanced=true;}
+    }
+    if(!advanced)break;
+  }
+  return result;
+}
 function renderHomeContent(){
   const act=activeProducts();
   // categories
@@ -148,11 +165,11 @@ function renderHomeContent(){
   let html='';
   // Homepage shelves: only products WITH real photos (no "Photo coming soon" on showcase)
   const actImg=act.filter(hasPhoto);
-  const sale=actImg.filter(p=>p.oldPrice&&p.oldPrice>p.price).slice(0,10);
-  const picks=curatedProducts('chaska_picks',actImg.filter(p=>p.category!=='Bundles').slice(0,10));
-  const bundles=curatedProducts('boxes',(cats['Bundles']||[]).filter(hasPhoto).slice(0,10));
-  const chatpata=curatedProducts('chatpata_picks',actImg.filter(p=>p.category==='Snacks & Nimco').slice(0,10));
-  const newest=curatedProducts('new_items',actImg.sort((a,b)=>Number(b.id)-Number(a.id)).slice(0,10));
+  const sale=distinctBrandPicks(actImg.filter(p=>p.oldPrice&&p.oldPrice>p.price),10);
+  const picks=curatedProducts('chaska_picks',distinctBrandPicks(actImg.filter(p=>p.category!=='Bundles'),10));
+  const bundles=curatedProducts('boxes',distinctBrandPicks((cats['Bundles']||[]).filter(hasPhoto),10));
+  const chatpata=curatedProducts('chatpata_picks',distinctBrandPicks(actImg.filter(p=>p.category==='Snacks & Nimco'),10));
+  const newest=curatedProducts('new_items',distinctBrandPicks([...actImg].sort((a,b)=>Number(b.id)-Number(a.id)),10));
   if(sale.length) html+=shelf('🔥 Deals Worth Grabbing',sale,'#b42318','', 'Sale','deals');
   if(picks.length) html+=shelf('⭐ Chaska Picks',picks,'#1a2b5c','','','chaska_picks');
   if(bundles.length) html+=shelf('📦 Chaska Boxes',bundles,'#896000','Bundles','','boxes');
@@ -595,6 +612,10 @@ function applyHomeCms(){
   }
 
   window.applyStorefrontManifest?.(STORE_CONFIG);
+  const heroRow=by.hero||{};
+  window.dispatchEvent(new CustomEvent('chaskabox:home-config',{detail:{
+    ...(heroRow.config||{}),heading:heroRow.heading,subheading:heroRow.subheading
+  }}));
   renderPackingVideo();
 }
 /* ---------- views ---------- */
