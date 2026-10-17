@@ -374,7 +374,7 @@ function checkForm(scope = 'all') {
       const field=$('#'+f);
       field.setAttribute('aria-invalid',good?'false':'true');
       // Preserve helpful field instructions while associating the error with this input.
-      const describedBy=(field.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
+      const describedBy=(field.getAttribute?.('aria-describedby')||'').split(/\s+/).filter(Boolean);
       if(!describedBy.includes(e))describedBy.push(e);
       field.setAttribute('aria-describedby',describedBy.join(' '));
     }
