@@ -49,6 +49,12 @@
     else primary.textContent=s.primary+' ›';
     primary.href=s.href;
     secondary.textContent=s.secondary;secondary.href=s.secondHref;
+    const collage=root.querySelector('#heroCollage');
+    const authenticImages=window.CHASKABOX_HERO_MARKUP?.[current];
+    if(collage&&authenticImages&&collage.dataset.heroMarkupKey!==String(current)){
+      collage.innerHTML=authenticImages;
+      collage.dataset.heroMarkupKey=String(current);
+    }
     root.dataset.heroSlide=String(current+1);
     dots.forEach((dot,i)=>{
       dot.setAttribute('aria-pressed',i===current?'true':'false');
@@ -97,5 +103,6 @@
     show(current);start();
   });
   root.addEventListener('hero-reveal',start);
+  window.addEventListener('chaskabox:hero-imagery-ready',()=>{const node=root.querySelector('#heroCollage');if(node)delete node.dataset.heroMarkupKey;show(current);});
   show(0);start();
 })();
