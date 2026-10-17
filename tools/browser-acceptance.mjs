@@ -768,6 +768,48 @@ try{
     results.interactions.push({case:'V4 mobile demo drawer navigates and closes',pass:navigated&&closed});
     await context.close();
   }
+
+  // Admin V4.2 sidebar: no network/data access in this synthetic design review.
+  {
+    const {context,page}=await contextFor(1440,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('#adminSidebarCollapse').click();
+    const minimized=await page.locator('.demo-admin-shell').evaluate(el=>el.classList.contains('admin-sidebar-minimized'));
+    await page.locator('#adminSidebarRestore').click();
+    const expanded=!(await page.locator('.demo-admin-shell').evaluate(el=>el.classList.contains('admin-sidebar-minimized')));
+    results.interactions.push({case:'V4 desktop sidebar focus mode collapses and restores accessibly',pass:minimized&&expanded});
+    await page.locator('#adminPinCurrent').click();
+    const onePinned=await page.locator('.admin-pinned-item').count()===1;
+    await page.locator('[data-view="orders"]').click();
+    await page.locator('#adminPinCurrent').click();
+    const twoPinned=await page.locator('.admin-pinned-item').count()===2;
+    await page.locator('.admin-pinned-jump').first().click();
+    const jumped=await page.locator('#view-dashboard').evaluate(el=>el.classList.contains('active'));
+    results.interactions.push({case:'V4 pinned panel shortcuts navigate and persist inside one browser',pass:onePinned&&twoPinned&&jumped});
+    await page.locator('#adminCollapseGroups').click();
+    const closed=await page.locator('details.admin-nav-group[open]').count()===0;
+    await page.locator('#adminExpandGroups').click();
+    const opened=await page.locator('details.admin-nav-group[open]').count()===6;
+    results.interactions.push({case:'V4 expand/collapse-all group controls operate native disclosures',pass:closed&&opened});
+    await page.reload();
+    const kept=await page.locator('.admin-pinned-item').count()===2;
+    results.interactions.push({case:'V4 favorite panel shortcuts survive local browser reload',pass:kept});
+    await context.close();
+  }
+  {
+    const {context,page}=await contextFor(390,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('#sidebarToggle').click();
+    const opened=await page.locator('#adminSidebar').evaluate(el=>el.classList.contains('open'));
+    const focusedSearch=await page.locator('#adminNavSearch').evaluate(el=>document.activeElement===el);
+    await page.locator('#adminPinFromSidebar').click();
+    const pinned=await page.locator('.admin-pinned-item').count()===1;
+    await page.locator('#adminSidebarCollapse').click();
+    const closed=!(await page.locator('#adminSidebar').evaluate(el=>el.classList.contains('open')));
+    const focusReturned=await page.locator('#sidebarToggle').evaluate(el=>document.activeElement===el);
+    results.interactions.push({case:'V4 mobile sidebar pins current panel and closes with focus returned',pass:opened&&focusedSearch&&pinned&&closed&&focusReturned});
+    await context.close();
+  }
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));globalThis.fetch=originalFetch;await writeFile(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));}
 console.log(JSON.stringify({pages:results.cases.length,interactions:results.interactions,errors:results.errors}));
 if(results.cases.some(c=>c.status!==200||c.overflow||c.duplicatePromo||c.violations.length)||results.interactions.some(c=>!c.pass)||results.errors.length)process.exitCode=1;
