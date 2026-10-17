@@ -238,6 +238,29 @@ function filterPanelHTML(){
     +`<details class="fgroup filter-group"><summary>Deals</summary><div class="filter-options"><label><input type="checkbox" ${shopState.badge==='Sale'?'checked':''} onchange="shopState.badge=this.checked?'Sale':'';renderShopResults()"> On Sale</label></div></details>`
     +'<button class="fclear" onclick="clearAllFilters()">Clear filters</button>';
 }
+function renderShopCategoryRail(){
+  const el=document.getElementById('shopCategoryRail');
+  if(!el)return;
+  const products=publicProducts();
+  const totals=new Map();
+  for(const product of products){
+    const key=String(product.category||'').trim();
+    if(key)totals.set(key,(totals.get(key)||0)+1);
+  }
+  const configured=Array.isArray(STORE_CONFIG?.categories)?STORE_CONFIG.categories
+    .map(c=>String(c.name||'').trim()).filter(Boolean):CAT_ORDER.filter(x=>x!=='Bundles');
+  const categories=[...new Set([...configured,...totals.keys()])].filter(c=>totals.has(c));
+  el.replaceChildren();
+  const all=document.createElement('a');all.href='/shop/';all.textContent='All snacks';
+  if(!shopState.cat){all.className='active';all.setAttribute('aria-current','page');}
+  el.append(all);
+  categories.forEach(cat=>{
+    const link=document.createElement('a');
+    link.href=categoryPath(cat);link.textContent=cat+' ('+totals.get(cat)+')';
+    if(shopState.cat===cat){link.className='active';link.setAttribute('aria-current','page');}
+    el.append(link);
+  });
+}
 function renderShopContent(){
   const headerSearch=document.getElementById('headerSearch');
   if(headerSearch&&document.activeElement!==headerSearch)headerSearch.value=shopState.q||'';
@@ -246,6 +269,7 @@ function renderShopContent(){
   if(badge) title=(badge==='Sale'?'🔥 ':'⭐ ')+title;
   $('#crumbCat').textContent=title;
   $('#catTitle').textContent=title;
+  renderShopCategoryRail();
   const html=filterPanelHTML();
   $('#shopSidebar').innerHTML=html;
   const sb=$('#filterSheetBody'); if(sb)sb.innerHTML=html;
@@ -307,7 +331,7 @@ function filteredShop(){
   let list=publicProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
   if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>category?category.product_ids.includes(Number(p.id)):(cat==='Bundles'?p.bundle:p.category===cat));}
   if(badge)list=list.filter(p=>p.badge===badge);
-  if(q){const n=q.toLowerCase();list=list.filter(p=>(p.name+' '+(p.pack||'')).toLowerCase().includes(n));}
+  if(q){const n=q.toLowerCase().trim();list=list.filter(p=>[p.name,p.pack,p.category,getBrand(p),p.desc].filter(Boolean).join(' ').toLowerCase().includes(n));}
   if(brands.length)list=list.filter(p=>brands.includes(getBrand(p)));
   if(maxPrice)list=list.filter(p=>p.price<=maxPrice);
   if(pack)list=list.filter(p=>p.pack===pack);
@@ -384,9 +408,9 @@ async function renderSmartSearchResults(query,seq){
     const rows=(data.products||[]).map(serverProductToLocal);
     const grid=$('#shopGrid'),cnt=document.getElementById('shopResultCount');
     if(rows.length){grid.innerHTML=rows.map(cardHTML).join('');if(cnt)cnt.textContent=rows.length+' smart matches';$('#catCount').textContent=rows.length+' smart matches';}
-    else grid.innerHTML='<div class="empty">No products found. Try another search.</div>';
+    else grid.innerHTML='<div class="empty shop-no-results"><strong>No matching snacks yet</strong><p>Try another name, brand or category.</p><button type="button" class="shop-empty-reset" onclick="clearAllFilters()">Clear search</button><a href="/shop/">Browse all snacks</a></div>';
     observeReveals();
-  }catch{if(seq===smartSearchSeq&&shopState.q===query)$('#shopGrid').innerHTML='<div class="empty">No products found. Try another search.</div>';}
+  }catch{if(seq===smartSearchSeq&&shopState.q===query)$('#shopGrid').innerHTML='<div class="empty shop-no-results"><strong>Search suggestions unavailable</strong><p>You can still browse categories or clear the search.</p><button type="button" class="shop-empty-reset" onclick="clearAllFilters()">Clear search</button><a href="/shop/">Browse all snacks</a></div>';}
 }
 function renderShopResults(){
   const list=filteredShop();
@@ -395,7 +419,7 @@ function renderShopResults(){
   const canSmart=!list.length&&String(shopState.q||'').trim().length>=2&&!shopState.cat&&!shopState.brands.length&&!shopState.maxPrice&&!shopState.pack&&!shopState.badge;
   if(list.length){clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML=list.map((p,i)=>cardHTML(p,i===0?'high':i===1?'eager':undefined)).join('');}
   else if(canSmart){const seq=++smartSearchSeq;clearTimeout(smartSearchTimer);$('#shopGrid').innerHTML='<div class="empty">✦ Looking for smart matches…</div>';smartSearchTimer=setTimeout(()=>renderSmartSearchResults(shopState.q,seq),420);}
-  else {clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML='<div class="empty">No products found. Try another search.</div>';}
+  else {clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML='<div class="empty shop-no-results"><strong>No matching snacks yet</strong><p>Try a different brand, category or price range.</p><button type="button" class="shop-empty-reset" onclick="clearAllFilters()">Clear filters &amp; search</button><a href="/shop/">Browse all snacks</a></div>';}
   renderFilterChips();updateApplyBtn();
   const ms=$('#mSort'); if(ms)ms.value=shopState.sort;
   if(typeof revealObs!=='undefined'&&revealObs){
