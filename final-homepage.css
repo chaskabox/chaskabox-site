@@ -178,3 +178,5 @@ body.reference-storefront{background:white;color:#152c4d}
 .reference-storefront .aifab{width:44px;height:44px;min-width:44px;padding:0;border-radius:50%;font-size:0;justify-content:center}
 .reference-storefront .aifab>*{display:none}
 .reference-storefront .aifab::before{content:'?';font-size:23px;font-weight:800}
+/* Reference shelves use white headings rows; supersede legacy category band colors. */
+.reference-storefront #view-home .shelf[data-home-section] .shelfband{background:#fff!important}
