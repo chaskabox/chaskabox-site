@@ -101,16 +101,57 @@ export async function providerReadiness(env,fetcher=fetch){
 }
 function base(value) { return String(value || 'https://chaskabox.online').replace(/\/+$/, ''); }
 export function wahaEndpoint(env) { const url = base(env.WAHA_API_URL); return url.endsWith('/api') ? url + '/sendText' : url + '/api/sendText'; }
+function safeOrderText(value, maxLength=180) {
+  return String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+function pkrAmount(value) {
+  const number=Number(value);
+  return Number.isFinite(number) && number >= 0 ? Math.round(number).toLocaleString('en-PK') : '—';
+}
+function orderItemsSummary(items) {
+  const rows=Array.isArray(items)?items:[];
+  if (!rows.length) return 'Product details are available in your order summary.';
+  const lines=rows.slice(0,25).map(item=>{
+    const name=safeOrderText(item.product_name||'Product',90);
+    const pack=safeOrderText(item.pack||'',36);
+    const qty=Number(item.quantity ?? item.qty);
+    const price=Number(item.unit_price);
+    const quantity=Number.isInteger(qty)&&qty>0&&qty<=99?qty:1;
+    const lineAmount=Number.isFinite(price)&&price>=0?pkrAmount(price*quantity):'—';
+    return '• '+name+(pack?' ('+pack+')':'')+' × '+quantity+' — Rs. '+lineAmount;
+  });
+  if(rows.length>25)lines.push('… '+(rows.length-25)+' more item lines. See your order details.');
+  return lines.join('\n');
+}
 function variables(env, order, job) {
   const statuses = { new: 'received', sourcing: 'being prepared', packed: 'packed', dispatched: 'on its way', delivered: 'delivered', cancelled: 'cancelled' };
   const status = job.event_data?.new_status || '';
   const paymentStatus = job.event_type === 'payment_status' ? status : job.event_data?.payment_status || order.payment_status;
+  const paymentMethods = {cod:'Cash on Delivery',jazzcash:'JazzCash',bank_transfer:'Bank Transfer'};
+  const paymentStates = {
+    cod_due:'Payment on delivery',payment_submitted:'Awaiting payment verification',
+    payment_verified:'Payment verified',paid:'Paid',failed:'Payment failed',
+    refunded:'Refunded',cancelled:'Cancelled',
+  };
   return {
     delivery_estimate: String(env.NOTIFICATION_PUBLIC_POLICY?.delivery_estimate || 'Check the current estimate at checkout'),
     support_email: String(env.NOTIFICATION_PUBLIC_POLICY?.support_email || 'Use official support'),
     support_whatsapp: String(env.NOTIFICATION_PUBLIC_POLICY?.support_whatsapp || 'Use official support'),
-    order_number: String(order.order_number || ''), customer_name: String(order.customer_name || ''), customer_phone: String(order.customer_phone || ''), total: String(order.total ?? ''),
-    payment_method: String(order.payment_method || ''), payment_status: String(paymentStatus || '').replaceAll('_', ' '),
+    order_number: String(order.order_number || ''),
+    customer_name: safeOrderText(order.customer_name,100),
+    customer_phone: safeOrderText(order.customer_phone,25),
+    customer_city: safeOrderText(order.customer_city,100) || 'Not specified',
+    delivery_address: safeOrderText(order.customer_address,320) || 'Check the order in Admin',
+    items_summary: orderItemsSummary(order.items),
+    subtotal_display: pkrAmount(order.subtotal),
+    delivery_fee_display: pkrAmount(order.delivery_fee),
+    discount_display: pkrAmount(order.discount || 0),
+    total_display: pkrAmount(order.total),
+    total: String(order.total ?? ''),
+    payment_method: String(order.payment_method || ''),
+    payment_method_label: paymentMethods[order.payment_method] || safeOrderText(order.payment_method,60),
+    payment_status: String(paymentStatus || '').replaceAll('_', ' '),
+    payment_status_label: paymentStates[paymentStatus] || safeOrderText(String(paymentStatus || '').replaceAll('_',' '),60),
     tracking_url: base(env.PUBLIC_BASE_URL) + '/track-order.html?order=' + encodeURIComponent(order.order_number || ''),
     admin_url: base(env.ADMIN_BASE_URL) + '/admin.html#order-' + encodeURIComponent(order.id),
     status_text: job.event_type === 'payment_status' ? 'payment ' + String(status).replaceAll('_', ' ') : statuses[status] || String(status).replaceAll('_', ' '),
@@ -143,7 +184,7 @@ export function previewNotificationTemplate(template, policy = {}) {
   const names={order_received_owner:'owner_email',order_received_owner_whatsapp:'owner_whatsapp',order_thankyou_customer:'customer_whatsapp',status_update:'customer_whatsapp'};
   if(!Object.hasOwn(names,template.name))throw new Error('template_name_invalid');
   const env={RESEND_FROM_EMAIL:'preview@example.invalid',OWNER_ORDER_EMAIL:'preview@example.invalid',WAHA_API_URL:'https://preview.example.invalid',WAHA_SESSION:'preview',OWNER_WHATSAPP:'03000000000',NOTIFICATION_PUBLIC_POLICY:policy};
-  const order={id:'00000000-0000-4000-8000-000000000001',order_number:'CB-PREVIEW',customer_name:'Preview customer',customer_phone:'03000000000',total:1500,payment_method:'cod',payment_status:'cod_due',items:[]};
+  const order={id:'00000000-0000-4000-8000-000000000001',order_number:'CB-PREVIEW',customer_name:'Preview customer',customer_phone:'03000000000',total:2450,subtotal:2350,delivery_fee:100,discount:0,customer_city:'Lahore',customer_address:'House 12, Model Town, Lahore',payment_method:'cod',payment_status:'cod_due',items:[{product_name:'Imli Candy',pack:'200g',quantity:2,unit_price:500},{product_name:'Nimko Mix',pack:'500g',quantity:1,unit_price:1350}]};
   const job={target:names[template.name],event_type:template.name==='status_update'?'fulfilment_status':'order_created',event_data:{new_status:'dispatched'}};
   const payload=buildNotificationPayload(env,order,job,[{...template,is_active:true}]);
   return {template:payload.template,subject:payload.body.subject||null,text:payload.body.text};
