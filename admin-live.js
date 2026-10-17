@@ -418,7 +418,7 @@
       });
       if(verified){toast('Verified COD advance recorded');await openOrder(id);await loadOrders();}
     };
-    $('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
+    $$('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
     $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{
       if(b.disabled)return;
       const st=b.dataset.status,body={fulfilment_status:st,expected_updated_at:o.updated_at};
