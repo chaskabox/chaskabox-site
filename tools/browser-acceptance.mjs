@@ -281,6 +281,17 @@ try{
   });
   if(!preferenceLayout.visible||!preferenceLayout.afterEmail||!preferenceLayout.withinScreen||preferenceLayout.tapHeight<48)
     throw Error('WhatsApp consent placement or tap target failed '+JSON.stringify({width,preferenceLayout}));
+  if(width===390){
+    await page.locator('#toPaymentBtn').click();
+    const fields=await page.evaluate(()=>Object.fromEntries(['f_phone','f_email','f_addr'].map(id=>{
+      const node=document.getElementById(id);
+      const described=(node.getAttribute('aria-describedby')||'').split(/\s+/);
+      return [id,{invalid:node.getAttribute('aria-invalid')==='true',help:described.includes({f_phone:'f_phoneHelp',f_email:'emailHelp',f_addr:'addressHelp'}[id]),error:described.includes({f_phone:'e_phone',f_email:'e_email',f_addr:'e_addr'}[id])}];
+    })));
+    if(await page.locator('#checkoutPaymentStep').isVisible()||Object.values(fields).some(f=>!f.invalid||!f.help||!f.error))
+      throw Error('Invalid delivery details bypassed validation or lost accessible help: '+JSON.stringify(fields));
+    results.interactions.push({case:'invalid delivery details remain on step 1 and retain help/error descriptions',pass:true});
+  }
   await page.locator('#f_whatsapp_optin').check();
   await page.locator('#f_fname').fill('Ali');
   await page.locator('#f_phone').fill('03000000000');
