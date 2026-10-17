@@ -59,6 +59,8 @@ const server=createServer(async(req,res)=>{try{
   if(p==='/api/admin/me')return json(res,{role,user:{id:'00000000-0000-4000-8000-000000000001',email:'synthetic@example.invalid'},mfa:{required:true,aal:'aal2'},capabilities:role==='owner'?['*']:[]});
   if(p==='/api/admin/products')return json(res,{products:products.map(p=>({...p,image_url:p.img,description:p.desc,visibility:'visible',stock_state:p.stockState})),page:1,total:products.length,total_pages:1});
   if(p==='/api/admin/orders')return json(res,{orders:[],total:0,total_pages:1,page:1});
+  if(p==='/api/admin/couriers')return json(res,{couriers:[]});
+  if(p==='/api/admin/couriers/ledger')return json(res,{ledger:[],unassigned:[]});
   if(p==='/api/admin/boxes')return json(res,{boxes:[],total:0,total_pages:1,page:1});
   if(p==='/api/admin/categories')return json(res,{categories:[]});
   if(p==='/api/admin/metrics')return json(res,{recognized_sales_pkr:0});
@@ -399,7 +401,7 @@ try{
    // One synthetic navigation pass over every owner-facing panel; source wiring
    // only. This does not replace authenticated persistence/provider acceptance.
    const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
-   if(panelKeys.length!==25)throw Error('Expected Dashboard plus 24 owner panel targets, got '+panelKeys.length);
+   if(panelKeys.length!==26)throw Error('Expected Dashboard plus 25 owner panel targets, got '+panelKeys.length);
    for(const key of panelKeys){
     await openAdminPanel(page,key);
     const target=page.locator('#view-'+key);
