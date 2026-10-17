@@ -208,3 +208,27 @@ header{background:#fff;box-shadow:0 1px 10px rgba(14,42,84,.045);border-bottom:1
 .cb-offer[hidden]{display:none!important}
 .cb-offers:has(.cb-offer-deals[hidden]){grid-template-columns:1fr}
 @media(prefers-reduced-motion:reduce){#view-home .herocollage img{animation:none!important}}
+
+/* Final accessibility + narrow-screen correction pass. */
+.cb-subnav a[aria-current=page],.cb-subnav a:hover{color:#a63c09}
+#view-home .discover .eyebrow{color:#a64809}
+#view-home .shelf[data-home-section] .shelfband{background:#fff!important}
+#view-home .cb-offer-box .cb-offer-link{background:#153b72;color:#fff}
+#view-home .cb-offer-deals .cb-offer-link{background:#fff;color:#83122d}
+@media(max-width:760px){
+  #view-home .discover{width:calc(100% - 16px);margin:9px 8px 0}
+  #view-home .herotrust{display:none}
+  #view-home .herocollage{height:185px}
+  #view-home .herocollage::before{height:108px;bottom:5px;padding-bottom:14px;font-size:16px}
+  #view-home .herocollage::after{bottom:110px;height:32px}
+  #view-home .herocollage img{height:111px;max-height:111px;padding:5px}
+  #view-home .herocollage .hc1{top:8%;left:7%}
+  #view-home .herocollage .hc2{top:7%;right:7%}
+  #view-home .herocollage .hc3{bottom:22%;left:33%}
+  #view-home [data-home-section="chaska_picks"] .hscroll .card:nth-child(n+5){display:none}
+  #view-home .cb-offers{width:calc(100% - 16px);margin-left:8px;margin-right:8px;padding:0}
+}
+@media(max-width:380px){
+  #view-home .herotxt p{font-size:11.5px}
+  #view-home .hero .cta{font-size:11px}
+}
