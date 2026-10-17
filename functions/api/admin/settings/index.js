@@ -1,7 +1,7 @@
 import { withAdmin, sb, json, readJson, httpError, audit } from '../_lib/auth.js';
 import { cmsMutate } from '../_lib/cms-mutate.js';
 
-const BOOL_KEYS = new Set(['cod_enabled','jazzcash_enabled','bank_transfer_enabled','ai_customer_assistant_enabled','ai_semantic_search_enabled','ai_enabled','ai_text_enabled','ai_images_enabled','ai_embeddings_enabled','media_upload_enabled']);
+const BOOL_KEYS = new Set(['cod_enabled','jazzcash_enabled','bank_transfer_enabled','prepaid_free_delivery_enabled','ai_customer_assistant_enabled','ai_semantic_search_enabled','ai_enabled','ai_text_enabled','ai_images_enabled','ai_embeddings_enabled','media_upload_enabled']);
 const MONEY_KEYS = new Set(['cod_delivery_fee_pkr','prepaid_delivery_fee_pkr']);
 const THRESHOLD_KEYS = new Set(['prepaid_free_delivery_threshold_pkr']);
 const TEXT_LIMITS = {

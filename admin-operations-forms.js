@@ -4,7 +4,7 @@
  const typeChoices=['refund','replacement','complaint','damaged','missing_item','late_delivery','other'];
  const defs={
   coupon:[['code','Coupon code','text',true],['discount_type','Discount type','select',true,['percent','fixed']],['discount_value','Discount value','number',true],['min_order','Minimum order (PKR)','number',true],['max_uses','Max uses (empty = unlimited)','number'],['valid_from','Start date','date'],['valid_until','End date','date'],['is_active','Active at checkout','checkbox']],
-  zone:[['name','Zone name','text',true],['fee','Delivery fee (PKR)','number',true],['free_above','Free delivery above (blank = none)','number'],['cities','Cities (comma separated; blank = all)','textarea'],['is_active','Active at checkout','checkbox']],
+  zone:[['name','Zone name','text',true],['fee','Delivery fee (PKR)','number',true],['free_above','Free delivery above (blank = none)','number'],['cities','Cities (comma-separated; required for zone override)','textarea'],['is_active','Active at checkout','checkbox']],
   resolution:[['issue_type','Issue type','select',true,typeChoices],['description','Issue description','textarea',true],['order_number','Order number','text'],['customer_name','Customer name','text'],['customer_phone','Customer phone','text']],
   resolve:[['resolution','Resolution notes','textarea',true],['refund_amount','Refund amount recorded (PKR)','number',true]]
  };
@@ -35,6 +35,7 @@
   if(kind==='zone'){
    const name=str(v,'name');if(!name||name.length>160)throw new Error('Enter a zone name (up to 160 characters)');
    const cities=str(v,'cities').split(/[,\n]+/).map(s=>s.trim()).filter(Boolean);
+   if(cities.length===0)throw new Error('Choose one or more cities. Nationwide fees belong in Store Settings.');
    if(cities.length>200||cities.some(s=>s.length<2||s.length>100))throw new Error('Invalid city names');
    return {name,fee:whole(v.fee,'Fee',0,10000000),free_above:whole(v.free_above,'Free-delivery threshold',0,10000000,true),
     cities:[...new Set(cities.map(s=>s.toLowerCase()))],is_active:v.is_active===true};
@@ -65,7 +66,7 @@
    const heading=document.createElement('h2');heading.textContent=({coupon:'Coupon',zone:'Shipping zone',resolution:'New case',resolve:'Resolve case'})[kind];
    form.append(heading);
    const desc=document.createElement('p');desc.className='muted';
-   desc.textContent=kind==='resolve'?'Recording a refund amount does NOT transfer money. Confirm any actual refund separately.':kind==='zone'?'Delivery fees affect checkout; verify a test order after saving.':'Only authorized staff can save; all values are validated by the server.';
+   desc.textContent=kind==='resolve'?'Recording a refund amount does NOT transfer money. Confirm any actual refund separately.':kind==='zone'?'Only named cities override nationwide Store Settings; check your test quote after saving.':'Only authorized staff can save; all values are validated by the server.';
    form.append(desc);
    const controls=new Map();
    for(const [key,label,type,required,choices] of defs[kind]){

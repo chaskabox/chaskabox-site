@@ -31,6 +31,7 @@ test('real Turnstile stays server-verified while compact mode protects extra-sma
  assert.match(html,/Edit shopping bag/);
  assert.match(html,/Estimated total/);
  assert.match(js,/Verified total/);
+  assert.match(js,/FREE_PREPAID_ENABLED/);
 });
 
 test('guided checkout has accessible separate delivery, payment and review stages',async()=>{
@@ -43,7 +44,7 @@ test('guided checkout has accessible separate delivery, payment and review stage
  assert.match(html,/id="checkoutPaymentStep" hidden/);
  assert.match(html,/id="checkoutReviewStep" hidden/);
  assert.match(html,/id="placeBtn" type="button" hidden disabled/);
- assert.match(html,/checkout\.js\?v=20261017-pk-regions-v1/);
+ assert.match(html,/checkout\.js\?v=20261017-shipping-pricing-v1/);
  assert.match(css,/\.checkout-page \[hidden\]\{display:none!important\}/);
  assert.match(js,/function checkForm\(scope = 'all'\)/);
  assert.match(js,/await refreshQuote\(\);\s*showCheckoutStep\(3\)/);
