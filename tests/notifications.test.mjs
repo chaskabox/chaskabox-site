@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fixture, activate, order, rpc, env, router, actor } from './notification-fixture.mjs';
-import worker,{runNotifications} from '../workers/notification-outbox.js';
+import worker,{runNotifications,runOwnerWahaCanary} from '../workers/notification-outbox.js';
 import { buildNotificationPayload,sendNotification,notificationConfig,notificationHealth,limitedText,privateRequest,providerReadiness,wahaAccessHeaders } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt,verifyResend,verifyWaha } from '../functions/api/_lib/notification-receipts.js';
 import { onRequestGet as adminNotifications } from '../functions/api/admin/notifications/index.js';
@@ -333,4 +333,43 @@ test('WAHA Access credentials are scoped to the trusted gateway and missing cred
  });
  assert.equal(missing.whatsapp.check_blocked,true);
  assert.equal(missing.whatsapp.reason,'waha_access_configuration_missing');
+});
+
+test('owner-only WAHA canary atomically claims once and sends exactly one approved message', async () => {
+ const env={WAHA_OWNER_CANARY_ENABLED:'true',SUPABASE_URL:'https://db.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-role',WAHA_API_URL:'https://waha.chaskabox.online',WAHA_API_KEY:'fixture-key',WAHA_SESSION:'default',OWNER_WHATSAPP:'923320005381',WAHA_CF_ACCESS_CLIENT_ID:'fixture.access',WAHA_CF_ACCESS_CLIENT_SECRET:'fixture-secret'};
+ let claims=0, sends=0, saved=[];
+ const fetcher=async (url,opts)=>{
+   if(url.endsWith('/rpc/waha_owner_canary_claim'))return Response.json(claims++===0);
+   if(url.endsWith('/rpc/waha_owner_canary_finish')){saved.push(JSON.parse(opts.body));return Response.json(true);}
+   if(url.endsWith('/api/sessions/default')){assert.equal(opts.headers['CF-Access-Client-Id'],'fixture.access');return Response.json({status:'WORKING'});}
+   if(url.endsWith('/api/sendText')){
+     sends++;
+     const data=JSON.parse(opts.body);
+     assert.equal(data.chatId,'923320005381@c.us');
+     assert.equal(data.session,'default');
+     assert.match(data.text,/owner only/);
+     assert.equal(opts.headers['CF-Access-Client-Secret'],'fixture-secret');
+     return Response.json({id:'fixture-owner-only-ack'});
+   }
+   throw Error('Unexpected route '+url);
+ };
+ assert.equal((await runOwnerWahaCanary(env,fetcher)).status,'accepted');
+ assert.equal((await runOwnerWahaCanary(env,fetcher)).status,'not_pending');
+ assert.equal(sends,1);
+ assert.deepEqual(saved.map(s=>s.p_status),['accepted']);
+ assert.equal(saved[0].p_provider_id,'fixture-owner-only-ack');
+ assert.equal((await runOwnerWahaCanary({...env,WAHA_OWNER_CANARY_ENABLED:'false'},fetcher)).status,'disabled');
+});
+test('owner-only WAHA canary never sends without a WORKING session', async () => {
+ const env={WAHA_OWNER_CANARY_ENABLED:'true',SUPABASE_URL:'https://db.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-role',WAHA_API_URL:'https://waha.chaskabox.online',WAHA_API_KEY:'fixture-key',WAHA_SESSION:'default',OWNER_WHATSAPP:'923320005381',WAHA_CF_ACCESS_CLIENT_ID:'fixture.access',WAHA_CF_ACCESS_CLIENT_SECRET:'fixture-secret'};
+ let sends=0;
+ const fetcher=async(url,opts)=>{
+  if(url.endsWith('/rpc/waha_owner_canary_claim'))return Response.json(true);
+  if(url.endsWith('/rpc/waha_owner_canary_finish')){assert.equal(JSON.parse(opts.body).p_status,'blocked');return Response.json(true);}
+  if(url.endsWith('/api/sessions/default'))return Response.json({status:'SCAN_QR_CODE'});
+  if(url.endsWith('/api/sendText'))sends++;
+  throw Error('Unexpected route '+url);
+ };
+ assert.equal((await runOwnerWahaCanary(env,fetcher)).status,'blocked');
+ assert.equal(sends,0);
 });
