@@ -18,7 +18,8 @@
     "database/migrations/20261011184327_admin_business_controls.sql",
     "database/migrations/20261011191351_content_ai_contracts.sql",
     "database/migrations/20261011195527_secure_media_lifecycle.sql",
-    "database/migrations/20261012013700_final_acceptance_fixes.sql"
+    "database/migrations/20261012013700_final_acceptance_fixes.sql",
+    "database/migrations/20261017150000_checkout_shipping_default_settings.sql"
   ],
   "managed_history_observed": [
     {
