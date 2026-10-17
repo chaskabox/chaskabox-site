@@ -11,7 +11,10 @@
     "NOTIFICATION_DISPATCH_ENABLED": "false",
     "ANALYTICS_RETENTION_ENABLED": "false",
     "NOTIFICATION_DISPATCH_AFTER": "",
-    "NOTIFICATION_CHANNELS": "owner_email,owner_whatsapp,customer_whatsapp",
+    "NOTIFICATION_CHANNELS": "owner_email",
+    "WAHA_OWNER_CANARY_ENABLED": "false",
+    "WAHA_WEBHOOK_SETUP_ENABLED": "false",
+    "WAHA_WEBHOOK_VERIFY_ENABLED": "false",
     "WAHA_SESSION": "default",
     "PUBLIC_BASE_URL": "https://chaskabox.online",
     "ADMIN_BASE_URL": "https://chaskabox.online"
@@ -19,6 +22,7 @@
   // Private Worker secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
   // RESEND_API_KEY, RESEND_FROM_EMAIL, OWNER_ORDER_EMAIL,
   // WAHA_API_URL, WAHA_API_KEY, OWNER_WHATSAPP, OUTBOX_RUN_SECRET,
-  // RESEND_WEBHOOK_SECRET, WAHA_WEBHOOK_SECRET.
-  // Keep BOTH Worker and database dispatch switches off until the final release.
+  // RESEND_WEBHOOK_SECRET, WAHA_WEBHOOK_SECRET, WAHA_CF_ACCESS_CLIENT_ID,
+  // WAHA_CF_ACCESS_CLIENT_SECRET.
+  // Safe defaults: only owner email eligible. Never opt WhatsApp channels in via a code deploy.
 }
