@@ -69,6 +69,8 @@ test('all reporting RPCs execute against the full schema; refunds cannot count a
   for(const [n,method] of [[1,'cod'],[2,'bank_transfer']]){
    await db.query('SELECT create_order_atomic($1)',[{customer,items:[{product_id:1,qty:1}],payment_method:method,transaction_reference:'SYNTHETIC',order_number:'CB-ANALYTICS-'+n,idempotency_key:'00000000-0000-4000-8000-00000000000'+n}]);
   }
+  await db.exec("UPDATE site_settings SET value='false'::jsonb WHERE key='cod_advance_enabled';");
+  await db.query("SELECT admin_cod_advance_record($1,id,500,'jazzcash','ANALYTICS-REF',CURRENT_DATE) FROM orders WHERE payment_method='cod'",[actor]);
   await db.exec("UPDATE orders SET fulfilment_status='delivered',payment_status='refunded' WHERE payment_method='cod'; UPDATE orders SET payment_status='payment_verified' WHERE payment_method='bank_transfer';");
   const from='2026-01-01T00:00:00Z',to='2030-01-01T00:00:00Z';
   const revenue=(await db.query('SELECT analytics_revenue($1,$2) r',[from,to])).rows[0].r;
@@ -149,6 +151,8 @@ test('courier dispatch, expected COD settlement and partial receipts are atomic 
    [actor,orderId,courier,'COURIER-123',expected])).rows[0].result;
   assert.equal((await dispatch()).status,409,'Cannot assign courier before packing');
   assert.equal((await db.query('SELECT count(*)::int n FROM courier_order_shipments')).rows[0].n,0);
+  const approvedAdvance=(await db.query("SELECT admin_cod_advance_record($1,$2,500,'jazzcash','COURIER-ADVANCE',CURRENT_DATE) r",[actor,orderId])).rows[0].r;
+  assert.equal(approvedAdvance.remaining_advance_pkr,0);
   for(const state of ['sourcing','packed'])await db.query(
     "SELECT admin_order_mutate($1,$2,'status',$3,'',NULL)",[actor,orderId,state]);
   assert.equal((await dispatch(999999)).status,400,'Unknown courier must not dispatch');
@@ -162,13 +166,13 @@ test('courier dispatch, expected COD settlement and partial receipts are atomic 
   assert.equal((await receipt(100,'BANK-A')).status,409,'Only delivered COD can receive remittance');
   await db.query("SELECT admin_order_mutate($1,$2,'status','delivered','',NULL)",[actor,orderId]);
   const ledger=(await db.query('SELECT * FROM courier_cod_ledger WHERE order_id=$1',[orderId])).rows[0];
-  assert.equal(ledger.estimated_remittance_pkr,1225);
-  assert.equal(ledger.outstanding_pkr,1225);
+  assert.equal(ledger.estimated_remittance_pkr,725);
+  assert.equal(ledger.outstanding_pkr,725);
   assert.ok(ledger.expected_settlement_on,'Delivery creates due date automatically');
-  assert.equal((await receipt(500,'BANK-A')).outstanding_pkr,725);
+  assert.equal((await receipt(500,'BANK-A')).outstanding_pkr,225);
   assert.equal((await receipt(500,'BANK-A')).status,409,'Duplicate reference blocked');
   assert.equal((await receipt(800,'BANK-B')).status,409,'Over-receipt blocked');
-  assert.equal((await receipt(725,'BANK-B')).outstanding_pkr,0,'Partial remittances reconcile exactly');
+  assert.equal((await receipt(225,'BANK-B')).outstanding_pkr,0,'Partial courier remittances exclude the advance');
   assert.equal((await db.query('SELECT outstanding_pkr FROM courier_cod_ledger WHERE order_id=$1',[orderId])).rows[0].outstanding_pkr,0);
   assert.equal((await db.query("SELECT count(*)::int n FROM audit_log WHERE entity_id=$1 AND action='courier.cod_received'",[orderId])).rows[0].n,2);
   assert.equal((await db.query('SELECT count(*)::int n FROM courier_cod_receipts')).rows[0].n,2);
@@ -293,4 +297,62 @@ test('card activation readiness must require all provider secrets, deployed proc
  assert.match(backend,/cardGatewayReadiness/);
  assert.doesNotMatch(checkout,/payment_method:.*'card'/);
  assert.doesNotMatch(order,/payment_method.*\bcard\b/);
+});
+
+
+test('mandatory universal COD advance snapshots Rs 500, blocks packaging, reconciles verified receipts and toggles for new orders only',async()=>{
+ const db=await fixture();
+ try{
+  const buyer={name:'Synthetic',phone:'03000000000',address:'Synthetic address 124',city:'Lahore',country:'Pakistan'};
+  const make=async(n,pid=1)=> (await db.query('SELECT create_order_atomic($1) result',[{
+   order_number:'CB-ADVANCE-'+n, idempotency_key:'00000000-0000-4000-8000-00000000026'+n,
+   items:[{product_id:pid,qty:1}],payment_method:'cod',customer:buyer
+  }])).rows[0].result.order;
+  const quote=async(method)=> (await db.query('SELECT checkout_quote($1) q',[{
+   items:[{product_id:1,qty:1}],payment_method:method,customer:buyer
+  }])).rows[0].q;
+  assert.equal((await quote('cod')).cod_advance_required_pkr,500);
+  assert.equal((await quote('cod')).cod_due_on_delivery_pkr,800);
+  assert.equal((await quote('jazzcash')).cod_advance_required_pkr,0,'Advance never applies to fully prepaid orders');
+  const o=await make(1);
+  assert.equal(o.cod_advance_required_pkr,500);
+  await db.query("SELECT admin_order_mutate($1,$2,'status','sourcing','',NULL)",[actor,o.id]);
+  await assert.rejects(db.query("SELECT admin_order_mutate($1,$2,'status','packed','',NULL)",[actor,o.id]),/COD_ADVANCE_UNPAID/);
+  const received=async(amount,ref,channel='jazzcash')=>(await db.query(
+   'SELECT admin_cod_advance_record($1,$2,$3,$4,$5,CURRENT_DATE) r',
+   [actor,o.id,amount,channel,ref])).rows[0].r;
+  assert.equal((await received(200,'ADV-1')).remaining_advance_pkr,300);
+  await assert.rejects(db.query("SELECT admin_order_mutate($1,$2,'status','packed','',NULL)",[actor,o.id]),/COD_ADVANCE_UNPAID/);
+  assert.equal((await received(200,'adv-1')).status,409,'Duplicate wallet reference blocked');
+  assert.equal((await received(301,'ADV-overpay')).status,409,'Cannot take more than required advance');
+  assert.equal((await received(300,'ADV-2','bank_transfer')).remaining_advance_pkr,0);
+  const packed=(await db.query("SELECT admin_order_mutate($1,$2,'status','packed','',NULL) r",[actor,o.id])).rows[0].r;
+  assert.equal(packed.order.fulfilment_status,'packed');
+  assert.equal((await db.query("SELECT sum(amount_pkr)::int n FROM cod_advance_receipts WHERE order_id=$1",[o.id])).rows[0].n,500);
+  assert.equal((await db.query("SELECT count(*)::int n FROM audit_log WHERE action='payment.cod_advance_verified' AND entity_id=$1",[o.id])).rows[0].n,2);
+  await db.exec("UPDATE site_settings SET value='false'::jsonb WHERE key='cod_advance_enabled'");
+  assert.equal((await make(2)).cod_advance_required_pkr,0,'Switch OFF affects only newly created orders');
+  assert.equal((await db.query('SELECT cod_advance_required_pkr FROM orders WHERE id=$1',[o.id])).rows[0].cod_advance_required_pkr,500,'Old snapshot unchanged');
+  await db.exec("UPDATE site_settings SET value='true'::jsonb WHERE key='cod_advance_enabled'; UPDATE site_settings SET value='650'::jsonb WHERE key='cod_advance_amount_pkr'");
+  const newer=await make(3);
+  assert.equal(newer.cod_advance_required_pkr,650,'Owner changes only new orders');
+  const small=await make(4,2);
+  assert.equal(small.cod_advance_required_pkr,650,'Amount is capped to total including delivery when applicable');
+  await db.exec('SET ROLE anon');
+  await assert.rejects(db.query('SELECT * FROM cod_advance_receipts'),/permission denied/);
+  await db.exec('RESET ROLE');
+ }finally{await db.close();}
+});
+test('advance settings and orders UI connect to the secure COD receipt endpoint',async()=>{
+ const html=await readFile(new URL('../checkout.html',import.meta.url),'utf8'),
+  js=await readFile(new URL('../checkout.js',import.meta.url),'utf8'),
+  admin=await readFile(new URL('../admin-live.js',import.meta.url),'utf8'),
+  server=await readFile(new URL('../functions/api/admin/orders/[id]/cod-advance.js',import.meta.url),'utf8'),
+  settings=await readFile(new URL('../functions/api/admin/settings/index.js',import.meta.url),'utf8');
+ assert.match(html,/codAdvanceSummary/);assert.match(html,/doneCodAdvanceBox/);
+ assert.match(js,/srv.cod_advance_required_pkr/);assert.match(js,/cod_due_on_delivery_pkr/);
+ assert.match(admin,/setCodAdvanceEnabled/);assert.match(admin,/setCodAdvanceAmount/);
+ assert.match(admin,/Record verified COD advance/);assert.match(admin,/cod-advance/);
+ assert.match(settings,/COD_ADVANCE_KEYS/);
+ assert.match(server,/withAdmin\(\['owner','manager'\]/);
 });
