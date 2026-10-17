@@ -68,6 +68,11 @@
     <a class="cb-contact" href="/shop/">🛍️ Explore Snacks ↗</a>
   </div>
 </nav>
+<form class="cb-mobile-search" action="/shop/" method="get" role="search">
+  <label class="sr-only" for="cbMobileSearch">Search snacks and brands</label>
+  <input id="cbMobileSearch" name="q" type="search" placeholder="Search snacks, brands, Chaska Boxes..." autocomplete="off">
+  <button type="submit" aria-label="Search products">⌕</button>
+</form>
 
 <!-- mobile nav drawer -->
 <div id="mnav" class="mnav" role="dialog" aria-label="Shop menu" aria-hidden="true" inert><div class="mnav-head"><b>Shop ChaskaBox</b><button class="mclose" aria-label="Close menu" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
@@ -75,6 +80,13 @@
 <main id="main">
 <!-- Serve the homepage hero and sections in the initial HTML to avoid late layout shifts. -->
 <div id="view-home">
+  <nav class="cb-mobile-dock" aria-label="Mobile shopping shortcuts">
+    <a href="/" aria-current="page"><span aria-hidden="true">⌂</span>Home</a>
+    <a href="/shop/"><span aria-hidden="true">▦</span>Categories</a>
+    <a href="/shop/"><span aria-hidden="true">⌕</span>Search</a>
+    <a href="/wishlist/"><span aria-hidden="true">♡</span>Wishlist</a>
+    <a href="/account/"><span aria-hidden="true">♙</span>Account</a>
+  </nav>
   <section class="hero">
     <div class="herowrap">
       <div class="herotxt">
