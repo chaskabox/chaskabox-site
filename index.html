@@ -20,6 +20,7 @@
 <link rel="stylesheet" href="/styles.css?v=20261015-header-promo-v1">
 <link rel="stylesheet" href="/storefront-ux-refresh.css?v=20261017-p2">
 <link rel="stylesheet" href="/home-hero-carousel.css?v=20261017-p2">
+<link rel="stylesheet" href="/final-homepage.css?v=20261017-final-design-1">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 </head>
 <body>
@@ -54,6 +55,19 @@
     <button class="hbtn solid" onclick="openDrawer()" aria-label="Open shopping bag">🛍️ Bag <span class="cartcount" style="display:none">0</span></button>
   </div>
 </header>
+<nav class="cb-subnav" aria-label="Quick shopping navigation">
+  <div class="cb-subnav-inner">
+    <div class="cb-subnav-links">
+      <a class="cb-discover" href="/shop/">☰ &nbsp; Shop by Category</a>
+      <a href="/" aria-current="page">Home</a>
+      <a href="/shop/">All Products</a>
+      <a href="/bundles/">Chaska Boxes</a>
+      <a href="/brands/">Brands</a>
+      <a href="/shop/" onclick="goBadge('Sale');return false">Deals</a>
+    </div>
+    <a class="cb-contact" href="/shop/">🛍️ Explore Snacks ↗</a>
+  </div>
+</nav>
 
 <!-- mobile nav drawer -->
 <div id="mnav" class="mnav" role="dialog" aria-label="Shop menu" aria-hidden="true" inert><div class="mnav-head"><b>Shop ChaskaBox</b><button class="mclose" aria-label="Close menu" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
@@ -103,7 +117,24 @@
     <div class="cats" id="catTiles"></div>
   </section>
 
+  <section class="cb-trust-rail" aria-label="Why shop with ChaskaBox">
+    <div class="cb-trust-item"><span class="cb-trust-ico" aria-hidden="true">🚚</span><span><b>Pakistan-wide delivery</b><small>Estimated 4–7 days</small></span></div>
+    <div class="cb-trust-item"><span class="cb-trust-ico" aria-hidden="true">🛡️</span><span><b>Original sealed snacks</b><small>Known Pakistani brands</small></span></div>
+    <div class="cb-trust-item"><span class="cb-trust-ico" aria-hidden="true">📦</span><span><b>Sourced after order</b><small>Carefully selected and packed</small></span></div>
+    <div class="cb-trust-item"><span class="cb-trust-ico" aria-hidden="true">💳</span><span><b>Payment choices</b><small>COD and prepaid options</small></span></div>
+  </section>
+
   <div id="shelves"></div>
+  <div class="cb-offers">
+    <a class="cb-offer cb-offer-box" href="/bundles/">
+      <div><b>Curated Chaska Boxes</b><small>Snacks for gifting, movie nights and memorable moments.</small><span class="cb-offer-link">Explore Boxes →</span></div>
+      <span class="cb-offer-media" id="cbBoxMedia" aria-hidden="true"></span>
+    </a>
+    <a class="cb-offer cb-offer-deals" href="/shop/" onclick="goBadge('Sale');return false">
+      <div><b>Special Snack Deals</b><small>Explore current offers on real ChaskaBox products.</small><span class="cb-offer-link">Shop Current Deals →</span></div>
+      <span class="cb-offer-media" id="cbDealsMedia" aria-hidden="true"></span>
+    </a>
+  </div>
 
   <section class="box-spotlight reveal">
     <div class="box-spotlight-inner">
