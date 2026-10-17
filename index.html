@@ -62,9 +62,9 @@
     <div class="cb-subnav-links">
       <a class="cb-discover" href="/shop/">☰ &nbsp; Shop by Category</a>
       <a href="/">Home</a>
-      <a href="/shop/">All Products</a>
+      <span class="cb-managed-nav"><a href="/shop/">All Products</a>
       <a href="/bundles/">Chaska Boxes</a>
-      <a href="/brands/">Brands</a>
+      <a href="/brands/">Brands</a></span>
       <a href="/shop/" onclick="goBadge('Sale');return false">Deals</a>
       <a href="/shop/" onclick="goBadge('');shopState.sort='new';renderShopList();return false">New Arrivals</a>
       <a href="/about/">About Us</a>
@@ -449,6 +449,6 @@
 <script defer src="/analytics.js?v=1"></script>
 <script defer src="/retention.js?v=5"></script>
 <!-- Removed global DOM MutationObserver/setInterval badge scrubber: no Netlify badge exists on Cloudflare Pages. -->
-<script src="/site-runtime.js?v=20261015-header-promo-v1" defer></script><script src="/reference-ui.js?v=20261017-reference" defer></script>
+<script src="/site-runtime.js?v=20261017-reference" defer></script><script src="/reference-ui.js?v=20261017-reference" defer></script>
 </body>
 </html>

@@ -221,6 +221,11 @@ try{
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');
   if(width>760&&!await page.locator('.header-search').isVisible())throw Error('Desktop search missing');
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
+  if(width===1440){
+   await page.evaluate(()=>window.applyStorefrontManifest({...STORE_CONFIG,navigation:[{location:'header',is_enabled:true,position:1,label:'Owner menu fixture',url:'/shop/?brand=Mayfair'}]}));
+   if(!await page.locator('.cb-managed-nav').getByRole('link',{name:'Owner menu fixture',exact:true}).isVisible())throw Error('Owner header navigation was lost by the reference shell');
+   results.interactions.push({case:'reference header retains owner-managed navigation',pass:true});
+  }
   if(width<=760){
    await page.locator('#cbMobileSearch').fill('gum');
    await page.locator('.cb-mobile-search button').click();

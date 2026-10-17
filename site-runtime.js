@@ -44,7 +44,7 @@
   }
   window.applyStorefrontManifest=function(d){
     if(Array.isArray(d.navigation)){
-      for(const [location,selector] of [['header','.hnav'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
+      for(const [location,selector] of [['header','.hnav'],['header','.cb-managed-nav'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
         document.querySelectorAll(selector).forEach(el=>{
           el.replaceChildren();
           for(const row of d.navigation.filter(r=>r.location===location&&r.is_enabled).sort((a,b)=>a.position-b.position)){

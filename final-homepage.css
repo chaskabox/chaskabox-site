@@ -168,3 +168,7 @@ body.reference-storefront{background:white;color:#152c4d}
 @media(max-width:760px){
  #view-home .hero::before{display:block;content:'';position:absolute;inset:0;background:linear-gradient(90deg,#06274d 0%,#06274dee 34%,#06274d15 67%,transparent 80%);z-index:0;pointer-events:none}
 }
+
+.cb-managed-nav{display:contents}
+
+.reference-storefront .mfilterbar{top:0}
