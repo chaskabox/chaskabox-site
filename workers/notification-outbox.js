@@ -19,7 +19,7 @@ export async function runNotifications(env, fetcher = fetch) {
       counts.claimed++;
       let payload = job.request_payload;
       if (!payload) {
-        const order = (await privateRequest(env, '/rest/v1/orders?id=eq.' + encodeURIComponent(job.order_id) + '&select=id,order_number,customer_name,customer_phone,customer_city,customer_address,subtotal,delivery_fee,discount,total,payment_method,payment_status&limit=1', undefined, fetcher))?.[0];
+        const order = (await privateRequest(env, '/rest/v1/orders?id=eq.' + encodeURIComponent(job.order_id) + '&select=id,order_number,customer_name,customer_phone,customer_city,customer_address,subtotal,delivery_fee,discount,total,cod_advance_required_pkr,payment_method,payment_status&limit=1', undefined, fetcher))?.[0];
         if (!order) throw new Error('notification_order_missing');
         order.items = await privateRequest(env, '/rest/v1/order_items?order_id=eq.' + encodeURIComponent(job.order_id) + '&select=product_name,pack,quantity,unit_price&limit=100', undefined, fetcher);
         const templates = await privateRequest(env, '/rest/v1/notification_templates?name=in.(order_received_owner,order_received_owner_whatsapp,order_thankyou_customer,status_update)&select=name,channel,subject,body,is_active,version&limit=4', undefined, fetcher);
