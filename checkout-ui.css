@@ -252,7 +252,7 @@
 .checkout-page .checkout-optional-disclosure>summary{display:flex;gap:12px;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;min-height:49px;color:#203e71;font-weight:750;font-size:13px}
 .checkout-page .checkout-optional-disclosure>summary::-webkit-details-marker{display:none}
 .checkout-page .checkout-optional-disclosure>summary:focus-visible{outline:3px solid #2d63a9;outline-offset:3px;border-radius:7px}
-.checkout-page .checkout-optional-disclosure>summary small{font-size:11px;font-weight:500;color:#67778d}
+.checkout-page .checkout-optional-disclosure>summary small{font-size:11px;font-weight:500;color:#50627a}
 .checkout-page .checkout-disclosure-chevron{font-size:20px;line-height:1;transition:transform .15s}
 .checkout-page .checkout-optional-disclosure[open] .checkout-disclosure-chevron{transform:rotate(180deg)}
 .checkout-page .checkout-optional-disclosure[open]{background:#fff}
@@ -267,5 +267,5 @@
  .checkout-page .checkout-whatsapp-choice{padding:13px;gap:12px}
  .checkout-page .checkout-contact-preferences-heading h3{font-size:15px}
  .checkout-page .checkout-next-btn,.checkout-page .checkout-back-btn{min-height:48px}
- .checkout-page .checkout-option-disclosure{margin-top:3px}
+ .checkout-page .checkout-optional-disclosure{margin-top:3px}
 }
