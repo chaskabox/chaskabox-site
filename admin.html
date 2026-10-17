@@ -64,6 +64,7 @@ setTimeout(function(){
         <summary><span>Orders & customers</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
         <div class="admin-nav-group-links">
           <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
+          <button class="admin-nav-btn" data-view="couriers"><span>🚚</span> Courier COD Ledger</button>
           <button class="admin-nav-btn" data-view="resolutions"><span>🛠️</span> Refunds & Issues</button>
           <button class="admin-nav-btn" data-view="coupons"><span>🎟️</span> Coupons</button>
           <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
@@ -233,6 +234,21 @@ setTimeout(function(){
           <div class="panel-head"><div><h2>Required order workflow</h2><p>The final backend should use these explicit states.</p></div></div>
           <div class="status-flow"><span>New</span><i>→</i><span>Payment / COD confirmed</span><i>→</i><span>Sourcing</span><i>→</i><span>Packed</span><i>→</i><span>Dispatched</span><i>→</i><span>Delivered</span></div>
         </section>
+      </section>
+
+      <!-- Courier companies and COD receipts. Money here is estimated until bank receipt is recorded. -->
+      <section class="admin-view" id="view-couriers" data-title="Courier COD Ledger" data-subtitle="Track courier collections, expected settlement dates and confirmed receipts.">
+        <div class="panel">
+          <div class="panel-head"><div><h2>Courier settlement rules</h2><p>Set each company's payment delay (calendar days after delivery) and any fixed per-order deduction. Changes apply to new dispatches; existing shipments keep their original rule.</p></div>
+            <div style="display:flex;gap:8px"><button class="btn secondary" id="refreshCourierLedger">↻ Refresh</button><button class="btn primary" id="addCourierCompany">+ Add courier</button></div>
+          </div>
+          <div id="courierCompanies" aria-live="polite">Open the panel to load couriers.</div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Expected vs received COD</h2><p>Expected settlement is calculated from the recorded delivered date. A delivery status never means cash reached your bank.</p></div></div>
+          <div id="courierCodSummary" aria-live="polite">Open the panel to load settlement figures.</div>
+          <div id="courierCodLedger">No data loaded.</div>
+        </div>
       </section>
 
       <!-- RESOLUTIONS -->
@@ -794,7 +810,7 @@ setTimeout(function(){
 <script src="/admin-storefront-controls.js?v=20261017-controls1" defer></script>
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261017-shipping-ops-v1" defer></script>
-<script src="/admin-live.js?v=20261017-shipping-pricing-v1" defer></script>
+<script src="/admin-live.js?v=20261017-courier-ledger-v1" defer></script>
 <script src="/admin-agents.js?v=20261015-phase12-operations" defer></script>
  <script src="/admin-agent-workbench.js?v=20261015-agent-workbench1" defer></script>
 </body>

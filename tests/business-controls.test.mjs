@@ -129,3 +129,62 @@ test('default owner shipping controls govern quote and prepaid free-delivery tog
   assert.ok(rows.every(row=>row.is_active===false),'Legacy nationwide zone records are retired');
  }finally{await db.close();}
 });
+
+test('courier dispatch, expected COD settlement and partial receipts are atomic and auditable',async()=>{
+ const db=await fixture();try{
+  const save=async(id,name,days,deduction,active=true)=>(await db.query(
+   'SELECT public.admin_courier_company_save($1,$2,$3,$4,$5,$6) result',
+   [actor,id,name,days,deduction,active])).rows[0].result;
+  const company=await save(null,'Synthetic Courier',5,75);
+  assert.equal(company.courier.settlement_days,5);
+  assert.equal(company.courier.deduction_per_order_pkr,75);
+  assert.equal((await save(company.courier.id,'Synthetic Courier',7,75)).courier.settlement_days,7);
+  const payload={idempotency_key:'00000000-0000-4000-8000-000000009211',
+   order_number:'CB-COURIER-FIXTURE',payment_method:'cod',items:[{product_id:1,qty:1}],
+   customer:{name:'Buyer',phone:'03000000000',address:'Fixture Street 124',city:'Lahore',country:'Pakistan'}};
+  const created=(await db.query('SELECT create_order_atomic($1) result',[payload])).rows[0].result.order;
+  const orderId=created.id;
+  const dispatch=async(courier=company.courier.id,expected=null)=> (await db.query(
+   'SELECT admin_courier_dispatch($1,$2,$3,$4,$5) result',
+   [actor,orderId,courier,'COURIER-123',expected])).rows[0].result;
+  assert.equal((await dispatch()).status,409,'Cannot assign courier before packing');
+  assert.equal((await db.query('SELECT count(*)::int n FROM courier_order_shipments')).rows[0].n,0);
+  for(const state of ['sourcing','packed'])await db.query(
+    "SELECT admin_order_mutate($1,$2,'status',$3,'',NULL)",[actor,orderId,state]);
+  assert.equal((await dispatch(999999)).status,400,'Unknown courier must not dispatch');
+  assert.equal((await dispatch()).order.fulfilment_status,'dispatched');
+  const assigned=(await db.query('SELECT * FROM courier_order_shipments WHERE order_id=$1',[orderId])).rows[0];
+  assert.equal(assigned.settlement_days_snapshot,7,'Rule at dispatch gets snapshotted');
+  assert.equal(assigned.deduction_snapshot_pkr,75);
+  assert.equal((await save(company.courier.id,'Synthetic Courier',15,25)).courier.settlement_days,15);
+  assert.equal((await db.query('SELECT settlement_days_snapshot FROM courier_order_shipments WHERE order_id=$1',[orderId])).rows[0].settlement_days_snapshot,7,'Later setting change does not rewrite existing shipment');
+  const receipt=async(amount,ref)=>(await db.query('SELECT admin_courier_record_receipt($1,$2,$3,CURRENT_DATE,$4) result',[actor,orderId,amount,ref])).rows[0].result;
+  assert.equal((await receipt(100,'BANK-A')).status,409,'Only delivered COD can receive remittance');
+  await db.query("SELECT admin_order_mutate($1,$2,'status','delivered','',NULL)",[actor,orderId]);
+  const ledger=(await db.query('SELECT * FROM courier_cod_ledger WHERE order_id=$1',[orderId])).rows[0];
+  assert.equal(ledger.estimated_remittance_pkr,1225);
+  assert.equal(ledger.outstanding_pkr,1225);
+  assert.ok(ledger.expected_settlement_on,'Delivery creates due date automatically');
+  assert.equal((await receipt(500,'BANK-A')).outstanding_pkr,725);
+  assert.equal((await receipt(500,'BANK-A')).status,409,'Duplicate reference blocked');
+  assert.equal((await receipt(800,'BANK-B')).status,409,'Over-receipt blocked');
+  assert.equal((await receipt(725,'BANK-B')).outstanding_pkr,0,'Partial remittances reconcile exactly');
+  assert.equal((await db.query('SELECT outstanding_pkr FROM courier_cod_ledger WHERE order_id=$1',[orderId])).rows[0].outstanding_pkr,0);
+  assert.equal((await db.query("SELECT count(*)::int n FROM audit_log WHERE entity_id=$1 AND action='courier.cod_received'",[orderId])).rows[0].n,2);
+  assert.equal((await db.query('SELECT count(*)::int n FROM courier_cod_receipts')).rows[0].n,2);
+ }finally{await db.close();}
+});
+
+test('courier panel and dispatch form retain courier attribution and do not auto-confirm cash',async()=>{
+ const admin=await readFile(new URL('../admin-live.js',import.meta.url),'utf8');
+ const html=await readFile(new URL('../admin.html',import.meta.url),'utf8');
+ const endpoint=await readFile(new URL('../functions/api/admin/orders/[id]/status.js',import.meta.url),'utf8');
+ assert.match(html,/data-view="couriers"/);
+ assert.match(html,/id="view-couriers"/);
+ assert.match(admin,/chooseCourierForDispatch/);
+ assert.match(admin,/courier_id=assignment\.courier_id/);
+ assert.match(admin,/function loadCouriers\(/);
+ assert.match(admin,/function recordCourierReceipt\(/);
+ assert.match(endpoint,/admin_courier_dispatch/);
+ assert.match(admin,/actual.*receipt|Receipt.*only|Recorded as actually received/i);
+});

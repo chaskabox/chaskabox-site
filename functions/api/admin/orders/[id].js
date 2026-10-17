@@ -20,5 +20,6 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'fulfilment'], async 
     `/rest/v1/audit_log?entity_type=eq.order&entity_id=eq.${encodeURIComponent(String(order.id))}&select=actor_id,actor_role,action,before_data,after_data,created_at&order=created_at.asc&limit=200`
   );
 
-  return json({ order, items: items || [], history: history || [] });
+  const shipmentRows = await sb(context,`/rest/v1/courier_order_shipments?order_id=eq.${encodeURIComponent(id)}&select=order_id,courier_id,courier_name_snapshot,tracking_number,settlement_days_snapshot,deduction_snapshot_pkr,assigned_at`);
+  return json({ order, items: items || [], history: history || [], courier_shipment:(shipmentRows||[])[0]||null });
 });
