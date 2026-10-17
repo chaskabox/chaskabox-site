@@ -442,12 +442,33 @@ setTimeout(function(){
       <!-- PREVIEW -->
       <section class="admin-view" id="view-preview" data-title="Site Preview" data-subtitle="Inspect storefront routes at desktop, tablet and mobile widths.">
         <div class="preview-toolbar">
-          <select id="previewRoute"><option value="/">Homepage</option><option value="/shop/">Shop</option><option value="/bundles/">Chaska Boxes</option><option value="/cart/">Cart</option><option value="/checkout.html">Checkout</option></select>
+          <select id="previewRoute"><option value="/">Homepage</option><option value="/shop/">Shop</option><option value="/bundles/">Chaska Boxes</option><option value="/brands/">Brands directory</option><option value="/track-order.html">Track an order</option><option value="/account/">Customer account</option><option value="/cart/">Cart</option><option value="/checkout.html">Checkout</option></select>
           <div class="viewport-switch"><button data-width="100%" class="active">Desktop</button><button data-width="768px">Tablet</button><button data-width="390px">Mobile</button></div>
           <button class="btn secondary" id="refreshPreview">↻ Refresh</button>
           <a class="btn secondary" id="openPreviewNew" href="/" target="_blank" rel="noopener">↗ New tab</a>
         </div>
-        <div class="preview-stage"><div class="preview-frame-wrap" id="previewFrameWrap"><iframe id="sitePreview" title="ChaskaBox storefront preview" src="/"></iframe></div></div>
+        <section class="panel storefront-control-center" aria-labelledby="storefrontControlTitle">
+  <div class="panel-head"><div><h2 id="storefrontControlTitle">Storefront Control Center</h2><p>Edit existing protected settings, preview customer routes, then review before publishing. No changes are made by navigating here.</p></div></div>
+  <div class="storefront-control-actions" role="group" aria-label="Storefront editor shortcuts">
+    <button type="button" data-storefront-editor="homepage"><strong>Homepage sections</strong><small>Hero, sections, featured snacks and drafts</small></button>
+    <button type="button" data-storefront-editor="navigation"><strong>Header & mobile menus</strong><small>Links, order and visibility</small></button>
+    <button type="button" data-storefront-editor="theme"><strong>Theme Studio</strong><small>Colors, logo and unsaved visual preview</small></button>
+    <button type="button" data-storefront-editor="categories"><strong>Shop categories</strong><small>Category names and catalogue scope</small></button>
+    <button type="button" data-storefront-editor="products"><strong>Product merchandising</strong><small>Visibility, images, badges and price review</small></button>
+    <button type="button" data-storefront-editor="media"><strong>Media Library</strong><small>Authorized pack photos and assets</small></button>
+  </div>
+  <div class="storefront-review-routes" role="group" aria-label="Customer journey shortcuts">
+    <strong>Customer journey</strong>
+    <button type="button" data-storefront-route="/">Homepage</button>
+    <button type="button" data-storefront-route="/shop/">Shop & filters</button>
+    <button type="button" data-storefront-route="/brands/">Brands</button>
+    <button type="button" data-storefront-route="/bundles/">Chaska Boxes</button>
+    <button type="button" data-storefront-route="/cart/">Cart</button>
+    <button type="button" data-storefront-route="/track-order.html">Order tracking</button>
+  </div>
+  <p id="storefrontControlStatus" class="safe-note" role="status" aria-live="polite">Controls open existing panels; save and publish require the usual staff permissions.</p>
+</section>
+<div class="preview-stage"><div class="preview-frame-wrap" id="previewFrameWrap"><iframe id="sitePreview" title="ChaskaBox storefront preview" src="/"></iframe></div></div>
       </section>
 
       <!-- AI -->
@@ -770,6 +791,7 @@ setTimeout(function(){
 <script src="/admin.js?v=20261016-admin-v4-shell1" defer></script>
 <script src="/admin-v4-tools.js?v=20261016-v4-actions1" defer></script>
 <script src="/admin-v4-sidebar.js?v=20261017-nav2" defer></script>
+<script src="/admin-storefront-controls.js?v=20261017-controls1" defer></script>
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
 <script src="/admin-live.js?v=20261016-preview-safe-demo-1" defer></script>
