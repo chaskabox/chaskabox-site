@@ -528,8 +528,7 @@ html,body{overflow-x:clip}
 @media(min-width:901px){
   .admin-shell.admin-sidebar-minimized .admin-sidebar{flex:0 0 0!important;width:0!important;min-width:0!important;overflow:hidden;visibility:hidden;pointer-events:none;padding:0!important;border:0!important}
   .admin-shell.admin-sidebar-minimized .admin-main{position:relative}
-  .admin-shell.admin-sidebar-minimized .admin-sidebar-restore{display:inline-flex;position:absolute;left:16px;top:17px;z-index:3;align-items:center;justify-content:center;border:1px solid #cddbef;color:#1b3a73;background:#eef4ff;border-radius:10px;min-height:42px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer}
-  .admin-shell.admin-sidebar-minimized .admin-topbar{padding-left:164px}
+  .admin-shell.admin-sidebar-minimized .admin-sidebar-restore{display:inline-flex;position:static;z-index:1;flex:0 0 auto;align-items:center;justify-content:center;border:1px solid #cddbef;color:#1b3a73;background:#eef4ff;border-radius:10px;min-height:42px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer}
 }
 @media(max-width:900px){
   .admin-shell .admin-sidebar{background:#fff}
