@@ -473,3 +473,74 @@ html,body{overflow-x:clip}
 .admin-shell .product-toolbar .admin-filter-control select:focus-visible{outline:3px solid #4273bd;outline-offset:2px}
 .admin-shell #productResultCount{color:#455a78;line-height:1.6;max-width:100%;font-size:12px}
 @media(max-width:600px){.admin-shell .admin-quick-views{gap:6px}.admin-shell .admin-quick-views button{flex:1 1 auto;padding:8px 10px}.admin-shell .product-toolbar .admin-filter-control{flex:1 1 42%}.admin-shell .product-toolbar .admin-filter-control select{width:100%;max-width:100%}}
+
+/* Admin V4.2: discoverable, collapsible workspace navigation.
+   Semantic native <details> remain the keyboard disclosure controls. */
+.admin-shell .admin-sidebar{
+  background:linear-gradient(180deg,#fdfefe 0%,#f8faff 100%);
+  border-right:1px solid #d9e3f0;
+  box-shadow:5px 0 24px rgba(22,44,80,.045);
+  gap:0;
+}
+.admin-shell .admin-brand-row{display:flex;align-items:center;gap:3px;margin:0 3px 9px;padding:6px 3px 11px;border-bottom:1px solid #e5ebf6}
+.admin-shell .admin-brand-row .admin-brand{padding:3px 4px;min-width:0;flex:1;gap:7px;font-size:14px}
+.admin-shell .admin-brand-row .admin-brand img{width:40px;height:40px}
+.admin-sidebar-collapse{flex:0 0 36px;height:40px;border:1px solid #dae4f4;background:#f3f7ff;color:#244271;border-radius:11px;font-size:22px;font-weight:800;cursor:pointer}
+.admin-sidebar-collapse:hover{border-color:#9bb6db;background:#e6efff}
+.admin-sidebar-collapse:focus-visible,.admin-sidebar-restore:focus-visible{outline:3px solid #426dc0;outline-offset:2px}
+.admin-shell .admin-sidebar-restore{display:none}
+.admin-sidebar-controls{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 7px 12px}
+.admin-sidebar-controls button{background:#eef3fa;color:#345078;border:1px solid #dfe7f4;border-radius:9px;min-height:37px;padding:7px 11px;font-size:11px;font-weight:800;flex:1;cursor:pointer}
+.admin-sidebar-controls button:hover{background:#e1ecfb}
+.admin-sidebar-controls button:focus-visible{outline:3px solid #4779cc;outline-offset:2px}
+.admin-pinned{margin:0 7px 13px;border-radius:13px;padding:10px 9px 8px;background:#eef4ff;border:1px solid #dce8fa;flex:0 1 auto;max-height:207px;min-height:0;overflow-y:auto}
+.admin-pinned-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 3px 7px;color:#234174;font-size:11px}
+.admin-pinned-head strong{font-weight:900}
+.admin-pinned-head span{font-size:10px;color:#647897;font-variant-numeric:tabular-nums}
+.admin-pinned-links{display:grid;gap:4px}
+.admin-pinned-item{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:4px}
+.admin-pinned-jump,.admin-pinned-remove{background:#fff;border:1px solid #dae4f5;color:#23416d;border-radius:8px;min-height:39px}
+.admin-pinned-jump{font-size:12px;font-weight:750;text-align:left;padding:7px 9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-pinned-remove{font-size:18px;color:#536582}
+.admin-pinned-jump[aria-current="page"]{background:#d7e5ff;border-color:#9ebded}
+.admin-pinned-jump:hover,.admin-pinned-remove:hover{background:#e3edff}
+.admin-pinned-links button:focus-visible{outline:3px solid #4779cc;outline-offset:1px}
+.admin-pinned-empty{font-size:11px;line-height:1.5;margin:0;padding:4px;color:#64758c}
+.admin-shell .admin-nav{padding:0 5px 12px}
+.admin-shell .admin-nav-group{border-top:1px solid #e7edf6;margin-bottom:2px}
+.admin-shell .admin-nav-group>summary{min-height:43px;color:#4e6385;letter-spacing:.06em;font-size:10.5px;padding:8px 9px}
+.admin-shell .admin-nav-group>summary::before{font-size:15px;line-height:1;flex:0 0 21px;text-align:center;filter:saturate(.75)}
+.admin-shell .admin-nav-group[data-group="overview"]>summary::before{content:'◈';color:#315a9c}
+.admin-shell .admin-nav-group[data-group="commerce"]>summary::before{content:'▣';color:#4b6798}
+.admin-shell .admin-nav-group[data-group="catalogue"]>summary::before{content:'▤';color:#4b6798}
+.admin-shell .admin-nav-group[data-group="storefront"]>summary::before{content:'◉';color:#4b6798}
+.admin-shell .admin-nav-group[data-group="intelligence"]>summary::before{content:'✦';color:#4b6798}
+.admin-shell .admin-nav-group[data-group="management"]>summary::before{content:'⚙';color:#4b6798}
+.admin-shell .admin-nav-group>summary>span:first-child{flex:1;min-width:0}
+.admin-shell .admin-nav-group[open]>summary{color:#1d3b71;background:#eef3fc}
+.admin-shell .admin-nav-group-links{padding:4px 1px 10px}
+.admin-shell .admin-nav-btn{border-radius:11px;min-height:44px}
+.admin-shell .admin-nav-btn.active,.admin-shell .admin-nav-btn[aria-current="page"]{background:linear-gradient(90deg,#e3edff,#f4f7ff);box-shadow:inset 4px 0 0 #d39d16}
+.admin-shell .admin-nav-btn:hover{box-shadow:inset 2px 0 0 #8ba9d4}
+.admin-shell .admin-sidebar-foot{padding:10px 5px 4px;border-top:1px solid #e1e8f2}
+.admin-shell .admin-top-actions #adminPinCurrent[aria-pressed="true"]{background:#fff5df;border-color:#e0b456;color:#744e05}
+.admin-shell .admin-top-actions #adminPinCurrent:disabled{opacity:.6;cursor:not-allowed}
+@media(min-width:901px){
+  .admin-shell.admin-sidebar-minimized .admin-sidebar{flex:0 0 0!important;width:0!important;min-width:0!important;overflow:hidden;visibility:hidden;pointer-events:none;padding:0!important;border:0!important}
+  .admin-shell.admin-sidebar-minimized .admin-main{position:relative}
+  .admin-shell.admin-sidebar-minimized .admin-sidebar-restore{display:inline-flex;position:absolute;left:16px;top:17px;z-index:3;align-items:center;justify-content:center;border:1px solid #cddbef;color:#1b3a73;background:#eef4ff;border-radius:10px;min-height:42px;padding:7px 12px;font-size:12px;font-weight:800;cursor:pointer}
+  .admin-shell.admin-sidebar-minimized .admin-topbar{padding-left:164px}
+}
+@media(max-width:900px){
+  .admin-shell .admin-sidebar{background:#fff}
+  .admin-shell .admin-sidebar-collapse{flex-basis:44px;height:44px}
+  .admin-shell .admin-pinned{max-height:142px}
+  .admin-shell .admin-sidebar-restore{display:none!important}
+}
+@media(max-width:700px){
+  .admin-shell .admin-top-actions #adminPinCurrent{display:none}
+  .admin-shell .admin-nav-group>summary{min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+  .admin-shell .admin-sidebar,.admin-pinned-jump,.admin-sidebar-collapse{transition:none}
+}
