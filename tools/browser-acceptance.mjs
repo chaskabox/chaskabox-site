@@ -61,6 +61,7 @@ const server=createServer(async(req,res)=>{try{
   if(p==='/api/admin/orders')return json(res,{orders:[],total:0,total_pages:1,page:1});
   if(p==='/api/admin/couriers')return json(res,{couriers:[]});
   if(p==='/api/admin/couriers/ledger')return json(res,{ledger:[],unassigned:[]});
+  if(p==='/api/admin/online-payments')return json(res,{accounts:[{method:'jazzcash',display_name:'JazzCash',account_label:null,settlement_days:null},{method:'bank_transfer',display_name:'Bank Transfer',account_label:null,settlement_days:null}],ledger:[],card_gateway_connected:false});
   if(p==='/api/admin/boxes')return json(res,{boxes:[],total:0,total_pages:1,page:1});
   if(p==='/api/admin/categories')return json(res,{categories:[]});
   if(p==='/api/admin/metrics')return json(res,{recognized_sales_pkr:0});
