@@ -810,6 +810,35 @@ try{
     results.interactions.push({case:'V4 mobile sidebar pins current panel and closes with focus returned',pass:opened&&focusedSearch&&pinned&&closed&&focusReturned});
     await context.close();
   }
+
+  // Public discovery and owner storefront design controls, without live writes.
+  {
+    const {context,page}=await contextFor(390,null);
+    await page.goto(base+'/shop/',{waitUntil:'domcontentloaded'});
+    await page.locator('#shopCategoryRail a').first().waitFor({state:'visible'});
+    const count=await page.locator('#shopCategoryRail a').count();
+    const all=await page.locator('#shopCategoryRail a').first().getAttribute('href');
+    results.interactions.push({case:'storefront mobile category rail displays catalogue links with a clear all-snacks route',pass:count>1&&all==='/shop/'});
+    const firstCategory=page.locator('#shopCategoryRail a').nth(1);
+    const route=await firstCategory.getAttribute('href');
+    await firstCategory.click();
+    await page.waitForURL(url=>url.pathname===route,{timeout:6000});
+    results.interactions.push({case:'storefront category shortcuts navigate to genuine category routes',pass:page.url().includes(route)});
+    await context.close();
+  }
+  {
+    const {context,page}=await contextFor(1440,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('[data-view="preview"]').click();
+    await page.locator('[data-storefront-editor="theme"]').click();
+    const opened=await page.locator('#view-theme').evaluate(el=>el.classList.contains('active'));
+    await page.locator('[data-view="preview"]').click();
+    await page.locator('[data-storefront-route="/shop/"]').click();
+    await page.locator('#demoStorefrontRouteFrame').waitFor({state:'attached'});
+    const publicRoute=await page.locator('#demoStorefrontRouteFrame').getAttribute('src');
+    results.interactions.push({case:'V4 storefront design controls navigate to real editor and public route preview',pass:opened&&publicRoute==='/shop/'});
+    await context.close();
+  }
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));globalThis.fetch=originalFetch;await writeFile(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));}
 console.log(JSON.stringify({pages:results.cases.length,interactions:results.interactions,errors:results.errors}));
 if(results.cases.some(c=>c.status!==200||c.overflow||c.duplicatePromo||c.violations.length)||results.interactions.some(c=>!c.pass)||results.errors.length)process.exitCode=1;
