@@ -88,9 +88,9 @@ const server=createServer(async(req,res)=>{try{
  if(/\.\.|(^|\/)\./.test(p)){res.writeHead(403);return res.end('Forbidden');}
  const assetPath=p==='/cart/'?'/index.html':p==='/admin/'?'/admin.html':/^\/brand\/[^/]+\/$/.test(p)?'/brand/index.html':p;
  let file=path.join(root,decodeURIComponent(assetPath));if((await stat(file).catch(()=>null))?.isDirectory())file=path.join(file,'index.html');
- if(!/\.(html|css|js|json|png|webp|svg|mp4)$/.test(file)){res.writeHead(404);return res.end('Not found');}
+ if(!/\.(html|css|js|json|png|webp|svg|mp4|woff2)$/.test(file)){res.writeHead(404);return res.end('Not found');}
  let data=await readFile(file);if(file.endsWith('.html'))data=Buffer.from(data.toString().replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
- const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'application/json','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml'};
+ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'application/json','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2'};
  res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'});res.end(data);
 }catch{res.writeHead(404);res.end('Not found');}});
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+server.address().port;
@@ -133,7 +133,7 @@ async function inspect(page,route,width,role){
  if(layout.overflow)console.error('OVERFLOW_DETAILS',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>getComputedStyle(e).display!=='none'&&e.getBoundingClientRect().right>innerWidth+1).slice(0,20).map(e=>({tag:e.tagName,id:e.id,cls:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right,text:e.textContent.slice(0,70)})))));
  const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
  const violations=axe.violations.filter(v=>['serious','critical'].includes(v.impact)).map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));
- if(width===390&&['/','/shop/','/product/39/','/snack-boxes/bachpan/','/guides/choosing-a-snack-box/'].includes(route))await page.screenshot({path:path.join(output,route==='/'?'home-390.png':route.replace(/\//g,'_')+'390.png'),fullPage:true});
+ if([390,1440].includes(width)&&['/','/shop/','/product/39/','/snack-boxes/bachpan/','/guides/choosing-a-snack-box/'].includes(route))await page.screenshot({path:path.join(output,route==='/'?'home-'+width+'.png':route.replace(/\//g,'_')+width+'.png'),fullPage:true});
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
@@ -206,6 +206,31 @@ try{
   await context.close();
  }
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
+ // Reference design acceptance: actual responsive UI, rather than a rendered mockup.
+ for(const width of [320,390,768,1440]){
+  const {context,page}=await contextFor(width);
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
+  await page.evaluate(()=>document.fonts.ready);
+  const layout=await page.evaluate(()=>{
+   const hero=document.querySelector('#view-home .hero'),box=hero.getBoundingClientRect();
+   return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundImage,font:getComputedStyle(hero.querySelector('h1')).fontFamily};
+  });
+  if(layout.width<width-60||layout.width>width||layout.height>(width<=760?320:540))throw Error('Reference hero layout mismatch '+JSON.stringify({width,...layout}));
+  if(!layout.background.includes('hero-reference-snackbox-20261017.webp')||!layout.font.includes('Kalam'))throw Error('Reference hero artwork or type is missing');
+  if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');
+  if(width>760&&!await page.locator('.header-search').isVisible())throw Error('Desktop search missing');
+  await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
+  if(width<=760){
+   await page.locator('#cbMobileSearch').fill('gum');
+   await page.locator('.cb-mobile-search button').click();
+   await page.waitForURL(/\/shop\/\?q=gum/);
+   if(!await page.locator('.cb-mobile-dock').isVisible())throw Error('Mobile dock disappeared on shop navigation');
+   if(await page.locator('#fq').inputValue()!=='gum')throw Error('Mobile search did not reach the catalogue');
+  }
+  results.interactions.push({case:'reference hero, type and responsive shopping navigation / '+width,pass:true});
+  await context.close();
+ }
  for(const width of args.includes('--quick')?[390]:[320,390,768,1440]){const {context,page}=await contextFor(width);for(const route of routes)await inspect(page,route,width);await context.close();}
  // Signed-out staff sign-in visual and keyboard acceptance using local synthetic Auth only.
  for(const width of [320,390,1440]){
@@ -246,7 +271,28 @@ try{
   await page.getByRole('button',{name:'Close shopping bag'}).click();
   results.interactions.push({case:'cart and drawer cap quantity at 99 / '+width,pass:true});
   await inspect(page,'/checkout.html',width);
-  // Visual regression: new branded header, 2-step progress and a non-default coupon CTA.
+  const checkoutSpacing=await page.evaluate(()=>{
+    const promo=document.querySelector('.promo').getBoundingClientRect();
+    const header=document.querySelector('header').getBoundingClientRect();
+    const intro=document.querySelector('.checkout-intro').getBoundingClientRect();
+    const field=document.querySelector('#checkoutDeliveryStep .field');
+    const control=document.querySelector('#f_phone');
+    const card=document.querySelector('#checkoutDeliveryStep');
+    return {
+      headerGap:Math.round(header.top-promo.bottom),
+      introGap:Math.round(intro.top-header.bottom),
+      fieldGap:parseFloat(getComputedStyle(field).marginBottom),
+      inputHeight:Math.round(control.getBoundingClientRect().height),
+      cardPadding:parseFloat(getComputedStyle(card).paddingTop),
+      footerMargin:parseFloat(getComputedStyle(document.querySelector('footer')).marginTop)
+    };
+  });
+  if(Math.abs(checkoutSpacing.headerGap)>2 || checkoutSpacing.introGap>26 ||
+    checkoutSpacing.fieldGap>14 || checkoutSpacing.inputHeight<44 ||
+    checkoutSpacing.cardPadding>24 || checkoutSpacing.footerMargin>1)
+    throw Error('Checkout compact spacing regressed '+JSON.stringify({width,checkoutSpacing}));
+  results.interactions.push({case:'compact checkout spacing, flush header and 44px+ mobile inputs / '+width,pass:true});
+  // Visual regression: branded header, three-step progress and a non-default coupon CTA.
   const checkoutVisual=await page.evaluate(()=>{
    const intro=document.querySelector('.checkout-intro'),coupon=document.querySelector('#applyCoupon'),
     grid=document.querySelector('.co-grid'),total=document.querySelector('.checkout-totals .sumrow.total');
@@ -281,10 +327,21 @@ try{
   });
   if(!preferenceLayout.visible||!preferenceLayout.afterEmail||!preferenceLayout.withinScreen||preferenceLayout.tapHeight<48)
     throw Error('WhatsApp consent placement or tap target failed '+JSON.stringify({width,preferenceLayout}));
+  if(width===390){
+    await page.locator('#toPaymentBtn').click();
+    const fields=await page.evaluate(()=>Object.fromEntries(['f_phone','f_email','f_addr'].map(id=>{
+      const node=document.getElementById(id);
+      const described=(node.getAttribute('aria-describedby')||'').split(/\s+/);
+      return [id,{invalid:node.getAttribute('aria-invalid')==='true',help:described.includes({f_phone:'f_phoneHelp',f_email:'emailHelp',f_addr:'addressHelp'}[id]),error:described.includes({f_phone:'e_phone',f_email:'e_email',f_addr:'e_addr'}[id])}];
+    })));
+    if(await page.locator('#checkoutPaymentStep').isVisible()||Object.values(fields).some(f=>!f.invalid||!f.help||!f.error))
+      throw Error('Invalid delivery details bypassed validation or lost accessible help: '+JSON.stringify(fields));
+    results.interactions.push({case:'invalid delivery details remain on step 1 and retain help/error descriptions',pass:true});
+  }
   await page.locator('#f_whatsapp_optin').check();
-  await page.getByLabel('First Name *').fill('Ali');
-  await page.getByLabel('Phone Number *').fill('03000000000');
-  await page.getByLabel('Email Address *').fill('ali@example.invalid');
+  await page.locator('#f_fname').fill('Ali');
+  await page.locator('#f_phone').fill('03000000000');
+  await page.locator('#f_email').fill('ali@example.invalid');
   await page.locator('#f_addr').fill('Fixture Street 123, Lahore');
   await page.locator('#toPaymentBtn').click();
   if(!await page.locator('#checkoutPaymentStep').isVisible()||await page.locator('#checkoutDeliveryStep').isVisible())
