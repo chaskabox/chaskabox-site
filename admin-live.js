@@ -101,6 +101,7 @@
   const ROLE_VIEWS={
     dashboard:['owner','manager','fulfilment','content'],
     orders:['owner','manager','fulfilment'],
+    couriers:['owner','manager'],
     resolutions:['owner','manager'],
     coupons:['owner','manager'],
     shipping:['owner','manager'],
@@ -150,6 +151,7 @@
     try{
       $('#view-'+name)?.querySelector('.admin-view-error')?.remove();
       if(name==='orders') await loadOrders();
+      if(name==='couriers' && roleAllows('owner','manager')) await loadCouriers();
       if(name==='analytics' && roleAllows('owner','manager')) await loadAnalytics();
       if(name==='coupons' && roleAllows('owner','manager')) await loadCoupons();
       if(name==='shipping' && roleAllows('owner','manager')) await loadShipping();
@@ -387,10 +389,10 @@
   }
 
   async function openOrder(id){
-    const data=await api(`/api/admin/orders/${encodeURIComponent(id)}`),o=data.order, items=data.items||[];
+    const data=await api(`/api/admin/orders/${encodeURIComponent(id)}`),o=data.order, items=data.items||[],shipment=data.courier_shipment;
     let modal=$('#liveOrderModal'); if(!modal){modal=document.createElement('div');modal.id='liveOrderModal';modal.className='admin-modal';document.body.appendChild(modal);} modal.classList.add('open');
     const flow=['new','sourcing','packed','dispatched','delivered']; const idx=flow.indexOf(o.fulfilment_status); const next=idx>=0&&idx<flow.length-1?flow[idx+1]:null;
-    modal.innerHTML=`<div class="modal-backdrop" data-close-order></div><section class="admin-modal-card live-order-card"><div class="modal-head"><div><small>ORDER</small><h2>${esc(o.order_number)}</h2></div><button class="icon-btn" data-close-order>×</button></div><div class="order-detail-grid"><section><h3>Customer</h3><p><b>${esc(o.customer_name)}</b><br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</p><h3>Items</h3><div class="order-items">${items.map(i=>`<div><span>${esc(i.product_name)} · ${esc(i.pack)} × ${i.quantity}</span><b>${money(i.line_total)}</b></div>`).join('')}</div></section><section><h3>Payment</h3><p>${esc(o.payment_method)} · <b>${esc(o.payment_status)}</b>${o.transaction_reference?`<br>Ref: ${esc(o.transaction_reference)}`:''}</p><h3>Total</h3><p>Subtotal ${money(o.subtotal)}<br>Delivery ${money(o.delivery_fee)}<br><b>${money(o.total)}</b></p><h3>Actions</h3><div class="order-actions">${next?`<button class="btn primary" data-status="${next}">Move to ${esc(next)}</button>`:''}${!['delivered','cancelled'].includes(o.fulfilment_status)?'<button class="btn danger" data-status="cancelled">Cancel</button>':''}${['payment_submitted','awaiting_payment'].includes(o.payment_status)?'<button class="btn secondary" data-pay="verified">Verify payment</button><button class="btn secondary" data-pay="rejected">Reject payment</button>':''}<button class="btn secondary" data-retry>Retry notification</button></div><h3>Status history</h3><div class="history-list">${(data.history||[]).map(h=>`<div><b>${esc(h.action)}</b><small>${fmtDate(h.created_at)} · ${esc(h.actor_role)}</small></div>`).join('')||'<small>No audit events yet.</small>'}</div></section></div></section>`;
+    modal.innerHTML=`<div class="modal-backdrop" data-close-order></div><section class="admin-modal-card live-order-card"><div class="modal-head"><div><small>ORDER</small><h2>${esc(o.order_number)}</h2></div><button class="icon-btn" data-close-order>×</button></div><div class="order-detail-grid"><section><h3>Customer</h3><p><b>${esc(o.customer_name)}</b><br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</p><h3>Items</h3><div class="order-items">${items.map(i=>`<div><span>${esc(i.product_name)} · ${esc(i.pack)} × ${i.quantity}</span><b>${money(i.line_total)}</b></div>`).join('')}</div></section><section><h3>Payment</h3><p>${esc(o.payment_method)} · <b>${esc(o.payment_status)}</b>${o.transaction_reference?`<br>Ref: ${esc(o.transaction_reference)}`:''}</p><h3>Total</h3><p>Subtotal ${money(o.subtotal)}<br>Delivery ${money(o.delivery_fee)}<br><b>${money(o.total)}</b></p><h3>Courier dispatch</h3><p>${shipment?esc(shipment.courier_name_snapshot)+(shipment.tracking_number?' · Tracking: '+esc(shipment.tracking_number):'')+' · Settlement: '+shipment.settlement_days_snapshot+' days after delivery':'Not assigned yet'}</p><h3>Actions</h3><div class="order-actions">${next?`<button class="btn primary" data-status="${next}">Move to ${esc(next)}</button>`:''}${!['delivered','cancelled'].includes(o.fulfilment_status)?'<button class="btn danger" data-status="cancelled">Cancel</button>':''}${['payment_submitted','awaiting_payment'].includes(o.payment_status)?'<button class="btn secondary" data-pay="verified">Verify payment</button><button class="btn secondary" data-pay="rejected">Reject payment</button>':''}<button class="btn secondary" data-retry>Retry notification</button></div><h3>Status history</h3><div class="history-list">${(data.history||[]).map(h=>`<div><b>${esc(h.action)}</b><small>${fmtDate(h.created_at)} · ${esc(h.actor_role)}</small></div>`).join('')||'<small>No audit events yet.</small>'}</div></section></div></section>`;
     $$('[data-close-order]',modal).forEach(x=>x.onclick=()=>modal.classList.remove('open'));
     $$('[data-status]',modal).forEach(b=>b.onclick=async()=>{
       if(b.disabled)return;
@@ -398,6 +400,11 @@
       if(st==='cancelled'){
         const reason=await askForOrderDecision('Cancel '+o.order_number,'Cancellation is irreversible. Record the reason.');
         if(!reason)return;body.cancel_reason=reason;
+      }else if(st==='dispatched'){
+        const assignment=await chooseCourierForDispatch(o.order_number);
+        if(!assignment)return;
+        body.courier_id=assignment.courier_id;
+        body.tracking_number=assignment.tracking_number;
       }else if(!confirm('Advance order '+o.order_number+' to '+st+'?'))return;
       b.disabled=true;
       try{await api('/api/admin/orders/'+encodeURIComponent(id)+'/status',{method:'PATCH',body});toast('Order updated');modal.classList.remove('open');await Promise.allSettled([loadOrders(),loadDashboard()]);}
@@ -433,6 +440,131 @@
     modal.querySelector('.live-order-card').appendChild(printBar);
     $('#printInvoiceBtn').onclick = () => printInvoice(o, items, false);
     $('#printPackingBtn').onclick = () => printInvoice(o, items, true);
+  }
+
+
+  /* COURIER COD CONTROL: settlement forecast and bank-confirmed receipts are separate. */
+  function pkToday(){
+    const parts=Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Karachi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+    const get=t=>parts.find(p=>p.type===t)?.value||'';
+    return get('year')+'-'+get('month')+'-'+get('day');
+  }
+  function courierDialog(title,fields,onSave){
+    return new Promise(resolve=>{
+      const dialog=document.createElement('dialog');dialog.className='admin-ops-dialog';
+      const form=document.createElement('form');form.noValidate=true;
+      const h=document.createElement('h2');h.textContent=title;form.append(h);
+      const entries={};
+      for(const f of fields){
+        const wrap=document.createElement('label');wrap.className='admin-ops-field';wrap.textContent=f.label;
+        const el=document.createElement(f.type==='select'?'select':'input');
+        el.name=f.id;entries[f.id]=el;
+        if(f.type==='select'){for(const o of f.options||[]){const option=document.createElement('option');option.value=String(o.value);option.textContent=o.label;el.append(option);}}
+        else {el.type=f.type||'text';if(f.min!==undefined)el.min=f.min;if(f.max!==undefined)el.max=f.max;if(f.maxLength)el.maxLength=f.maxLength;}
+        if(f.required)el.required=true;
+        if(f.type==='checkbox')el.checked=f.value!==false;
+        else el.value=String(f.value??'');
+        wrap.append(el);form.append(wrap);
+      }
+      const error=document.createElement('p');error.hidden=true;error.setAttribute('role','alert');form.append(error);
+      const actions=document.createElement('div');actions.className='admin-ops-actions';
+      const cancel=document.createElement('button');cancel.type='button';cancel.className='btn secondary';cancel.textContent='Cancel';
+      const submit=document.createElement('button');submit.type='submit';submit.className='btn primary';submit.textContent='Save';
+      actions.append(cancel,submit);form.append(actions);dialog.append(form);document.body.append(dialog);
+      let finished=false;
+      const finish=r=>{if(finished)return;finished=true;dialog.close();dialog.remove();resolve(r);};
+      cancel.onclick=()=>finish(null);
+      dialog.oncancel=e=>{e.preventDefault();finish(null)};
+      form.onsubmit=async e=>{
+        e.preventDefault();if(!form.reportValidity())return;
+        const values={};for(const [k,node]of Object.entries(entries))values[k]=node.type==='checkbox'?node.checked:node.value;
+        submit.disabled=true;error.hidden=true;
+        try{const result=await onSave(values);finish(result);}
+        catch(err){error.textContent=err.message||'Not saved';error.hidden=false;}
+        finally{submit.disabled=false;}
+      };
+      dialog.showModal();
+    });
+  }
+  async function chooseCourierForDispatch(orderNumber){
+    const response=await api('/api/admin/couriers'),active=(response.couriers||[]).filter(x=>x.is_active);
+    if(!active.length){
+      toast('No courier configured. Owner/Manager: add one in Courier COD Ledger before dispatch.');
+      return null;
+    }
+    return courierDialog('Dispatch '+orderNumber+' with courier',[
+      {id:'courier_id',type:'select',label:'Courier company',required:true,
+       options:active.map(c=>({value:c.id,label:c.name+' · pays '+c.settlement_days+' days after delivery'}))},
+      {id:'tracking_number',type:'text',label:'Tracking / consignment number (optional)',maxLength:120}
+    ],v=>{
+      if(!active.some(c=>String(c.id)===String(v.courier_id)))throw Error('Choose an active courier');
+      if(v.tracking_number&&!/^[A-Za-z0-9][A-Za-z0-9 /._-]{0,119}$/.test(v.tracking_number))throw Error('Tracking contains invalid characters');
+      return {courier_id:Number(v.courier_id),tracking_number:String(v.tracking_number).trim()};
+    });
+  }
+  async function editCourierCompany(company){
+    const saved=await courierDialog(company?'Edit courier rule':'Add courier company',[
+      {id:'name',label:'Courier company name',required:true,value:company?.name||'',maxLength:100},
+      {id:'settlement_days',type:'number',label:'Calendar days after delivery until expected COD payment',required:true,min:0,max:120,value:company?.settlement_days??7},
+      {id:'deduction_per_order_pkr',type:'number',label:'Courier deduction per COD order (PKR; enter 0 if courier remits gross)',required:true,min:0,max:100000,value:company?.deduction_per_order_pkr??0},
+      {id:'is_active',type:'checkbox',label:'Available for future dispatch',value:company?.is_active??true}
+    ],async v=>{
+      const days=Number(v.settlement_days),deduction=Number(v.deduction_per_order_pkr),name=String(v.name).trim();
+      if(name.length<2||name.length>100||!Number.isInteger(days)||days<0||days>120||!Number.isInteger(deduction)||deduction<0||deduction>100000)
+       throw Error('Check company name, settlement days and deduction');
+      return api(company?'/api/admin/couriers/'+company.id:'/api/admin/couriers',{method:company?'PATCH':'POST',
+       body:{name,settlement_days:days,deduction_per_order_pkr:deduction,is_active:v.is_active}});
+    });
+    if(saved){toast('Courier settings saved');await loadCouriers();}
+  }
+  async function recordCourierReceipt(row){
+    const max=Number(row.outstanding_pkr);
+    if(max<=0)return;
+    const saved=await courierDialog('Confirm actual courier COD receipt · '+row.order_number,[
+      {id:'amount_pkr',type:'number',label:'Amount received in bank/cash (PKR)',min:1,max,required:true,value:max},
+      {id:'received_on',type:'date',label:'Actual date received',required:true,value:pkToday()},
+      {id:'reference',label:'Bank/statement reference (required)',required:true,maxLength:120}
+    ],async v=>{
+      const amount=Number(v.amount_pkr);
+      if(!Number.isSafeInteger(amount)||amount<=0||amount>max)throw Error('Amount must not exceed remaining expected COD');
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(v.received_on)||v.received_on>pkToday())throw Error('Enter a valid received date, not in the future');
+      if(String(v.reference).trim().length<3)throw Error('Bank/statement reference is required');
+      return api('/api/admin/couriers/receipts',{method:'POST',body:{
+       order_id:row.order_id,amount_pkr:amount,received_on:v.received_on,reference:v.reference.trim()
+      }});
+    });
+    if(saved){toast('Confirmed COD receipt recorded');await loadCouriers();}
+  }
+  async function loadCouriers(){
+    const companies=$('#courierCompanies'),summary=$('#courierCodSummary'),ledger=$('#courierCodLedger');
+    if(!companies||!summary||!ledger)return;
+    companies.textContent='Loading couriers…';summary.textContent='Calculating…';
+    const [c,l]=await Promise.all([api('/api/admin/couriers'),api('/api/admin/couriers/ledger')]);
+    const cs=c.couriers||[],rows=l.ledger||[],unassigned=l.unassigned||[];
+    companies.innerHTML=cs.length?'<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Courier</th><th>COD settlement</th><th>Deduction per order</th><th>Status</th><th></th></tr></thead><tbody>'+cs.map(x=>'<tr><td><b>'+esc(x.name)+'</b></td><td>'+Number(x.settlement_days)+' calendar days after delivery</td><td>'+money(x.deduction_per_order_pkr)+'</td><td>'+(x.is_active?'Active':'Disabled')+'</td><td><button class="btn secondary compact" data-edit-courier="'+x.id+'">Edit</button></td></tr>').join('')+'</tbody></table></div>':'<p>No courier companies yet. Add each real delivery partner with its COD payment delay.</p>';
+    const tod=pkToday();
+    const delivered=rows.filter(x=>x.payment_method==='cod'&&x.fulfilment_status==='delivered'&&x.payment_status!=='refunded');
+    const sum=key=>delivered.reduce((n,x)=>n+Number(x[key]||0),0);
+    const expected=sum('estimated_remittance_pkr'),received=sum('received_pkr'),due=sum('outstanding_pkr');
+    const overdue=delivered.filter(x=>x.expected_settlement_on&&x.expected_settlement_on<tod&&Number(x.outstanding_pkr)>0);
+    const inTransit=rows.filter(x=>x.payment_method==='cod'&&x.fulfilment_status==='dispatched');
+    const badges=[
+      ['Delivered COD receivable',money(expected)],
+      ['Recorded as actually received',money(received)],
+      ['Outstanding',money(due)],
+      ['Overdue COD',money(overdue.reduce((n,x)=>n+Number(x.outstanding_pkr),0))],
+      ['COD in transit',money(inTransit.reduce((n,x)=>n+Number(x.estimated_remittance_pkr),0))]
+    ];
+    summary.innerHTML='<div class="metric-grid">'+badges.map(([label,value])=>'<article class="metric-card"><div><small>'+esc(label)+'</small><strong>'+esc(value)+'</strong></div></article>').join('')+'</div>'+
+      (unassigned.length?'<p role="status"><b>'+unassigned.length+' delivered COD orders lack courier assignment.</b> Do not attribute them to a courier without verifying historical records.</p>':'')+
+      '<p class="safe-note">Forecast uses original COD total minus the courier deduction captured at dispatch. Receipt is only counted after bank/statement verification and a manual entry; courier deductions and actual statements may differ.</p>';
+    ledger.innerHTML=rows.length?'<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Order</th><th>Courier / tracking</th><th>Delivery</th><th>Expected receipt</th><th>Expected net</th><th>Received</th><th>Outstanding</th><th></th></tr></thead><tbody>'+
+      rows.map(x=>'<tr><td><b>'+esc(x.order_number)+'</b><small>'+esc(x.fulfilment_status)+'</small></td><td>'+esc(x.courier_name)+(x.tracking_number?'<small>'+esc(x.tracking_number)+'</small>':'')+'</td><td>'+esc(x.delivered_at?String(x.delivered_at).slice(0,10):'In transit')+'</td><td>'+esc(x.expected_settlement_on||'After delivery')+(x.expected_settlement_on&&x.expected_settlement_on<tod&&Number(x.outstanding_pkr)>0?' · OVERDUE':'')+'</td><td>'+money(x.estimated_remittance_pkr)+'</td><td>'+money(x.received_pkr)+'</td><td>'+money(x.outstanding_pkr)+'</td><td>'+((x.payment_method==='cod'&&x.fulfilment_status==='delivered'&&Number(x.outstanding_pkr)>0)?'<button class="btn secondary compact" data-cod-receipt="'+esc(x.order_id)+'">Record receipt</button>':'—')+'</td></tr>').join('')+'</tbody></table></div>':'<p>No courier dispatch records yet. Assign a courier when moving an order from Packed to Dispatched.</p>';
+    if(l.warning)ledger.insertAdjacentHTML('afterbegin','<p role="alert">'+esc(l.warning)+'</p>');
+    companies.querySelectorAll('[data-edit-courier]').forEach(b=>b.onclick=()=>editCourierCompany(cs.find(x=>String(x.id)===b.dataset.editCourier)));
+    ledger.querySelectorAll('[data-cod-receipt]').forEach(b=>b.onclick=()=>recordCourierReceipt(rows.find(x=>x.order_id===b.dataset.codReceipt)));
+    $('#addCourierCompany').onclick=()=>editCourierCompany(null);
+    $('#refreshCourierLedger').onclick=loadCouriers;
   }
 
   function printInvoice(o, items, isPacking){
