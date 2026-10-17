@@ -731,6 +731,11 @@ async function placeOrder() {
           const title=document.createElement('h4');title.textContent=label;dest.append(title);
           const source=document.getElementById(selector);if(source)for(const child of [...source.children])dest.append(child.cloneNode(true));
         }
+        const copy=dest.querySelector('#copyBankBtn');
+        if(copy){
+          copy.id='copyCodAdvanceBank';
+          copy.onclick=async()=>{const number=dest.querySelector('#bankAccount')?.textContent||'';try{await navigator.clipboard.writeText(number);copy.textContent='Copied';}catch{copy.textContent='Select the account number to copy';}};
+        }
       }
       if($('#doneWhatsApp'))$('#doneWhatsApp').href='https://wa.me/923320005381?text='+encodeURIComponent('Salam ChaskaBox, order '+finalOrderNo+' ke liye '+fmt(confirmedCodAdvance)+' COD advance ki payment proof/reference verify karni hai.');
     }else{
