@@ -205,4 +205,6 @@ header{background:#fff;box-shadow:0 1px 10px rgba(14,42,84,.045);border-bottom:1
   #view-home .hscroll .card{flex:0 0 153px}
   .cb-trust-item b{font-size:8px}
 }
+.cb-offer[hidden]{display:none!important}
+.cb-offers:has(.cb-offer-deals[hidden]){grid-template-columns:1fr}
 @media(prefers-reduced-motion:reduce){#view-home .herocollage img{animation:none!important}}
