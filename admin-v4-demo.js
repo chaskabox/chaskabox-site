@@ -89,6 +89,38 @@
     if(quality)quality.value='';if(sort)sort.value='name_asc';updateSampleProducts();
   });
   updateSampleProducts();
+  // Demo theme sandbox: only changes the public-page iframe's CSS variables.
+  const demoFrame=one('#demoThemeFrame'),demoThemeStatus=one('#demoThemeStatus');
+  let demoStyle='';
+  const applyDemoTheme=()=>{
+    if(!demoFrame)return;
+    try{
+      const doc=demoFrame.contentDocument;
+      if(!doc?.head)throw new Error('Frame not ready');
+      let style=doc.getElementById('chaskaboxDemoThemeStyle');
+      if(!style){style=doc.createElement('style');style.id='chaskaboxDemoThemeStyle';doc.head.append(style);}
+      style.textContent=demoStyle;
+      if(demoThemeStatus)demoThemeStatus.textContent=demoStyle?'Sample colors applied to preview only. Nothing saved.':'Original sample colors restored.';
+    }catch{
+      if(demoThemeStatus)demoThemeStatus.textContent='Preview cannot be styled in this browser. No changes saved.';
+    }
+  };
+  demoFrame?.addEventListener('load',applyDemoTheme);
+  one('#demoThemeApply')?.addEventListener('click',()=>{
+    const primary=one('#demoThemePrimary').value,accent=one('#demoThemeAccent').value,bg=one('#demoThemeBackground').value;
+    const font=one('#demoThemeFont').value;
+    const allowed=['system-ui','Georgia, serif','Arial, sans-serif'];
+    if(!/^#[a-f0-9]{6}$/i.test(primary)||!/^#[a-f0-9]{6}$/i.test(accent)||!/^#[a-f0-9]{6}$/i.test(bg)||!allowed.includes(font))return;
+    demoStyle=':root{--primary:'+primary+';--navy:'+primary+';--gold:'+accent+';--accent:'+accent+';--bg:'+bg+';--radius:12px}body{font-family:'+font+'}';
+    applyDemoTheme();
+  });
+  one('#demoThemeReset')?.addEventListener('click',()=>{
+    demoStyle='';one('#demoThemePrimary').value='#1a2b5c';one('#demoThemeAccent').value='#f59e0b';
+    one('#demoThemeBackground').value='#ffffff';one('#demoThemeFont').value='system-ui';
+    applyDemoTheme();
+  });
+  one('#demoThemeRoute')?.addEventListener('change',e=>{if(demoFrame)demoFrame.src=e.target.value;});
+  one('#demoThemeSize')?.addEventListener('change',e=>{if(demoFrame)demoFrame.style.width=e.target.value;});
   const first = one('.admin-nav-btn.active');
   if (first) first.setAttribute('aria-current','page');
 })();
