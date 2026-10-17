@@ -68,7 +68,7 @@ function cardHTML(p,priority){
     <a class="pimg" href="${href}">${fan}${img}</a>
     <div class="pbody">
       ${catlabel}
-      <a class="pname" href="${href}">${esc(p.name)}</a>
+      <a class="pname" href="${href}" title="${esc(p.name)}">${esc(p.name)}</a>
       <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
       <button class="addcart" ${unavailable?'disabled':''} aria-label="${unavailable?'Currently unavailable':'Add to Bag '+fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">${unavailable?'Currently unavailable':'Add to Bag'}</span><span class="addcart-price">${fmt(p.price)}</span></button>
@@ -123,18 +123,18 @@ function renderHomeContent(){
   const allCount=act.length;
   const cmsCats=STORE_CONFIG?.categories;
   if(Array.isArray(cmsCats))for(const c of cmsCats)cats[c.name]=act.filter(p=>c.product_ids.includes(Number(p.id)));
-  const tileOrder=['All',...(Array.isArray(cmsCats)?cmsCats.filter(c=>c.show_on_homepage).map(c=>c.name):CAT_ORDER.filter(c=>cats[c]&&cats[c].length))];
+  const tileOrder=['All',...(Array.isArray(cmsCats)?cmsCats.filter(c=>c.show_on_homepage&&(cats[c.name]||[]).length>0).map(c=>c.name):CAT_ORDER.filter(c=>cats[c]&&cats[c].length))];
   // ensure 'All' pseudo-category first, then fixed original order
   $('#catTiles').innerHTML=tileOrder.map(c=>{
     const st=CAT_STYLE[c]||{bg:'#8a94a6'};
     const list=c==='All'?act:(cats[c]||[]);
     const n=c==='All'?allCount:list.length;
-    if(c!=='All'&&!n&&!Array.isArray(cmsCats)) return '';
+    if(c!=='All'&&!n) return '';
     const inner=TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
     const href=c==='All'?'/shop/':categoryPath(c);
     return `<a class="cat reveal" href="${href}">
       <div class="ci" style="background:${st.bg}">${inner}</div>
-      <b>${esc(c)}</b><small>${n} items</small></a>`;
+      <b>${esc(c)}</b><small>${n} ${n===1?'item':'items'}</small></a>`;
   }).join('');
   // hero collage: 3 product images
   const candidates=curatedProducts('hero',act.filter(hasPhoto)).sort((a,b)=>Number(/^https?:/i.test(a.img))-Number(/^https?:/i.test(b.img)));
@@ -728,8 +728,9 @@ async function renderBrandsDirectory(){
   const azEl=document.getElementById('brandAZ');
   if(!grid) return;
   grid.innerHTML='<p class="muted" style="grid-column:1/-1">Loading brands...</p>';
-  const brands=await fetchBrands();
-  if(countEl) countEl.textContent=brands.length+' brands';
+  const brands=(await fetchBrands()).filter(b=>Number(b.productCount)>0);
+  // Empty brands stay in the admin catalogue; only customer-facing discovery is filtered.
+  if(countEl) countEl.textContent=brands.length+' '+(brands.length===1?'brand':'brands');
   const q=(document.getElementById('brandSearch')?.value||'').toLowerCase();
   const list=brands.filter(b=>!q||b.name.toLowerCase().includes(q));
   // A-Z filter chips
@@ -745,7 +746,7 @@ async function renderBrandsDirectory(){
     return `<a class="card" href="/brand/${esc(b.slug)}/" style="text-decoration:none;text-align:center;padding:18px 12px;display:block">
       <div style="height:64px;display:flex;align-items:center;justify-content:center">${logo}</div>
       <div class="pname" style="margin-top:8px">${esc(b.name)}</div>
-      <div class="pcat">${b.productCount} products</div></a>`;
+      <div class="pcat">${b.productCount} ${Number(b.productCount)===1?'product':'products'}</div></a>`;
   }).join(''):'<p class="muted" style="grid-column:1/-1">No brands found.</p>';
 }
 async function renderBrandRoute(slug){
