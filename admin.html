@@ -64,7 +64,7 @@ setTimeout(function(){
         <summary><span>Orders & customers</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
         <div class="admin-nav-group-links">
           <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
-          <button class="admin-nav-btn" data-view="couriers"><span>🚚</span> Courier COD Ledger</button>
+          <button class="admin-nav-btn" data-view="couriers"><span>💳</span> Payments &amp; COD Ledger</button>
           <button class="admin-nav-btn" data-view="resolutions"><span>🛠️</span> Refunds & Issues</button>
           <button class="admin-nav-btn" data-view="coupons"><span>🎟️</span> Coupons</button>
           <button class="admin-nav-btn" data-view="shipping"><span>🚚</span> Shipping</button>
@@ -237,7 +237,7 @@ setTimeout(function(){
       </section>
 
       <!-- Courier companies and COD receipts. Money here is estimated until bank receipt is recorded. -->
-      <section class="admin-view" id="view-couriers" data-title="Courier COD Ledger" data-subtitle="Track courier collections, expected settlement dates and confirmed receipts.">
+      <section class="admin-view" id="view-couriers" data-title="Payments &amp; COD Ledger" data-subtitle="Track COD, JazzCash and bank transfer collections and settlements.">
         <div class="panel">
           <div class="panel-head"><div><h2>Courier settlement rules</h2><p>Set each company's payment delay (calendar days after delivery) and any fixed per-order deduction. Changes apply to new dispatches; existing shipments keep their original rule.</p></div>
             <div style="display:flex;gap:8px"><button class="btn secondary" id="refreshCourierLedger">↻ Refresh</button><button class="btn primary" id="addCourierCompany">+ Add courier</button></div>
@@ -249,6 +249,15 @@ setTimeout(function(){
           <div id="courierCodSummary" aria-live="polite">Open the panel to load settlement figures.</div>
           <div id="courierCodLedger">No data loaded.</div>
         </div>
+        <section class="panel">
+          <div class="panel-head">
+            <div><h2>Online payments · JazzCash, Bank Transfer &amp; Cards</h2><p>Order payment verification and actual wallet/bank settlement are separate records. Card gateway is not connected.</p></div>
+            <button type="button" class="btn secondary" id="refreshOnlinePayments">↻ Refresh online payments</button>
+          </div>
+          <div id="onlinePaymentAccounts" aria-live="polite">Open Payments &amp; COD Ledger to load online payment accounts.</div>
+          <div id="onlinePaymentSummary" aria-live="polite"></div>
+          <div id="onlinePaymentTable" aria-live="polite"></div>
+        </section>
       </section>
 
       <!-- RESOLUTIONS -->
@@ -810,7 +819,7 @@ setTimeout(function(){
 <script src="/admin-storefront-controls.js?v=20261017-controls1" defer></script>
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261017-shipping-ops-v1" defer></script>
-<script src="/admin-live.js?v=20261017-courier-ledger-v1" defer></script>
+<script src="/admin-live.js?v=20261017-finance-ledger-v1" defer></script>
 <script src="/admin-agents.js?v=20261015-phase12-operations" defer></script>
  <script src="/admin-agent-workbench.js?v=20261015-agent-workbench1" defer></script>
 </body>
