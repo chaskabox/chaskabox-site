@@ -25,7 +25,7 @@ test('schema plan verifies its baseline and rejects production hosts or libpq ho
 });
 test('complete captured schema and final-batch migrations replay into an empty isolated database',async()=>{
  const db=await fixture();try{
-  assert.equal((await db.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n,43);
+  assert.equal((await db.query("SELECT count(*)::int n FROM pg_tables WHERE schemaname='public'")).rows[0].n,45);
   assert.equal((await db.query("SELECT count(*)::int n FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.prorettype='trigger'::regtype AND p.proconfig IS NULL")).rows[0].n,0);
   for(const role of ['anon','authenticated']){await db.exec('SET ROLE '+role);await assert.rejects(db.query('SELECT admin_cms_transaction($1,$2)',[actor,[]]),/permission denied/);await assert.rejects(db.query('SELECT handle_new_user()'),/permission denied/);await db.exec('RESET ROLE');}
   const baseline=await readFile(new URL('../database/baseline/20261011_public.sql',import.meta.url),'utf8');await assert.rejects(db.exec(baseline),/Baseline requires an empty public schema/);await db.exec('ROLLBACK');
