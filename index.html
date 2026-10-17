@@ -19,6 +19,7 @@
 
 <link rel="stylesheet" href="/styles.css?v=20261015-header-promo-v1">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+<link rel="stylesheet" href="/hero-slider.css?v=20261017-v1">
 </head>
 <body>
 <a href="#main" class="skip-link">Skip to content</a>
@@ -78,6 +79,13 @@
         
       </div>
       <div class="heroimg"><div class="herocollage" id="heroCollage"></div></div>
+    </div>
+    <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
+      <button type="button" data-hero-direction="previous" aria-label="Previous banner">‹</button>
+      <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-current="true"></button>
+      <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-current="false"></button>
+      <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-current="false"></button>
+      <button type="button" data-hero-direction="next" aria-label="Next banner">›</button>
     </div>
     <div class="herotrust">
       <div class="htrustwrap">
@@ -389,5 +397,6 @@
 <script defer src="/analytics.js?v=1"></script>
 <script defer src="/retention.js?v=5"></script>
 <!-- Removed global DOM MutationObserver/setInterval badge scrubber: no Netlify badge exists on Cloudflare Pages. -->
-<script src="/site-runtime.js?v=20261015-header-promo-v1" defer></script></body>
+<script src="/site-runtime.js?v=20261015-header-promo-v1" defer></script><script src="/hero-slider.js?v=20261017-v1" defer></script>
+</body>
 </html>
