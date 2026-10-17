@@ -2,6 +2,7 @@
 let DELIVERY_FEE = 300;
 let PREPAID_DELIVERY_FEE = 300;
 let FREE_ABOVE = 5000;
+let FREE_PREPAID_ENABLED = true;
 const PREPAID_METHODS = new Set(['jazzcash','bank_transfer']);
 const PAYMENT_LABELS = {
   cod: 'Cash on Delivery',
@@ -80,13 +81,17 @@ async function init() {
     DELIVERY_FEE = settingNumber(st.cod_delivery_fee_pkr, 300);
     PREPAID_DELIVERY_FEE = settingNumber(st.prepaid_delivery_fee_pkr, 300);
     FREE_ABOVE = settingNumber(st.prepaid_free_delivery_threshold_pkr, 5000);
+    FREE_PREPAID_ENABLED = st.prepaid_free_delivery_enabled !== false;
     PAYMENT_ENABLED = {
       cod: st.cod_enabled !== false,
       jazzcash: st.jazzcash_enabled !== false,
       bank_transfer: st.bank_transfer_enabled !== false
     };
     document.querySelectorAll('[data-dynamic-delivery]').forEach(el=>el.textContent='Rs. '+DELIVERY_FEE.toLocaleString('en-PK'));
-    document.querySelectorAll('[data-dynamic-threshold]').forEach(el=>el.textContent='Rs. '+FREE_ABOVE.toLocaleString('en-PK'));
+    document.querySelectorAll('[data-dynamic-threshold]').forEach(el=>{
+      if(FREE_PREPAID_ENABLED)el.textContent='Rs. '+FREE_ABOVE.toLocaleString('en-PK');
+      else if(el.closest('small'))el.closest('small').textContent='Prepaid · Delivery fee shown at checkout';
+    });
     applyPaymentAvailability(st);
   } catch(e){}
   try { CART = JSON.parse(localStorage.getItem('chaskabox-cart') || '{}'); } catch (e) { CART = {}; }
@@ -179,7 +184,7 @@ function cartSubtotal() {
   }, 0);
 }
 function isPrepaid(){ return PREPAID_METHODS.has(PAY); }
-function deliveryFee(sub) { return isPrepaid() ? (sub >= FREE_ABOVE ? 0 : PREPAID_DELIVERY_FEE) : DELIVERY_FEE; }
+function deliveryFee(sub) { return isPrepaid() ? (FREE_PREPAID_ENABLED && sub >= FREE_ABOVE ? 0 : PREPAID_DELIVERY_FEE) : DELIVERY_FEE; }
 
 function setPay(method) {
   const allowed=['cod','jazzcash','bank_transfer'];
@@ -230,10 +235,10 @@ function renderSummary() {
   scheduleQuote();
   const hint = $('#freeHint');
   if (!hint) return;
-  if (isPrepaid() && sub < FREE_ABOVE) {
+  if (FREE_PREPAID_ENABLED && isPrepaid() && sub < FREE_ABOVE) {
     hint.hidden = false;
     hint.innerHTML = `💡 Add <b>${fmt(FREE_ABOVE - sub)}</b> more to unlock <b>FREE prepaid delivery</b> and save ${fmt(PREPAID_DELIVERY_FEE)}.`;
-  } else if (isPrepaid()) {
+  } else if (FREE_PREPAID_ENABLED && isPrepaid()) {
     hint.hidden = false;
     hint.innerHTML = '🎉 <b>FREE prepaid delivery unlocked.</b>';
   } else {
