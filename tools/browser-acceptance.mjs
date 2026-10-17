@@ -246,6 +246,27 @@ try{
   await page.getByRole('button',{name:'Close shopping bag'}).click();
   results.interactions.push({case:'cart and drawer cap quantity at 99 / '+width,pass:true});
   await inspect(page,'/checkout.html',width);
+  const checkoutSpacing=await page.evaluate(()=>{
+    const promo=document.querySelector('.promo').getBoundingClientRect();
+    const header=document.querySelector('header').getBoundingClientRect();
+    const intro=document.querySelector('.checkout-intro').getBoundingClientRect();
+    const field=document.querySelector('#checkoutDeliveryStep .field');
+    const control=document.querySelector('#f_phone');
+    const card=document.querySelector('#checkoutDeliveryStep');
+    return {
+      headerGap:Math.round(header.top-promo.bottom),
+      introGap:Math.round(intro.top-header.bottom),
+      fieldGap:parseFloat(getComputedStyle(field).marginBottom),
+      inputHeight:Math.round(control.getBoundingClientRect().height),
+      cardPadding:parseFloat(getComputedStyle(card).paddingTop),
+      footerMargin:parseFloat(getComputedStyle(document.querySelector('footer')).marginTop)
+    };
+  });
+  if(Math.abs(checkoutSpacing.headerGap)>2 || checkoutSpacing.introGap>26 ||
+    checkoutSpacing.fieldGap>14 || checkoutSpacing.inputHeight<44 ||
+    checkoutSpacing.cardPadding>24 || checkoutSpacing.footerMargin>1)
+    throw Error('Checkout compact spacing regressed '+JSON.stringify({width,checkoutSpacing}));
+  results.interactions.push({case:'compact checkout spacing, flush header and 44px+ mobile inputs / '+width,pass:true});
   // Visual regression: branded header, three-step progress and a non-default coupon CTA.
   const checkoutVisual=await page.evaluate(()=>{
    const intro=document.querySelector('.checkout-intro'),coupon=document.querySelector('#applyCoupon'),
