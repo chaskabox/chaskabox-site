@@ -572,7 +572,7 @@ function setProductMeta(p){
  const pack=String(p.pack||''),title=p.seoTitle||p.name+(pack&&!String(p.name).toLowerCase().includes(pack.toLowerCase())?' — '+pack:'')+' | ChaskaBox';
  const description=p.seoDescription||p.desc||'Compare the listed pack and order details at ChaskaBox Pakistan.';
  setPageMeta(title,productHref(p.id),false,description);setMetaTag('property','og:type','product');
- const photo=hasPhoto(p)?new URL(assetUrl(p.img),'https://chaskabox.online').href:'https://chaskabox.online/images/logo-navy.png';
+ const photo=hasPhoto(p)?new URL(assetUrl(p.img),'https://chaskabox.online').href:'https://chaskabox.online/images/logo-approved-20261017.png';
  setMetaTag('property','og:image',photo);setMetaTag('name','twitter:image',photo);
  const canonical='https://chaskabox.online'+productHref(p.id),offer={'@type':'Offer',url:canonical,priceCurrency:'PKR',price:String(p.price),seller:{'@type':'Organization',name:'ChaskaBox'}};
  const availability={available:'InStock',limited:'LimitedAvailability',unavailable:'OutOfStock'}[p.stockState];if(availability)offer.availability='https://schema.org/'+availability;
@@ -693,8 +693,8 @@ function setPageMeta(title,path,noindex,description){
     document.getElementById('product-schema')?.remove();
     document.getElementById('breadcrumb-schema')?.remove?.();
     setMetaTag('property','og:type','website');
-    setMetaTag('property','og:image','https://chaskabox.online/images/logo-navy.png');
-    setMetaTag('name','twitter:image','https://chaskabox.online/images/logo-navy.png');
+    setMetaTag('property','og:image','https://chaskabox.online/images/logo-approved-20261017.png');
+    setMetaTag('name','twitter:image','https://chaskabox.online/images/logo-approved-20261017.png');
   }
   if(!normalizePath(path||'/').startsWith('/brand/'))document.getElementById('brandBreadcrumbSchema')?.remove();
   if(!normalizePath(path||'/').startsWith('/category/') && normalizePath(path||'/')!=='/shop/' && normalizePath(path||'/')!=='/bundles/')document.getElementById('category-breadcrumb-schema')?.remove?.();

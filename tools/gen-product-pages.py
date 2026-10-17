@@ -14,7 +14,7 @@ import json, html, os, re, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SITE = "https://chaskabox.online"
-DEFAULT_OG = SITE + "/images/logo-navy.png"
+DEFAULT_OG = SITE + "/images/logo-approved-20261017.png"
 
 def esc(s):
     return html.escape(str(s if s is not None else ""), quote=True)
@@ -230,7 +230,7 @@ TEMPLATE = """<!DOCTYPE html>
 <meta name="twitter:description" content="%%META_DESC%%">
 <meta name="twitter:image" content="%%OG_IMAGE%%">
 <meta name="theme-color" content="#1a2b5c">
-<link rel="icon" href="/images/logo-navy.png">
+<link rel="icon" href="/images/logo-approved-20261017.png">
 <link rel="stylesheet" href="/styles.css?v=7">
 <script type="application/ld+json">%%JSON_LD%%</script>
 <style>
@@ -254,7 +254,7 @@ TEMPLATE = """<!DOCTYPE html>
 <body>
 <header>
   <div class="hwrap">
-    <a class="logo" href="/"><img src="/images/logo-navy.png" alt="ChaskaBox" class="logo-img"></a>
+    <a class="logo" href="/"><img src="/images/logo-approved-20261017.png" alt="ChaskaBox" class="logo-img"></a>
     <nav class="hnav" aria-label="Main navigation">
       <a class="hdrop-btn" href="/" style="text-decoration:none">Home</a>
       <a class="hdrop-btn" href="/shop/" style="text-decoration:none">Shop</a>
@@ -276,7 +276,7 @@ TEMPLATE = """<!DOCTYPE html>
 </main>
 <footer>
   <div class="fwrap">
-    <div class="fbrand"><img src="/images/logo-white.png" alt="ChaskaBox"><p>Bachpan ka zaiqa, ab ghar baithe. Pakistani snacks sourced after your order, with a personal touch.</p></div>
+    <div class="fbrand"><img src="/images/logo-approved-footer-20261017.png" alt="ChaskaBox"><p>Bachpan ka zaiqa, ab ghar baithe. Pakistani snacks sourced after your order, with a personal touch.</p></div>
     <div><h3>Shop</h3><p><a href="/shop/">All Snacks</a><br><a href="/bundles/">Chaska Boxes</a></p></div>
     <div><h3>Help</h3><p><a href="/about/">About</a><br><a href="/contact/">Contact</a><br><a href="/shipping-policy/">Shipping</a><br><a href="/refund-policy/">Refund & Resolution</a></p></div>
     <div><h3>Legal</h3><p><a href="/privacy-policy/">Privacy</a><br><a href="/terms/">Terms</a></p></div>

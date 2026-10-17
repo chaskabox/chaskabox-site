@@ -387,18 +387,21 @@ try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>typeof window.applyStorefrontManifest==='function');
   const loadedLogo=expected=>page.waitForFunction(src=>{const img=document.querySelector('.logo img');return img?.getAttribute('src')===src&&img.complete&&img.naturalWidth>0&&getComputedStyle(img).display!=='none';},expected);
-  await loadedLogo('/images/logo-navy.png');
+  await loadedLogo('/images/logo-approved-20261017.png');
+  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/images/logo-navy.png'}}));
+  await loadedLogo('/images/logo-approved-20261017.png');
+  results.interactions.push({case:'legacy bundled logo settings use the approved new brand without stale image URLs',pass:true});
   await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/logo.png'}}));
-  await loadedLogo('/images/logo-navy.png');
+  await loadedLogo('/images/logo-approved-20261017.png');
   results.interactions.push({case:'missing CMS logo restores the bundled original',pass:true});
-  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/images/logo-white.png'}}));
-  await loadedLogo('/images/logo-white.png');
-  if(!await page.locator('.logo img').evaluate(img=>new URL(img.currentSrc).pathname==='/images/logo-white.png'))throw Error('Custom CMS logo was overridden by default responsive sources');
+  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/images/logo-approved-footer-20261017.png'}}));
+  await loadedLogo('/images/logo-approved-footer-20261017.png');
+  if(!await page.locator('.logo img').evaluate(img=>new URL(img.currentSrc).pathname==='/images/logo-approved-footer-20261017.png'))throw Error('Custom CMS logo was overridden by default responsive sources');
   results.interactions.push({case:'valid custom logo still loads after a failed logo',pass:true});
   await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/missing-site-logo.png'}}));
-  await loadedLogo('/images/logo-navy.png');
+  await loadedLogo('/images/logo-approved-20261017.png');
   await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:''}}));
-  await loadedLogo('/images/logo-navy.png');
+  await loadedLogo('/images/logo-approved-20261017.png');
   results.interactions.push({case:'repeat logo errors and theme reset preserve branding',pass:true});
   await context.close();
  }
@@ -466,7 +469,7 @@ try{
   const section={section_key:'how_it_works',enabled:true,position:6,heading:'How it works',config:{button_text:'Preserved'},draft_config:null};
   await context.route('**/api/admin/homepage',route=>{if(route.request().method()==='PATCH')section.draft_config=route.request().postDataJSON().sections[0].draft_config;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
   await context.route('**/api/admin/homepage/publish',route=>{section.config={...section.draft_config};return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
-  await context.route('**/api/admin/media?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({processor_available:true,monthly_app_limit:1000,media:[{id:'00000000-0000-4000-8000-000000000010',url:'/images/logo-navy.png',bucket:'product-media',object_path:'synthetic.webp',state:'active',size_bytes:100}],page:1,total:1,total_pages:1})}));
+  await context.route('**/api/admin/media?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({processor_available:true,monthly_app_limit:1000,media:[{id:'00000000-0000-4000-8000-000000000010',url:'/images/logo-approved-20261017.png',bucket:'product-media',object_path:'synthetic.webp',state:'active',size_bytes:100}],page:1,total:1,total_pages:1})}));
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
   await openAdminPanel(page,'reviews');await page.getByRole('button',{name:'Unpublish',exact:true}).click();await page.locator('#view-reviews').getByText(/rejected/).waitFor();
   results.interactions.push({case:'owner can unpublish an approved review without deleting its record',pass:review.moderation_status==='rejected'&&await page.locator('#view-reviews [data-review-action="approve"]').count()===1});

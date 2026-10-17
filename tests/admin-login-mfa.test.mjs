@@ -138,7 +138,7 @@ test('redesigned MFA is a six-slot accessible single-input challenge without rel
  assert.match(css,/grid-template-columns:repeat\(6,minmax\(0,1fr\)\)/);
  assert.match(css,/@media\(max-width:390px\)/);
  assert.match(css,/:focus-within/);
- assert.match(html,/admin-login-mfa\.js\?v=20261015-mfa-ux1/);
+ assert.match(html,/admin-login-mfa\.js\?v=20261017-approvedbrand/);
  // The shared stylesheet keeps its current cache version as other panels evolve.
  assert.match(html,/href="\/admin\.css\?v=[^"]+"/);
 });

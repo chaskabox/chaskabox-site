@@ -602,7 +602,7 @@ a.cat:hover b{color:var(--red)}
 }
 
 /* footer */
-.fbrand img{height:64px;width:auto;margin-bottom:10px}
+.fbrand img{height:64px;width:auto;max-width:100%;object-fit:contain;margin-bottom:10px;padding:5px;background:#fff;border-radius:8px}
 .fwrap a{color:#fff;opacity:.9}
 .fwrap a:hover{opacity:1;text-decoration:underline}
 

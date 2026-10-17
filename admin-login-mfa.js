@@ -20,7 +20,7 @@
     screen.hidden = false;
     screen.innerHTML =
       '<form class="live-login-card mfa-login-card" id="loginMfaForm" aria-labelledby="loginMfaHeading" novalidate>' +
-      '<div class="mfa-brand"><img src="/images/logo-navy.png" alt="ChaskaBox">' +
+      '<div class="mfa-brand"><img src="/images/logo-approved-20261017.png" alt="ChaskaBox">' +
         '<span class="mfa-brand-name">ADMIN CONSOLE<small>CHASKABOX</small></span></div>' +
       '<div class="mfa-security-icon" aria-hidden="true">✓</div>' +
       '<div class="mfa-stage"><span>SECURE SIGN-IN</span><span>STEP 2 OF 2</span></div>' +
