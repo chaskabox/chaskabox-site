@@ -33,7 +33,8 @@ import { validateOrderPayload } from './_lib/validate.js';
 import { takeToken, getClientIp } from './_lib/rate-limit.js';
 import { verifyTurnstile } from './_lib/turnstile.js';
 import { ok, Errors, logError } from './_lib/respond.js';
-import { sendOwnerWhatsApp } from './_lib/waha-notify.js';
+// Notifications are enqueued atomically by the database order trigger.
+// The scheduled notification Worker is the ONLY sender; never send from checkout.
 
 const MAX_BODY_BYTES = 64 * 1024;
 const ORDER_NUMBER_RETRIES = 5;
@@ -228,38 +229,9 @@ export async function onRequest(context) {
           throw rpcErr;
         }
         const status = result.replay ? 200 : 201;
-        // WhatsApp owner notification (best-effort, fire-and-forget; never blocks checkout)
-        if (!result.replay) {
-          try {
-            const items = await selectMany(env, 'order_items', { order_id: result.row.id });
-            const orderForNotify = {
-              id: result.row.id,
-              order_number: result.row.order_number,
-              customer_name: result.row.customer_name,
-              customer_phone: result.row.customer_phone,
-              total: result.row.total,
-              payment_method: result.row.payment_method,
-              payment_status: result.row.payment_status,
-              created_at: result.row.created_at,
-              items: (items || []).map(it => ({
-                product_name: it.product_name,
-                qty: it.quantity,
-                unit_price: it.unit_price,
-                product_pack: it.pack,
-              })),
-            };
-            // Fire-and-forget: don't await, don't let failures affect the order response.
-            // Registered with context.waitUntil so Cloudflare doesn't kill the
-            // isolate before the WhatsApp send completes.
-            context.waitUntil(
-              sendOwnerWhatsApp(env, orderForNotify).catch(err =>
-                logError('orders:waha-notify', err)
-              )
-            );
-          } catch (notifyErr) {
-            logError('orders:waha-notify-setup', notifyErr);
-          }
-        }
+        // A single database trigger enqueues owner and customer notification events.
+        // Never send directly here: that bypasses the signed receipt / retry ledger
+        // and can duplicate the scheduled Worker's WhatsApp message.
         return ok(publicOrderShape(result.row, result.replay), status);
       } catch (err) {
         if (isUniqueViolation(err)) {
