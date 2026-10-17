@@ -6,7 +6,7 @@
 <title>Checkout — ChaskaBox</title>
 <meta name="robots" content="noindex, follow">
 <link rel="stylesheet" href="/styles.css?v=20261015-az-validated">
-<link rel="stylesheet" href="/checkout-ui.css?v=20261017-checkout-ux-v2">
+<link rel="stylesheet" href="/checkout-ui.css?v=20261017-checkout-compact-v3">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=checkoutTurnstileReady" defer></script>
 </head>
@@ -40,7 +40,7 @@
     <div>
       <section class="co-card" id="checkoutDeliveryStep" aria-labelledby="detailsTitle">
         <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">01</span><div><h2 id="detailsTitle" class="co-step-title">Delivery details</h2><p>Where should we deliver your snacks?</p></div></div>
-        <div class="field"><label for="f_country">Delivery country</label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help">We currently deliver within Pakistan only. Overseas shipping is not yet available.</p><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
+        <div class="field"><label for="f_country">Delivery country</label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help">Pakistan delivery only. International shipping is not yet available.</p><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
         <div class="form-two">
           <div class="field"><label for="f_fname">First Name *</label><input id="f_fname" name="first_name" autocomplete="given-name" placeholder="e.g. Ahmed"><div class="err" id="e_fname">Enter first name</div></div>
           <div class="field"><label for="f_lname">Last Name <span class="optional">(optional)</span></label><input id="f_lname" name="last_name" autocomplete="family-name" maxlength="100" placeholder="e.g. Khan"><div class="err" id="e_lname">Name must be 100 characters or fewer in total.</div></div>
@@ -56,9 +56,9 @@
           </div>
           <label class="checkout-whatsapp-choice" id="whatsappOrderOptIn">
             <input type="checkbox" id="f_whatsapp_optin" name="whatsapp_opt_in" value="true">
-            <span><b>Send my order updates on WhatsApp (optional)</b><small>Order confirmation and delivery-status updates to the number above. Optional, no marketing. Leave unticked for no WhatsApp messages.</small></span>
+            <span><b>Send my order updates on WhatsApp (optional)</b><small>Order confirmations and delivery updates only. No marketing. Leave unchecked to opt out.</small></span>
           </label>
-          <p class="checkout-contact-optout">Your delivery number stays the same whether or not you choose WhatsApp updates.</p>
+          <p class="checkout-contact-optout">This choice does not affect delivery calls.</p>
         </section>
         <div class="field"><label for="f_addr">Complete delivery address <span class="optional">(required)</span></label><textarea id="f_addr" name="address" autocomplete="street-address" maxlength="440" rows="3" placeholder="House / flat, street, area and nearby landmark" aria-describedby="addressHelp e_addr"></textarea><p id="addressHelp" class="checkout-field-help">Include house or shop number, street and area so the courier can find you.</p><div class="err" id="e_addr">Please enter a complete delivery address</div></div>
         <div class="form-two checkout-location-grid">
