@@ -6,7 +6,7 @@
 <title>Checkout — ChaskaBox</title>
 <meta name="robots" content="noindex, follow">
 <link rel="stylesheet" href="/styles.css?v=20261015-az-validated">
-<link rel="stylesheet" href="/checkout-ui.css?v=20261017-pk-regions-v1">
+<link rel="stylesheet" href="/checkout-ui.css?v=20261017-checkout-ux-v2">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=checkoutTurnstileReady" defer></script>
 </head>
@@ -49,6 +49,17 @@
         <input type="hidden" id="f_name" name="name">
         <div class="field"><label for="f_phone">Phone Number *</label><div class="phone-wrap"><select id="f_ccode" name="country_code" aria-label="Country code"><option value="+92" selected>🇵🇰 +92</option></select><input id="f_phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" placeholder="03XXXXXXXXX" aria-describedby="f_phoneHelp e_phone"></div><p id="f_phoneHelp" class="checkout-field-help">Only used for delivery coordination. Enter a Pakistani mobile number (03XXXXXXXXX).</p><div class="err" id="e_phone">Enter a valid Pakistani mobile number.</div></div>
         <div class="field"><label for="f_email">Email Address *</label><input id="f_email" name="email" type="email" autocomplete="email" placeholder="you@example.com (for order updates)"><div class="err" id="e_email">Enter a valid email address</div></div>
+        <section class="checkout-contact-preferences" aria-labelledby="checkoutContactHeading">
+          <div class="checkout-contact-preferences-heading">
+            <span aria-hidden="true" class="checkout-contact-icon">💬</span>
+            <div><h3 id="checkoutContactHeading">WhatsApp order updates</h3><p>Choose how you want to hear about this order.</p></div>
+          </div>
+          <label class="checkout-whatsapp-choice" id="whatsappOrderOptIn">
+            <input type="checkbox" id="f_whatsapp_optin" name="whatsapp_opt_in" value="true">
+            <span><b>Yes, send order updates on WhatsApp</b><small>Order confirmation and delivery-status updates to the number above. Optional, no marketing. Leave unticked for no WhatsApp messages.</small></span>
+          </label>
+          <p class="checkout-contact-optout">Your delivery number stays the same whether or not you choose WhatsApp updates.</p>
+        </section>
         <div class="field"><label for="f_addr">Address *</label><textarea id="f_addr" name="address" autocomplete="street-address" maxlength="440" rows="3" placeholder="House number, street, area / landmark..."></textarea><div class="err" id="e_addr">Please enter a complete delivery address</div></div>
         <div class="form-two checkout-location-grid">
           <div class="field"><label for="f_province">Province / Region *</label>
@@ -71,7 +82,7 @@
         </div>
         <div class="field"><label for="f_postal">Postal Code <span class="optional">(optional)</span></label><input id="f_postal" name="postal_code" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 34200" aria-describedby="e_postal"><div class="err" id="e_postal">Use a 5-digit Pakistan postal code, or leave blank.</div></div>
         <div class="field checkbox-field"><label><input type="checkbox" id="f_saveinfo"> Save this information for next time</label></div>
-        <div class="field"><label for="f_note">Order Note <span class="optional">(optional)</span></label><textarea id="f_note" name="note" rows="2" maxlength="300" placeholder="e.g. Call before delivery, gift note, do not substitute..."></textarea></div>
+        <details class="checkout-optional-disclosure checkout-note-disclosure"><summary><span>Add a note for delivery <small>(optional)</small></span><span aria-hidden="true" class="checkout-disclosure-chevron">⌄</span></summary><div class="field"><label for="f_note">Instructions for your order</label><textarea id="f_note" name="note" rows="2" maxlength="300" placeholder="e.g. Call before delivery, gift note, no substitutions..."></textarea></div></details>
         <div class="availability-note">If any snack becomes unavailable after you order, ChaskaBox will contact you before removing or substituting it.</div>
         <div class="checkout-step-actions"><span class="checkout-step-hint">Your details stay here when you go back.</span><button id="toPaymentBtn" type="button" class="checkout-next-btn">Continue to payment <span aria-hidden="true">→</span></button></div>
       </section>
@@ -122,23 +133,20 @@
             </div>
           </div>
         </fieldset>
-      </section>
-
-      <section class="co-card" id="checkoutExtrasStep" hidden aria-labelledby="extrasTitle">
-        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">03</span><div><h2 id="extrasTitle" class="co-step-title">A little extra</h2><p>Optional requests for your order.</p></div></div>
-        <label class="payopt" id="videoOpt">
-          <input type="checkbox" id="f_video">
-          <span><b>🎬 Request a packing video <span class="free">FREE</span></b><small>If operations allow, Rameez will send a short packing clip on WhatsApp. This is a request, not a guaranteed service.</small></span>
-        </label>
-        <label class="payopt" id="whatsappOrderOptIn">
-          <input type="checkbox" id="f_whatsapp_optin" name="whatsapp_opt_in" value="true">
-          <span><b>Receive order updates on WhatsApp (optional)</b><small>I agree to receive this order's confirmation and delivery-status messages at my phone number. This is optional; I can opt out by contacting ChaskaBox support. No marketing messages.</small></span>
-        </label>
+        <details class="checkout-optional-disclosure" id="checkoutPackingOption">
+          <summary><span>🎬 Packing video request <small>(optional)</small></span><span aria-hidden="true" class="checkout-disclosure-chevron">⌄</span></summary>
+          <label class="checkout-packing-choice" id="videoOpt">
+            <input type="checkbox" id="f_video">
+            <span>I'd like a free packing video, if available.<small>This is a request only, not a guaranteed service. It is separate from WhatsApp order notifications.</small></span>
+          </label>
+        </details>
         <div class="checkout-step-actions"><button type="button" id="backDeliveryBtn" class="checkout-back-btn">← Delivery details</button><button id="toReviewBtn" type="button" class="checkout-next-btn">Review my order <span aria-hidden="true">→</span></button></div>
       </section>
+
+
       <section class="co-card checkout-review-card" id="checkoutReviewStep" hidden aria-labelledby="reviewTitle">
         <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">03</span><div><h2 id="reviewTitle" class="co-step-title">Review &amp; confirm</h2><p>Make sure everything looks right before placing your order.</p></div></div>
-        <div class="checkout-review-block"><div class="checkout-review-block-title"><h3>Delivery details</h3><button type="button" id="editDeliveryBtn" class="checkout-edit-btn">Edit</button></div><p id="reviewName"></p><p id="reviewPhone"></p><p id="reviewEmail"></p><p id="reviewAddress"></p></div>
+        <div class="checkout-review-block"><div class="checkout-review-block-title"><h3>Delivery details</h3><button type="button" id="editDeliveryBtn" class="checkout-edit-btn">Edit</button></div><p id="reviewName"></p><p id="reviewPhone"></p><p id="reviewEmail"></p><p id="reviewAddress"></p><p id="reviewWhatsapp" class="checkout-review-note" aria-live="polite"></p></div>
         <div class="checkout-review-block"><div class="checkout-review-block-title"><h3>Payment method</h3><button type="button" id="editPaymentBtn" class="checkout-edit-btn">Edit</button></div><p id="reviewPayment"></p><p id="reviewPaymentStatus" class="checkout-review-note"></p></div>
         <p class="checkout-review-reminder">Please verify the final total in the order summary. Your order is placed only when you press “Place order”.</p>
         <div class="checkout-step-actions"><button type="button" id="backPaymentBtn" class="checkout-back-btn">← Payment method</button><span class="checkout-step-hint">Final confirmation is in your order summary.</span></div>
@@ -197,7 +205,7 @@
 <script src="/analytics.js?v=1"></script>
 <script src="/account.js?v=20261012-release?v=1"></script>
 <script src="/pakistan-locations.js?v=20261017-pk-regions-v1"></script>
-<script src="/checkout.js?v=20261017-shipping-pricing-v1"></script>
+<script src="/checkout.js?v=20261017-checkout-ux-v2"></script>
 <div class="modal" id="acctmodal" role="dialog" aria-modal="true" aria-label="Account sign in" aria-hidden="true" onclick="if(event.target===this)closeAuthModal()">
   <div class="mbox acctbox"><button class="mclose" onclick="closeAuthModal()">✕</button><div id="abody"></div></div>
 </div>
