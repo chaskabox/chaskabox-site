@@ -23,6 +23,10 @@
 #view-home .cat:focus-visible{outline:3px solid #2458a8;outline-offset:3px}
 #view-home .shelf{margin-bottom:18px}
 #view-home .shelfband{background:#1e3468!important}
+#view-home [data-home-section="deals"] .shelfband{background:#a62825!important}
+#view-home [data-home-section="boxes"] .shelfband{background:#75501d!important}
+#view-home [data-home-section="chatpata_picks"] .shelfband{background:#226044!important}
+#view-home [data-home-section="new_items"] .shelfband{background:#3e4673!important}
 #view-home .shelfw{min-height:68px}
 #view-home .shelfband h2{letter-spacing:-.3px}
 #view-home .card,#view-shop .card{border:1px solid #e9edf3;border-radius:16px;box-shadow:0 3px 13px rgba(16,32,67,.07)}
