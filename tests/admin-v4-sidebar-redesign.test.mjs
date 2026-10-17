@@ -34,6 +34,6 @@ test('Navigation respects keyboard focus, native disclosure elements and mobile 
  assert.match(js,/groups\.forEach\(g=>g\.open=true\)/);
  assert.match(css,/admin-sidebar-minimized/);
  assert.match(css,/@media\(min-width:901px\)/);
- assert.match(css,/\.admin-pinned-jump:focus-visible/);
+ assert.match(css,/\.admin-pinned-links button:focus-visible/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
