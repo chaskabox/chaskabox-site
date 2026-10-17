@@ -151,7 +151,7 @@
     try{
       $('#view-'+name)?.querySelector('.admin-view-error')?.remove();
       if(name==='orders') await loadOrders();
-      if(name==='couriers' && roleAllows('owner','manager')) await loadCouriers();
+      if(name==='couriers' && roleAllows('owner','manager')) await Promise.allSettled([loadCouriers(),loadOnlinePayments()]);
       if(name==='analytics' && roleAllows('owner','manager')) await loadAnalytics();
       if(name==='coupons' && roleAllows('owner','manager')) await loadCoupons();
       if(name==='shipping' && roleAllows('owner','manager')) await loadShipping();
@@ -575,6 +575,78 @@
     ledger.querySelectorAll('[data-cod-receipt]').forEach(b=>b.onclick=()=>recordCourierReceipt(rows.find(x=>x.order_id===b.dataset.codReceipt)));
     $('#addCourierCompany').onclick=()=>editCourierCompany(null);
     $('#refreshCourierLedger').onclick=loadCouriers;
+  }
+
+
+  /* ONLINE PAYMENT RECONCILIATION: customer verification does not create bank receipts. */
+  async function editOnlineAccount(account){
+    const saved=await courierDialog('Online payment account · '+account.display_name,[
+      {id:'account_label',label:'Wallet / destination account label (optional; no account or card numbers)',value:account.account_label||'',maxLength:100},
+      {id:'settlement_days',type:'number',label:'Expected calendar days after payment verification (blank = unknown)',min:0,max:120,value:account.settlement_days??''}
+    ],async v=>{
+      const days=v.settlement_days.trim()===''?null:Number(v.settlement_days);
+      const label=v.account_label.trim();
+      if((days!==null&&(!Number.isSafeInteger(days)||days<0||days>120))||(label&&label.length<2)||label.length>100)throw Error('Enter a valid account label or 0–120 days');
+      return api('/api/admin/online-payments/accounts',{method:'PATCH',body:{
+       method:account.method,account_label:label,settlement_days:days
+      }});
+    });
+    if(saved){toast('Online payment account settings saved');await loadOnlinePayments();}
+  }
+  async function recordOnlineReceipt(row){
+    const max=Number(row.unreconciled_pkr);
+    if(max<1)return;
+    const result=await courierDialog('Record verified online payout · '+row.order_number,[
+      {id:'amount_pkr',type:'number',label:'Actual amount credited to wallet/bank (PKR)',required:true,min:1,max,value:max},
+      {id:'processing_fee_pkr',type:'number',label:'Processor fees/deductions applied to this order (PKR)',required:true,min:0,max,value:0},
+      {id:'received_on',type:'date',label:'Actual credit/settlement date',required:true,value:pkToday()},
+      {id:'reference',type:'text',label:'Bank/wallet statement reference (required)',required:true,maxLength:120}
+    ],async v=>{
+      const amount=Number(v.amount_pkr),fee=Number(v.processing_fee_pkr);
+      if(!Number.isSafeInteger(amount)||amount<1||!Number.isSafeInteger(fee)||fee<0||amount+fee>max)
+        throw Error('Payout and fee together cannot exceed remaining order amount');
+      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(v.received_on)||v.received_on>pkToday())
+        throw Error('Enter a valid settlement date not in the future');
+      if(String(v.reference).trim().length<3)throw Error('Statement reference must be at least 3 characters');
+      return api('/api/admin/online-payments/receipts',{method:'POST',body:{
+        order_id:row.order_id,amount_pkr:amount,processing_fee_pkr:fee,
+        received_on:v.received_on,reference:v.reference.trim()
+      }});
+    });
+    if(result){toast('Online payment payout recorded');await loadOnlinePayments();}
+  }
+  async function loadOnlinePayments(){
+    const accountsEl=$('#onlinePaymentAccounts'),summaryEl=$('#onlinePaymentSummary'),tableEl=$('#onlinePaymentTable');
+    if(!accountsEl||!summaryEl||!tableEl)return;
+    accountsEl.textContent='Loading online payment accounts…';
+    try{
+      const result=await api('/api/admin/online-payments'),accounts=result.accounts||[],rows=result.ledger||[];
+      const verified=rows.filter(r=>r.payment_status==='payment_verified'&&r.fulfilment_status!=='cancelled');
+      const sum=(list,key)=>list.reduce((n,r)=>n+Number(r[key]||0),0),today=pkToday();
+      const methods=[['jazzcash','JazzCash'],['bank_transfer','Bank Transfer']];
+      const blocks=methods.map(([method,label])=>{
+        const account=accounts.find(a=>a.method===method),all=rows.filter(r=>r.payment_method===method),
+         ok=verified.filter(r=>r.payment_method===method);
+        return '<article class="metric-card"><div><small>'+esc(label)+' · '+all.length+' orders</small><strong>'+money(sum(ok,'verified_gross_pkr'))+'</strong><em>Verified orders · Credited '+money(sum(ok,'received_pkr'))+' · Pending reconciliation '+money(sum(ok,'unreconciled_pkr'))+'</em>'+(account?'<button type="button" class="btn secondary compact" data-online-account="'+method+'">Account rules</button>':'')+'</div></article>';
+      });
+      blocks.push('<article class="metric-card"><div><small>Card payments</small><strong>Not connected</strong><em>Zero card transactions. Requires a verified payment gateway integration; no card data is stored.</em></div></article>');
+      const unreconciled=sum(verified,'unreconciled_pkr'),received=sum(verified,'received_pkr');
+      const awaiting=rows.filter(r=>['payment_submitted','awaiting_payment'].includes(r.payment_status));
+      const overdue=verified.filter(r=>r.expected_settlement_on&&r.expected_settlement_on<today&&Number(r.unreconciled_pkr)>0);
+      const companyOptions=accounts.map(a=>'<tr><td>'+esc(a.display_name)+'</td><td>'+esc(a.account_label||'Not set')+'</td><td>'+esc(a.settlement_days===null?'Not configured':a.settlement_days+' days after verification')+'</td><td><button class="btn secondary compact" data-online-account="'+esc(a.method)+'">Edit</button></td></tr>').join('');
+      accountsEl.innerHTML='<p class="safe-note">JazzCash wallet/account and bank transfer are supported. Account labels are optional internal names, not banking credentials. Card payments remain disabled until a real gateway is connected.</p><div class="live-table-wrap"><table class="live-table"><thead><tr><th>Channel</th><th>Account label</th><th>Expected payout</th><th></th></tr></thead><tbody>'+companyOptions+'</tbody></table></div>';
+      summaryEl.innerHTML='<div class="metric-grid">'+blocks.join('')+'</div><p class="safe-note"><b>Total verified online:</b> '+money(sum(verified,'verified_gross_pkr'))+' · <b>Actual payout recorded:</b> '+money(received)+' · <b>Processing fees:</b> '+money(sum(verified,'processing_fees_pkr'))+' · <b>Unreconciled:</b> '+money(unreconciled)+' · <b>Pending verification:</b> '+awaiting.length+' orders · <b>Overdue:</b> '+money(sum(overdue,'unreconciled_pkr'))+'. Verification is NOT a confirmed payout.</p>';
+      tableEl.innerHTML=rows.length?'<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Order</th><th>Method</th><th>Payment status</th><th>Order total</th><th>Expected payout</th><th>Recorded payout</th><th>Fees</th><th>Unreconciled</th><th></th></tr></thead><tbody>'+
+       rows.map(r=>'<tr><td><b>'+esc(r.order_number)+'</b><small>Ref: '+esc(r.transaction_reference||'—')+'</small></td><td>'+esc(r.display_name||r.payment_method)+'</td><td>'+esc(r.payment_status)+'</td><td>'+money(r.order_total_pkr)+'</td><td>'+esc(r.expected_settlement_on||'Not set')+'</td><td>'+money(r.received_pkr)+'</td><td>'+money(r.processing_fees_pkr)+'</td><td>'+money(r.unreconciled_pkr)+'</td><td>'+(r.payment_status==='payment_verified'&&r.fulfilment_status!=='cancelled'&&Number(r.unreconciled_pkr)>0?'<button class="btn secondary compact" data-online-receipt="'+esc(r.order_id)+'">Record payout</button>':'—')+'</td></tr>').join('')+'</tbody></table></div>':'<p>No JazzCash or Bank Transfer orders have been recorded yet. Future orders appear automatically after checkout.</p>';
+      if(result.warning)tableEl.insertAdjacentHTML('afterbegin','<p role="alert">'+esc(result.warning)+'</p>');
+      accountsEl.querySelectorAll('[data-online-account]').forEach(b=>b.onclick=()=>editOnlineAccount(accounts.find(a=>a.method===b.dataset.onlineAccount)));
+      summaryEl.querySelectorAll('[data-online-account]').forEach(b=>b.onclick=()=>editOnlineAccount(accounts.find(a=>a.method===b.dataset.onlineAccount)));
+      tableEl.querySelectorAll('[data-online-receipt]').forEach(b=>b.onclick=()=>recordOnlineReceipt(rows.find(r=>r.order_id===b.dataset.onlineReceipt)));
+      $('#refreshOnlinePayments').onclick=loadOnlinePayments;
+    }catch(e){
+      accountsEl.textContent='Unable to load online ledger: '+e.message;
+      summaryEl.textContent='';tableEl.textContent='No confirmed online amounts available.';
+    }
   }
 
   function printInvoice(o, items, isPacking){
