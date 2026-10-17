@@ -219,3 +219,10 @@
  .checkout-page .checkout-progress-line{width:auto;max-width:54px;flex:1}
  .checkout-page button.checkout-progress-item{min-width:42px;justify-content:center}
 }
+
+/* Province/region dependent city selector */
+.checkout-page .checkout-location-grid{align-items:start}
+.checkout-page .checkout-location-grid .field{min-width:0}
+.checkout-page #f_province{width:100%;max-width:100%}
+.checkout-page #f_city:disabled{background:#eef2f7;color:#7d8aa0;cursor:not-allowed}
+.checkout-page #cityHelp{min-height:20px}
