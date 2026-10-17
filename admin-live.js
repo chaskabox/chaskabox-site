@@ -616,11 +616,11 @@
     if(result){toast('Online payment payout recorded');await loadOnlinePayments();}
   }
   async function loadOnlinePayments(){
-    const accountsEl=$('#onlinePaymentAccounts'),summaryEl=$('#onlinePaymentSummary'),tableEl=$('#onlinePaymentTable');
-    if(!accountsEl||!summaryEl||!tableEl)return;
+    const accountsEl=$('#onlinePaymentAccounts'),summaryEl=$('#onlinePaymentSummary'),tableEl=$('#onlinePaymentTable'),cardEl=$('#cardGatewayControl');
+    if(!accountsEl||!summaryEl||!tableEl||!cardEl)return;
     accountsEl.textContent='Loading online payment accounts…';
     try{
-      const result=await api('/api/admin/online-payments'),accounts=result.accounts||[],rows=result.ledger||[];
+      const result=await api('/api/admin/online-payments'),accounts=result.accounts||[],rows=result.ledger||[],card=result.card_gateway||{};
       const verified=rows.filter(r=>r.payment_status==='payment_verified'&&r.fulfilment_status!=='cancelled');
       const sum=(list,key)=>list.reduce((n,r)=>n+Number(r[key]||0),0),today=pkToday();
       const methods=[['jazzcash','JazzCash'],['bank_transfer','Bank Transfer']];
@@ -629,12 +629,52 @@
          ok=verified.filter(r=>r.payment_method===method);
         return '<article class="metric-card"><div><small>'+esc(label)+' · '+all.length+' orders</small><strong>'+money(sum(ok,'verified_gross_pkr'))+'</strong><em>Verified orders · Credited '+money(sum(ok,'received_pkr'))+' · Pending reconciliation '+money(sum(ok,'unreconciled_pkr'))+'</em>'+(account?'<button type="button" class="btn secondary compact" data-online-account="'+method+'">Account rules</button>':'')+'</div></article>';
       });
-      blocks.push('<article class="metric-card"><div><small>Card payments</small><strong>Not connected</strong><em>Zero card transactions. Requires a verified payment gateway integration; no card data is stored.</em></div></article>');
+      blocks.push('<article class="metric-card"><div><small>BOP card gateway</small><strong>'+(card.effective_enabled?'Active':'Disabled')+'</strong><em>'+Number(card.transactions?.length||0)+' provider transactions recorded · Merchant verification required before activating</em></div></article>');
       const unreconciled=sum(verified,'unreconciled_pkr'),received=sum(verified,'received_pkr');
       const awaiting=rows.filter(r=>['payment_submitted','awaiting_payment'].includes(r.payment_status));
       const overdue=verified.filter(r=>r.expected_settlement_on&&r.expected_settlement_on<today&&Number(r.unreconciled_pkr)>0);
       const companyOptions=accounts.map(a=>'<tr><td>'+esc(a.display_name)+'</td><td>'+esc(a.account_label||'Not set')+'</td><td>'+esc(a.settlement_days===null?'Not configured':a.settlement_days+' days after verification')+'</td><td><button class="btn secondary compact" data-online-account="'+esc(a.method)+'">Edit</button></td></tr>').join('');
       accountsEl.innerHTML='<p class="safe-note">JazzCash wallet/account and bank transfer are supported. Account labels are optional internal names, not banking credentials. Card payments remain disabled until a real gateway is connected.</p><div class="live-table-wrap"><table class="live-table"><thead><tr><th>Channel</th><th>Account label</th><th>Expected payout</th><th></th></tr></thead><tbody>'+companyOptions+'</tbody></table></div>';
+      const cardHistory=card.transactions||[];
+      const cardTotals=cardHistory.filter(x=>x.status==='settled').reduce((n,x)=>n+Number(x.net_settled_pkr||0),0);
+      const cardFlag=Boolean(card.requested_enabled),canCardActivate=Boolean(card.can_activate);
+      const cardOptions='<section class="panel" style="margin-top:14px"><h3>BOP debit / credit card gateway</h3>'+
+        '<p class="safe-note">Card checkout is not connected. This is a future activation control, NOT a payment processor. BOP credentials must be stored as private Cloudflare secrets after bank approval; never enter card details here.</p>'+
+        '<p><b>Status:</b> '+(card.effective_enabled?'Enabled':'Disabled')+' · <b>Gateway tested:</b> '+(card.integration_verified?'Yes':'No')+' · <b>Credentials configured:</b> '+(card.credentials_configured?'Yes':'No')+' · <b>Backend ready:</b> '+(card.processor_connected?'Yes':'No')+'</p>'+
+        '<p class="safe-note">'+esc(card.readiness_reason||'Gateway not configured')+'</p>'+
+        '<label class="checkline"><input type="checkbox" id="setCardGatewayEnabled" '+(cardFlag?'checked':'')+' '+(!canCardActivate&&!cardFlag?'disabled':'')+'> Accept card payments after gateway verification</label>'+
+        '<label>Expected card settlement (calendar days; optional)<input type="number" min="0" max="120" id="setCardSettlementDays" value="'+esc(card.settlement_days??'')+'" placeholder="Not agreed yet"></label>'+
+        '<label>Agreed percentage processing fee (basis points; optional, 100 = 1%)<input type="number" min="0" max="10000" id="setCardFeeBps" value="'+esc(card.fee_bps??'')+'" placeholder="Bank quote pending"></label>'+
+        '<label>Agreed fixed per-transaction fee in PKR (optional)<input type="number" min="0" max="100000" id="setCardFixedFee" value="'+esc(card.fixed_fee_pkr??'')+'" placeholder="Bank quote pending"></label>'+
+        (roleAllows('owner')?'<button class="btn primary" type="button" id="saveCardGateway">Save card gateway settings</button>':'<p>Owner access required to change card controls.</p>')+
+        '<p class="safe-note">Settlement journal: '+cardHistory.length+' records · Confirmed net bank settlement: '+money(cardTotals)+'. No card number, CVV, expiry or PIN is stored.</p>'+
+        (cardHistory.length?'<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Provider transaction</th><th>Status</th><th>Gross</th><th>Fees</th><th>Net settled</th><th>Settled on</th></tr></thead><tbody>'+
+          cardHistory.map(x=>'<tr><td>'+esc(x.provider_transaction_id)+'</td><td>'+esc(x.status)+'</td><td>'+money(x.gross_amount_pkr)+'</td><td>'+money(x.fee_amount_pkr)+'</td><td>'+money(x.net_settled_pkr)+'</td><td>'+esc(x.settled_on||'—')+'</td></tr>').join('')+'</tbody></table></div>':'')+'</section>';
+      cardEl.innerHTML=cardOptions;
+      const cardSave=$('#saveCardGateway');
+      if(cardSave)cardSave.onclick=async()=>{
+        const optNumber=id=>{
+          const raw=String($('#'+id).value||'').trim();
+          if(raw==='')return null;
+          const value=Number(raw);
+          if(!Number.isSafeInteger(value)||value<0)throw Error('Enter a non-negative whole number or leave blank');
+          return value;
+        };
+        try{
+          const enabled=$('#setCardGatewayEnabled').checked;
+          if(enabled&&!card.can_activate)throw Error('BOP gateway must be connected and verified before enabling card checkout');
+          const payload={enabled,settlement_days:optNumber('setCardSettlementDays'),
+            fee_bps:optNumber('setCardFeeBps'),fixed_fee_pkr:optNumber('setCardFixedFee')};
+          if(payload.settlement_days!==null&&payload.settlement_days>120)throw Error('Settlement must be 0–120 days');
+          if(payload.fee_bps!==null&&payload.fee_bps>10000)throw Error('Percentage fee must be 0–100%');
+          if(payload.fixed_fee_pkr!==null&&payload.fixed_fee_pkr>100000)throw Error('Fixed fee exceeds 100000 PKR');
+          cardSave.disabled=true;
+          await api('/api/admin/online-payments/card-gateway',{method:'PATCH',body:payload});
+          toast('BOP card settings saved. Card checkout remains locked until provider integration is verified.');
+          await loadOnlinePayments();
+        }catch(e){toast('Card settings not saved: '+e.message);}
+        finally{if(cardSave.isConnected)cardSave.disabled=false;}
+      };
       summaryEl.innerHTML='<div class="metric-grid">'+blocks.join('')+'</div><p class="safe-note"><b>Total verified online:</b> '+money(sum(verified,'verified_gross_pkr'))+' · <b>Actual payout recorded:</b> '+money(received)+' · <b>Processing fees:</b> '+money(sum(verified,'processing_fees_pkr'))+' · <b>Unreconciled:</b> '+money(unreconciled)+' · <b>Pending verification:</b> '+awaiting.length+' orders · <b>Overdue:</b> '+money(sum(overdue,'unreconciled_pkr'))+'. Verification is NOT a confirmed payout.</p>';
       tableEl.innerHTML=rows.length?'<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Order</th><th>Method</th><th>Payment status</th><th>Order total</th><th>Expected payout</th><th>Recorded payout</th><th>Fees</th><th>Unreconciled</th><th></th></tr></thead><tbody>'+
        rows.map(r=>'<tr><td><b>'+esc(r.order_number)+'</b><small>Ref: '+esc(r.transaction_reference||'—')+'</small></td><td>'+esc(r.display_name||r.payment_method)+'</td><td>'+esc(r.payment_status)+'</td><td>'+money(r.order_total_pkr)+'</td><td>'+esc(r.expected_settlement_on||'Not set')+'</td><td>'+money(r.received_pkr)+'</td><td>'+money(r.processing_fees_pkr)+'</td><td>'+money(r.unreconciled_pkr)+'</td><td>'+(r.payment_status==='payment_verified'&&r.fulfilment_status!=='cancelled'&&Number(r.unreconciled_pkr)>0?'<button class="btn secondary compact" data-online-receipt="'+esc(r.order_id)+'">Record payout</button>':'—')+'</td></tr>').join('')+'</tbody></table></div>':'<p>No JazzCash or Bank Transfer orders have been recorded yet. Future orders appear automatically after checkout.</p>';
@@ -645,7 +685,7 @@
       $('#refreshOnlinePayments').onclick=loadOnlinePayments;
     }catch(e){
       accountsEl.textContent='Unable to load online ledger: '+e.message;
-      summaryEl.textContent='';tableEl.textContent='No confirmed online amounts available.';
+      summaryEl.textContent='';cardEl.textContent='Gateway controls unavailable; card checkout is disabled.';tableEl.textContent='No confirmed online amounts available.';
     }
   }
 
