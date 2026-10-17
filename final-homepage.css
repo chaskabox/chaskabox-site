@@ -394,3 +394,18 @@ header{background:#fff;box-shadow:0 1px 10px rgba(14,42,84,.045);border-bottom:1
   .aifab{bottom:72px}
   .aimodal{bottom:120px}
 }
+
+
+/* Full-width flex items: visual regression fix.
+   Auto width with margin:auto previously shrink-wrapped the desktop hero. */
+#view-home>.hero{width:calc(100% - 24px);max-width:1490px}
+#view-home>.discover{width:calc(100% - 24px)!important;max-width:1450px}
+#view-home>.cb-trust-rail{width:calc(100% - 24px);max-width:1450px}
+#view-home>.cb-offers{width:calc(100% - 24px);max-width:1450px}
+#view-home>.box-spotlight{width:calc(100% - 24px);max-width:1450px}
+#view-home>.fresh,#view-home>.why-section,#view-home>.faq-section{width:100%;min-width:0}
+@media(max-width:760px){
+  #view-home>.hero{width:calc(100% - 20px)}
+  #view-home>.discover{width:calc(100% - 16px)!important}
+  #view-home>.cb-trust-rail,#view-home>.cb-offers{width:calc(100% - 16px)}
+}
