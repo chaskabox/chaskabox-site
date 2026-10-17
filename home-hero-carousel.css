@@ -1,0 +1,10 @@
+/* Rotating homepage hero: controls are touch-friendly and keep original product imagery. */
+#view-home .hero-slider-controls{display:flex;align-items:center;justify-content:center;gap:10px;padding:0 12px 16px}
+#view-home .hero-slider-controls button{font:inherit;cursor:pointer;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;color:#fff;border:1px solid rgba(255,255,255,.48);background:rgba(255,255,255,.11)}
+#view-home .hero-slider-controls button[data-hero-dot]{width:14px;height:14px;padding:0;border:0;background:rgba(255,255,255,.48)}
+#view-home .hero-slider-controls button[data-hero-dot][aria-pressed=true]{background:#ffb72c;width:30px}
+#view-home .hero-slider-controls button:focus-visible{outline:3px solid #ffcc42;outline-offset:3px}
+#view-home .hero[data-hero-slide="2"]{background:radial-gradient(circle at 83% 15%,rgba(244,170,60,.16),transparent 32%),linear-gradient(112deg,#111d3e,#293966 65%,#62422f)}
+#view-home .hero[data-hero-slide="3"]{background:radial-gradient(circle at 83% 15%,rgba(253,176,31,.13),transparent 32%),linear-gradient(112deg,#111d3e,#263d70 65%,#74402d)}
+@media(max-width:760px){#view-home .hero-slider-controls{padding-bottom:12px}}
+@media(prefers-reduced-motion:reduce){#view-home .hero-slider-controls *{transition:none!important}}

@@ -68,7 +68,7 @@ function cardHTML(p,priority){
     <a class="pimg" href="${href}">${fan}${img}</a>
     <div class="pbody">
       ${catlabel}
-      <a class="pname" href="${href}">${esc(p.name)}</a>
+      <a class="pname" href="${href}" title="${esc(p.name)}">${esc(p.name)}</a>
       <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
       <button class="addcart" ${unavailable?'disabled':''} aria-label="${unavailable?'Currently unavailable':'Add to Bag '+fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">${unavailable?'Currently unavailable':'Add to Bag'}</span><span class="addcart-price">${fmt(p.price)}</span></button>
@@ -114,6 +114,23 @@ const BAND_COLORS={
   'Betel Nuts & Pan Masala':'#4e7d4e'
 };
 const CAT_ORDER=['Biscuits & Wafers','Bunties & Cakes','Chews & Gums','Chocolates & Candies','Imli & Ice Lollies','Jellies & Marshmallow','Snacks & Nimco','Betel Nuts & Pan Masala','Bundles'];
+function distinctBrandPicks(items,maxItems=10){
+  const buckets=new Map(),result=[];
+  for(const item of items){
+    const brand=getBrand(item).toLowerCase();
+    if(!buckets.has(brand))buckets.set(brand,[]);
+    buckets.get(brand).push(item);
+  }
+  while(result.length<maxItems){
+    let advanced=false;
+    for(const bucket of buckets.values()){
+      if(result.length===maxItems)break;
+      if(bucket.length){result.push(bucket.shift());advanced=true;}
+    }
+    if(!advanced)break;
+  }
+  return result;
+}
 function renderHomeContent(){
   const act=activeProducts();
   // categories
@@ -123,18 +140,18 @@ function renderHomeContent(){
   const allCount=act.length;
   const cmsCats=STORE_CONFIG?.categories;
   if(Array.isArray(cmsCats))for(const c of cmsCats)cats[c.name]=act.filter(p=>c.product_ids.includes(Number(p.id)));
-  const tileOrder=['All',...(Array.isArray(cmsCats)?cmsCats.filter(c=>c.show_on_homepage).map(c=>c.name):CAT_ORDER.filter(c=>cats[c]&&cats[c].length))];
+  const tileOrder=['All',...(Array.isArray(cmsCats)?cmsCats.filter(c=>c.show_on_homepage&&(cats[c.name]||[]).length>0).map(c=>c.name):CAT_ORDER.filter(c=>cats[c]&&cats[c].length))];
   // ensure 'All' pseudo-category first, then fixed original order
   $('#catTiles').innerHTML=tileOrder.map(c=>{
     const st=CAT_STYLE[c]||{bg:'#8a94a6'};
     const list=c==='All'?act:(cats[c]||[]);
     const n=c==='All'?allCount:list.length;
-    if(c!=='All'&&!n&&!Array.isArray(cmsCats)) return '';
+    if(c!=='All'&&!n) return '';
     const inner=TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
     const href=c==='All'?'/shop/':categoryPath(c);
     return `<a class="cat reveal" href="${href}">
       <div class="ci" style="background:${st.bg}">${inner}</div>
-      <b>${esc(c)}</b><small>${n} items</small></a>`;
+      <b>${esc(c)}</b><small>${n} ${n===1?'item':'items'}</small></a>`;
   }).join('');
   // hero collage: 3 product images
   const candidates=curatedProducts('hero',act.filter(hasPhoto)).sort((a,b)=>Number(/^https?:/i.test(a.img))-Number(/^https?:/i.test(b.img)));
@@ -143,16 +160,24 @@ function renderHomeContent(){
   for(const p of candidates){if(heroPicks.length===3)break;if(!heroPicks.includes(p))heroPicks.push(p);}
   const hi=$('#heroCollage');
   if(hi){hi.innerHTML=heroPicks.map((p,i)=>`<img ${photoAttributes(p.img,"150px")} alt="${esc(p.name)}" width="150" height="150" loading="${i===0?'eager':'lazy'}" fetchpriority="${i===0?'high':'low'}" decoding="async" class="hc${i+1}">`).join('');const wrap=hi.closest('.heroimg');if(wrap)wrap.hidden=!heroPicks.length;}
+  // Each banner uses only authentic pack images already present in the product catalogue.
+  if(hi && heroPicks.length){
+    const boxPicks=distinctBrandPicks(act.filter(p=>p.bundle&&hasPhoto(p)),3);
+    const snackPicks=distinctBrandPicks(act.filter(p=>p.category==='Snacks & Nimco'&&hasPhoto(p)),3);
+    const markup=items=>items.map((p,i)=>`<img ${photoAttributes(p.img,"150px")} alt="${esc(p.name)}" width="150" height="150" loading="${i===0?'eager':'lazy'}" fetchpriority="${i===0?'high':'low'}" decoding="async" class="hc${i+1}">`).join('');
+    window.CHASKABOX_HERO_MARKUP=[hi.innerHTML,markup(boxPicks.length?boxPicks:heroPicks),markup(snackPicks.length?snackPicks:heroPicks)];
+    if(typeof window.Event==='function'&&typeof window.dispatchEvent==='function')window.dispatchEvent(new window.Event('chaskabox:hero-imagery-ready'));
+  }
   // Curated homepage shelves: fast discovery without dumping the full catalogue
   shelfSeq=0;
   let html='';
   // Homepage shelves: only products WITH real photos (no "Photo coming soon" on showcase)
   const actImg=act.filter(hasPhoto);
-  const sale=actImg.filter(p=>p.oldPrice&&p.oldPrice>p.price).slice(0,10);
-  const picks=curatedProducts('chaska_picks',actImg.filter(p=>p.category!=='Bundles').slice(0,10));
-  const bundles=curatedProducts('boxes',(cats['Bundles']||[]).filter(hasPhoto).slice(0,10));
-  const chatpata=curatedProducts('chatpata_picks',actImg.filter(p=>p.category==='Snacks & Nimco').slice(0,10));
-  const newest=curatedProducts('new_items',actImg.sort((a,b)=>Number(b.id)-Number(a.id)).slice(0,10));
+  const sale=distinctBrandPicks(actImg.filter(p=>p.oldPrice&&p.oldPrice>p.price),10);
+  const picks=curatedProducts('chaska_picks',distinctBrandPicks(actImg.filter(p=>p.category!=='Bundles'),10));
+  const bundles=curatedProducts('boxes',distinctBrandPicks((cats['Bundles']||[]).filter(hasPhoto),10));
+  const chatpata=curatedProducts('chatpata_picks',distinctBrandPicks(actImg.filter(p=>p.category==='Snacks & Nimco'),10));
+  const newest=curatedProducts('new_items',distinctBrandPicks([...actImg].sort((a,b)=>Number(b.id)-Number(a.id)),10));
   if(sale.length) html+=shelf('🔥 Deals Worth Grabbing',sale,'#b42318','', 'Sale','deals');
   if(picks.length) html+=shelf('⭐ Chaska Picks',picks,'#1a2b5c','','','chaska_picks');
   if(bundles.length) html+=shelf('📦 Chaska Boxes',bundles,'#896000','Bundles','','boxes');
@@ -595,6 +620,10 @@ function applyHomeCms(){
   }
 
   window.applyStorefrontManifest?.(STORE_CONFIG);
+  const heroRow=by.hero||{};
+  if(typeof window.CustomEvent==='function'&&typeof window.dispatchEvent==='function')window.dispatchEvent(new window.CustomEvent('chaskabox:home-config',{detail:{
+    ...(heroRow.config||{}),heading:heroRow.heading,subheading:heroRow.subheading
+  }}));
   renderPackingVideo();
 }
 /* ---------- views ---------- */
@@ -728,8 +757,9 @@ async function renderBrandsDirectory(){
   const azEl=document.getElementById('brandAZ');
   if(!grid) return;
   grid.innerHTML='<p class="muted" style="grid-column:1/-1">Loading brands...</p>';
-  const brands=await fetchBrands();
-  if(countEl) countEl.textContent=brands.length+' brands';
+  const brands=(await fetchBrands()).filter(b=>Number(b.productCount)>0);
+  // Empty brands stay in the admin catalogue; only customer-facing discovery is filtered.
+  if(countEl) countEl.textContent=brands.length+' '+(brands.length===1?'brand':'brands');
   const q=(document.getElementById('brandSearch')?.value||'').toLowerCase();
   const list=brands.filter(b=>!q||b.name.toLowerCase().includes(q));
   // A-Z filter chips
@@ -745,7 +775,7 @@ async function renderBrandsDirectory(){
     return `<a class="card" href="/brand/${esc(b.slug)}/" style="text-decoration:none;text-align:center;padding:18px 12px;display:block">
       <div style="height:64px;display:flex;align-items:center;justify-content:center">${logo}</div>
       <div class="pname" style="margin-top:8px">${esc(b.name)}</div>
-      <div class="pcat">${b.productCount} products</div></a>`;
+      <div class="pcat">${b.productCount} ${Number(b.productCount)===1?'product':'products'}</div></a>`;
   }).join(''):'<p class="muted" style="grid-column:1/-1">No brands found.</p>';
 }
 async function renderBrandRoute(slug){
