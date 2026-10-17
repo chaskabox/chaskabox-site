@@ -1,6 +1,20 @@
 /* Private transactional helpers. Only the scheduled Worker sends notifications. */
 const encoder = new TextEncoder();
 export const TARGETS = ['owner_email', 'owner_whatsapp', 'customer_whatsapp'];
+function protectedWahaOrigin(env) {
+  try {
+    const url = new URL(String(env.WAHA_API_URL || ''));
+    return url.protocol === 'https:' && url.hostname === 'waha.chaskabox.online';
+  } catch { return false; }
+}
+// Never send Cloudflare Access credentials to temporary or unrelated gateways.
+export function wahaAccessHeaders(env) {
+  if (!protectedWahaOrigin(env)) return {};
+  const id = String(env.WAHA_CF_ACCESS_CLIENT_ID || '').trim();
+  const secret = String(env.WAHA_CF_ACCESS_CLIENT_SECRET || '').trim();
+  return id && secret ? { 'CF-Access-Client-Id': id, 'CF-Access-Client-Secret': secret } : {};
+}
+
 export function activationMatches(stored, expected) {
   const fraction=String(stored || '').match(/\.(\d+)(?:Z|[+-]\d{2}:?\d{2})$/)?.[1] || '';
   return Number.isFinite(Date.parse(expected)) && Date.parse(stored)===Date.parse(expected) && !/[1-9]/.test(fraction.slice(3));
@@ -14,6 +28,7 @@ export function notificationConfig(env) {
   if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) errors.push('database_configuration_missing');
   if (targets.includes('owner_email') && (!env.RESEND_API_KEY || !env.OWNER_ORDER_EMAIL || !env.RESEND_FROM_EMAIL)) errors.push('resend_configuration_missing');
   if (targets.some(t => t.endsWith('whatsapp')) && (!env.WAHA_API_URL || !env.WAHA_API_KEY || !env.WAHA_SESSION)) errors.push('waha_configuration_missing');
+  if (targets.some(t => t.endsWith('whatsapp')) && protectedWahaOrigin(env) && !Object.keys(wahaAccessHeaders(env)).length) errors.push('waha_access_configuration_missing');
   if (targets.includes('owner_whatsapp') && !chatId(env.OWNER_WHATSAPP)) errors.push('owner_whatsapp_invalid');
   for (const value of [env.SUPABASE_URL, targets.some(t => t.endsWith('whatsapp')) && env.WAHA_API_URL].filter(Boolean)) {
     try { const u = new URL(value); if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash) throw new Error(); }
@@ -73,8 +88,9 @@ export async function providerReadiness(env,fetcher=fetch){
  const result={};
  try{const r=await read('https://api.resend.com/domains',{Authorization:'Bearer '+String(env.RESEND_API_KEY||'').trim()});const from=String(env.RESEND_FROM_EMAIL||''),domain=from.match(/@([^>\s]+)/)?.[1]?.toLowerCase(),available=r.http_status===200&&Array.isArray(r.data?.data);result.email={http_status:r.http_status,domain_check_available:available,sender_domain_verified:available?r.data.data.some(d=>d.name===domain&&d.status==='verified'):null,owner_recipient_configured:!!env.OWNER_ORDER_EMAIL};}catch{result.email={request_failed:true};}
  const gateway=String(env.WAHA_API_URL||'');let temporary=false,origin=null;try{const parsed=new URL(gateway);origin=parsed.origin;temporary=parsed.hostname.endsWith('.trycloudflare.com');}catch{temporary=true;}
- if(!origin||(temporary&&env.WAHA_APPROVED_GATEWAY_ORIGIN!==origin)){result.whatsapp={check_blocked:true,reason:'gateway_ownership_verification_required',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
- else try{const headers={'X-Api-Key':String(env.WAHA_API_KEY||'').trim()},root=gateway.replace(/\/$/,'');const r=await read(root+'/api/sessions/'+encodeURIComponent(env.WAHA_SESSION||'default'),headers);result.whatsapp={http_status:r.http_status,response_kind:r.response_kind,tunnel_unavailable:!!r.tunnel_unavailable,session_status:['WORKING','STARTING','SCAN_QR_CODE','FAILED','STOPPED'].includes(r.data?.status)?r.data.status:'unknown',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};if(r.http_status===404&&r.response_kind==='json'){const sessions=await read(root+'/api/sessions?all=true',headers);result.whatsapp.session_list_http_status=sessions.http_status;if(sessions.http_status===200&&Array.isArray(sessions.data))result.whatsapp.available_sessions=sessions.data.filter(s=>typeof s.name==='string'&&s.name.length<=120).map(s=>({name:s.name,status:['WORKING','STARTING','SCAN_QR_CODE','FAILED','STOPPED'].includes(s.status)?s.status:'unknown'}));}}catch{result.whatsapp={request_failed:true,signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
+ if(protectedWahaOrigin(env)&&!Object.keys(wahaAccessHeaders(env)).length){result.whatsapp={check_blocked:true,reason:'waha_access_configuration_missing',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
+ else if(!origin||(temporary&&env.WAHA_APPROVED_GATEWAY_ORIGIN!==origin)){result.whatsapp={check_blocked:true,reason:'gateway_ownership_verification_required',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
+ else try{const headers={'X-Api-Key':String(env.WAHA_API_KEY||'').trim(),...wahaAccessHeaders(env)},root=gateway.replace(/\/$/,'');const r=await read(root+'/api/sessions/'+encodeURIComponent(env.WAHA_SESSION||'default'),headers);result.whatsapp={http_status:r.http_status,response_kind:r.response_kind,tunnel_unavailable:!!r.tunnel_unavailable,session_status:['WORKING','STARTING','SCAN_QR_CODE','FAILED','STOPPED'].includes(r.data?.status)?r.data.status:'unknown',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};if(r.http_status===404&&r.response_kind==='json'){const sessions=await read(root+'/api/sessions?all=true',headers);result.whatsapp.session_list_http_status=sessions.http_status;if(sessions.http_status===200&&Array.isArray(sessions.data))result.whatsapp.available_sessions=sessions.data.filter(s=>typeof s.name==='string'&&s.name.length<=120).map(s=>({name:s.name,status:['WORKING','STARTING','SCAN_QR_CODE','FAILED','STOPPED'].includes(s.status)?s.status:'unknown'}));}}catch{result.whatsapp={request_failed:true,signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
  return result;
 }
 function base(value) { return String(value || 'https://chaskabox.online').replace(/\/+$/, ''); }
@@ -130,13 +146,14 @@ export async function sendNotification(env, job, fetcher = fetch) {
   if (!TARGETS.includes(job.target) || !/^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(job.order_id || '')) return { status: 'blocked', error: 'notification_identity_invalid' };
   const email = job.target === 'owner_email', payload = job.request_payload;
   if(!email){try{const gateway=new URL(wahaEndpoint(env));if(gateway.hostname.endsWith('.trycloudflare.com')&&env.WAHA_APPROVED_GATEWAY_ORIGIN!==gateway.origin)return {status:'blocked',error:'gateway_ownership_verification_required'};}catch{return {status:'blocked',error:'provider_endpoint_invalid'};}}
+  if (!email && protectedWahaOrigin(env) && !Object.keys(wahaAccessHeaders(env)).length) return { status: 'blocked', error: 'waha_access_configuration_missing' };
   if (!payload || payload.endpoint !== (email ? 'https://api.resend.com/emails' : wahaEndpoint(env))) return { status: 'blocked', error: 'provider_endpoint_changed' };
   if (!email && payload.body?.session !== env.WAHA_SESSION) return { status: 'blocked', error: 'provider_session_changed' };
   const controller = new AbortController(), timer = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetcher.call(globalThis,payload.endpoint, { method: 'POST', redirect: 'manual', signal: controller.signal,
       headers: email ? { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': 'chaskabox-owner-order-' + job.order_id }
-        : { 'X-Api-Key': env.WAHA_API_KEY, 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload.body),
+        : { 'X-Api-Key': env.WAHA_API_KEY, ...wahaAccessHeaders(env), 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload.body),
     });
     let data = null; try { data = JSON.parse(await limitedText(response, 16384)); } catch { /* Never treat missing acknowledgement as success. */ }
     if (response.ok) {
