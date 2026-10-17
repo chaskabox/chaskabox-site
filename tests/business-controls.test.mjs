@@ -118,7 +118,7 @@ test('default owner shipping controls govern quote and prepaid free-delivery tog
   assert.equal((await quote('bank_transfer',6)).delivery_fee,0);
   await db.exec("UPDATE site_settings SET value='false'::jsonb WHERE key='prepaid_free_delivery_enabled'");
   assert.equal((await quote('jazzcash',5)).delivery_fee,300,'Owner can disable free delivery');
-  await db.exec("UPDATE site_settings SET value='true'::jsonb WHERE key='prepaid_free_delivery_enabled'; UPDATE site_settings SET value='450'::jsonb WHERE key='prepaid_delivery_fee_pkr'; UPDATE site_settings SET value='350'::jsonb WHERE key='cod_delivery_fee_pkr'; UPDATE site_settings SET value='6000'::jsonb WHERE key='prepaid_free_delivery_threshold_pkr'");
+  await db.exec("INSERT INTO site_settings(key,value) VALUES ('prepaid_free_delivery_enabled','true'::jsonb),('prepaid_delivery_fee_pkr','450'::jsonb),('cod_delivery_fee_pkr','350'::jsonb),('prepaid_free_delivery_threshold_pkr','6000'::jsonb) ON CONFLICT(key) DO UPDATE SET value=excluded.value");
   assert.equal((await quote('cod',6)).delivery_fee,350,'COD fee comes from owner settings');
   assert.equal((await quote('jazzcash',5)).delivery_fee,450,'Prepaid fee comes from owner settings');
   assert.equal((await quote('jazzcash',6)).delivery_fee,0,'Threshold updates are honored');
