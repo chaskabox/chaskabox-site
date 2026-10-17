@@ -107,3 +107,25 @@ test('admin analytics renders the actual array/object contracts without undefine
  for(const [type,data] of cases)assert.match(ctx.renderAnalyticsTable(type,data),/Synthetic|SYNTHETIC/);
  assert.doesNotThrow(()=>ctx.renderAnalyticsTable('funnel',{steps:[{step:'product_view',label:'Views',count:2},{step:'order_created',label:'Orders',count:1}]}));
 });
+
+test('default owner shipping controls govern quote and prepaid free-delivery toggle',async()=>{
+ const db=await fixture();try{
+  const order=(method,qty,city='Lahore')=>({items:[{product_id:1,qty}],payment_method:method,customer:{name:'Buyer',phone:'03000000000',address:'Test street address',city,country:'Pakistan'}});
+  const quote=async(method,qty,city)=> (await db.query('SELECT checkout_quote($1) q',[order(method,qty,city)])).rows[0].q;
+  assert.equal((await quote('cod',5)).delivery_fee,300);
+  assert.equal((await quote('jazzcash',4)).delivery_fee,300);
+  assert.equal((await quote('jazzcash',5)).delivery_fee,0,'Exactly 5000 is free for prepaid');
+  assert.equal((await quote('bank_transfer',6)).delivery_fee,0);
+  await db.exec("UPDATE site_settings SET value='false'::jsonb WHERE key='prepaid_free_delivery_enabled'");
+  assert.equal((await quote('jazzcash',5)).delivery_fee,300,'Owner can disable free delivery');
+  await db.exec("UPDATE site_settings SET value='true'::jsonb WHERE key='prepaid_free_delivery_enabled'; UPDATE site_settings SET value='450'::jsonb WHERE key='prepaid_delivery_fee_pkr'; UPDATE site_settings SET value='350'::jsonb WHERE key='cod_delivery_fee_pkr'; UPDATE site_settings SET value='6000'::jsonb WHERE key='prepaid_free_delivery_threshold_pkr'");
+  assert.equal((await quote('cod',6)).delivery_fee,350,'COD fee comes from owner settings');
+  assert.equal((await quote('jazzcash',5)).delivery_fee,450,'Prepaid fee comes from owner settings');
+  assert.equal((await quote('jazzcash',6)).delivery_fee,0,'Threshold updates are honored');
+  await db.exec("INSERT INTO shipping_zones(name,cities,fee,free_above,position) VALUES('Multan special',ARRAY['Multan'],175,10000,0)");
+  assert.equal((await quote('jazzcash',6,'Multan')).delivery_fee,175,'Specific-city overrides still work');
+  assert.equal((await quote('jazzcash',6,'Lahore')).delivery_fee,0,'City override does not leak across cities');
+  const rows=(await db.query("SELECT is_active FROM shipping_zones WHERE cardinality(cities)=0")).rows;
+  assert.ok(rows.every(row=>row.is_active===false),'Legacy nationwide zone records are retired');
+ }finally{await db.close();}
+});
