@@ -348,3 +348,6 @@
  .checkout-page .checkout-totals .sumrow.total{margin:8px -16px 0;padding:14px 16px}
  .checkout-page .checkout-next-btn,.checkout-page .checkout-back-btn{min-height:46px}
 }
+
+/* Restore full-bleed order summary within the compact two-column grid. */
+.checkout-page .order-summary-card{padding:0}
