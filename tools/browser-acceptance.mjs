@@ -829,10 +829,10 @@ try{
   {
     const {context,page}=await contextFor(1440,null);
     await page.goto(base+'/admin-v4-demo.html');
-    await page.locator('[data-view="preview"]').click();
+    await openAdminPanel(page,'preview');
     await page.locator('[data-storefront-editor="theme"]').click();
     const opened=await page.locator('#view-theme').evaluate(el=>el.classList.contains('active'));
-    await page.locator('[data-view="preview"]').click();
+    await openAdminPanel(page,'preview');
     await page.locator('[data-storefront-route="/shop/"]').click();
     await page.locator('#demoStorefrontRouteFrame').waitFor({state:'attached'});
     const publicRoute=await page.locator('#demoStorefrontRouteFrame').getAttribute('src');
