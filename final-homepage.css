@@ -384,7 +384,7 @@ header{background:#fff;box-shadow:0 1px 10px rgba(14,42,84,.045);border-bottom:1
   .cb-mobile-dock a{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;
     font-size:9px;font-weight:800;text-decoration:none;color:#425c79;min-width:55px;min-height:48px}
   .cb-mobile-dock a span{font-size:22px;line-height:1.15}
-  .cb-mobile-dock a[aria-current=page]{color:#dd5419}
+  .cb-mobile-dock a[aria-current=page]{color:#a73b12}
   #view-home .card .pbody{padding:8px 9px 10px;gap:3px}
   #view-home .card .ppack{font-size:10px}
   #view-home .card .pname{font-size:12px;line-height:1.25;min-height:31px;-webkit-line-clamp:2}
