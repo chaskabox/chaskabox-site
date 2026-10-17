@@ -53,7 +53,7 @@ export async function runNotifications(env, fetcher = fetch) {
 // A single, explicitly approved owner test. The database claim consumes the
 // attempt atomically before any WAHA I/O; an uncertain result is never retried.
 export async function runOwnerWahaCanary(env, fetcher = fetch) {
-  const id = 'chaskabox-owner-20261017';
+  const id = 'chaskabox-owner-20261017b';
   if (env.WAHA_OWNER_CANARY_ENABLED !== 'true') return { status: 'disabled' };
   const claim = await privateRequest(env, '/rest/v1/rpc/waha_owner_canary_claim', { p_id: id }, fetcher);
   if (claim !== true) return { status: 'not_pending' };
@@ -82,7 +82,7 @@ export async function runOwnerWahaCanary(env, fetcher = fetch) {
           endpoint: wahaEndpoint(env),
           body: {
             session: 'default', chatId: recipient,
-            text: 'ChaskaBox WhatsApp integration test (owner only). No customer messages, orders or payments were created. Ref: CB-WAHA-20261017.',
+            text: 'ChaskaBox WhatsApp integration test (owner only). No customer messages, orders or payments were created. Ref: CB-WAHA-20261017-B.',
             linkPreview: false,
           },
         };
