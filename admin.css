@@ -496,7 +496,7 @@ html,body{overflow-x:clip}
 .admin-pinned{margin:0 7px 13px;border-radius:13px;padding:10px 9px 8px;background:#eef4ff;border:1px solid #dce8fa;flex:0 1 auto;max-height:207px;min-height:0;overflow-y:auto}
 .admin-pinned-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 3px 7px;color:#234174;font-size:11px}
 .admin-pinned-head strong{font-weight:900}
-.admin-pinned-head span{font-size:10px;color:#647897;font-variant-numeric:tabular-nums}
+.admin-pinned-head span{font-size:10px;color:#425b80;font-variant-numeric:tabular-nums}
 .admin-pinned-links{display:grid;gap:4px}
 .admin-pinned-item{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:4px}
 .admin-pinned-jump,.admin-pinned-remove{background:#fff;border:1px solid #dae4f5;color:#23416d;border-radius:8px;min-height:39px}
@@ -505,7 +505,7 @@ html,body{overflow-x:clip}
 .admin-pinned-jump[aria-current="page"]{background:#d7e5ff;border-color:#9ebded}
 .admin-pinned-jump:hover,.admin-pinned-remove:hover{background:#e3edff}
 .admin-pinned-links button:focus-visible{outline:3px solid #4779cc;outline-offset:1px}
-.admin-pinned-empty{font-size:11px;line-height:1.5;margin:0;padding:4px;color:#64758c}
+.admin-pinned-empty{font-size:11px;line-height:1.5;margin:0;padding:4px;color:#415877}
 .admin-shell .admin-nav{padding:0 5px 12px}
 .admin-shell .admin-nav-group{border-top:1px solid #e7edf6;margin-bottom:2px}
 .admin-shell .admin-nav-group>summary{min-height:43px;color:#4e6385;letter-spacing:.06em;font-size:10.5px;padding:8px 9px}
