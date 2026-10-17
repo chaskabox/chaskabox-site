@@ -477,3 +477,41 @@ test('checkout cannot bypass the single notification worker and duplicate WhatsA
  assert.doesNotMatch(source,/from\s+['"].*waha-notify\.js['"]/);
  assert.match(source,/create_order_atomic/);
 });
+
+test('customer WhatsApp consent defaults OFF and is explicit at checkout',async()=>{
+ const html=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
+ const client=await readFile(new URL('../checkout.js',import.meta.url),'utf8');
+ const order=await readFile(new URL('../functions/api/orders.js',import.meta.url),'utf8');
+ const server=await readFile(new URL('../functions/api/_lib/validate.js',import.meta.url),'utf8');
+ const worker=await readFile(new URL('../workers/notification-outbox.js',import.meta.url),'utf8');
+ assert.match(html,/type="checkbox" id="f_whatsapp_optin"/);
+ assert.match(client,/whatsapp_opt_in:\s*!!/);
+ assert.match(client,/whatsapp_opt_in:payload\.whatsapp_opt_in===true/);
+ assert.match(server,/body\.whatsapp_opt_in === true/);
+ assert.match(order,/whatsapp_opt_in:\s*value\.whatsapp_opt_in === true/);
+ assert.match(worker,/customer_whatsapp_opt_in_missing/);
+ assert.match(worker,/whatsapp_before_activation/);
+});
+test('whatsapp targets fail closed without a recent activation cutoff and signed receipts',()=>{
+ const e=env(new Date().toISOString());
+ const unsafe=notificationConfig({...e,NOTIFICATION_CHANNELS:'owner_email,owner_whatsapp',WAHA_WEBHOOK_SECRET:'',NOTIFICATION_WHATSAPP_ACTIVATED_AFTER:''});
+ assert.ok(unsafe.errors.includes('whatsapp_activation_cutoff_invalid'));
+ assert.ok(unsafe.errors.includes('waha_signed_receipt_configuration_missing'));
+ const safe=notificationConfig({...e,NOTIFICATION_CHANNELS:'owner_email,owner_whatsapp',
+   WAHA_API_URL:'https://waha.chaskabox.online',WAHA_API_KEY:'synthetic',WAHA_SESSION:'default',
+   WAHA_CF_ACCESS_CLIENT_ID:'id',WAHA_CF_ACCESS_CLIENT_SECRET:'secret',OWNER_WHATSAPP:'923320005381',
+   WAHA_WEBHOOK_SECRET:'signed-fixture',NOTIFICATION_WHATSAPP_ACTIVATED_AFTER:'2026-10-17T07:30:00.000Z'});
+ assert.equal(safe.errors.length,0);
+});
+test('signed WAHA receipt with nested serialized ID matches outgoing provider ID',async()=>{
+ const e={WAHA_WEBHOOK_SECRET:'fixture-hmac',WAHA_SESSION:'default',SUPABASE_URL:'https://db.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture-role'};
+ const id='true_923320005381@c.us_ABC123';
+ let recorded;
+ const fetcher=async(url,opts)=>{
+  assert.match(url,/notification_record_receipt/);recorded=JSON.parse(opts.body);return Response.json(true);
+ };
+ const payload={event:'message.ack',session:'default',payload:{id:{_serialized:id},fromMe:true,ack:2}};
+ assert.equal((await handleNotificationReceipt(await signedWaha(payload),e,'whatsapp',fetcher)).status,200);
+ assert.equal(recorded.p_provider_id,id);
+ assert.equal(recorded.p_status,'delivered');
+});
