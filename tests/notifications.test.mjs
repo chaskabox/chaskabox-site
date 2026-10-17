@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fixture, activate, order, rpc, env, router, actor } from './notification-fixture.mjs';
 import worker,{runNotifications} from '../workers/notification-outbox.js';
-import { buildNotificationPayload,sendNotification,notificationConfig,notificationHealth,limitedText,privateRequest,providerReadiness } from '../functions/api/_lib/notification-delivery.js';
+import { buildNotificationPayload,sendNotification,notificationConfig,notificationHealth,limitedText,privateRequest,providerReadiness,wahaAccessHeaders } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt,verifyResend,verifyWaha } from '../functions/api/_lib/notification-receipts.js';
 import { onRequestGet as adminNotifications } from '../functions/api/admin/notifications/index.js';
 
@@ -302,4 +302,35 @@ test('paused manual run and scheduled handler perform no external I/O and return
   await worker.scheduled({},e,{waitUntil(p){pending=p}});await pending;
   assert.equal(calls,0);assert.equal(logs[0].paused,true);
  }finally{globalThis.fetch=original;console.log=log;}
+});
+
+test('WAHA Access credentials are scoped to the trusted gateway and missing credentials fail closed', async () => {
+ const endpoint = 'https://waha.chaskabox.online';
+ const env = {WAHA_API_URL:endpoint,WAHA_API_KEY:'fixture-waha-key',WAHA_SESSION:'default',WAHA_CF_ACCESS_CLIENT_ID:'fixture-access-id',WAHA_CF_ACCESS_CLIENT_SECRET:'fixture-access-secret'};
+ assert.deepEqual(wahaAccessHeaders(env),{'CF-Access-Client-Id':'fixture-access-id','CF-Access-Client-Secret':'fixture-access-secret'});
+ assert.deepEqual(wahaAccessHeaders({...env,WAHA_API_URL:'https://untrusted.trycloudflare.com'}),{});
+ const job={target:'owner_whatsapp',order_id:'00000000-0000-4000-8000-000000000001',request_payload:{endpoint:endpoint+'/api/sendText',body:{session:'default',chatId:'923001234567@c.us',text:'test',linkPreview:false}}};
+ let sent=0;
+ const accepted=await sendNotification(env,job,async(url,options)=>{
+   sent++;assert.equal(url,endpoint+'/api/sendText');
+   assert.equal(options.headers['CF-Access-Client-Id'],'fixture-access-id');
+   assert.equal(options.headers['CF-Access-Client-Secret'],'fixture-access-secret');
+   assert.equal(options.headers['X-Api-Key'],'fixture-waha-key');
+   return Response.json({id:'fixture-provider-id'});
+ });
+ assert.equal(accepted.status,'accepted');assert.equal(sent,1);
+ assert.equal((await sendNotification({...env,WAHA_CF_ACCESS_CLIENT_SECRET:''},job,()=>{throw new Error('must not send')})).status,'blocked');
+ const readiness=await providerReadiness(env,async(url,options)=>{
+   if(url==='https://api.resend.com/domains')return Response.json({data:[]});
+   assert.equal(options.headers['CF-Access-Client-Id'],'fixture-access-id');
+   assert.equal(options.headers['CF-Access-Client-Secret'],'fixture-access-secret');
+   return Response.json({status:'WORKING'});
+ });
+ assert.equal(readiness.whatsapp.session_status,'WORKING');
+ const missing=await providerReadiness({...env,WAHA_CF_ACCESS_CLIENT_ID:''},async url=>{
+   if(url==='https://api.resend.com/domains')return Response.json({data:[]});
+   throw new Error('WAHA readiness must not request protected gateway without credentials');
+ });
+ assert.equal(missing.whatsapp.check_blocked,true);
+ assert.equal(missing.whatsapp.reason,'waha_access_configuration_missing');
 });
