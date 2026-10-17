@@ -269,3 +269,82 @@
  .checkout-page .checkout-next-btn,.checkout-page .checkout-back-btn{min-height:48px}
  .checkout-page .checkout-optional-disclosure{margin-top:3px}
 }
+
+/* Checkout compact-density pass (PR #77): preserve 44px+ controls and focus rings.
+   Fix the shared sticky-promo header offset, then reduce empty space only. */
+.checkout-page .promo{height:32px;min-height:32px;padding:4px 12px;font-size:11px}
+.checkout-page .promo + header{top:0}
+.checkout-page .hwrap{min-height:60px;padding:7px 24px}
+.checkout-page .logo-img{width:136px;max-height:48px}
+.checkout-page #coMain.co-wrap{padding:19px 24px 38px}
+.checkout-page .checkout-intro{gap:16px;margin-bottom:10px}
+.checkout-page .checkout-kicker{margin-bottom:3px}
+.checkout-page h1.checkout-title{font-size:clamp(29px,3vw,39px);margin-bottom:3px}
+.checkout-page .checkout-progress{padding:0}
+.checkout-page .checkout-progress-item{gap:7px}
+.checkout-page .checkout-guest-note{padding:9px 13px;margin-bottom:13px}
+.checkout-page .co-grid{gap:18px}
+.checkout-page .co-card{padding:22px}
+.checkout-page .checkout-section-heading{gap:12px;padding-bottom:13px;margin-bottom:15px}
+.checkout-page .checkout-section-number{width:41px;height:41px;border-radius:12px}
+.checkout-page .checkout-section-heading h2{font-size:19px;margin-bottom:2px}
+.checkout-page .field{margin-bottom:12px}
+.checkout-page .field label,.checkout-page .checkout-coupon label{margin-bottom:5px}
+.checkout-page .field :is(input:not([type=checkbox]),select,textarea){min-height:46px;padding:10px 12px}
+.checkout-page .field textarea{min-height:80px}
+.checkout-page .checkout-field-help{margin-top:4px;line-height:1.45}
+.checkout-page #countryDeliveryNote{margin-top:4px;padding:0;border:0;background:transparent}
+.checkout-page .form-two{gap:12px}
+.checkout-page .checkout-contact-preferences{margin:0 0 13px;padding:12px;border-radius:13px}
+.checkout-page .checkout-contact-preferences-heading{gap:9px;margin-bottom:8px}
+.checkout-page .checkout-contact-icon{width:34px;height:34px;font-size:17px}
+.checkout-page .checkout-contact-preferences-heading h3{font-size:15px}
+.checkout-page .checkout-whatsapp-choice{min-height:50px;padding:10px 11px;gap:10px}
+.checkout-page .checkout-whatsapp-choice b{margin-bottom:3px}
+.checkout-page .checkout-contact-optout{margin-top:6px}
+.checkout-page .checkbox-field{padding:10px 12px}
+.checkout-page .checkout-optional-disclosure{margin-bottom:12px}
+.checkout-page .checkout-optional-disclosure>summary{min-height:46px}
+.checkout-page .availability-note{padding:10px 12px}
+.checkout-page .checkout-step-actions{margin-top:15px;padding-top:13px;gap:12px}
+.checkout-page .checkout-next-btn{min-height:46px}
+.checkout-page .checkout-review-card .checkout-review-block{padding:13px;margin-bottom:12px}
+.checkout-page .payopt{padding:13px;margin-bottom:9px}
+.checkout-page .checkout-summary-heading{padding:18px 20px}
+.checkout-page #coItems{padding:15px 20px 8px}
+.checkout-page #coItems .sumrow{padding-bottom:11px}
+.checkout-page .checkout-summary-body{padding:14px 20px 4px}
+.checkout-page .checkout-coupon{margin-bottom:11px}
+.checkout-page .checkout-quote-status{padding:8px 10px;margin-bottom:12px}
+.checkout-page .checkout-totals .sumrow{padding:8px 0}
+.checkout-page .checkout-totals .sumrow.total{margin:8px -20px 0;padding:16px 20px}
+.checkout-page footer{margin-top:0}
+@media(max-width:760px){
+ .checkout-page .promo{height:30px;min-height:30px;padding:4px 9px;font-size:10px;white-space:nowrap}
+ .checkout-page .hwrap{min-height:55px;padding:6px 14px}
+ .checkout-page .logo-img{width:118px;max-height:44px}
+ .checkout-page #coMain.co-wrap{padding:12px 14px 26px}
+ .checkout-page .checkout-intro{margin-bottom:9px}
+ .checkout-page h1.checkout-title{font-size:29px}
+ .checkout-page .checkout-progress{margin-top:10px}
+ .checkout-page .checkout-guest-note{margin-bottom:12px;padding:9px 11px}
+ .checkout-page .co-grid{gap:13px}
+ .checkout-page .co-card{padding:18px}
+ .checkout-page .checkout-section-heading{padding-bottom:11px;margin-bottom:13px}
+ .checkout-page .checkout-contact-preferences{margin-bottom:12px;padding:11px}
+ .checkout-page .checkout-whatsapp-choice{padding:10px}
+ .checkout-page .checkout-step-actions{margin-top:13px}
+}
+@media(max-width:400px){
+ .checkout-page #coMain.co-wrap{padding:10px 11px 23px}
+ .checkout-page .hwrap{padding:6px 11px}
+ .checkout-page .co-card{padding:15px}
+ .checkout-page .checkout-progress{margin-top:9px}
+ .checkout-page .checkout-section-heading{gap:9px}
+ .checkout-page .checkout-section-number{height:38px;width:38px}
+ .checkout-page .checkout-summary-heading{padding:15px 16px}
+ .checkout-page #coItems{padding:13px 16px 7px}
+ .checkout-page .checkout-summary-body{padding:13px 16px 4px}
+ .checkout-page .checkout-totals .sumrow.total{margin:8px -16px 0;padding:14px 16px}
+ .checkout-page .checkout-next-btn,.checkout-page .checkout-back-btn{min-height:46px}
+}
