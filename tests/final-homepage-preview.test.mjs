@@ -17,7 +17,7 @@ test('product images in category and editorial blocks come from the real catalog
 });
 test('preview only preserves approved logo and payment integrations untouched',()=>{
   const html=content('index.html'),css=content('final-homepage.css');
-  assert.match(html,/src="\/images\/logo-navy\.png"/);
+  assert.match(html,/src="\/images\/logo-approved-20261017\.png"/);
   assert.doesNotMatch(html,/src="\/images\/new-approved-logo/);
   assert.doesNotMatch(css,/checkout|cod_advance|payment_gateway|whatsapp_api/i);
 });

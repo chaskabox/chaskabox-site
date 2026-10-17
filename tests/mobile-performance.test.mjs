@@ -15,7 +15,7 @@ test('initial storefront scripts download without blocking HTML parsing in docum
  const cfg=readFileSync(new URL('../supabase-config.js',import.meta.url),'utf8');
  assert.match(cfg,/function loadSupabaseSdk\(\)/);
  assert.match(cfg,/script\.async=true/);
- assert.match(index,/<img src="\/images\/logo-white\.png"[^>]+loading="lazy"/);
+ assert.match(index,/<img src="\/images\/logo-approved-footer-20261017\.png"[^>]+loading="lazy"/);
 });
 
 test('homepage does not refetch CMS and render hero products twice per route',()=>{

@@ -50,7 +50,7 @@
     const mfaOverlay=$('#liveAdminMfa');if(mfaOverlay)mfaOverlay.hidden=true;
     let el=$('#liveAdminLogin'); if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);} el.hidden=false;
     el.innerHTML=`<form class="live-login-card staff-login-card" id="liveLoginForm" aria-labelledby="staffLoginHeading">
-      <div class="staff-login-brand"><img src="/images/logo-navy.png" alt="ChaskaBox"><div class="staff-login-brandname">CHASKABOX<small>ADMIN CONSOLE</small></div></div>
+      <div class="staff-login-brand"><img src="/images/logo-approved-20261017.png" alt="ChaskaBox"><div class="staff-login-brandname">CHASKABOX<small>ADMIN CONSOLE</small></div></div>
       <div class="staff-login-shield" aria-hidden="true">✓</div>
       <div class="staff-login-eyebrow"><span>SECURE STAFF ACCESS</span><span>STEP 1 OF 2</span></div>
       <h1 id="staffLoginHeading">Staff sign in</h1>
@@ -1345,7 +1345,7 @@
     if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);}
     el.hidden=false;
     el.innerHTML=`<section class="live-login-card staff-login-card" aria-labelledby="staffLoginHeading">
-      <div class="staff-login-brand"><img src="/images/logo-navy.png" alt="ChaskaBox"><div class="staff-login-brandname">CHASKABOX<small>ADMIN CONSOLE V4</small></div></div>
+      <div class="staff-login-brand"><img src="/images/logo-approved-20261017.png" alt="ChaskaBox"><div class="staff-login-brandname">CHASKABOX<small>ADMIN CONSOLE V4</small></div></div>
       <div class="staff-login-shield" aria-hidden="true">✓</div>
       <div class="staff-login-eyebrow"><span>SAFE DESIGN PREVIEW</span><span>NO LIVE DATA</span></div>
       <h1 id="staffLoginHeading">Preview without signing in</h1>
@@ -1374,7 +1374,7 @@
     hideBoot();
     let el=$('#liveAdminLogin');
     if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);}
-    el.innerHTML=`<form class="live-login-card" id="resetPwForm"><img src="/images/logo-navy.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Set new password</h1><p>Enter your new password below.</p><label>New password<input id="newPw1" type="password" autocomplete="new-password" required minlength="8"></label><label>Confirm password<input id="newPw2" type="password" autocomplete="new-password" required minlength="8"></label><div id="resetPwError" class="live-error" hidden></div><div id="resetPwMsg" class="live-msg" hidden></div><button class="btn primary" type="submit">Update password</button></form>`;
+    el.innerHTML=`<form class="live-login-card" id="resetPwForm"><img src="/images/logo-approved-20261017.png" alt="ChaskaBox"><span class="eyebrow">SECURE ADMIN</span><h1>Set new password</h1><p>Enter your new password below.</p><label>New password<input id="newPw1" type="password" autocomplete="new-password" required minlength="8"></label><label>Confirm password<input id="newPw2" type="password" autocomplete="new-password" required minlength="8"></label><div id="resetPwError" class="live-error" hidden></div><div id="resetPwMsg" class="live-msg" hidden></div><button class="btn primary" type="submit">Update password</button></form>`;
     el.hidden=false;
     $('#resetPwForm').onsubmit=async e=>{
       e.preventDefault();

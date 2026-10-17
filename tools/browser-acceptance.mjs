@@ -387,18 +387,21 @@ try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>typeof window.applyStorefrontManifest==='function');
   const loadedLogo=expected=>page.waitForFunction(src=>{const img=document.querySelector('.logo img');return img?.getAttribute('src')===src&&img.complete&&img.naturalWidth>0&&getComputedStyle(img).display!=='none';},expected);
-  await loadedLogo('/images/logo-navy.png');
+  await loadedLogo('/images/logo-approved-20261017.png');
+  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/images/logo-navy.png'}}));
+  await loadedLogo('/images/logo-approved-20261017.png');
+  results.interactions.push({case:'legacy bundled logo settings use the approved new brand without stale image URLs',pass:true});
   await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/logo.png'}}));
-  await loadedLogo('/images/logo-navy.png');
+  await loadedLogo('/images/logo-approved-20261017.png');
   results.interactions.push({case:'missing CMS logo restores the bundled original',pass:true});
-  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/images/logo-white.png'}}));
-  await loadedLogo('/images/logo-white.png');
-  if(!await page.locator('.logo img').evaluate(img=>new URL(img.currentSrc).pathname==='/images/logo-white.png'))throw Error('Custom CMS logo was overridden by default responsive sources');
+  await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/images/logo-approved-footer-20261017.png'}}));
+  await loadedLogo('/images/logo-approved-footer-20261017.png');
+  if(!await page.locator('.logo img').evaluate(img=>new URL(img.currentSrc).pathname==='/images/logo-approved-footer-20261017.png'))throw Error('Custom CMS logo was overridden by default responsive sources');
   results.interactions.push({case:'valid custom logo still loads after a failed logo',pass:true});
   await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:'/missing-site-logo.png'}}));
-  await loadedLogo('/images/logo-navy.png');
+  await loadedLogo('/images/logo-approved-20261017.png');
   await page.evaluate(()=>window.applyStorefrontManifest({theme:{logo_url:''}}));
-  await loadedLogo('/images/logo-navy.png');
+  await loadedLogo('/images/logo-approved-20261017.png');
   results.interactions.push({case:'repeat logo errors and theme reset preserve branding',pass:true});
   await context.close();
  }
@@ -429,7 +432,13 @@ try{
  await page.evaluate(()=>{window.qaPasswordFailure=true;});await page.locator('#recoveryConfirm').fill('Synthetic-Password-1');await page.locator('#saveRecovery').click();await page.waitForFunction(()=>document.getElementById('recoveryStatus')?.textContent.includes('Synthetic password'));
  results.interactions.push({case:'password validation and outage',pass:noInvalidUpdate&&await page.locator('#recoveryPass').inputValue()==='Synthetic-Password-1'&&!await page.locator('#saveRecovery').isDisabled()});await context.clearCookies();
  await page.goto(base+'/shop/?q=chocolate&brand=Mayfair');await page.reload();await page.waitForFunction(()=>document.querySelector('#fq')?.value==='chocolate');results.interactions.push({case:'search query survives refresh',pass:true});
- await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(base+'/');await page.emulateMedia({reducedMotion:'reduce'});results.interactions.push({case:'runtime reduced motion reveals content',pass:await page.evaluate(()=>!document.documentElement.classList.contains('motion-reveals')&&[...document.querySelectorAll('.reveal')].every(e=>getComputedStyle(e).opacity==='1'))});
+ // Media-query change events arrive asynchronously. Confirm the initial mode,
+ // then wait for the real change handler rather than sampling the previous frame.
+ await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(base+'/');
+ await page.waitForFunction(()=>document.documentElement.classList.contains('motion-reveals'),null,{timeout:5000});
+ await page.emulateMedia({reducedMotion:'reduce'});
+ await page.waitForFunction(()=>!document.documentElement.classList.contains('motion-reveals')&&[...document.querySelectorAll('.reveal')].every(e=>getComputedStyle(e).opacity==='1'),null,{timeout:5000});
+ results.interactions.push({case:'runtime reduced motion reveals content',pass:true});
  await page.getByRole('link',{name:'Find your snack moment',exact:false}).click();await page.waitForURL('**/snack-boxes/');
  results.interactions.push({case:'home occasion link uses the actual content page',pass:(await page.locator('main').innerText()).includes('Movie night')});
  await page.goto(base+'/');await page.getByRole('link',{name:'Snack and order guides',exact:true}).first().click();await page.waitForURL('**/guides/');
@@ -466,7 +475,7 @@ try{
   const section={section_key:'how_it_works',enabled:true,position:6,heading:'How it works',config:{button_text:'Preserved'},draft_config:null};
   await context.route('**/api/admin/homepage',route=>{if(route.request().method()==='PATCH')section.draft_config=route.request().postDataJSON().sections[0].draft_config;return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
   await context.route('**/api/admin/homepage/publish',route=>{section.config={...section.draft_config};return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
-  await context.route('**/api/admin/media?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({processor_available:true,monthly_app_limit:1000,media:[{id:'00000000-0000-4000-8000-000000000010',url:'/images/logo-navy.png',bucket:'product-media',object_path:'synthetic.webp',state:'active',size_bytes:100}],page:1,total:1,total_pages:1})}));
+  await context.route('**/api/admin/media?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({processor_available:true,monthly_app_limit:1000,media:[{id:'00000000-0000-4000-8000-000000000010',url:'/images/logo-approved-20261017.png',bucket:'product-media',object_path:'synthetic.webp',state:'active',size_bytes:100}],page:1,total:1,total_pages:1})}));
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
   await openAdminPanel(page,'reviews');await page.getByRole('button',{name:'Unpublish',exact:true}).click();await page.locator('#view-reviews').getByText(/rejected/).waitFor();
   results.interactions.push({case:'owner can unpublish an approved review without deleting its record',pass:review.moderation_status==='rejected'&&await page.locator('#view-reviews [data-review-action="approve"]').count()===1});

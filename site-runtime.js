@@ -24,7 +24,7 @@
     })().catch(error=>{manifestRead=null;throw error;});
     return manifestRead;
   };
-  const logoSelector='.logo img,.logo-img', defaultLogo='/images/logo-navy.png';
+  const logoSelector='.logo img,.logo-img', defaultLogo='/images/logo-approved-20261017.png';
   // Preserve the responsive child spans: replacing .promo textContent destroys them.
   function applyPromoCopy(raw){
     const text=String(raw||'').trim();
@@ -38,7 +38,9 @@
     });
   }
   function setLogo(img,src){
-    if(src===defaultLogo){img.srcset='/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w';img.sizes='210px';}
+    // Older saved bundled-logo settings follow this approved branding release.
+    if(src==='/images/logo-navy.png')src=defaultLogo;
+    if(src===defaultLogo){img.srcset='/images/logo-approved-20261017-420.webp 420w, /images/logo-approved-20261017-840.webp 840w';img.sizes='210px';}
     else{img.removeAttribute('srcset');img.removeAttribute('sizes');}
     img.src=src;
   }
