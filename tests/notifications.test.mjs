@@ -470,3 +470,10 @@ test('read-only WAHA webhook verification does not record disconnected sessions'
  });
  assert.equal(r.status,'unverified');assert.equal(r.session_status,'STARTING');assert.equal(calls,1);
 });
+
+test('checkout cannot bypass the single notification worker and duplicate WhatsApp messages',async()=>{
+ const source=await readFile(new URL('../functions/api/orders.js',import.meta.url),'utf8');
+ assert.doesNotMatch(source,/sendOwnerWhatsApp\s*\(/);
+ assert.doesNotMatch(source,/from\s+['"].*waha-notify\.js['"]/);
+ assert.match(source,/create_order_atomic/);
+});
