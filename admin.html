@@ -34,14 +34,25 @@ setTimeout(function(){
 </script>
 <div class="admin-shell">
   <aside class="admin-sidebar" id="adminSidebar">
-    <a class="admin-brand" href="/" target="_blank" rel="noopener">
+    <div class="admin-brand-row">
+      <a class="admin-brand" href="/" target="_blank" rel="noopener">
       <img src="/images/logo-navy.png" srcset="/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w" sizes="210px" alt="ChaskaBox" width="1624" height="776">
       <span>Admin Console</span>
     </a>
+      <button type="button" id="adminSidebarCollapse" class="admin-sidebar-collapse" aria-label="Hide sidebar to focus on content" title="Hide sidebar (desktop) or close menu (mobile)">«</button>
+    </div>
     <div class="admin-nav-search">
       <label for="adminNavSearch">Find a panel</label>
       <div class="admin-nav-search-field"><span aria-hidden="true">⌕</span><input type="search" id="adminNavSearch" placeholder="Search panels…" autocomplete="off" aria-controls="adminNavGroups"></div>
     </div>
+    <div class="admin-sidebar-controls" role="group" aria-label="Navigation groups">
+      <button type="button" id="adminExpandGroups" title="Show every section">Expand all</button>
+      <button type="button" id="adminCollapseGroups" title="Hide every section">Collapse all</button>
+    </div>
+    <section class="admin-pinned" aria-labelledby="adminPinnedTitle">
+      <div class="admin-pinned-head"><strong id="adminPinnedTitle">★ Pinned panels</strong><span id="adminPinnedCount">0 / 6</span></div>
+      <div id="adminPinnedLinks" class="admin-pinned-links"><p class="admin-pinned-empty">Pin frequently used panels from the page header.</p></div>
+    </section>
     <nav class="admin-nav" id="adminNavGroups" aria-label="Admin sections">
       <details class="admin-nav-group" data-group="overview" open>
         <summary><span>Overview</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
@@ -109,6 +120,7 @@ setTimeout(function(){
   <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
 
   <div class="admin-main">
+    <button type="button" id="adminSidebarRestore" class="admin-sidebar-restore" aria-label="Show sidebar" title="Show navigation sidebar">☰ Show sidebar</button>
     <header class="admin-topbar">
       <button class="sidebar-toggle" id="sidebarToggle" aria-label="Open admin navigation" aria-controls="adminSidebar" aria-expanded="false">☰</button>
       <div class="admin-page-heading">
@@ -118,6 +130,7 @@ setTimeout(function(){
       </div>
       <div class="admin-top-actions">
         <button class="btn secondary admin-tools-button" type="button" id="adminCommandOpen" title="Quick switch (Ctrl or Command + K)" aria-haspopup="dialog">⌕ Find panel <kbd>⌘K</kbd></button>
+        <button class="btn secondary admin-tools-button" type="button" id="adminPinCurrent" aria-pressed="false" title="Pin current panel to shortcuts">☆ Pin panel</button>
         <button class="btn secondary admin-tools-button" type="button" id="adminDensityToggle" aria-pressed="false">☰ Compact: Off</button>
         <button class="btn secondary" id="globalPreviewBtn">Preview site</button>
         <button class="btn primary" id="quickAddProductBtn">+ Add product</button>
@@ -756,6 +769,7 @@ setTimeout(function(){
 <script src="/supabase-config.js?v=4"></script>
 <script src="/admin.js?v=20261016-admin-v4-shell1" defer></script>
 <script src="/admin-v4-tools.js?v=20261016-v4-actions1" defer></script>
+<script src="/admin-v4-sidebar.js?v=20261017-nav2" defer></script>
 <script src="/admin-login-mfa.js?v=20261015-mfa-ux1" defer></script>
 <script src="/admin-operations-forms.js?v=20261013-ops-1" defer></script>
 <script src="/admin-live.js?v=20261016-preview-safe-demo-1" defer></script>
