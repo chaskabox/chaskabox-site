@@ -141,7 +141,7 @@ test('native PostgreSQL 17 clean application baseline, role matrix, CMS rollback
  const lit=value=>"'"+String(value).replace(/'/g,"''")+"'";
  try{
   const connection=await fixture('baseline',directory,processes);
-  assert.equal(query(connection,"SELECT count(*) FROM pg_tables WHERE schemaname='public'").trim(),'45');
+  assert.equal(query(connection,"SELECT count(*) FROM pg_tables WHERE schemaname='public'").trim(),'46');
   assert.equal(query(connection,"SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname='public' AND p.proconfig IS NULL AND p.prorettype='trigger'::regtype").trim(),'0');
   query(connection,"INSERT INTO auth.users(id,email,email_confirmed_at) VALUES('"+owner+"','owner@example.invalid',now()),('"+content+"','content@example.invalid',now()),('"+manager+"','manager@example.invalid',now()); INSERT INTO admin_roles(user_id,role,active) VALUES('"+owner+"','owner',true),('"+content+"','content',true),('"+manager+"','manager',true);");
   query(connection,"INSERT INTO auth.mfa_factors(id,user_id,status) VALUES('"+factor+"','"+owner+"','verified'); INSERT INTO auth.sessions(id,user_id,factor_id,aal) VALUES('"+session+"','"+owner+"','"+factor+"','aal2');");

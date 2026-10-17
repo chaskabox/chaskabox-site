@@ -172,7 +172,13 @@ export function buildNotificationPayload(env, order, job, templates = []) {
   if(!template)throw new Error('template_missing');
   const templateRevision = { name, version:Number(template.version || 1), source:'stored_template' };
   if (template && (!template.is_active || template.channel !== (job.target === 'owner_email' ? 'email' : 'whatsapp'))) throw new Error('template_disabled_or_wrong_channel');
-  const text = interpolate(String(template.body || '').replaceAll('\\n', '\n'), vars);
+  let text = interpolate(String(template.body || '').replaceAll('\\n', '\n'), vars);
+  const codAdvance=Math.max(0,Math.min(Number(order.total)||0,Number(order.cod_advance_required_pkr)||0));
+  if(job.event_type==='order_created' && order.payment_method==='cod' && codAdvance>0){
+    text+='\n\nCOD advance required: Rs. '+pkrAmount(codAdvance)+
+      '. Remaining cash on delivery: Rs. '+pkrAmount(Number(order.total)-codAdvance)+
+      '. Send JazzCash/bank payment proof with your order number to ChaskaBox; dispatch waits for manual verification. Advance is already part of the order total.';
+  }
   if (job.target === 'owner_email') return { template: templateRevision, endpoint: 'https://api.resend.com/emails', body: {
     from: env.RESEND_FROM_EMAIL, to: [env.OWNER_ORDER_EMAIL], subject: interpolate(template.subject, vars).replace(/[\r\n]/g, ' ').slice(0, 200), text,
   } };

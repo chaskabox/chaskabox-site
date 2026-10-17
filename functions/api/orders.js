@@ -70,6 +70,8 @@ function publicOrderShape(row, replay = false) {
     order_id: row.id,
     order_number: row.order_number,
     total: row.total,
+    cod_advance_required_pkr: row.payment_method==='cod'?Number(row.cod_advance_required_pkr||0):0,
+    cod_due_on_delivery_pkr: row.payment_method==='cod'?Math.max(0,Number(row.total)-Number(row.cod_advance_required_pkr||0)):0,
     payment_status: row.payment_status,
     fulfilment_status: row.fulfilment_status,
     idempotent_replay: !!replay,

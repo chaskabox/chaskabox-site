@@ -50,6 +50,7 @@ test('full attention counts exceed samples and recognized sales exclude refunds 
  const db=await fixture();try{
   await db.exec("INSERT INTO products(id,name,slug,category,pack,price,visibility) SELECT n,'Synthetic '||n,'synthetic-'||n,'Test','One',100,'visible' FROM generate_series(1,9)n;");
   await db.exec("INSERT INTO products(id,name,slug,category,pack,price,visibility,bundle_kind) SELECT n,'Synthetic box '||n,'synthetic-box-'||n,'Bundles','One',100,'visible','curated' FROM generate_series(10,16)n;");
+  await db.exec("UPDATE site_settings SET value='false'::jsonb WHERE key='cod_advance_enabled'");
   await db.exec("INSERT INTO orders(order_number,idempotency_key,customer_name,customer_phone,customer_address,customer_city,payment_method,payment_status,subtotal,delivery_fee,total,created_at) SELECT 'CB-SYNTHETIC-'||n,gen_random_uuid(),'Synthetic','03000000000','Synthetic address','Karachi','cod','cod_due',100,0,100,now()-interval '6 days' FROM generate_series(1,171)n;");
   await db.exec("UPDATE orders SET fulfilment_status='delivered' WHERE order_number='CB-SYNTHETIC-1';UPDATE orders SET payment_method='bank_transfer',payment_status='payment_verified',transaction_reference='SYNTHETIC-REFERENCE' WHERE order_number='CB-SYNTHETIC-2';UPDATE orders SET fulfilment_status='delivered',payment_status='refunded' WHERE order_number='CB-SYNTHETIC-3';SET ROLE service_role;");
   const attention=(await db.query('SELECT analytics_attention() r')).rows[0].r;
