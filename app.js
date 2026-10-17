@@ -17,6 +17,9 @@ function photoAttributes(src,sizes='(max-width:700px) 45vw, 260px'){
  return sources?'src="'+esc(sources[0].src)+'" srcset="'+sources.map(v=>esc(v.src)+' '+v.width+'w').join(', ')+'" sizes="'+esc(sizes)+'"':'src="'+esc(assetUrl(src))+'"';
 }
 
+const CB_UI_ICONS={"heart":"<path d=\"M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8Z\"/>","search":"<circle cx=\"10.8\" cy=\"10.8\" r=\"6.8\"/><path d=\"m16 16 5 5\"/>","home":"<path d=\"m3 10 9-7 9 7v11h-6v-7H9v7H3Z\"/>","grid":"<rect x=\"3\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"3\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/><rect x=\"14\" y=\"14\" width=\"7\" height=\"7\" rx=\"1.5\"/>","user":"<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M4 21v-2a8 8 0 0 1 16 0v2\"/>","box":"<path d=\"m3 7 9-4 9 4-9 5Zm0 0v10l9 4 9-4V7M12 12v9M7 5l10 5\"/>","truck":"<path d=\"M2 5h12v12H2Zm12 5h4l4 4v3h-8\"/><circle cx=\"6\" cy=\"18\" r=\"2\"/><circle cx=\"18\" cy=\"18\" r=\"2\"/>","shield":"<path d=\"m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6Zm-4 9 3 3 5-6\"/>","card":"<rect x=\"2\" y=\"4\" width=\"20\" height=\"16\" rx=\"3\"/><path d=\"M2 10h20M6 15h4\"/>","star":"<path d=\"m12 2 3 6 7 .9-5 4.8 1.2 7L12 17.5 5.8 21 7 13.7 2 8.9 9 8Z\"/>","sparkles":"<path d=\"m12 3 2.8 6.2L21 12l-6.2 2.8L12 21l-2.8-6.2L3 12l6.2-2.8ZM20 2v4m-2-2h4\"/>","tag":"<path d=\"M3 3h8l10 10-8 8L3 11Z\"/><circle cx=\"7.5\" cy=\"7.5\" r=\"1\"/>","pepper":"<path d=\"M14 6c5 0 7 3 6 7-1 5-8 8-16 8 5-4 5-8 6-11 1-3 2-4 4-4Zm0 0c0-3 2-4 5-4\"/>","menu":"<path d=\"M3 6h18M3 12h18M3 18h18\"/>"};
+function cbIcon(name){return '<svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">'+(CB_UI_ICONS[name]||CB_UI_ICONS.box)+'</svg>';}
+
 /* ---------- data ---------- */
 async function loadProducts(){
   try{const initial=JSON.parse(document.getElementById('current-catalogue')?.textContent||'null');if(Array.isArray(initial)&&initial.every(p=>Number.isSafeInteger(Number(p.id))&&typeof p.name==='string')){PRODUCTS=initial;return;}}catch{}
@@ -147,9 +150,11 @@ function renderHomeContent(){
     const list=c==='All'?act:(cats[c]||[]);
     const n=c==='All'?allCount:list.length;
     if(c!=='All'&&!n) return '';
-    const featured=c==='All'?null:list.find(p=>hasPhoto(p)&&!p.bundle)||list.find(hasPhoto);
+    const matchers={'Biscuits & Wafers':/wafer|biscuit/i,'Bunties & Cakes':/cupkake|cake/i,'Chews & Gums':/bubble|gum/i,'Chocolates & Candies':/chocolate|toffee|candy/i,'Snacks & Nimco':/top pops|nimco|slanty|chewra/i};
+    const members=list.filter(p=>p.category===c&&!p.bundle&&hasPhoto(p));
+    const featured=(c==='All'||c==='Bundles')?null:members.find(p=>matchers[c]?.test(p.name))||members[0]||list.find(p=>hasPhoto(p)&&!p.bundle);
     const inner=featured? `<img ${photoAttributes(featured.img,'90px')} alt="" loading="lazy" width="90" height="90" decoding="async">` :
-      TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
+      (c==='All'||c==='Bundles')?`<span class="ci-svg ci-category-symbol">${cbIcon(c==='All'?'grid':'box')}</span>`:TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
     const href=c==='All'?'/shop/':categoryPath(c);
     return `<a class="cat reveal" href="${href}">
       <div class="ci" style="background:${st.bg}">${inner}</div>
@@ -180,11 +185,11 @@ function renderHomeContent(){
   const bundles=curatedProducts('boxes',distinctBrandPicks((cats['Bundles']||[]).filter(hasPhoto),10));
   const chatpata=curatedProducts('chatpata_picks',distinctBrandPicks(actImg.filter(p=>p.category==='Snacks & Nimco'),10));
   const newest=curatedProducts('new_items',distinctBrandPicks([...actImg].sort((a,b)=>Number(b.id)-Number(a.id)),10));
-  if(sale.length) html+=shelf('🔥 Deals Worth Grabbing',sale,'#b42318','', 'Sale','deals');
-  if(picks.length) html+=shelf('⭐ Chaska Picks',picks,'#1a2b5c','','','chaska_picks');
-  if(bundles.length) html+=shelf('📦 Chaska Boxes',bundles,'#896000','Bundles','','boxes');
-  if(chatpata.length) html+=shelf('🌶️ Chatpata Picks',chatpata,'#276a45','Snacks & Nimco','','chatpata_picks');
-  if(newest.length) html+=shelf('✨ New & Recently Added',newest,'#6b4f9d','','','new_items');
+  if(sale.length) html+=shelf('Deals Worth Grabbing',sale,'#b42318','', 'Sale','deals');
+  if(picks.length) html+=shelf('Chaska Picks',picks,'#1a2b5c','','','chaska_picks');
+  if(bundles.length) html+=shelf('Chaska Boxes',bundles,'#896000','Bundles','','boxes');
+  if(chatpata.length) html+=shelf('Chatpata Picks',chatpata,'#276a45','Snacks & Nimco','','chatpata_picks');
+  if(newest.length) html+=shelf('New & Recently Added',newest,'#6b4f9d','','','new_items');
   $('#shelves').innerHTML=html;
   // Editorial promotional artwork uses the same authentic pack photos as the catalogue.
   const boxMedia=document.getElementById('cbBoxMedia');
@@ -209,7 +214,7 @@ function shelf(title,items,color,cat,badge,homeKey){
   const sid='hs'+(++shelfSeq);
   return `<section class="shelf reveal"${homeKey?` data-home-section="${esc(homeKey)}"`:``}>
     <div class="shelfband" style="background:${color}">
-      <div class="shelfw"><h2>${esc(title)}</h2>
+      <div class="shelfw"><h2><span class="cb-heading-icon">${cbIcon(({deals:'tag',chaska_picks:'star',boxes:'box',chatpata_picks:'pepper',new_items:'sparkles'})[homeKey]||'star')}</span>${esc(title)}</h2>
       <div class="shelfnav"><a class="viewall" href="${href}" ${action}>View all →</a>
       <button class="sarrow" aria-label="Scroll left" onclick="shelfScroll('${sid}',-1)">←</button>
       <button class="sarrow" aria-label="Scroll right" onclick="shelfScroll('${sid}',1)">→</button></div></div>
@@ -1729,7 +1734,7 @@ function renderMnav(){
   const brandsHtml=topBrands.length?`<div style="border-top:1px solid var(--border);margin:8px 0"></div><div style="padding:8px 16px 4px;font-size:11px;font-weight:800;color:var(--muted)">🏷️ BRANDS</div>`+topBrands.map(([b,n])=>`<a href="/shop/?brand=${esc(encodeURIComponent(b))}">${esc(b)} <span style="opacity:.5">(${n})</span></a>`).join(''):'';
   $('#mnavList').innerHTML=catsHtml+brandsHtml+`
     <div style="border-top:1px solid var(--border);margin:8px 0"></div>
-    <a href="/bundles/">📦 Chaska Boxes</a>
+    <a href="/bundles/">Chaska Boxes</a>
     <a href="/shop/" onclick="goBadge('Sale');return false">🔥 Deals</a>
     <div style="border-top:1px solid var(--border);margin:8px 0"></div>
     <a href="/account/" onclick="closeMnav()">👤 My Account</a>`;
@@ -1769,7 +1774,7 @@ function toggleWishlist(id, btn){
 }
 function wishBtnHTML(p){
   const on = isWished(p.id) ? ' on' : '';
-  return `<button class="wishbtn${on}" data-wish="${p.id}" aria-label="Add to wishlist" aria-pressed="${isWished(p.id)}" onclick="event.preventDefault();toggleWishlist(${p.id},this)">♥</button>`;
+  return `<button class="wishbtn${on}" data-wish="${p.id}" aria-label="Add to wishlist" aria-pressed="${isWished(p.id)}" onclick="event.preventDefault();toggleWishlist(${p.id},this)">${cbIcon('heart')}</button>`;
 }
 function updateWishCount(){
   const n = getWishlist().length;
