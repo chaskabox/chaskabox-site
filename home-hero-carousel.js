@@ -11,7 +11,18 @@
   const kick=root.querySelector('.kick');
   const primary=root.querySelector('.hero-actions .cta');
   const secondary=root.querySelector('.hero-actions .cta.ghost');
-  const controls=root.querySelector('.hero-slider-controls');
+  let controls=root.querySelector('.hero-slider-controls');
+  // Entry pages for categories/brands can become Home via client-side navigation.
+  if(!controls){
+    controls=document.createElement('div');
+    controls.className='hero-slider-controls';
+    controls.setAttribute('role','group');
+    controls.setAttribute('aria-label','Choose homepage banner');
+    controls.innerHTML='<button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>'+
+      [0,1,2].map(i=>'<button type="button" data-hero-dot="'+i+'" aria-label="Show hero '+(i+1)+'" aria-pressed="'+(i===0)+'"></button>').join('')+
+      '<button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>';
+    root.querySelector('.herotrust')?.before(controls);
+  }
   if(!title||!desc||!eyebrow||!kick||!primary||!secondary||!controls)return;
   const defaults=[
     {label:'Bachpan Ka Zaiqa',kick:'Pakistan ka snack box, dil se',
