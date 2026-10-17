@@ -188,3 +188,58 @@ test('courier panel and dispatch form retain courier attribution and do not auto
  assert.match(endpoint,/admin_courier_dispatch/);
  assert.match(admin,/actual.*receipt|Receipt.*only|Recorded as actually received/i);
 });
+
+
+test('online JazzCash/bank reconciliation requires verified payment and reconciles actual payouts and fees',async()=>{
+ const db=await fixture();
+ try{
+  const account=async(method,label,days,user=actor)=>(await db.query('SELECT admin_online_payment_account_save($1,$2,$3,$4) r',[user,method,label,days])).rows[0].r;
+  assert.equal((await account('jazzcash','Business wallet',3)).account.settlement_days,3);
+  assert.equal((await account('card','Fake Gateway',2)).status,400,'No card gateway can be enabled from ledger settings');
+  const customer={name:'Synthetic',phone:'03000000000',address:'Synthetic address 100',city:'Multan',country:'Pakistan'};
+  const make=async(method,n)=> (await db.query('SELECT create_order_atomic($1) r',[{
+    customer,items:[{product_id:1,qty:1}],payment_method:method,transaction_reference:'REF-'+n,
+    order_number:'CB-ONLINE-TEST-'+n,idempotency_key:'00000000-0000-4000-8000-00000000014'+n
+  }])).rows[0].r.order;
+  const jazz=await make('jazzcash',1),bank=await make('bank_transfer',2);
+  const receipt=async(orderId,amount,fee,ref)=>(await db.query(
+   'SELECT admin_online_payment_record_receipt($1,$2,$3,$4,CURRENT_DATE,$5) r',
+   [actor,orderId,amount,fee,ref])).rows[0].r;
+  assert.equal((await receipt(jazz.id,200,0,'WALLET-A')).status,409,'Unverified payment must never count as received');
+  await db.query("UPDATE orders SET payment_status='payment_verified' WHERE id=$1",[jazz.id]);
+  const before=(await db.query('SELECT * FROM online_payment_ledger WHERE order_id=$1',[jazz.id])).rows[0];
+  assert.equal(before.verified_gross_pkr,1300);
+  assert.equal(before.received_pkr,0);
+  assert.equal(before.unreconciled_pkr,1300);
+  assert.ok(before.expected_settlement_on,'Expected date follows actual verified event and owner setting');
+  assert.equal((await receipt(jazz.id,500,25,'WALLET-A')).unreconciled_pkr,775);
+  assert.equal((await receipt(jazz.id,10,0,'wallet-a')).status,409,'References must be case-insensitively unique');
+  assert.equal((await receipt(jazz.id,800,0,'WALLET-B')).status,409,'Payout plus fees cannot exceed verified amount');
+  assert.equal((await receipt(jazz.id,775,0,'WALLET-B')).unreconciled_pkr,0);
+  const after=(await db.query('SELECT * FROM online_payment_ledger WHERE order_id=$1',[jazz.id])).rows[0];
+  assert.equal(after.received_pkr,1275);
+  assert.equal(after.processing_fees_pkr,25);
+  assert.equal(after.unreconciled_pkr,0);
+  const untouched=(await db.query('SELECT * FROM online_payment_ledger WHERE order_id=$1',[bank.id])).rows[0];
+  assert.equal(untouched.verified_gross_pkr,0);
+  assert.equal(untouched.received_pkr,0);
+  assert.equal(untouched.expected_settlement_on,null,'Bank transfer delay is unknown until owner configures it');
+  assert.equal((await db.query('SELECT count(*)::int n FROM online_payment_receipts')).rows[0].n,2);
+  assert.equal((await db.query("SELECT count(*)::int n FROM audit_log WHERE entity_id=$1 AND action='payment.online_payout_received'",[jazz.id])).rows[0].n,2);
+  assert.equal((await db.query("SELECT count(*)::int n FROM orders WHERE payment_method='card'")).rows[0].n,0);
+ }finally{await db.close();}
+});
+test('COD and online panel shows separate verified, recorded and unreconciled figures; card not connected',async()=>{
+ const html=await readFile(new URL('../admin.html',import.meta.url),'utf8');
+ const js=await readFile(new URL('../admin-live.js',import.meta.url),'utf8');
+ const receipts=await readFile(new URL('../functions/api/admin/online-payments/receipts.js',import.meta.url),'utf8');
+ assert.match(html,/Payments &amp; COD Ledger/);
+ assert.match(html,/id="onlinePaymentSummary"/);
+ assert.match(js,/function loadOnlinePayments\(/);
+ assert.match(js,/function recordOnlineReceipt\(/);
+ assert.match(js,/Card payments/);
+ assert.match(js,/Not connected/);
+ assert.match(js,/api\/admin\/online-payments\/receipts/);
+ assert.match(receipts,/\['owner','manager'\]/);
+ assert.doesNotMatch(js,/payment_method.*card.*create_order|saveCardNumber/);
+});
