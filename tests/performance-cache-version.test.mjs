@@ -6,10 +6,10 @@ test('all storefront entry routes load the same versioned UX application and car
   for(const path of pages){
     const html=readFileSync(new URL(path,root),'utf8');
     assert.match(html,/\/styles\.css\?v=20261017-approvedbrand/,path);
-    assert.match(html,/\/app\.js\?v=20261017-approvedbrand/,path);
+    assert.match(html,/\/app\.js\?v=20261017-polish/,path);
     assert.match(html,/\/storefront-ux-refresh\.css\?v=20261017-p[12]/,path);
     assert.match(html,/\/home-hero-carousel\.css\?v=20261017-p2/,path);
-    assert.match(html,/\/home-hero-carousel\.js\?v=20261017-reference/,path);
+    assert.match(html,/\/home-hero-carousel\.js\?v=20261017-polish/,path);
     assert.doesNotMatch(html,/\/(?:styles\.css|app\.js)\?v=20261012-release\?v=/,path);
   }
 });

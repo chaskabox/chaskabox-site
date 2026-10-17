@@ -36,14 +36,14 @@ setTimeout(function(){
   <aside class="admin-sidebar" id="adminSidebar">
     <div class="admin-brand-row">
       <a class="admin-brand" href="/" target="_blank" rel="noopener">
-      <img src="/images/logo-approved-20261017.png" srcset="/images/logo-approved-20261017-420.webp 420w, /images/logo-approved-20261017-840.webp 840w" sizes="210px" alt="ChaskaBox" width="1624" height="776">
+      <img src="/images/logo-approved-20261017.png" srcset="/images/logo-header-polish-20261017-420.webp 420w, /images/logo-header-polish-20261017-840.webp 840w" sizes="210px" alt="ChaskaBox" width="1624" height="776">
       <span>Admin Console</span>
     </a>
       <button type="button" id="adminSidebarCollapse" class="admin-sidebar-collapse" aria-label="Hide sidebar to focus on content" title="Hide sidebar (desktop) or close menu (mobile)">«</button>
     </div>
     <div class="admin-nav-search">
       <label for="adminNavSearch">Find a panel</label>
-      <div class="admin-nav-search-field"><span aria-hidden="true">⌕</span><input type="search" id="adminNavSearch" placeholder="Search panels…" autocomplete="off" aria-controls="adminNavGroups"></div>
+      <div class="admin-nav-search-field"><span aria-hidden="true"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></span><input type="search" id="adminNavSearch" placeholder="Search panels…" autocomplete="off" aria-controls="adminNavGroups"></div>
     </div>
     <div class="admin-sidebar-controls" role="group" aria-label="Navigation groups">
       <button type="button" id="adminExpandGroups" title="Show every section">Expand all</button>
@@ -197,7 +197,7 @@ setTimeout(function(){
       <!-- ORDERS -->
       <section class="admin-view" id="view-orders" data-title="Orders" data-subtitle="Manage fulfilment, payment verification and customer communication.">
         <div class="toolbar admin-order-filters" role="group" aria-label="Filter and export orders">
-          <div class="searchbox"><span aria-hidden="true">⌕</span><input id="orderSearch" type="search" aria-label="Search orders" placeholder="Order number, name, phone…" autocomplete="off" disabled></div>
+          <div class="searchbox"><span aria-hidden="true"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></span><input id="orderSearch" type="search" aria-label="Search orders" placeholder="Order number, name, phone…" autocomplete="off" disabled></div>
           <label class="admin-filter-control">Fulfilment
             <select id="orderStatusFilter" disabled><option value="">All fulfilment</option><option value="new">New</option><option value="sourcing">Sourcing</option><option value="packed">Packed</option><option value="dispatched">Dispatched</option><option value="delivered">Delivered</option><option value="cancelled">Cancelled</option></select>
           </label>
