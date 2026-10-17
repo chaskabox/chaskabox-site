@@ -238,7 +238,7 @@ test('COD and online panel shows separate verified, recorded and unreconciled fi
  assert.match(js,/function loadOnlinePayments\(/);
  assert.match(js,/function recordOnlineReceipt\(/);
  assert.match(js,/Card payments/);
- assert.match(js,/Not connected/);
+ assert.match(js,/BOP card gateway/);
  assert.match(js,/api\/admin\/online-payments\/receipts/);
  assert.match(receipts,/\['owner','manager'\]/);
  assert.doesNotMatch(js,/payment_method.*card.*create_order|saveCardNumber/);
