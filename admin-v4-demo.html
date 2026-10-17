@@ -8,12 +8,24 @@
 <link rel="stylesheet" href="/admin-v4-demo.css?v=1">
 <script src="/admin-v4-demo.js?v=1" defer></script>
 <script src="/admin-v4-tools.js?v=20261016-v4-actions1" defer></script>
+<script src="/admin-v4-sidebar.js?v=20261017-nav2" defer></script>
 </head>
 <body>
 <div class="admin-shell demo-admin-shell">
   <aside class="admin-sidebar" id="adminSidebar" aria-label="Demo navigation">
-    <a class="admin-brand" href="https://chaskabox.online/" target="_blank" rel="noopener"><img src="/images/logo-navy.png" alt="ChaskaBox"><span>Admin V4 Demo</span></a>
+    <div class="admin-brand-row">
+      <a class="admin-brand" href="https://chaskabox.online/" target="_blank" rel="noopener"><img src="/images/logo-navy.png" alt="ChaskaBox"><span>Admin V4 Demo</span></a>
+      <button type="button" id="adminSidebarCollapse" class="admin-sidebar-collapse" aria-label="Hide sidebar to focus on content" title="Hide sidebar (desktop) or close menu (mobile)">«</button>
+    </div>
     <div class="admin-nav-search"><label for="adminNavSearch">Find a panel</label><div class="admin-nav-search-field"><span aria-hidden="true">⌕</span><input type="search" id="adminNavSearch" placeholder="Search 25 panels…" autocomplete="off" aria-controls="adminNavGroups"></div></div>
+    <div class="admin-sidebar-controls" role="group" aria-label="Navigation groups">
+      <button type="button" id="adminExpandGroups" title="Show every section">Expand all</button>
+      <button type="button" id="adminCollapseGroups" title="Hide every section">Collapse all</button>
+    </div>
+    <section class="admin-pinned" aria-labelledby="adminPinnedTitle">
+      <div class="admin-pinned-head"><strong id="adminPinnedTitle">★ Pinned panels</strong><span id="adminPinnedCount">0 / 6</span></div>
+      <div id="adminPinnedLinks" class="admin-pinned-links"><p class="admin-pinned-empty">Pin frequently used panels from the page header.</p></div>
+    </section>
     <nav class="admin-nav" id="adminNavGroups" aria-label="Admin sections">
       <details class="admin-nav-group" data-group="overview" open>
         <summary><span>Overview</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
@@ -77,13 +89,15 @@
   </aside>
   <div class="sidebar-backdrop" id="sidebarBackdrop" aria-hidden="true"></div>
   <div class="admin-main">
+    <button type="button" id="adminSidebarRestore" class="admin-sidebar-restore" aria-label="Show sidebar" title="Show navigation sidebar">☰ Show sidebar</button>
     <header class="admin-topbar">
       <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-controls="adminSidebar" aria-expanded="false" aria-label="Open demo navigation">☰</button>
       <div class="admin-page-heading">
         <span class="admin-page-eyebrow">CHASKABOX / DESIGN DEMO</span>
         <h1 id="viewTitle">Dashboard</h1><p id="viewSubtitle">Explore V4 interface and grouped navigation without signing in.</p>
       </div>
-      <div class="admin-top-actions"><button class="btn secondary admin-tools-button" type="button" id="adminCommandOpen" title="Quick switch (Ctrl or Command + K)" aria-haspopup="dialog">⌕ Find panel <kbd>⌘K</kbd></button><button class="btn secondary admin-tools-button" type="button" id="adminDensityToggle" aria-pressed="false">☰ Compact: Off</button><a class="btn secondary" href="https://chaskabox.online/" target="_blank" rel="noopener">Preview site</a><a class="btn primary" href="https://chaskabox.online/admin.html">Secure admin sign-in</a></div>
+      <div class="admin-top-actions"><button class="btn secondary admin-tools-button" type="button" id="adminCommandOpen" title="Quick switch (Ctrl or Command + K)" aria-haspopup="dialog">⌕ Find panel <kbd>⌘K</kbd></button><button class="btn secondary admin-tools-button" type="button" id="adminPinCurrent" aria-pressed="false" title="Pin current panel to shortcuts">☆ Pin panel</button>
+        <button class="btn secondary admin-tools-button" type="button" id="adminDensityToggle" aria-pressed="false">☰ Compact: Off</button><a class="btn secondary" href="https://chaskabox.online/" target="_blank" rel="noopener">Preview site</a><a class="btn primary" href="https://chaskabox.online/admin.html">Secure admin sign-in</a></div>
     </header>
     <main class="admin-content">
       <div class="security-notice demo-safe-notice" role="status"><strong>SYNTHETIC DESIGN PREVIEW:</strong> All figures are illustrative. No Supabase session, payment, order or notification is accessed. Buttons do not save or send.</div>
