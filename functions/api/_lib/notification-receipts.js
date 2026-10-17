@@ -41,7 +41,9 @@ export async function handleNotificationReceipt(request, env, channel, fetcher =
     if (data.event !== 'message.ack' || data.session !== env.WAHA_SESSION || data.payload?.fromMe !== true) return json({ ignored: true }, 202);
     status = [2, 3, 4].includes(data.payload.ack) ? 'delivered' : data.payload.ack === -1 ? 'failed' : null;
     if (!status) return json({ ignored: true }, 202);
-    id = data.payload.id; event = data.session + ':' + id + ':' + data.payload.ack;
+    // WEBJS may emit a structured message ID; match the normalized send acknowledgment.
+    id = typeof data.payload.id === 'string' ? data.payload.id : data.payload.id?._serialized;
+    event = data.session + ':' + id + ':' + data.payload.ack;
     // WAHA's signed body may omit event time. Such receipts use arrival time;
     // delivered is terminal for WhatsApp, so an old ERROR replay cannot undo it.
     occurred = Number.isFinite(data.timestamp) ? new Date(data.timestamp).toISOString() : new Date().toISOString();
