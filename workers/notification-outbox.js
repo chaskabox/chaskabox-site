@@ -190,9 +190,46 @@ export async function configureWahaWebhookOnce(env, fetcher = fetch) {
   return {status:outcome,error_code:code,http_status:httpStatus,session_status:sessionStatus,webhook_present:present};
 }
 
+
+export async function verifyWahaWebhookRecovery(env, fetcher = fetch) {
+  if (env.WAHA_WEBHOOK_VERIFY_ENABLED !== 'true') return { status: 'disabled' };
+  const auth=wahaAccessHeaders(env);
+  const base=String(env.WAHA_API_URL||'').replace(/\/+$/,'');
+  if (base!=='https://waha.chaskabox.online'||env.WAHA_SESSION!=='default'||
+      !env.WAHA_API_KEY||!auth['CF-Access-Client-Id']||
+      !auth['CF-Access-Client-Secret']||!env.WAHA_WEBHOOK_SECRET)
+    return {status:'blocked',reason:'required_gateway_credentials_unavailable'};
+  try {
+    const r=await fetcher.call(globalThis,base+'/api/sessions/default',{
+      method:'GET',redirect:'manual',signal:AbortSignal.timeout(10000),
+      headers:{'X-Api-Key':env.WAHA_API_KEY,...auth,Accept:'application/json'},
+    });
+    let data=null;
+    try{data=JSON.parse(await limitedText(r,32768))}catch{}
+    const status=typeof data?.status==='string'?data.status:'unknown';
+    const hooks=Array.isArray(data?.config?.webhooks)?data.config.webhooks:[];
+    const present=hooks.some(h=>h?.url==='https://notify.chaskabox.online/webhooks/waha'&&
+      h?.events?.includes('message.ack')&&
+      (!h.hmac?.key||h.hmac.key===env.WAHA_WEBHOOK_SECRET));
+    if(r.status!==200||status!=='WORKING'||!present)
+      return {status:'unverified',http_status:r.status,session_status:status,webhook_present:present};
+    const saved=await privateRequest(env,'/rest/v1/rpc/waha_webhook_setup_verify',{
+      p_id:'chaskabox-waha-receipts-20261017',p_http_status:r.status,
+      p_session_status:status,p_webhook_present:present,
+    },fetcher);
+    return {status:saved===true?'configured':'already_checked',http_status:200,
+      session_status:'WORKING',webhook_present:true};
+  } catch {return {status:'unverified',reason:'read_only_check_failed'};}
+}
+
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }); }
 export default {
   async scheduled(_controller, env, ctx) {
+    if (env.WAHA_WEBHOOK_VERIFY_ENABLED === 'true') {
+      ctx.waitUntil(verifyWahaWebhookRecovery(env).then(result => {
+        console.log(JSON.stringify({event:'waha_webhook_verify',...result}));
+      }).catch(() => console.log(JSON.stringify({event:'waha_webhook_verify',status:'diagnostic_error'}))));
+    }
     if (env.WAHA_WEBHOOK_SETUP_ENABLED === 'true') {
       ctx.waitUntil(configureWahaWebhookOnce(env).then(result => {
         console.log(JSON.stringify({event:'waha_webhook_setup',...result}));
