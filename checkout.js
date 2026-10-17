@@ -396,8 +396,6 @@ function showCheckoutStep(step, moveFocus=true) {
     const panel=document.getElementById(id);
     if(panel) panel.hidden=Number(number)!==step;
   }
-  const extras=document.getElementById('checkoutExtrasStep');
-  if(extras) extras.hidden=step!==2;
   for(const id of ['checkoutVerification','placeBtn','checkoutPolicy']){
     const node=document.getElementById(id);
     if(node) node.hidden=step!==3;
@@ -432,6 +430,7 @@ function updateCheckoutReview(){
     reviewPhone:($('#f_phone')?.value||'').trim(),
     reviewEmail:($('#f_email')?.value||'').trim(),
     reviewAddress:[($('#f_addr')?.value||'').trim(),($('#f_city')?.value||'').trim(),($('#f_province')?.value||'').trim(),($('#f_postal')?.value||'').trim(), 'Pakistan'].filter(Boolean).join(', '),
+    reviewWhatsapp: $('#f_whatsapp_optin')?.checked ? 'WhatsApp updates: Yes — for this order only' : 'WhatsApp updates: Not requested',
     reviewPayment:PAYMENT_LABELS[PAY]||'Payment method not selected',
     reviewPaymentStatus:isPrepaid()?'Payment reference provided. Awaiting verification after your order is placed.':'Pay when your order arrives.'
   };
