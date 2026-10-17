@@ -220,7 +220,7 @@ try{
   if(!layout.background.includes('hero-approved-brand-polish-20261017.webp')||!layout.font.includes('Kalam'))throw Error('Reference hero artwork or type is missing');
   const polish=await page.evaluate(()=>({
    duplicateTrust:getComputedStyle(document.querySelector('#view-home .herotrust')).display,
-   firstCardTop:document.querySelector('#view-home .card')?.getBoundingClientRect().top,
+   firstCardTop:Math.min(...[...document.querySelectorAll('#view-home .card')].map(el=>el.getBoundingClientRect().top)),
    packSize:parseFloat(getComputedStyle(document.querySelector('#view-home .card .ppack')).fontSize),
    buttonHeight:document.querySelector('#view-home .card .addcart')?.getBoundingClientRect().height,
    categorySymbols:document.querySelectorAll('#catTiles .ci-category-symbol').length,
