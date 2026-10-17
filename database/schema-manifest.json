@@ -21,7 +21,8 @@
     "database/migrations/20261012013700_final_acceptance_fixes.sql",
     "database/migrations/20261017150000_checkout_shipping_default_settings.sql",
     "database/migrations/20261017180000_courier_cod_settlements.sql",
-    "database/migrations/20261017190000_online_payment_reconciliation.sql"
+    "database/migrations/20261017190000_online_payment_reconciliation.sql",
+    "database/migrations/20261017210000_bop_card_gateway_readiness.sql"
   ],
   "managed_history_observed": [
     {
