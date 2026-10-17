@@ -839,6 +839,21 @@ try{
     results.interactions.push({case:'V4 storefront design controls navigate to real editor and public route preview',pass:opened&&publicRoute==='/shop/'});
     await context.close();
   }
+
+  {
+    const {context,page}=await contextFor(1440,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await openAdminPanel(page,'theme');
+    await page.locator('#demoThemeFrame').waitFor({state:'attached'});
+    await page.waitForFunction(()=>document.getElementById('demoThemeFrame')?.contentDocument?.readyState==='complete',{timeout:12000});
+    await page.locator('#demoThemePrimary').fill('#244a86');
+    await page.locator('#demoThemeApply').click();
+    const applied=await page.locator('#demoThemeFrame').evaluate(f=>f.contentDocument?.getElementById('chaskaboxDemoThemeStyle')?.textContent.includes('#244a86'));
+    await page.locator('#demoThemeReset').click();
+    const reset=await page.locator('#demoThemeFrame').evaluate(f=>f.contentDocument?.getElementById('chaskaboxDemoThemeStyle')?.textContent==='');
+    results.interactions.push({case:'V4 theme sandbox applies and resets unsaved colors inside storefront iframe only',pass:applied&&reset});
+    await context.close();
+  }
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));globalThis.fetch=originalFetch;await writeFile(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));}
 console.log(JSON.stringify({pages:results.cases.length,interactions:results.interactions,errors:results.errors}));
 if(results.cases.some(c=>c.status!==200||c.overflow||c.duplicatePromo||c.violations.length)||results.interactions.some(c=>!c.pass)||results.errors.length)process.exitCode=1;
