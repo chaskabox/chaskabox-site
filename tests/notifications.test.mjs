@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fixture, activate, order, rpc, env, router, actor } from './notification-fixture.mjs';
 import worker,{runNotifications,runOwnerWahaCanary,configureWahaWebhookOnce,verifyWahaWebhookRecovery} from '../workers/notification-outbox.js';
-import { buildNotificationPayload,sendNotification,notificationConfig,notificationHealth,limitedText,privateRequest,providerReadiness,wahaAccessHeaders } from '../functions/api/_lib/notification-delivery.js';
+import { buildNotificationPayload,previewNotificationTemplate,sendNotification,notificationConfig,notificationHealth,limitedText,privateRequest,providerReadiness,wahaAccessHeaders } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt,verifyResend,verifyWaha } from '../functions/api/_lib/notification-receipts.js';
 import { onRequestGet as adminNotifications } from '../functions/api/admin/notifications/index.js';
 
@@ -514,4 +514,41 @@ test('signed WAHA receipt with nested serialized ID matches outgoing provider ID
  assert.equal((await handleNotificationReceipt(await signedWaha(payload),e,'whatsapp',fetcher)).status,200);
  assert.equal(recorded.p_provider_id,id);
  assert.equal(recorded.p_status,'delivered');
+});
+
+test('professional WhatsApp templates show item quantities, line amounts, and truthful payment status',()=>{
+ const template={
+  name:'order_thankyou_customer',channel:'whatsapp',version:3,body:
+  'ChaskaBox received {{order_number}}\n{{items_summary}}\nSubtotal Rs. {{subtotal_display}}\n'+
+  'Delivery Rs. {{delivery_fee_display}}\nDiscount Rs. {{discount_display}}\nTotal Rs. {{total_display}}\n'+
+  'Payment {{payment_method_label}} — {{payment_status_label}}\nCity {{customer_city}}\nTrack {{tracking_url}}',
+ };
+ const preview=previewNotificationTemplate(template);
+ assert.match(preview.text,/Imli Candy \(200g\) × 2 — Rs. 1,000/);
+ assert.match(preview.text,/Nimko Mix \(500g\) × 1 — Rs. 1,350/);
+ assert.match(preview.text,/Subtotal Rs. 2,350/);
+ assert.match(preview.text,/Delivery Rs. 100/);
+ assert.match(preview.text,/Total Rs. 2,450/);
+ assert.match(preview.text,/Payment Cash on Delivery — Payment on delivery/);
+ assert.match(preview.text,/City Lahore/);
+ assert.doesNotMatch(preview.text,/confirmed|will deliver in 4-7 days|{{|}}/i);
+});
+test('professional owner WhatsApp template includes address, item list and admin URL',()=>{
+ const template={name:'order_received_owner_whatsapp',channel:'whatsapp',body:
+  'New {{order_number}}\n{{customer_name}} {{customer_phone}}\n{{delivery_address}}\n{{items_summary}}\n'+
+  'Rs. {{total_display}}\n{{payment_method_label}} {{payment_status_label}}\n{{admin_url}}'};
+ const preview=previewNotificationTemplate(template);
+ assert.match(preview.text,/House 12, Model Town, Lahore/);
+ assert.match(preview.text,/Nimko Mix/);
+ assert.match(preview.text,/\/admin\.html#order-/);
+});
+test('order item formatting bounds the preview output and sanitizes item names',()=>{
+ const order={id:'00000000-0000-4000-8000-000000000001',order_number:'CB-TEST',customer_name:'A Customer',
+ customer_phone:'03001234567',total:100,subtotal:100,delivery_fee:0,discount:0,payment_method:'cod',payment_status:'cod_due',
+ items:[{product_name:'Snack\nInjected Heading',pack:'pack',quantity:2,unit_price:50}]};
+ const template={name:'order_thankyou_customer',channel:'whatsapp',is_active:true,body:'{{items_summary}}'};
+ const payload=buildNotificationPayload({WAHA_API_URL:'https://waha.example.invalid',WAHA_SESSION:'default'},order,
+  {target:'customer_whatsapp',event_type:'order_created',event_data:{}},[template]);
+ assert.match(payload.body.text,/Snack Injected Heading/);
+ assert.doesNotMatch(payload.body.text,/Snack\nInjected/);
 });
