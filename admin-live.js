@@ -463,8 +463,8 @@
     printBar.style.cssText = 'display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)';
     printBar.innerHTML = `<button class="btn secondary" id="printInvoiceBtn">🖨️ Print Invoice</button><button class="btn secondary" id="printPackingBtn">📦 Packing Slip</button>`;
     modal.querySelector('.live-order-card').appendChild(printBar);
-    $('#printInvoiceBtn').onclick = () => printInvoice(o, items, false);
-    $('#printPackingBtn').onclick = () => printInvoice(o, items, true);
+    $('#printInvoiceBtn').onclick = () => printInvoice(o, items, false, advance);
+    $('#printPackingBtn').onclick = () => printInvoice(o, items, true, advance);
   }
 
 
@@ -714,7 +714,7 @@
     }
   }
 
-  function printInvoice(o, items, isPacking){
+  function printInvoice(o, items, isPacking, advance){
     const w = window.open('', '_blank', 'width=800,height=900');
     const rows = items.map((i,idx)=>`<tr><td>${idx+1}</td><td>${esc(i.product_name)}<br><small>${esc(i.pack||'')}</small></td><td>${i.quantity}</td>${isPacking?'':`<td style="text-align:right">${money(i.line_total)}</td>`}</tr>`).join('');
     w.document.write(`<!DOCTYPE html><html><head><title>${isPacking?'Packing Slip':'Invoice'} ${esc(o.order_number)}</title><style>
@@ -732,7 +732,7 @@
       <div class="head"><div><h1>🍬 ChaskaBox</h1><small>Pakistani Snacks · chaskabox.online</small></div><div style="text-align:right"><b>${isPacking?'PACKING SLIP':'INVOICE'}</b><br>${esc(o.order_number)}<br>${new Date(o.created_at).toLocaleDateString('en-PK')}</div></div>
       <div class="addr"><b>Ship to:</b><br>${esc(o.customer_name)}<br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</div>
       <table><tr><th>#</th><th>Item</th><th>Qty</th>${isPacking?'':'<th style="text-align:right">Amount</th>'}</tr>${rows}</table>
-      ${isPacking?`<p><b>Total items: ${items.reduce((s,i)=>s+Number(i.quantity||0),0)}</b></p>`:`<div class="totals"><p>Subtotal: ${money(o.subtotal)}</p><p>Delivery: ${money(o.delivery_fee)}</p><p style="font-size:18px"><b>Total: ${money(o.total)}</b></p><p>Payment: ${esc(o.payment_method)} (${esc(o.payment_status)})</p></div>`}
+      ${isPacking?`<p><b>Total items: ${items.reduce((s,i)=>s+Number(i.quantity||0),0)}</b></p><p><b>Courier COD to collect: ${o.payment_method==='cod'?money(Math.max(0,Number(o.total)-Number(o.cod_advance_required_pkr||0))):'Prepaid'}</b></p>${Number(advance?.remaining_pkr||0)>0?'<p style="color:#c00"><b>DO NOT DISPATCH: COD advance not verified</b></p>':''}`:`<div class="totals"><p>Subtotal: ${money(o.subtotal)}</p><p>Delivery: ${money(o.delivery_fee)}</p><p style="font-size:18px"><b>Order total: ${money(o.total)}</b></p>${o.payment_method==='cod'?'<p>Required advance: '+money(o.cod_advance_required_pkr||0)+' · Verified: '+money(advance?.received_pkr||0)+'</p><p><b>Courier COD remaining: '+money(Math.max(0,Number(o.total)-Number(o.cod_advance_required_pkr||0)))+'</b></p>':''}<p>Payment: ${esc(o.payment_method)} (${esc(o.payment_status)})</p></div>`}
       <p class="no-print" style="margin-top:24px"><button onclick="window.print()" style="padding:10px 24px;font-size:16px;cursor:pointer">🖨️ Print</button></p>
     </body></html>`);
     w.document.close();
