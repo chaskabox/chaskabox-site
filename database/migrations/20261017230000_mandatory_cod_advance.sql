@@ -190,9 +190,9 @@ BEGIN
  END IF;
  SELECT * INTO v_courier FROM public.courier_companies WHERE id=p_courier AND is_active FOR SHARE;
  IF NOT FOUND THEN RETURN jsonb_build_object('error','Choose an active courier company','status',400); END IF;
- IF v_order.payment_method='cod' AND v_courier.deduction_per_order_pkr>v_order.total-v_order.cod_advance_required_pkr THEN
-  RETURN jsonb_build_object('error','Courier deduction exceeds outstanding COD collection after advance','status',400);
- END IF;
+ -- Courier charges are separate expenses: a fully-advanced small order may have
+ -- zero remaining COD while the courier still charges us for shipping.
+ -- The settlement view safely forecasts max(remaining COD minus deduction, 0).
  v_result:=public.admin_order_mutate(p_actor,p_order,'status','dispatched','',p_expected_updated_at);
  IF v_result ? 'error' THEN RETURN v_result; END IF;
  INSERT INTO public.courier_order_shipments(order_id,courier_id,courier_name_snapshot,tracking_number,
