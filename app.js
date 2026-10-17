@@ -727,6 +727,8 @@ function renderShopRoute(){
   shopState.cat='';
   const urlQ=new URLSearchParams(location.search).get('q'); if(urlQ!==null) shopState.q=urlQ;
   const params=new URLSearchParams(location.search);
+  if(params.get('sort')==='new')shopState.sort='new';
+  if(params.get('badge')==='Sale')shopState.badge='Sale';
   if(params.has('brand'))shopState.brands=params.getAll('brand').map(v=>v.trim()).filter(Boolean);
   const category=params.get('category')??params.get('cat');if(category!==null)shopState.cat=(STORE_CONFIG?.categories||[]).find(c=>c.slug===category)?.name||CATEGORY_SLUGS[category]||category;
   showView('shop');
