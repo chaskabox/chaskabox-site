@@ -166,7 +166,7 @@ function renderHomeContent(){
     const snackPicks=distinctBrandPicks(act.filter(p=>p.category==='Snacks & Nimco'&&hasPhoto(p)),3);
     const markup=items=>items.map((p,i)=>`<img ${photoAttributes(p.img,"150px")} alt="${esc(p.name)}" width="150" height="150" loading="${i===0?'eager':'lazy'}" fetchpriority="${i===0?'high':'low'}" decoding="async" class="hc${i+1}">`).join('');
     window.CHASKABOX_HERO_MARKUP=[hi.innerHTML,markup(boxPicks.length?boxPicks:heroPicks),markup(snackPicks.length?snackPicks:heroPicks)];
-    window.dispatchEvent(new Event('chaskabox:hero-imagery-ready'));
+    if(typeof window.Event==='function'&&typeof window.dispatchEvent==='function')window.dispatchEvent(new window.Event('chaskabox:hero-imagery-ready'));
   }
   // Curated homepage shelves: fast discovery without dumping the full catalogue
   shelfSeq=0;
@@ -621,7 +621,7 @@ function applyHomeCms(){
 
   window.applyStorefrontManifest?.(STORE_CONFIG);
   const heroRow=by.hero||{};
-  window.dispatchEvent(new CustomEvent('chaskabox:home-config',{detail:{
+  if(typeof window.CustomEvent==='function'&&typeof window.dispatchEvent==='function')window.dispatchEvent(new window.CustomEvent('chaskabox:home-config',{detail:{
     ...(heroRow.config||{}),heading:heroRow.heading,subheading:heroRow.subheading
   }}));
   renderPackingVideo();
