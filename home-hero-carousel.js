@@ -28,7 +28,7 @@
     {label:'Bachpan Ka Zaiqa',kick:'Pakistan ka snack box, dil se',
      eyebrow:'PAKISTANI SNACKS · SOURCED AFTER ORDER',
      heading:'Bachpan Ka Zaiqa, ',highlight:'Ab Ghar Baithe.',
-     description:'Pakistani snacks & curated Chaska Boxes. Sourced after your order, delivered across Pakistan.',
+     description:'Pakistani favourites, sourced after your order. Delivered across Pakistan.',
      primary:'Shop Now',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
     {label:'Curated Chaska Boxes',kick:'Har mood ka Chaska Box',
      eyebrow:'CURATED SNACK BOXES · GIFTING & SHARING',

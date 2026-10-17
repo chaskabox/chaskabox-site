@@ -217,10 +217,30 @@ try{
    return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundImage,font:getComputedStyle(hero.querySelector('h1')).fontFamily};
   });
   if(layout.width<width-60||layout.width>width||layout.height>(width<=760?320:540))throw Error('Reference hero layout mismatch '+JSON.stringify({width,...layout}));
-  if(!layout.background.includes('hero-reference-snackbox-20261017.webp')||!layout.font.includes('Kalam'))throw Error('Reference hero artwork or type is missing');
+  if(!layout.background.includes('hero-approved-brand-polish-20261017.webp')||!layout.font.includes('Kalam'))throw Error('Reference hero artwork or type is missing');
+  const polish=await page.evaluate(()=>({
+   duplicateTrust:getComputedStyle(document.querySelector('#view-home .herotrust')).display,
+   firstCardTop:Math.min(...[...document.querySelectorAll('#view-home .card')].map(el=>el.getBoundingClientRect().top)),
+   packSize:parseFloat(getComputedStyle(document.querySelector('#view-home .card .ppack')).fontSize),
+   buttonHeight:document.querySelector('#view-home .card .addcart')?.getBoundingClientRect().height,
+   categorySymbols:document.querySelectorAll('#catTiles .ci-category-symbol').length,
+   headerLogo:document.querySelector('.logo img')?.currentSrc
+  }));
+  if(polish.duplicateTrust!=='none'||polish.packSize<11||polish.buttonHeight<44||!polish.headerLogo.includes('logo-header-polish-20261017-'))throw Error('Design polish accessibility/branding mismatch '+JSON.stringify({width,...polish}));
+  if(width===1440&&(layout.height>370||polish.firstCardTop>780))throw Error('Products remain too low in the desktop layout '+JSON.stringify(polish));
+  if(!polish.categorySymbols)throw Error('Category discovery symbol missing');
+  results.interactions.push({case:'compact hero, legible packs, 44px purchase controls and approved header branding / '+width,pass:true});
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');
   if(width>760&&!await page.locator('.header-search').isVisible())throw Error('Desktop search missing');
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
+  if(width===390){
+   const wish=page.locator('#view-home .card .wishbtn').first();
+   await wish.click();
+   if(await wish.getAttribute('aria-pressed')!=='true'||await wish.locator('svg').count()!==1)throw Error('Line-icon wishlist add failed');
+   await wish.click();
+   if(await wish.getAttribute('aria-pressed')!=='false')throw Error('Line-icon wishlist remove failed');
+   results.interactions.push({case:'wishlist SVG controls add and remove the same product without navigation',pass:true});
+  }
   if(width===1440){
    await page.evaluate(()=>window.applyStorefrontManifest({...STORE_CONFIG,navigation:[{location:'header',is_enabled:true,position:1,label:'Owner menu fixture',url:'/shop/?brand=Mayfair'}]}));
    if(!await page.locator('.cb-managed-nav').getByRole('link',{name:'Owner menu fixture',exact:true}).isVisible())throw Error('Owner header navigation was lost by the reference shell');

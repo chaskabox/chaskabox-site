@@ -40,7 +40,7 @@
   function setLogo(img,src){
     // Older saved bundled-logo settings follow this approved branding release.
     if(src==='/images/logo-navy.png')src=defaultLogo;
-    if(src===defaultLogo){img.srcset='/images/logo-approved-20261017-420.webp 420w, /images/logo-approved-20261017-840.webp 840w';img.sizes='210px';}
+    if(src===defaultLogo){img.srcset='/images/logo-header-polish-20261017-420.webp 420w, /images/logo-header-polish-20261017-840.webp 840w';img.sizes='210px';}
     else{img.removeAttribute('srcset');img.removeAttribute('sizes');}
     img.src=src;
   }
