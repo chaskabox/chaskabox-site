@@ -168,6 +168,15 @@ test('provider outcomes distinguish acceptance, rejected retries, permanent fail
  email.request_payload=buildNotificationPayload(e,o,email,syntheticTemplates);wa.request_payload=buildNotificationPayload(e,o,wa,syntheticTemplates);
  const response=(status,body,headers={})=>async()=>new Response(JSON.stringify(body),{status,headers});
  assert.equal((await sendNotification(e,email,response(200,{id:'provider-ack'}))).status,'accepted');
+ const nestedId='true_923320005381@c.us_ABC123';
+ const nestedResult=await sendNotification(e,wa,response(201,{id:{fromMe:true,remote:'923320005381@c.us',id:'ABC123',_serialized:nestedId}}));
+ assert.equal(nestedResult.status,'accepted');
+ assert.equal(nestedResult.provider_id,nestedId);
+ assert.equal((await sendNotification(e,wa,response(200,{id:'plain-waha-id'}))).status,'accepted');
+ assert.equal((await sendNotification(e,email,response(200,{id:{_serialized:nestedId}}))).status,'retry');
+ assert.equal((await sendNotification(e,wa,response(200,{id:{id:'ABC123'}}))).status,'uncertain');
+ assert.equal((await sendNotification(e,wa,response(200,{id:{_serialized:'   '}}))).status,'uncertain');
+ assert.equal((await sendNotification(e,wa,response(200,{id:{_serialized:'x'.repeat(241)}}))).status,'uncertain');
  assert.equal((await sendNotification(e,email,response(200,{}))).status,'retry');assert.equal((await sendNotification(e,wa,response(200,{}))).status,'uncertain');
  assert.equal((await sendNotification(e,email,response(503,{}))).status,'retry');assert.equal((await sendNotification(e,wa,response(503,{}))).status,'uncertain');
  assert.equal((await sendNotification(e,email,response(400,{}))).status,'dead');assert.equal((await sendNotification(e,email,response(409,{name:'concurrent_idempotent_requests'}))).status,'retry');

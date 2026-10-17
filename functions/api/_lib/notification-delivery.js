@@ -157,7 +157,10 @@ export async function sendNotification(env, job, fetcher = fetch) {
     });
     let data = null; try { data = JSON.parse(await limitedText(response, 16384)); } catch { /* Never treat missing acknowledgement as success. */ }
     if (response.ok) {
-      const id = data?.id;
+      // WAHA engines such as WEBJS return { id: { _serialized: "true_..." } };
+      // Resend email IDs remain top-level strings. Never treat HTTP 2xx alone as
+      // acknowledgment: missing, malformed or oversized IDs stay uncertain.
+      const id = email ? data?.id : (typeof data?.id === 'string' ? data.id : data?.id?._serialized);
       if (typeof id !== 'string' || !id.trim() || id.length > 240) return { status: email ? 'retry' : 'uncertain', error: 'provider_ack_id_missing' };
       return { status: 'accepted', provider_id: id, error: null };
     }
