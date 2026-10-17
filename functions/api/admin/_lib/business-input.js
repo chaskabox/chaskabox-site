@@ -22,6 +22,7 @@ export function businessInput(body,kind,create=false) {
       out[key]=v.trim();
     }
   }
+  if(kind==='zone' && ((create && (!out.cities||!out.cities.length)) || (out.is_active===true && out.cities && !out.cities.length)))httpError('Zone overrides must specify cities; use Store Settings for nationwide fees',400);
   if(out.code!==undefined){out.code=out.code.toUpperCase();if(!/^[A-Z0-9]{1,32}$/.test(out.code))httpError('Invalid coupon code',400);}
   if(out.discount_type!==undefined&&!['percent','fixed'].includes(out.discount_type))httpError('Invalid discount type',400);
   if(out.discount_type==='percent'&&out.discount_value>90)httpError('Percent discount max 90%',400);
