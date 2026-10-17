@@ -7,12 +7,12 @@ import { csvCell } from '../functions/api/admin/_lib/csv.js';
 import { validateOrderPayload } from '../functions/api/_lib/validate.js';
 import { onRequestGet as loyaltyGet, onRequestPost as loyaltyPost } from '../functions/api/loyalty.js';
 
-const checkout = await readFile(new URL('../checkout.js',import.meta.url),'utf8');
+const checkout = (await readFile(new URL('../pakistan-locations.js',import.meta.url),'utf8'))+'\n'+(await readFile(new URL('../checkout.js',import.meta.url),'utf8'));
 const storefront = await readFile(new URL('../app.js',import.meta.url),'utf8');
 const fallbackCatalogue=JSON.parse(await readFile(new URL('../products.json',import.meta.url),'utf8'));
 function browser(source, storage=new Map()) {
   const nodes=new Map(), scrolls=[];
-  function element(){return {value:'',checked:false,hidden:false,disabled:false,textContent:'',innerHTML:'',style:{setProperty(){},removeProperty(){}},dataset:{},children:[],classList:{add(){},remove(){},toggle(){},contains(){return false;}},addEventListener(){},setAttribute(){},querySelector(){return null;},querySelectorAll(){return [];},appendChild(x){this.children.push(x);},scrollIntoView(){},focus(){},remove(){}};}
+  function element(){return {value:'',checked:false,hidden:false,disabled:false,textContent:'',innerHTML:'',style:{setProperty(){},removeProperty(){}},dataset:{},children:[],classList:{add(){},remove(){},toggle(){},contains(){return false;}},addEventListener(){},setAttribute(){},querySelector(){return null;},querySelectorAll(){return [];},appendChild(x){this.children.push(x);},replaceChildren(...x){this.children=x;},scrollIntoView(){},focus(){},remove(){}};}
   const node=id=>{if(!nodes.has(id))nodes.set(id,element());return nodes.get(id);};
   const context={console,crypto:webcrypto,TextEncoder,URL,URLSearchParams,Response,Request,
     setTimeout(){return 0;},clearTimeout(){},setInterval(){return 0;},clearInterval(){},
@@ -55,7 +55,7 @@ test('shop keeps unavailable public packs discoverable with a disabled status, e
   assert.match(notice,/unavailable/);
 });
 function checkoutForm(b){
-  const values={f_fname:'Ali',f_lname:'Ahmed',f_name:'Ali Ahmed',f_phone:'03000000000',f_ccode:'+92',f_email:'a@mail.com',f_addr:'Fixture Street 123',f_city:'Lahore',f_country:'Pakistan',f_reference:'',f_note:''};
+  const values={f_fname:'Ali',f_lname:'Ahmed',f_name:'Ali Ahmed',f_phone:'03000000000',f_ccode:'+92',f_email:'a@mail.com',f_addr:'Fixture Street 123',f_province:'Punjab',f_city:'Lahore',f_country:'Pakistan',f_reference:'',f_note:''};
   for(const [id,value] of Object.entries(values))b.node(id).value=value;
   b.run("PRODUCTS=[{id:1,name:'Fixture Snack',pack:'100g',price:200}];CART={1:2};");
 }
@@ -208,4 +208,24 @@ test('guided checkout enforces delivery validation and review requires a server 
  await b.run('goToCheckoutStep(1)');
  assert.equal(b.node('checkoutPaymentStep').hidden,true);
  assert.equal(b.node('f_addr').value,'Fixture Street 123','Navigation must retain customer edits');
+});
+
+test('province-driven suggestions filter correctly and unknown towns remain selectable',()=>{
+ const b=browser(checkout);
+ b.run("document.getElementById('f_province').value='Punjab';initCheckoutRegions();");
+ assert.ok(b.node('pkCities').children.some(o=>o.value==='Muzaffargarh'));
+ assert.ok(b.node('pkCities').children.some(o=>o.value==='Lahore'));
+ assert.ok(!b.node('pkCities').children.some(o=>o.value==='Karachi'));
+ b.run("setCheckoutRegion('Sindh')");
+ assert.ok(b.node('pkCities').children.some(o=>o.value==='Karachi'));
+ assert.ok(!b.node('pkCities').children.some(o=>o.value==='Lahore'));
+ b.run("setCheckoutRegion('Gilgit Baltistan')");
+ assert.ok(b.node('pkCities').children.some(o=>o.value==='Skardu'));
+ b.run("setCheckoutRegion('Azad Kashmir')");
+ assert.ok(b.node('pkCities').children.some(o=>o.value==='Muzaffarabad'));
+ checkoutForm(b);
+ b.node('f_province').value='';
+ assert.equal(b.run("checkForm('delivery')"),false,'Delivery must require a region');
+ b.node('f_province').value='Punjab';b.node('f_city').value='Small Village Town';
+ assert.equal(b.run("checkForm('delivery')"),true,'Do not block small communities absent from the suggestion list');
 });
