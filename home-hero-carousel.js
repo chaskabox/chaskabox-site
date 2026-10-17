@@ -41,7 +41,7 @@
      description:'Chatpatay, meethay aur crunchy Pakistani favourites ek jagah. Available snacks aur deals explore karein.',
      primary:'Shop Snacks',href:'/shop/',secondary:'Browse Chaska Boxes',secondHref:'/bundles/'}
   ];
-  const safeLink=s=>typeof s==='string'&&/^\/(?!\/)[^"'<>\s]*$/.test(s);
+  const safeLink=s=>typeof s==='string'&&(/^(?:\/(?!\/)|https:\/\/)[^"'<>\s]*$/.test(s));
   const field=(value,fallback,max=180)=>typeof value==='string'&&value.trim()?value.trim().slice(0,max):fallback;
   let slides=defaults.map(s=>({...s}));
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -105,8 +105,10 @@
       return copy;
     });
     if(!cmsSlides.length){
-      slides[0].heading=field(config.heading,defaults[0].heading);
-      slides[0].highlight=field(config.highlight,defaults[0].highlight);
+      if(typeof config.heading==='string'&&config.heading.trim()){
+        slides[0].heading=field(config.heading,defaults[0].heading);
+        slides[0].highlight=field(config.highlight,'');
+      }
       slides[0].description=field(config.subheading,defaults[0].description,300);
       slides[0].primary=field(config.button_text,defaults[0].primary);
       if(safeLink(config.button_url))slides[0].href=config.button_url;
