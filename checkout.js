@@ -3,6 +3,8 @@ let DELIVERY_FEE = 300;
 let PREPAID_DELIVERY_FEE = 300;
 let FREE_ABOVE = 5000;
 let FREE_PREPAID_ENABLED = true;
+let COD_ADVANCE_ENABLED = true;
+let COD_ADVANCE_AMOUNT = 500;
 const PREPAID_METHODS = new Set(['jazzcash','bank_transfer']);
 const PAYMENT_LABELS = {
   cod: 'Cash on Delivery',
@@ -83,6 +85,8 @@ async function init() {
     PREPAID_DELIVERY_FEE = settingNumber(st.prepaid_delivery_fee_pkr, 300);
     FREE_ABOVE = settingNumber(st.prepaid_free_delivery_threshold_pkr, 5000);
     FREE_PREPAID_ENABLED = st.prepaid_free_delivery_enabled !== false;
+    COD_ADVANCE_ENABLED = st.cod_advance_enabled !== false;
+    COD_ADVANCE_AMOUNT = Number.isInteger(Number(st.cod_advance_amount_pkr))&&Number(st.cod_advance_amount_pkr)>0?Number(st.cod_advance_amount_pkr):500;
     PAYMENT_ENABLED = {
       cod: st.cod_enabled !== false,
       jazzcash: st.jazzcash_enabled !== false,
@@ -94,6 +98,7 @@ async function init() {
       else if(el.closest('small'))el.closest('small').textContent='Prepaid · Delivery fee shown at checkout';
     });
     applyPaymentAvailability(st);
+    updateCodAdvanceDisplay();
   } catch(e){}
   try { CART = JSON.parse(localStorage.getItem('chaskabox-cart') || '{}'); } catch (e) { CART = {}; }
   try {
@@ -187,12 +192,27 @@ function cartSubtotal() {
 function isPrepaid(){ return PREPAID_METHODS.has(PAY); }
 function deliveryFee(sub) { return isPrepaid() ? (FREE_PREPAID_ENABLED && sub >= FREE_ABOVE ? 0 : PREPAID_DELIVERY_FEE) : DELIVERY_FEE; }
 
+function updateCodAdvanceDisplay(total=null,quotedAdvance=null){
+  const visible=PAY==='cod'&&COD_ADVANCE_ENABLED;
+  const totalValue=total===null?Math.max(0,cartSubtotal()+deliveryFee(cartSubtotal())):Math.max(0,Number(total)||0);
+  const required=visible?(quotedAdvance===null?Math.min(totalValue,COD_ADVANCE_AMOUNT):Math.max(0,Math.min(totalValue,Number(quotedAdvance)||0))):0;
+  const advanceLine=$('#codAdvanceSummary'),balanceLine=$('#codBalanceSummary');
+  if(advanceLine)advanceLine.style.display=required>0?'':'none';
+  if(balanceLine)balanceLine.style.display=required>0?'':'none';
+  if($('#s_cod_advance'))$('#s_cod_advance').textContent=fmt(required);
+  if($('#s_cod_balance'))$('#s_cod_balance').textContent=fmt(totalValue-required);
+  const hint=$('#codAdvancePayHint');
+  if(hint)hint.textContent=visible?fmt(required)+' advance after ordering, verified before dispatch · rest COD':'Pay remaining amount on delivery';
+  const note=$('#codAdvanceExplainer');
+  if(note)note.style.display=visible?'':'none';
+}
 function setPay(method) {
   const allowed=['cod','jazzcash','bank_transfer'];
   if (!allowed.includes(method) || PAYMENT_ENABLED[method] === false) {
     method = allowed.find(m=>PAYMENT_ENABLED[m]) || 'cod';
   }
   PAY = method;
+  updateCodAdvanceDisplay();
   $('#pay_cod')?.classList.toggle('sel', method === 'cod');
   $('#pay_jazz')?.classList.toggle('sel', method === 'jazzcash');
   $('#pay_bank')?.classList.toggle('sel', method === 'bank_transfer');
@@ -214,6 +234,7 @@ async function refreshQuote(){
  if(!r.ok||!data.quote)throw new Error(data.error?.message||'Could not confirm your total. Please retry.');
  if(seq!==quoteSequence)throw new Error('Delivery details changed. Confirm the total again.');
  const q=data.quote;$('#s_sub').textContent=fmt(q.subtotal);$('#s_del').textContent=fmt(q.delivery_fee);$('#s_tot').textContent=fmt(q.total);if($('#s_discount'))$('#s_discount').textContent=fmt(q.discount);
+ updateCodAdvanceDisplay(q.total,q.cod_advance_required_pkr??null);
  if($('#quoteStatus'))$('#quoteStatus').textContent='Total confirmed for '+city+'.';
  if($('#checkoutTotalLabel'))$('#checkoutTotalLabel').textContent='Verified total';
  if($('#freeHint'))$('#freeHint').hidden=true;
@@ -232,6 +253,7 @@ function renderSummary() {
   $('#s_sub').textContent = fmt(sub);
   $('#s_del').innerHTML = del === 0 ? '<span class="free">FREE</span>' : fmt(del);
   $('#s_tot').textContent = fmt(sub + del);
+  updateCodAdvanceDisplay(sub+del);
   if($('#checkoutTotalLabel'))$('#checkoutTotalLabel').textContent='Estimated total';
   scheduleQuote();
   const hint = $('#freeHint');
@@ -432,7 +454,7 @@ function updateCheckoutReview(){
     reviewAddress:[($('#f_addr')?.value||'').trim(),($('#f_city')?.value||'').trim(),($('#f_province')?.value||'').trim(),($('#f_postal')?.value||'').trim(), 'Pakistan'].filter(Boolean).join(', '),
     reviewWhatsapp: $('#f_whatsapp_optin')?.checked ? 'WhatsApp updates: Yes — for this order only' : 'WhatsApp updates: Not requested',
     reviewPayment:PAYMENT_LABELS[PAY]||'Payment method not selected',
-    reviewPaymentStatus:isPrepaid()?'Payment reference provided. Awaiting verification after your order is placed.':'Pay when your order arrives.'
+    reviewPaymentStatus:isPrepaid()?'Payment reference provided. Awaiting verification after your order is placed.':(COD_ADVANCE_ENABLED?'Advance is required and must be verified before we pack or dispatch the order. The remainder is payable on delivery.':'Pay when your order arrives.')
   };
   for(const [id,value] of Object.entries(values)){
     const node=document.getElementById(id);
@@ -664,6 +686,8 @@ async function placeOrder() {
   const srv = apiResult.data;
   const finalOrderNo = srv.order_number || ono;
   const finalTotal = typeof srv.total === 'number' ? srv.total : total;
+  const confirmedCodAdvance=PAY==='cod'?Math.max(0,Math.min(finalTotal,Number(srv.cod_advance_required_pkr)||0)):0;
+  const confirmedCodBalance=PAY==='cod'?Math.max(0,Number(srv.cod_due_on_delivery_pkr??(finalTotal-confirmedCodAdvance))):0;
 
   const order = {
     no: finalOrderNo, name: $('#f_name').value.trim(), phone,
@@ -671,7 +695,8 @@ async function placeOrder() {
     items: itemRows, sub, del, total: finalTotal,
     pay_method: PAY === 'cod' ? 'COD' : (PAY === 'jazzcash' ? 'JazzCash' : 'Bank Transfer'),
     payment_reference: reference, video: wantVideo, note,
-    payment_status: srv.payment_status, fulfilment_status: srv.fulfilment_status
+    payment_status: srv.payment_status, fulfilment_status: srv.fulfilment_status,
+    cod_advance_required_pkr:confirmedCodAdvance,cod_due_on_delivery_pkr:confirmedCodBalance
   };
 
   saveLocalPurchaseSummary(order);
@@ -691,12 +716,26 @@ async function placeOrder() {
   $('#doneNo').textContent = finalOrderNo;
   if ($('#doneTotal')) $('#doneTotal').textContent = fmt(finalTotal);
   if ($('#donePayment')) $('#donePayment').textContent = PAYMENT_LABELS[PAY] || PAY;
-  if ($('#doneStatus')) $('#doneStatus').textContent = isPrepaid() ? 'Awaiting payment verification' : 'Order received · COD pending';
+  if ($('#doneStatus')) $('#doneStatus').textContent = isPrepaid() ? 'Awaiting payment verification' : (confirmedCodAdvance>0?'Advance payment required · dispatch on hold':'Order received · COD pending');
   if ($('#doneWhatsApp')) $('#doneWhatsApp').href = 'https://wa.me/923320005381?text=' + encodeURIComponent('Salam ChaskaBox, I need help with order '+finalOrderNo);
   const track = document.getElementById('doneTrack'); if (track) track.href = '/track-order.html?order=' + encodeURIComponent(finalOrderNo) + '&phone=' + encodeURIComponent(phone);
 
   if (PAY === 'cod') {
-    $('#doneMsg').innerHTML = `We'll contact <b>${esc(phone)}</b> if confirmation is needed, then prepare your order for dispatch. Amount due on delivery: <b>${fmt(finalTotal)}</b>.`;
+    if(confirmedCodAdvance>0){
+      $('#doneMsg').innerHTML = `Order received. Pay <b>${fmt(confirmedCodAdvance)} advance</b> via JazzCash or Bank Transfer and share the payment reference/proof. We dispatch only after verifying the advance. The balance due on delivery is <b>${fmt(confirmedCodBalance)}</b>; the advance is included in your order total, not an extra charge.`;
+      const dest=$('#doneCodAdvanceBox');if(dest){
+        dest.style.display='';dest.textContent='';
+        const heading=document.createElement('h3');heading.textContent='Pay advance before dispatch · '+fmt(confirmedCodAdvance);dest.append(heading);
+        const help=document.createElement('p');help.textContent='Reference this order number when transferring: '+finalOrderNo+'. Send transaction proof to ChaskaBox WhatsApp for manual verification.';dest.append(help);
+        for(const [label,selector] of [['JazzCash','jazzBox'],['Bank Transfer','bankBox']]){
+          const title=document.createElement('h4');title.textContent=label;dest.append(title);
+          const source=document.getElementById(selector);if(source)for(const child of [...source.children])dest.append(child.cloneNode(true));
+        }
+      }
+      if($('#doneWhatsApp'))$('#doneWhatsApp').href='https://wa.me/923320005381?text='+encodeURIComponent('Salam ChaskaBox, order '+finalOrderNo+' ke liye '+fmt(confirmedCodAdvance)+' COD advance ki payment proof/reference verify karni hai.');
+    }else{
+      $('#doneMsg').innerHTML = `We'll contact <b>${esc(phone)}</b> if confirmation is needed, then prepare your order for dispatch. Amount due on delivery: <b>${fmt(finalTotal)}</b>.`;
+    }
   } else if (PAY === 'jazzcash') {
     $('#doneMsg').innerHTML = `Your JazzCash reference <b>${esc(reference)}</b> has been submitted for verification. Amount: <b>${fmt(finalTotal)}</b>. We'll prepare the order after payment is verified.`;
   } else {
