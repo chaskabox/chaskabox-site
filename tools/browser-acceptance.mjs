@@ -246,7 +246,7 @@ try{
   await page.getByRole('button',{name:'Close shopping bag'}).click();
   results.interactions.push({case:'cart and drawer cap quantity at 99 / '+width,pass:true});
   await inspect(page,'/checkout.html',width);
-  // Visual regression: new branded header, 2-step progress and a non-default coupon CTA.
+  // Visual regression: branded header, three-step progress and a non-default coupon CTA.
   const checkoutVisual=await page.evaluate(()=>{
    const intro=document.querySelector('.checkout-intro'),coupon=document.querySelector('#applyCoupon'),
     grid=document.querySelector('.co-grid'),total=document.querySelector('.checkout-totals .sumrow.total');
@@ -282,9 +282,9 @@ try{
   if(!preferenceLayout.visible||!preferenceLayout.afterEmail||!preferenceLayout.withinScreen||preferenceLayout.tapHeight<48)
     throw Error('WhatsApp consent placement or tap target failed '+JSON.stringify({width,preferenceLayout}));
   await page.locator('#f_whatsapp_optin').check();
-  await page.getByLabel('First Name *').fill('Ali');
-  await page.getByLabel('Phone Number *').fill('03000000000');
-  await page.getByLabel('Email Address *').fill('ali@example.invalid');
+  await page.locator('#f_fname').fill('Ali');
+  await page.locator('#f_phone').fill('03000000000');
+  await page.locator('#f_email').fill('ali@example.invalid');
   await page.locator('#f_addr').fill('Fixture Street 123, Lahore');
   await page.locator('#toPaymentBtn').click();
   if(!await page.locator('#checkoutPaymentStep').isVisible()||await page.locator('#checkoutDeliveryStep').isVisible())
