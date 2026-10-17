@@ -267,6 +267,21 @@ try{
   const fmt=n=>'Rs. '+n.toLocaleString('en-PK');
   const subtotal=99*products.find(p=>p.id===39).price;
   if(await page.locator('#s_tot').innerText()!==fmt(subtotal+300))throw Error('COD quote total mismatch');
+  // Consent must be visible next to contact details (not hidden under payment),
+  // default unchecked, and retained as users navigate through review/back.
+  const contactChoice=page.locator('#checkoutDeliveryStep #whatsappOrderOptIn');
+  if(!await contactChoice.isVisible()||await page.locator('#f_whatsapp_optin').isChecked())
+    throw Error('Optional WhatsApp consent hidden or preselected at '+width);
+  const preferenceLayout=await page.evaluate(()=>{
+    const box=document.querySelector('#whatsappOrderOptIn').getBoundingClientRect();
+    const email=document.getElementById('f_email').getBoundingClientRect();
+    return {visible:getComputedStyle(document.getElementById('whatsappOrderOptIn')).display!=='none',
+      afterEmail:box.top>=email.top,withinScreen:box.left>=-1&&box.right<=innerWidth+1,
+      tapHeight:box.height};
+  });
+  if(!preferenceLayout.visible||!preferenceLayout.afterEmail||!preferenceLayout.withinScreen||preferenceLayout.tapHeight<48)
+    throw Error('WhatsApp consent placement or tap target failed '+JSON.stringify({width,preferenceLayout}));
+  await page.locator('#f_whatsapp_optin').check();
   await page.getByLabel('First Name *').fill('Ali');
   await page.getByLabel('Phone Number *').fill('03000000000');
   await page.getByLabel('Email Address *').fill('ali@example.invalid');
@@ -284,9 +299,15 @@ try{
     throw Error('Checkout failed to reveal review and final order control');
   if(await page.locator('#reviewPayment').innerText()!=='JazzCash (Advance)')
     throw Error('Final review lost the chosen payment method');
+  if(!await page.locator('#reviewWhatsapp').innerText().then(x=>x.includes('Yes — for this order only')))
+    throw Error('Final review forgot explicitly selected WhatsApp order updates');
   await page.locator('#editDeliveryBtn').click();
   if(!await page.locator('#checkoutDeliveryStep').isVisible()||await page.locator('#f_addr').inputValue()!=='Fixture Street 123, Lahore')
     throw Error('Edit delivery lost the previous address');
+  if(!await page.locator('#f_whatsapp_optin').isChecked())throw Error('Back navigation forgot explicit WhatsApp consent');
+  await page.locator('#f_whatsapp_optin').uncheck();
+  if(await page.locator('#f_whatsapp_optin').isChecked())throw Error('WhatsApp opt-out could not be selected');
+  results.interactions.push({case:'WhatsApp consent visible and unchecked by default, survives review and remains reversible / '+width,pass:true});
   if(orders)throw Error('Browser check attempted an order');
   results.interactions.push({case:'checkout shows COD/prepaid totals without submitting / '+width,pass:true});
   await page.goto(base+'/shop/',{waitUntil:'domcontentloaded'});

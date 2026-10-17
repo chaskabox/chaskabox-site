@@ -226,3 +226,46 @@
 .checkout-page #f_province{width:100%;max-width:100%}
 .checkout-page #f_city:disabled{background:#eef2f7;color:#7d8aa0;cursor:not-allowed}
 .checkout-page #cityHelp{min-height:20px}
+
+
+/* Contact preferences: make an optional WhatsApp opt-in easy to find, never preselected. */
+.checkout-page .checkout-contact-preferences{
+  margin:4px 0 21px;padding:17px 17px 13px;
+  border:1.5px solid #b7ccef;border-radius:16px;
+  background:linear-gradient(145deg,#f0f6ff,#f8fbff);
+}
+.checkout-page .checkout-contact-preferences-heading{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.checkout-page .checkout-contact-icon{width:40px;height:40px;display:grid;place-items:center;flex:none;background:#e1edff;border-radius:12px;font-size:20px}
+.checkout-page .checkout-contact-preferences-heading h3{margin:0 0 3px;color:#153568;font-size:16px;line-height:1.3;font-weight:850}
+.checkout-page .checkout-contact-preferences-heading p{font-size:12px;color:#526780;margin:0;line-height:1.45}
+.checkout-page .checkout-whatsapp-choice{display:flex;align-items:flex-start;gap:13px;cursor:pointer;min-height:77px;border:1px solid #ccd9ee;border-radius:12px;padding:14px;background:#fff;transition:border-color .15s,box-shadow .15s}
+.checkout-page .checkout-whatsapp-choice:hover{border-color:#7ca8dc}
+.checkout-page .checkout-whatsapp-choice:focus-within{outline:3px solid rgba(38,92,158,.23);outline-offset:2px}
+.checkout-page .checkout-whatsapp-choice:has(input:checked){border-color:#368368;background:#f3fbf7}
+.checkout-page .checkout-whatsapp-choice input{flex:none;margin:2px 0 0;width:23px;height:23px;accent-color:#1a6e55;cursor:pointer}
+.checkout-page .checkout-whatsapp-choice span{min-width:0;display:block;flex:1}
+.checkout-page .checkout-whatsapp-choice b{display:block;font-size:14px;line-height:1.35;color:#1b3762;margin-bottom:5px}
+.checkout-page .checkout-whatsapp-choice small{display:block;font-size:12px;line-height:1.5;color:#566a80}
+.checkout-page .checkout-contact-optout{margin:10px 3px 0;font-size:11px;line-height:1.5;color:#53657b}
+/* Less form fatigue: optional instructions and packing video are collapsible. */
+.checkout-page .checkout-optional-disclosure{background:#fafbfd;border:1px solid #dce5f1;border-radius:12px;margin:0 0 19px;padding:0 15px}
+.checkout-page .checkout-optional-disclosure>summary{display:flex;gap:12px;align-items:center;justify-content:space-between;cursor:pointer;list-style:none;min-height:49px;color:#203e71;font-weight:750;font-size:13px}
+.checkout-page .checkout-optional-disclosure>summary::-webkit-details-marker{display:none}
+.checkout-page .checkout-optional-disclosure>summary:focus-visible{outline:3px solid #2d63a9;outline-offset:3px;border-radius:7px}
+.checkout-page .checkout-optional-disclosure>summary small{font-size:11px;font-weight:500;color:#50627a}
+.checkout-page .checkout-disclosure-chevron{font-size:20px;line-height:1;transition:transform .15s}
+.checkout-page .checkout-optional-disclosure[open] .checkout-disclosure-chevron{transform:rotate(180deg)}
+.checkout-page .checkout-optional-disclosure[open]{background:#fff}
+.checkout-page .checkout-optional-disclosure .field{margin:3px 0 15px}
+.checkout-page .checkout-optional-disclosure .field textarea{min-height:86px}
+.checkout-page .checkout-packing-choice{display:flex;align-items:flex-start;gap:12px;padding:4px 0 16px;cursor:pointer;color:#324d71;font-size:13px;line-height:1.5}
+.checkout-page .checkout-packing-choice input{width:22px;height:22px;flex:none;margin:0;accent-color:#1a6e55}
+.checkout-page .checkout-packing-choice small{display:block;color:#64738a;font-size:11px;line-height:1.5;margin-top:3px}
+.checkout-page .checkout-review-card #reviewWhatsapp{background:#edf6fa;padding:9px 11px;border:1px solid #d6e7ee;border-radius:9px;font-size:12px;font-weight:700;color:#234569}
+@media(max-width:760px){
+ .checkout-page .checkout-contact-preferences{padding:14px;margin-bottom:19px}
+ .checkout-page .checkout-whatsapp-choice{padding:13px;gap:12px}
+ .checkout-page .checkout-contact-preferences-heading h3{font-size:15px}
+ .checkout-page .checkout-next-btn,.checkout-page .checkout-back-btn{min-height:48px}
+ .checkout-page .checkout-optional-disclosure{margin-top:3px}
+}
