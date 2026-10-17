@@ -9,6 +9,7 @@
 <script src="/admin-v4-demo.js?v=1" defer></script>
 <script src="/admin-v4-tools.js?v=20261016-v4-actions1" defer></script>
 <script src="/admin-v4-sidebar.js?v=20261017-nav2" defer></script>
+<script src="/admin-storefront-controls.js?v=20261017-controls1" defer></script>
 </head>
 <body>
 <div class="admin-shell demo-admin-shell">
@@ -249,6 +250,28 @@
 <section class="admin-view" id="view-preview" data-title="Site Preview" data-subtitle="Customer storefront comparison">
   <div class="panel"><div class="panel-head"><div><h2>Site Preview</h2><p>Customer storefront comparison</p></div></div>
   <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
+<section class="panel storefront-control-center" aria-labelledby="storefrontControlTitle">
+  <div class="panel-head"><div><h2 id="storefrontControlTitle">Storefront Control Center</h2><p>Edit existing protected settings, preview customer routes, then review before publishing. No changes are made by navigating here.</p></div></div>
+  <div class="storefront-control-actions" role="group" aria-label="Storefront editor shortcuts">
+    <button type="button" data-storefront-editor="homepage"><strong>Homepage sections</strong><small>Hero, sections, featured snacks and drafts</small></button>
+    <button type="button" data-storefront-editor="navigation"><strong>Header & mobile menus</strong><small>Links, order and visibility</small></button>
+    <button type="button" data-storefront-editor="theme"><strong>Theme Studio</strong><small>Colors, logo and unsaved visual preview</small></button>
+    <button type="button" data-storefront-editor="categories"><strong>Shop categories</strong><small>Category names and catalogue scope</small></button>
+    <button type="button" data-storefront-editor="products"><strong>Product merchandising</strong><small>Visibility, images, badges and price review</small></button>
+    <button type="button" data-storefront-editor="media"><strong>Media Library</strong><small>Authorized pack photos and assets</small></button>
+  </div>
+  <div class="storefront-review-routes" role="group" aria-label="Customer journey shortcuts">
+    <strong>Customer journey</strong>
+    <button type="button" data-storefront-route="/">Homepage</button>
+    <button type="button" data-storefront-route="/shop/">Shop & filters</button>
+    <button type="button" data-storefront-route="/brands/">Brands</button>
+    <button type="button" data-storefront-route="/bundles/">Chaska Boxes</button>
+    <button type="button" data-storefront-route="/cart/">Cart</button>
+    <button type="button" data-storefront-route="/track-order.html">Order tracking</button>
+  </div>
+  <p id="storefrontControlStatus" class="safe-note" role="status" aria-live="polite">Controls open existing panels; save and publish require the usual staff permissions.</p>
+</section>
+
   <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
   </div></section>
 <section class="admin-view" id="view-analytics" data-title="Analytics" data-subtitle="Reports and business metrics">
