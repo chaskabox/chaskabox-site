@@ -239,3 +239,109 @@ header{background:#fff;box-shadow:0 1px 10px rgba(14,42,84,.045);border-bottom:1
   .hwrap .logo-img{max-width:116px}
   .hwrap .hbtn.solid{padding-left:8px;padding-right:8px}
 }
+
+
+/* Reference-alignment pass: strong blue/gold split and product-focused hero.
+   No fake packages, discount copy, or unverified delivery promises. */
+#view-home .hero{
+ background:linear-gradient(108deg,#061e46 0%,#0b3568 54%,#ffac42 54.15%,#ff8a1e 100%)!important;
+ border:1px solid rgba(16,39,76,.14);
+}
+#view-home .hero::before{
+ background:radial-gradient(circle at 87% 21%,rgba(255,250,215,.88),transparent 37%),
+   radial-gradient(circle at 89% 83%,rgba(232,82,11,.4),transparent 35%);
+}
+#view-home .hero::after{
+ left:auto;right:12%;top:12%;width:50px;height:50px;border:5px dashed rgba(255,255,255,.22);
+ border-radius:50%;background:none;transform:rotate(-20deg)
+}
+#view-home .herowrap{min-height:390px;padding-top:30px;padding-bottom:0;gap:3%}
+#view-home .herotxt{flex:0 0 49%;z-index:2}
+#view-home .herotxt .kick{display:none}
+#view-home .hero-eyebrow{font-size:11px;letter-spacing:1.8px;margin-bottom:10px}
+#view-home .herotxt h1{
+ font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;
+ font-style:italic;font-weight:900;font-size:clamp(36px,4.3vw,61px);
+ letter-spacing:-1.7px;line-height:1.07;
+ max-width:630px;
+}
+#view-home .herotxt h1 .hl{color:#ffb629}
+#view-home .herotxt p{max-width:38ch;font-size:15px;line-height:1.53;margin:15px 0 17px}
+#view-home .hero .cta{background:linear-gradient(120deg,#ffbb39,#ff7118);color:#092955}
+#view-home .hero .cta.ghost{background:rgba(1,25,60,.35);color:white}
+#view-home .heroimg{flex:1 0 47%;min-width:0;overflow:visible;align-self:center}
+#view-home .herocollage{height:345px;width:min(100%,540px);margin:0;filter:none}
+#view-home .herocollage::before{
+ left:6%;width:86%;bottom:0;height:180px;padding:0 7px 32px;
+ background:linear-gradient(135deg,#16477c 2%,#072758 52%,#031b40 100%);
+ color:#ffc24f;font-size:26px;letter-spacing:1.5px;font-weight:900;
+ border-radius:8px 8px 32px 32px;border:4px solid #0a356d;
+ box-shadow:inset 0 -20px 0 rgba(0,0,0,.16),0 15px 25px rgba(53,22,0,.28);
+ z-index:1;content:"CHASKA BOX";
+}
+#view-home .herocollage::after{
+ left:4%;width:90%;height:75px;bottom:157px;transform:skewY(-9deg);
+ border-radius:9px;background:linear-gradient(130deg,#164985,#0b366d);z-index:1;
+ box-shadow:0 6px 16px rgba(20,24,37,.29);
+}
+#view-home .herocollage img{
+ background:transparent;border:0;border-radius:0;padding:0;max-width:none;
+ width:35%;height:58%;object-fit:contain;
+ filter:drop-shadow(0 10px 8px rgba(18,21,39,.3));
+ box-shadow:none;animation:none;
+}
+#view-home .herocollage .hc1{top:-3%;left:3%;transform:rotate(-13deg)}
+#view-home .herocollage .hc2{top:-7%;right:13%;transform:rotate(14deg)}
+#view-home .herocollage .hc3{bottom:20%;left:31%;transform:rotate(4deg)}
+#view-home .hero-slider-controls{margin-top:0;padding-bottom:12px}
+#view-home .herotrust{background:rgba(5,25,62,.25)}
+#view-home .discover{padding:18px 25px 14px}
+#view-home .discover .section-head{margin-bottom:16px}
+#view-home .cat .ci{border-radius:100px}
+#view-home .cat .ci img{width:94%;height:94%;object-fit:contain}
+#view-home [data-home-section="chaska_picks"] .hscroll{
+ display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:12px
+}
+#view-home [data-home-section="chaska_picks"] .hscroll .card{flex:0 0 clamp(165px,14vw,202px);display:flex}
+#view-home [data-home-section="chaska_picks"] .sarrow{display:flex}
+#view-home .card .pimg{padding:8px}
+#view-home .shelfbody{padding-top:12px}
+#view-home .shelfband h2{font-size:22px}
+#view-home .cb-trust-rail{margin-top:9px;margin-bottom:12px}
+@media(max-width:760px){
+  #view-home .hero{min-height:0;background:linear-gradient(105deg,#061f47 0%,#0c3263 58%,#fa9022 58.1%,#ffb64d)!important}
+  #view-home .herowrap{
+    display:grid!important;grid-template-columns:minmax(0,1fr) 41%;
+    min-height:242px;padding:19px 13px 2px!important;align-items:center;gap:0;
+  }
+  #view-home .herotxt{grid-column:1;grid-row:1;min-width:0}
+  #view-home .herotxt h1{font-size:clamp(19px,5.5vw,27px)!important;line-height:1.08;font-style:italic;letter-spacing:-.3px}
+  #view-home .hero-eyebrow{display:none}
+  #view-home .herotxt p{font-size:10px;line-height:1.38;margin:9px 0 10px}
+  #view-home .hero-actions{margin-top:10px;gap:0}
+  #view-home .hero .cta{font-size:10px;padding:9px 11px;min-height:33px;border-radius:8px}
+  #view-home .hero .cta.ghost{display:none}
+  #view-home .heroimg{grid-column:2;grid-row:1;height:190px;width:100%;min-width:0;align-self:center}
+  #view-home .herocollage{width:100%;height:187px;filter:none}
+  #view-home .herocollage::before{
+    bottom:17px;left:-1%;height:76px;width:102%;border-width:2px;
+    font-size:11px;padding-bottom:10px;border-radius:4px 4px 13px 13px;letter-spacing:0
+  }
+  #view-home .herocollage::after{bottom:83px;left:-2%;width:104%;height:26px}
+  #view-home .herocollage img{height:84px;width:46%;max-height:100px}
+  #view-home .herocollage .hc1{top:19%;left:-5%}
+  #view-home .herocollage .hc2{top:3%;right:-7%}
+  #view-home .herocollage .hc3{bottom:34%;left:27%}
+  #view-home .hero-slider-controls{padding:0 10px 9px;margin-top:-4px}
+  #view-home .hero-slider-controls button{width:30px;height:30px}
+  #view-home .discover{padding-top:12px}
+  #view-home .discover .section-head h2{font-size:19px}
+  #view-home [data-home-section="chaska_picks"] .hscroll{display:flex;overflow-x:auto;gap:9px;scroll-snap-type:x mandatory}
+  #view-home [data-home-section="chaska_picks"] .hscroll .card{flex:0 0 156px}
+  #view-home [data-home-section="chaska_picks"] .hscroll .card:nth-child(n+5){display:flex}
+}
+@media(max-width:380px){
+  #view-home .herowrap{min-height:222px;padding:13px 12px 2px!important}
+  #view-home .heroimg{height:175px}
+  #view-home .herocollage{height:175px}
+}
