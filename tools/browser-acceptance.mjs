@@ -97,6 +97,16 @@ const results={method:'Actual local source with synthetic API/Auth fixtures; not
 async function contextFor(width,role){const context=await browser.newContext({viewport:{width,height:900},reducedMotion:'reduce'});if(role)await context.addCookies([{name:'qa_role',value:role,url:base}]);await context.route('https://**/*',async route=>route.request().url().includes('/@supabase/supabase-js@')
  ?route.fulfill({status:200,contentType:'text/javascript',body:'('+fakeSdk.toString()+')();'})
  :route.request().url().startsWith('https://chaskabox.online/images/')?(async()=>{const r=await originalFetch(base+new URL(route.request().url()).pathname);return route.fulfill({status:r.status,headers:Object.fromEntries(r.headers),body:Buffer.from(await r.arrayBuffer())});})():route.fulfill({status:200,contentType:'text/plain',body:''}));const page=await context.newPage();page.on('pageerror',e=>results.errors.push(e.stack));page.on('dialog',d=>d.dismiss());return {context,page};}
+async function openAdminPanel(page,key){
+ const button=page.locator('.admin-nav-btn[data-view="'+key+'"]');
+ const toggle=page.locator('#sidebarToggle');
+ if(await toggle.isVisible()&&!(await page.locator('#adminSidebar').evaluate(el=>el.classList.contains('open'))))
+  await toggle.click();
+ const disclosure=button.locator('xpath=ancestor::details[1]');
+ if(await disclosure.count()&&!(await disclosure.evaluate(el=>el.open)))
+  await disclosure.locator('summary').click();
+ await button.click();
+}
 async function inspect(page,route,width,role){
  const response=await page.goto(base+route,{waitUntil:'domcontentloaded'});
  if(route==='/admin/'){
@@ -129,10 +139,26 @@ try{
  for(const hostWidth of [1440,390]){
   const {context,page}=await contextFor(hostWidth,'owner');
   await page.goto(base+'/admin/');
-  await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  if(hostWidth<900)await page.locator('#sidebarToggle').click();
-  await page.locator('[data-view="preview"]').click();
-  await page.locator('#sitePreview').waitFor({state:'visible'});
+  try{await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none',undefined,{timeout:12000});}
+  catch(error){
+    console.error('V4_ADMIN_BOOT_DIAGNOSTIC',JSON.stringify(await page.evaluate(()=>({
+      boot:document.getElementById('adminBoot')?.outerHTML?.slice(0,500),
+      login:document.getElementById('liveAdminLogin')?.outerHTML?.slice(0,330),
+      notice:document.getElementById('securityNotice')?.textContent?.slice(0,180),
+      sdk:!!window.supabase,loaded:!!window.chaskaAdminBooted,
+      scripts:[...document.scripts].filter(x=>x.src.includes('admin')).map(x=>({url:new URL(x.src).pathname,loaded:performance.getEntriesByName(x.src).length}))
+    }))),JSON.stringify(results.errors.slice(-8)));
+    throw error;
+  }
+  await openAdminPanel(page,'preview');
+  await page.waitForTimeout(250);
+  const previewDiagnostics=await page.evaluate(()=>{
+    const button=document.querySelector('.admin-nav-btn[data-view="preview"]');
+    const view=document.getElementById('view-preview'),frame=document.getElementById('sitePreview');
+    return {buttonHidden:button?.hidden,buttonDisplay:button?.style.display,buttonAriaHidden:button?.getAttribute('aria-hidden'),buttonActive:button?.classList.contains('active'),viewClass:view?.className,viewDisplay:view?getComputedStyle(view).display:null,frameDisplay:frame?getComputedStyle(frame).display:null,navCurrent:[...document.querySelectorAll('.admin-nav-btn.active')].map(x=>x.dataset.view)};
+  });
+  console.log('V4_PREVIEW_DIAGNOSTIC',JSON.stringify(previewDiagnostics));
+  await page.locator('#sitePreview').waitFor({state:'visible',timeout:6500});
   for(const [device,width] of [['Desktop',null],['Tablet',768],['Mobile',390]]){
    await page.locator('.viewport-switch').getByRole('button',{name:device,exact:true}).click();
    await page.waitForFunction(target=>{
@@ -356,13 +382,13 @@ try{
   await context.route('**/api/admin/homepage/publish',route=>{section.config={...section.draft_config};return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sections:[section]})});});
   await context.route('**/api/admin/media?*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({processor_available:true,monthly_app_limit:1000,media:[{id:'00000000-0000-4000-8000-000000000010',url:'/images/logo-navy.png',bucket:'product-media',object_path:'synthetic.webp',state:'active',size_bytes:100}],page:1,total:1,total_pages:1})}));
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="reviews"]').click();await page.getByRole('button',{name:'Unpublish',exact:true}).click();await page.locator('#view-reviews').getByText(/rejected/).waitFor();
+  await openAdminPanel(page,'reviews');await page.getByRole('button',{name:'Unpublish',exact:true}).click();await page.locator('#view-reviews').getByText(/rejected/).waitFor();
   results.interactions.push({case:'owner can unpublish an approved review without deleting its record',pass:review.moderation_status==='rejected'&&await page.locator('#view-reviews [data-review-action="approve"]').count()===1});
-  await page.locator('[data-view="homepage"]').click();await page.locator('#homePackingVideo').waitFor();await page.locator('#homePackingVideo').fill('https://youtu.be/abcdefghijk');const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage'&&r.request().method()==='PATCH');await page.locator('#homeSave').click();await saved;await page.waitForFunction(()=>document.getElementById('homePackingVideo')?.value==='https://youtu.be/abcdefghijk');
+  await openAdminPanel(page,'homepage');await page.locator('#homePackingVideo').waitFor();await page.locator('#homePackingVideo').fill('https://youtu.be/abcdefghijk');const saved=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage'&&r.request().method()==='PATCH');await page.locator('#homeSave').click();await saved;await page.waitForFunction(()=>document.getElementById('homePackingVideo')?.value==='https://youtu.be/abcdefghijk');
   results.interactions.push({case:'admin packing-video draft retains other section configuration before publish',pass:section.draft_config?.packing_video_url==='https://youtu.be/abcdefghijk'&&section.draft_config?.button_text==='Preserved'&&!section.config.packing_video_url});
   const published=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/admin/homepage/publish');await page.locator('#homePublish').click();await published;
   results.interactions.push({case:'packing video becomes published only after an explicit owner action',pass:section.config.packing_video_url==='https://youtu.be/abcdefghijk'&&section.config.button_text==='Preserved'});
-  await page.locator('[data-view="media"]').click();await page.waitForFunction(()=>typeof document.getElementById('mediaUpload')?.onchange==='function');
+  await openAdminPanel(page,'media');await page.waitForFunction(()=>typeof document.getElementById('mediaUpload')?.onchange==='function');
   results.interactions.push({case:'media assignment and upload handlers initialize for original photos',pass:await page.locator('[data-assign-media]').evaluate(e=>typeof e.onclick==='function')&&await page.locator('[data-delete-media]').evaluate(e=>typeof e.onclick==='function')&&!await page.locator('#mediaUpload').isDisabled()});
   await context.close();
  }
@@ -375,13 +401,13 @@ try{
    const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
    if(panelKeys.length!==25)throw Error('Expected Dashboard plus 24 owner panel targets, got '+panelKeys.length);
    for(const key of panelKeys){
-    await page.locator('.admin-nav-btn[data-view="'+key+'"]').click();
+    await openAdminPanel(page,key);
     const target=page.locator('#view-'+key);
     const visible=await target.isVisible();
     results.interactions.push({case:'owner opens admin panel: '+key,pass:visible});
     if(!visible)throw Error('Admin navigation does not open '+key);
    }
-   attentionError=true;await page.locator('[data-view="analytics"]').click();await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;
+   attentionError=true;await openAdminPanel(page,'analytics');await page.waitForFunction(()=>document.getElementById('attnList')?.textContent.includes('unavailable'));results.interactions.push({case:'attention outage never says All clear',pass:true});attentionError=false;
   }
   else results.interactions.push({case:role+' cannot see owner AI agent controls',pass:!await page.locator('[data-view="agents"]').isVisible()});
   await context.close();
@@ -416,7 +442,7 @@ try{
    throw Error('Unexpected synthetic agent route');
   });
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="agents"]').click();await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('diagnostics updated'));
+  await openAdminPanel(page,'agents');await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('diagnostics updated'));
   results.interactions.push({case:'owner agent view shows eight configured and zero enabled agents',pass:(await page.locator('#agentsM05Readiness').innerText()).includes('Configured agents: 8')&&(await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')});
   await page.locator('#agentsM05ProductId').fill('5');await page.locator('#agentsM05Propose button[type="submit"]').click();
   await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('Synthetic proposal outage'));
@@ -453,7 +479,7 @@ try{
   });
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="navigation"]').click();
+  await openAdminPanel(page,'navigation');
   await page.locator('#headerNavList [data-nav-edit]').first().waitFor();
   await page.locator('#addMobileNav').click();
   await page.locator('#navEditLabel').fill('My mobile offers');
@@ -494,7 +520,7 @@ try{
   await context.route('**/api/admin/brands',route=>respond(route,{brands:[brand]}));
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="categories"]').click();
+  await openAdminPanel(page,'categories');
   await page.locator('[data-edit-cat]').waitFor();
   await page.locator('[data-edit-cat]').click();
   const canCategoryDelete=await page.locator('#deleteCategoryBtn').isVisible();
@@ -511,7 +537,7 @@ try{
     pass:writes.length===1&&writes[0].method==='POST'&&writes[0].payload.name==='Synthetic new category'});
   }
   if(role!=='content'){
-   await page.locator('[data-view="brands"]').click();
+   await openAdminPanel(page,'brands');
    await page.locator('[data-del-brand]').first().waitFor({state:role==='owner'?'visible':'hidden',timeout:8000}).catch(()=>{});
    const canBrandDelete=await page.locator('[data-del-brand]').count()>0;
    results.interactions.push({case:role+' brand delete control respects owner-only API policy',
@@ -533,7 +559,7 @@ try{
   });
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="navigation"]').click();
+  await openAdminPanel(page,'navigation');
   // allTextContents() does not wait for async panel load; capture only after rows exist.
   await page.locator('#headerNavList .nav-row').first().waitFor({state:'visible'});
   const original=await page.locator('#headerNavList .nav-row b').allTextContents();
@@ -570,7 +596,7 @@ try{
   });
   await page.goto(base+'/admin/');
   await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="agents"]').click();
+  await openAdminPanel(page,'agents');
   await page.waitForFunction(()=>document.getElementById('agentsM05Message')?.textContent.includes('Partial diagnostics'));
   const stillVisible=(await page.locator('#agentsM05Readiness').innerText()).includes('Configured agents: 8')&&
    (await page.locator('#agentsM05Signals').innerText()).includes('ORDERS · attention')&&
@@ -603,7 +629,7 @@ try{
    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({brands:created?[created]:[]})});
   });
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="brands"]').click();
+  await openAdminPanel(page,'brands');
   await page.locator('#addBrandBtn').click();await page.locator('#beName').waitFor();
   await page.locator('#beName').fill('Synthetic owner brand');
   await page.locator('#beShort').fill('Small batch fixture');
@@ -633,9 +659,15 @@ try{
   await context.route('**/api/admin/customers?*',r=>ok(r,{customers:[customer],page:1,total:1,total_pages:1}));
   await context.route('**/api/admin/customers/'+customerId+'?*',r=>ok(r,{customer,orders:[order],page:1,total:1,total_pages:1}));
   await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
-  await page.locator('[data-view="orders"]').click();
+  await openAdminPanel(page,'orders');
   const requestedOrderUrls=[];
   page.on('request',r=>{if(new URL(r.url()).pathname==='/api/admin/orders')requestedOrderUrls.push(new URL(r.url()));});
+  await page.locator('[data-order-view="payment_submitted"]').click();
+  await page.waitForFunction(()=>document.getElementById('orderActiveView')?.textContent.includes('submitted payments'));
+  const presetQuery=requestedOrderUrls.at(-1);
+  results.interactions.push({case:'V4 payment review preset triggers existing protected order GET filter',pass:presetQuery?.searchParams.get('payment_status')==='payment_submitted'&&!presetQuery.searchParams.get('fulfilment_status')});
+  await page.locator('[data-order-view="all"]').click();
+  await page.waitForFunction(()=>document.querySelector('[data-order-view="all"]')?.getAttribute('aria-pressed')==='true');
   await page.locator('#orderStatusFilter').selectOption('dispatched');
   await page.waitForFunction(()=>document.getElementById('orderStatusFilter')?.value==='dispatched');
   await page.waitForTimeout(300);
@@ -662,7 +694,13 @@ try{
   results.interactions.push({case:'payment save outage retains pending status and offers a usable retry',pass:order.payment_status==='payment_submitted'&&!await page.locator('#liveOrderModal [data-pay="verified"]').isDisabled()});
   failPayment=false;await page.locator('#liveOrderModal [data-pay="verified"]').click();await page.locator('.order-decision-dialog textarea').fill('Synthetic receiving-account evidence');const approved=page.waitForResponse(r=>r.url().endsWith('/payment/verify'));await page.locator('.order-decision-dialog').getByRole('button',{name:'Confirm',exact:true}).click();await approved;await page.waitForFunction(()=>!document.getElementById('liveOrderModal')?.classList.contains('open'));
   results.interactions.push({case:'payment retry records an explicit decision with evidence and current version',pass:order.payment_status==='payment_verified'&&paymentWrites.length===2&&paymentWrites[1].note==='Synthetic receiving-account evidence'&&paymentWrites[1].expected_updated_at==='2026-10-14T00:01:00Z'});
-  await page.locator('[data-view="products"]').click();
+  await openAdminPanel(page,'products');
+  await page.locator('#productSort').selectOption('price_asc');
+  await page.locator('#productQuality').selectOption('missing_seo');
+  const qualityContext=await page.locator('#productResultCount').innerText();
+  results.interactions.push({case:'V4 catalogue sort and quality filters explicitly label current page scope',pass:qualityContext.includes('loaded on page')&&await page.locator('#productSort').inputValue()==='price_asc'});
+  await page.locator('#resetFiltersBtn').click();
+  await page.waitForFunction(()=>document.getElementById('productQuality')?.value===''&&document.getElementById('productSort')?.value==='recent');
   for(const query of ['FixtureBrandOnly','fixture-tag-unique','fixture-slug-only']){
    await page.locator('#productSearch').fill(query);
    await page.locator('[data-live-edit="39"]').waitFor({state:'visible'});
@@ -676,13 +714,147 @@ try{
   results.interactions.push({case:'bulk write failure retains selection and restores controls for retry',pass:product.visibility==='visible'&&await page.locator('[data-live-select="39"]').isChecked()&&!await page.locator('#bulkBar [data-bulk="hide"]').isDisabled()});
   failBulk=false;const bulkSaved=page.waitForResponse(r=>r.url().endsWith('/products/bulk'));await page.locator('#bulkBar [data-bulk="hide"]').click();await bulkSaved;await page.waitForFunction(()=>document.getElementById('bulkFeedback')?.textContent.includes('1 updated'));
   results.interactions.push({case:'bulk retry updates only selected products and clears selection on success',pass:product.visibility==='hidden'&&bulkWrites.length===2&&bulkWrites[1].ids.length===1&&bulkWrites[1].ids[0]===39&&!await page.locator('[data-live-select="39"]').isChecked()});
-  await page.locator('[data-view="customers"]').click();await page.getByRole('button',{name:'Synthetic acceptance customer',exact:true}).click();await page.getByRole('button',{name:'Back to customers',exact:true}).waitFor();
+  await openAdminPanel(page,'customers');await page.getByRole('button',{name:'Synthetic acceptance customer',exact:true}).click();await page.getByRole('button',{name:'Back to customers',exact:true}).waitFor();
   const detail=(await page.locator('#view-customers').innerText()).includes('CB-SYNTHETIC-ACCEPTANCE');await page.getByRole('button',{name:'Back to customers',exact:true}).click();await page.locator('#customerSearch').waitFor();
   results.interactions.push({case:'customer detail and back navigation show matching synthetic order history',pass:detail&&await page.locator('[data-customer]').count()===1});
-  await page.locator('[data-view="boxes"]').click();await page.locator('#previewBoxBtn').click();await page.locator('[data-add-box="39"]').click();await page.locator('#boxPrice').fill('299');await page.locator('#previewBoxBtn').click();await page.locator('#boxDraftPreview').waitFor();
+  await openAdminPanel(page,'boxes');await page.locator('#previewBoxBtn').click();await page.locator('[data-add-box="39"]').click();await page.locator('#boxPrice').fill('299');await page.locator('#previewBoxBtn').click();await page.locator('#boxDraftPreview').waitFor();
   results.interactions.push({case:'box preview handles the selected product list without saving a box',pass:(await page.locator('#boxDraftPreview').innerText()).includes('Synthetic editor snack')&&(await page.locator('#boxDraftPreview').innerText()).includes('Nothing has been saved or published')});
   await context.close();
  }
+
+  // V4 controls use only synthetic fixtures and never write real data.
+  {
+    const {context,page}=await contextFor(1440,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('#adminCommandOpen').click();
+    await page.locator('#adminCommandDialog[open]').waitFor();
+    await page.locator('#adminCommandSearch').fill('notifications');
+    const matches=await page.locator('#adminCommandResults button').count();
+    await page.locator('#adminCommandSearch').press('Enter');
+    const navigated=await page.locator('#view-notifications').evaluate(el=>el.classList.contains('active'));
+    results.interactions.push({case:'V4 command search navigates synthetic panels',pass:matches===1&&navigated});
+    await page.locator('#adminDensityToggle').click();
+    const compact=await page.locator('.demo-admin-shell').evaluate(el=>el.classList.contains('admin-density-compact'));
+    await page.reload();
+    const persisted=await page.locator('.demo-admin-shell').evaluate(el=>el.classList.contains('admin-density-compact'));
+    results.interactions.push({case:'V4 density preference survives refresh locally',pass:compact&&persisted});
+    await page.keyboard.press('Control+k');
+    await page.locator('#adminCommandDialog[open]').waitFor();
+    await page.keyboard.press('Escape');
+    const closed=!(await page.locator('#adminCommandDialog').evaluate(el=>el.open));
+    results.interactions.push({case:'V4 keyboard shortcut and Escape close launcher',pass:closed});
+    await page.locator('[data-view="orders"]').click();
+    await page.locator('[data-demo-order-view="payment_submitted"]').click();
+    const visibleOrders=await page.locator('.demo-order-row:visible').count();
+    await page.locator('[data-demo-order-view="all"]').click();
+    results.interactions.push({case:'V4 synthetic quick order views filter and reset sample rows',pass:visibleOrders===1&&await page.locator('.demo-order-row:visible').count()===3});
+    await page.locator('[data-view="products"]').click();
+    await page.locator('#demoProductQuality').selectOption('missing_image');
+    const onlyMissing=await page.locator('.demo-product-row:visible').count();
+    await page.locator('#demoProductQuality').selectOption('');
+    await page.locator('#demoProductSort').selectOption('price_desc');
+    const firstSample=await page.locator('.demo-product-row:visible').first().getAttribute('data-demo-name');
+    results.interactions.push({case:'V4 synthetic catalogue quality and price sorting operate locally',pass:onlyMissing===1&&firstSample==='Chaska Mix'});
+    await context.close();
+  }
+  {
+    const {context,page}=await contextFor(390,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('#sidebarToggle').click();
+    await page.locator('#adminSidebar.open').waitFor();
+    await page.locator('#adminNavGroups details[data-group="storefront"] summary').click();
+    await page.locator('[data-view="preview"]').click();
+    const navigated=await page.locator('#view-preview').evaluate(el=>el.classList.contains('active'));
+    const closed=!(await page.locator('#adminSidebar').evaluate(el=>el.classList.contains('open')));
+    results.interactions.push({case:'V4 mobile demo drawer navigates and closes',pass:navigated&&closed});
+    await context.close();
+  }
+
+  // Admin V4.2 sidebar: no network/data access in this synthetic design review.
+  {
+    const {context,page}=await contextFor(1440,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('#adminSidebarCollapse').click();
+    const minimized=await page.locator('.demo-admin-shell').evaluate(el=>el.classList.contains('admin-sidebar-minimized'));
+    await page.locator('#adminSidebarRestore').click();
+    const expanded=!(await page.locator('.demo-admin-shell').evaluate(el=>el.classList.contains('admin-sidebar-minimized')));
+    results.interactions.push({case:'V4 desktop sidebar focus mode collapses and restores accessibly',pass:minimized&&expanded});
+    await page.locator('#adminPinCurrent').click();
+    const onePinned=await page.locator('.admin-pinned-item').count()===1;
+    await page.locator('[data-view="orders"]').click();
+    await page.locator('#adminPinCurrent').click();
+    const twoPinned=await page.locator('.admin-pinned-item').count()===2;
+    await page.locator('.admin-pinned-jump').first().click();
+    const jumped=await page.locator('#view-dashboard').evaluate(el=>el.classList.contains('active'));
+    results.interactions.push({case:'V4 pinned panel shortcuts navigate and persist inside one browser',pass:onePinned&&twoPinned&&jumped});
+    await page.locator('#adminCollapseGroups').click();
+    const closed=await page.locator('details.admin-nav-group[open]').count()===0;
+    await page.locator('#adminExpandGroups').click();
+    const opened=await page.locator('details.admin-nav-group[open]').count()===6;
+    results.interactions.push({case:'V4 expand/collapse-all group controls operate native disclosures',pass:closed&&opened});
+    await page.reload();
+    const kept=await page.locator('.admin-pinned-item').count()===2;
+    results.interactions.push({case:'V4 favorite panel shortcuts survive local browser reload',pass:kept});
+    await context.close();
+  }
+  {
+    const {context,page}=await contextFor(390,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await page.locator('#sidebarToggle').click();
+    const opened=await page.locator('#adminSidebar').evaluate(el=>el.classList.contains('open'));
+    const focusedSearch=await page.locator('#adminNavSearch').evaluate(el=>document.activeElement===el);
+    await page.locator('#adminPinFromSidebar').click();
+    const pinned=await page.locator('.admin-pinned-item').count()===1;
+    await page.locator('#adminSidebarCollapse').click();
+    const closed=!(await page.locator('#adminSidebar').evaluate(el=>el.classList.contains('open')));
+    const focusReturned=await page.locator('#sidebarToggle').evaluate(el=>document.activeElement===el);
+    results.interactions.push({case:'V4 mobile sidebar pins current panel and closes with focus returned',pass:opened&&focusedSearch&&pinned&&closed&&focusReturned});
+    await context.close();
+  }
+
+  // Public discovery and owner storefront design controls, without live writes.
+  {
+    const {context,page}=await contextFor(390,null);
+    await page.goto(base+'/shop/',{waitUntil:'domcontentloaded'});
+    await page.locator('#shopCategoryRail a').first().waitFor({state:'visible'});
+    const count=await page.locator('#shopCategoryRail a').count();
+    const all=await page.locator('#shopCategoryRail a').first().getAttribute('href');
+    results.interactions.push({case:'storefront mobile category rail displays catalogue links with a clear all-snacks route',pass:count>1&&all==='/shop/'});
+    const firstCategory=page.locator('#shopCategoryRail a').nth(1);
+    const route=await firstCategory.getAttribute('href');
+    await firstCategory.click();
+    await page.waitForURL(url=>url.pathname===route,{timeout:6000});
+    results.interactions.push({case:'storefront category shortcuts navigate to genuine category routes',pass:page.url().includes(route)});
+    await context.close();
+  }
+  {
+    const {context,page}=await contextFor(1440,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await openAdminPanel(page,'preview');
+    await page.locator('[data-storefront-editor="theme"]').click();
+    const opened=await page.locator('#view-theme').evaluate(el=>el.classList.contains('active'));
+    await openAdminPanel(page,'preview');
+    await page.locator('[data-storefront-route="/shop/"]').click();
+    await page.locator('#demoStorefrontRouteFrame').waitFor({state:'attached'});
+    const publicRoute=await page.locator('#demoStorefrontRouteFrame').getAttribute('src');
+    results.interactions.push({case:'V4 storefront design controls navigate to real editor and public route preview',pass:opened&&publicRoute==='/shop/'});
+    await context.close();
+  }
+
+  {
+    const {context,page}=await contextFor(1440,null);
+    await page.goto(base+'/admin-v4-demo.html');
+    await openAdminPanel(page,'theme');
+    await page.locator('#demoThemeFrame').waitFor({state:'attached'});
+    await page.waitForFunction(()=>document.getElementById('demoThemeFrame')?.contentDocument?.readyState==='complete',{timeout:12000});
+    await page.locator('#demoThemePrimary').fill('#244a86');
+    await page.locator('#demoThemeApply').click();
+    const applied=await page.locator('#demoThemeFrame').evaluate(f=>f.contentDocument?.getElementById('chaskaboxDemoThemeStyle')?.textContent.includes('#244a86'));
+    await page.locator('#demoThemeReset').click();
+    const reset=await page.locator('#demoThemeFrame').evaluate(f=>f.contentDocument?.getElementById('chaskaboxDemoThemeStyle')?.textContent==='');
+    results.interactions.push({case:'V4 theme sandbox applies and resets unsaved colors inside storefront iframe only',pass:applied&&reset});
+    await context.close();
+  }
 }finally{await browser.close();await new Promise(resolve=>server.close(resolve));globalThis.fetch=originalFetch;await writeFile(path.join(output,'browser-results.json'),JSON.stringify(results,null,2));}
 console.log(JSON.stringify({pages:results.cases.length,interactions:results.interactions,errors:results.errors}));
 if(results.cases.some(c=>c.status!==200||c.overflow||c.duplicatePromo||c.violations.length)||results.interactions.some(c=>!c.pass)||results.errors.length)process.exitCode=1;

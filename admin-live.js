@@ -269,19 +269,58 @@
     if(to)sp.set('date_to',to);
     return sp;
   }
+  function syncOrderQuickViews(){
+    const status=$('#orderStatusFilter')?.value||'';
+    const payment=$('#orderPaymentFilter')?.value||'';
+    const method=$('#orderMethodFilter')?.value||'';
+    const q=$('#orderSearch')?.value?.trim()||'';
+    const dates=Boolean($('#orderDateFrom')?.value||$('#orderDateTo')?.value);
+    let view='custom';
+    if(!method&&!q&&!dates){
+      if(!status&&!payment)view='all';
+      else if(status==='new'&&!payment)view='new';
+      else if(!status&&payment==='payment_submitted')view='payment_submitted';
+      else if(status==='dispatched'&&!payment)view='dispatched';
+    }
+    $$('[data-order-view]').forEach(button=>{
+      const active=button.dataset.orderView===view;
+      button.setAttribute('aria-pressed',String(active));
+    });
+    const note=$('#orderActiveView');
+    if(note)note.textContent=view==='custom'?'Custom order filters active.':{
+      all:'Showing all orders',new:'Filtering to new orders',
+      payment_submitted:'Filtering to submitted payments',dispatched:'Filtering to dispatched orders'
+    }[view]+'.';
+  }
   function wireOrderFilters(){
     const q=$('#orderSearch');
-    if(q){q.disabled=false;q.addEventListener('input',debounce(()=>loadOrders(1),250));}
+    if(q){q.disabled=false;q.addEventListener('input',debounce(()=>{syncOrderQuickViews();loadOrders(1);},250));}
     for(const id of ['orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
       const el=$('#'+id);
-      if(el){el.disabled=false;el.addEventListener('change',()=>loadOrders(1));}
+      if(el){el.disabled=false;el.addEventListener('change',()=>{syncOrderQuickViews();loadOrders(1);});}
     }
     $('#orderResetFilters')?.addEventListener('click',()=>{
       for(const id of ['orderSearch','orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
         const el=$('#'+id);if(el)el.value='';
       }
+      syncOrderQuickViews();
       loadOrders(1);
     });
+    // Presets set existing secured API query parameters; no writes or message sends.
+    $$('[data-order-view]').forEach(button=>{
+      button.disabled=false;
+      button.addEventListener('click',()=>{
+        for(const id of ['orderSearch','orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
+          const el=$('#'+id);if(el)el.value='';
+        }
+        if(button.dataset.orderView==='new')$('#orderStatusFilter').value='new';
+        if(button.dataset.orderView==='payment_submitted')$('#orderPaymentFilter').value='payment_submitted';
+        if(button.dataset.orderView==='dispatched')$('#orderStatusFilter').value='dispatched';
+        syncOrderQuickViews();
+        loadOrders(1);
+      });
+    });
+    syncOrderQuickViews();
     const exportBtn=$('#orderExportCsv');
     if(exportBtn){
       const allowed=roleAllows('owner','manager');
@@ -459,10 +498,12 @@
     const q=($('#productSearch')?.value||'').trim().toLowerCase();
     const cat=($('#productCategory')?.value||'').trim();
     const vis=$('#productVisibility')?.value||'';
-    return {q, cat, vis};
+    const quality=$('#productQuality')?.value||'';
+    const sort=$('#productSort')?.value||'recent';
+    return {q, cat, vis, quality, sort};
   }
   function renderFilteredProducts(){
-    const {q, cat, vis}=getProductFilters();
+    const {q, cat, vis, quality, sort}=getProductFilters();
     const normCat=s=>(s||'').trim();
     const filtered=products.filter(p=>{
       if(vis==='archived' && p.visibility!=='archived') return false;
@@ -473,21 +514,34 @@
       if(vis==='visible' && p.visibility!=='visible') return false;
       if(vis==='hidden' && p.visibility!=='hidden') return false;
       if(vis==='bundle' && !p.is_bundle) return false;
+      if(quality==='missing_image' && String(p.image_url||'').trim())return false;
+      if(quality==='missing_seo' && String(p.seo_title||'').trim() && String(p.seo_description||'').trim())return false;
       return true;
     });
+    // The protected API returns at most 1000 rows per page. Sorting here is
+    // intentionally page-scoped; never claim a global ordered catalogue.
+    const nameOf=p=>String(p.name||'');
+    const compareName=(a,b)=>nameOf(a).localeCompare(nameOf(b),'en',{sensitivity:'base'});
+    const priceOf=p=>Number(p.price)||0;
+    if(sort==='name_asc')filtered.sort(compareName);
+    else if(sort==='name_desc')filtered.sort((a,b)=>compareName(b,a));
+    else if(sort==='price_asc')filtered.sort((a,b)=>priceOf(a)-priceOf(b)||compareName(a,b));
+    else if(sort==='price_desc')filtered.sort((a,b)=>priceOf(b)-priceOf(a)||compareName(a,b));
     const grid=$('#productAdminGrid'); if(!grid)return; grid.innerHTML=filtered.map(p=>`<article class="admin-product-card" data-product-id="${p.id}"><label class="live-select-label"><input type="checkbox" data-live-select="${p.id}" aria-label="Select ${esc(p.name)}" ${bulkSelectedIds.has(Number(p.id))?'checked':''}> Select</label><span class="visibility-chip ${p.visibility==='visible'?'':'hidden-product'}">${esc(p.visibility)}</span><div class="admin-product-image">${p.image_url?`<img src="${esc(p.image_url)}" alt="${esc(p.name||'ChaskaBox product')}">`:'<span class="placeholder">🍿</span>'}</div><div class="admin-product-body"><h3>${esc(p.name)}</h3><div class="admin-product-meta">${esc(p.category)} · ${esc(p.pack||'')}</div><div class="admin-product-price"><strong>${money(p.price)}</strong>${p.old_price?`<del>${money(p.old_price)}</del>`:''}</div><div class="admin-card-actions"><button data-live-edit="${p.id}">Edit</button><button data-live-vis="${p.id}">${p.visibility==='archived'?'Restore':p.visibility==='visible'?'Hide':'Show'}</button></div></div></article>`).join('') || '<div class="panel"><p class="muted">No matching products.</p></div>';
-    $('#productResultCount').textContent=`Showing ${filtered.length} of ${products.length} products`; $('#loadMoreProducts').style.display='none';
+    $('#productResultCount').textContent=`Showing ${filtered.length} matching of ${products.length} loaded on page ${productPage} (${productTotal} catalogue items total).${productTotalPages>1?' Filters and sorting apply only to this loaded page.':''}`; $('#loadMoreProducts').style.display='none';
     $$('[data-live-select]',grid).forEach(b=>b.onchange=()=>{const id=Number(b.dataset.liveSelect);b.checked?bulkSelectedIds.add(id):bulkSelectedIds.delete(id);updateProductBulkBar();});
     updateProductBulkBar();
     $$('[data-live-edit]',grid).forEach(b=>b.onclick=()=>openLiveProduct(b.dataset.liveEdit)); $$('[data-live-vis]',grid).forEach(b=>b.onclick=async()=>{const p=products.find(x=>String(x.id)===String(b.dataset.liveVis));try{await api(`/api/admin/products/${p.id}`,{method:'PATCH',body:{visibility:p.visibility==='archived'?'hidden':p.visibility==='visible'?'hidden':'visible'}});toast('Visibility updated');loadProducts()}catch(e){toast(e.message)}});
     // Wire filter inputs to re-render (if not already wired)
     if(!renderFilteredProducts._wired){
       renderFilteredProducts._wired=true;
-      ['productSearch','productCategory','productVisibility'].forEach(id=>{
+      ['productSearch','productCategory','productVisibility','productQuality','productSort'].forEach(id=>{
         $('#'+id)?.addEventListener(id==='productSearch'?'input':'change',()=>renderFilteredProducts());
       });
       $('#resetFiltersBtn')?.addEventListener('click',()=>{
         $('#productSearch').value=''; $('#productCategory').value=''; $('#productVisibility').value='';
+        if($('#productQuality'))$('#productQuality').value='';
+        if($('#productSort'))$('#productSort').value='recent';
         renderFilteredProducts();
       });
     }
@@ -998,8 +1052,33 @@
     }catch(e){listEl.innerHTML=`<p class="muted">Failed to load: ${esc(e.message)}</p>`;}
   }
 
+  // Cloudflare Pages branch previews deliberately have no Supabase credentials.
+  // Never present real password fields on these unconfigured design-review hosts.
+  // The live, MFA-protected owner login remains at the canonical production site.
+  function isDesignPreviewHost(){
+    return /^[a-z0-9-]+\.chaskabox-site\.pages\.dev$/i.test(location.hostname);
+  }
+  function showDesignPreviewGate(){
+    hideBoot();
+    const mfa=$('#liveAdminMfa');if(mfa)mfa.hidden=true;
+    let el=$('#liveAdminLogin');
+    if(!el){el=document.createElement('div');el.id='liveAdminLogin';el.className='live-admin-login';document.body.appendChild(el);}
+    el.hidden=false;
+    el.innerHTML=`<section class="live-login-card staff-login-card" aria-labelledby="staffLoginHeading">
+      <div class="staff-login-brand"><img src="/images/logo-navy.png" alt="ChaskaBox"><div class="staff-login-brandname">CHASKABOX<small>ADMIN CONSOLE V4</small></div></div>
+      <div class="staff-login-shield" aria-hidden="true">✓</div>
+      <div class="staff-login-eyebrow"><span>SAFE DESIGN PREVIEW</span><span>NO LIVE DATA</span></div>
+      <h1 id="staffLoginHeading">Preview without signing in</h1>
+      <p class="staff-login-intro">This preview has no staging Supabase connection. For your security, staff passwords and MFA are not accepted here.</p>
+      <p class="staff-login-message" role="status">Design review uses synthetic sample data. Real orders, settings and messages stay protected.</p>
+      <p><a class="btn primary staff-login-submit" href="/admin-v4-demo.html">Explore Admin V4 demo →</a></p>
+      <p style="text-align:center;margin-top:16px"><a href="https://chaskabox.online/admin.html">Open secure production admin sign-in</a></p>
+      <div class="staff-login-footer"><span>◈ No account credentials required</span><a href="/">← Back to storefront</a></div>
+    </section>`;
+  }
   const recoveryHint=location.hash.includes('type=recovery');
   async function init(){
+    if(isDesignPreviewHost()){showDesignPreviewGate();return;}
     // Safety net: never leave the console stuck on "Verifying admin session…".
     setTimeout(()=>{ if(!bootDone) showBootError('Session check is taking too long. Please reload and try again.'); }, 25000);
     if(!(await ensureClient())){showLogin('Public Supabase configuration could not be loaded.');return;}
@@ -1703,13 +1782,56 @@
       announcement_text: $('#themeAnnText').value,
     };
   }
+  // Isolated iframe preview: never styles the authenticated admin chrome or writes to the CMS.
   async function previewTheme(){
-    let t;try{t=(await import('/theme-contract.js?v=6')).validateTheme(collectTheme());}catch(e){toast(e.message);return;}
-    const style=document.getElementById('themePreviewStyle')||document.createElement('style');
-    style.id='themePreviewStyle';
-    style.textContent=`:root{--primary:${t.primary_color};--navy:${t.primary_color};--gold:${t.accent_color};--accent:${t.accent_color};--bg:${t.background_color};--text:${t.text_color};--ink:${t.text_color};--radius:${t.border_radius}px} body{font-family:${t.font_family}}`;
-    document.head.appendChild(style);
-    toast('Preview applied (not saved)');
+    let t;
+    try{t=(await import('/theme-contract.js?v=6')).validateTheme(collectTheme());}
+    catch(e){toast('Theme preview validation failed: '+e.message);return;}
+    const view=$('#view-theme');
+    if(!view)return;
+    let host=$('#themeStorefrontPreview');
+    if(!host){
+      host=document.createElement('section');
+      host.id='themeStorefrontPreview';
+      host.className='panel admin-theme-preview';
+      const heading=document.createElement('h2');heading.textContent='Unsaved storefront theme preview';
+      const note=document.createElement('p');note.textContent='This preview is local to this browser tab. No theme, product or payment change is saved.';
+      const bar=document.createElement('div');bar.className='admin-theme-preview-actions';
+      const route=document.createElement('select');route.id='themePreviewRoute';route.setAttribute('aria-label','Preview storefront page');
+      for(const [value,name] of [['/','Homepage'],['/shop/','Shop'],['/bundles/','Chaska Boxes']]){
+        const option=document.createElement('option');option.value=value;option.textContent=name;route.append(option);
+      }
+      const size=document.createElement('select');size.id='themePreviewSize';size.setAttribute('aria-label','Preview width');
+      for(const [value,name] of [['100%','Desktop'],['768px','Tablet'],['390px','Mobile']]){
+        const option=document.createElement('option');option.value=value;option.textContent=name;size.append(option);
+      }
+      const reset=document.createElement('button');reset.type='button';reset.className='btn secondary';reset.textContent='Close unsaved preview';
+      reset.onclick=()=>host.remove();
+      const status=document.createElement('p');status.id='themePreviewStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+      const frame=document.createElement('iframe');frame.id='themePreviewFrame';frame.title='Unsaved storefront theme preview';frame.loading='lazy';
+      const wrap=document.createElement('div');wrap.className='admin-theme-frame';wrap.append(frame);
+      bar.append(route,size,reset);host.append(heading,note,bar,status,wrap);view.append(host);
+      route.onchange=()=>{frame.src=route.value;};
+      size.onchange=()=>{frame.style.width=size.value;};
+    }
+    const frame=host.querySelector('#themePreviewFrame');
+    const status=host.querySelector('#themePreviewStatus');
+    const css=`:root{--primary:${t.primary_color};--navy:${t.primary_color};--gold:${t.accent_color};--accent:${t.accent_color};--bg:${t.background_color};--text:${t.text_color};--ink:${t.text_color};--radius:${t.border_radius}px}body{font-family:${t.font_family}}`;
+    const apply=()=>{
+      try{
+        const doc=frame.contentDocument;
+        if(!doc||!doc.head)throw Error('Frame unavailable');
+        let style=doc.getElementById('adminThemePreviewStyle');
+        if(!style){style=doc.createElement('style');style.id='adminThemePreviewStyle';doc.head.append(style);}
+        style.textContent=css;
+        status.textContent='Unsaved design preview applied. Review desktop and mobile before saving separately.';
+      }catch(error){status.textContent='Preview unavailable in this browser: '+error.message+'. No changes were saved.';}
+    };
+    frame.onload=apply;
+    const src=host.querySelector('#themePreviewRoute').value;
+    if(new URL(frame.src||'about:blank',location.origin).pathname!==src)frame.src=src;
+    else apply();
+    host.scrollIntoView({block:'start',behavior:'auto'});
   }
 
   /* ============ COUPONS ============ */
