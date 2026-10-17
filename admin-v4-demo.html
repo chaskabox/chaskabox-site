@@ -232,11 +232,22 @@
   <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
   <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
   </div></section>
-<section class="admin-view" id="view-theme" data-title="Theme Studio" data-subtitle="Colors and typography">
-  <div class="panel"><div class="panel-head"><div><h2>Theme Studio</h2><p>Colors and typography</p></div></div>
-  <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
-  <div class="demo-fake-table"><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton middle"></span><span class="demo-skeleton narrow"></span></div><div class="demo-fake-row"><span class="demo-skeleton wide"></span><span class="demo-skeleton narrow"></span></div></div>
-  </div></section>
+<section class="admin-view" id="view-theme" data-title="Theme Studio" data-subtitle="Visual design controls with unsaved storefront preview">
+  <section class="panel"><div class="panel-head"><div><h2>Storefront theme sandbox</h2><p>Experiment with sample colors and font. This never changes ChaskaBox settings.</p></div></div>
+    <p class="demo-notice"><b>Sample design only.</b> Only the embedded public-page preview will change; this demo has no authentication or save function.</p>
+    <div class="demo-theme-controls">
+      <label>Primary / navigation <input type="color" id="demoThemePrimary" value="#1a2b5c"></label>
+      <label>Accent / highlights <input type="color" id="demoThemeAccent" value="#f59e0b"></label>
+      <label>Page background <input type="color" id="demoThemeBackground" value="#ffffff"></label>
+      <label>Font <select id="demoThemeFont"><option value="system-ui">System</option><option value="Georgia, serif">Georgia</option><option value="Arial, sans-serif">Arial</option></select></label>
+      <label>View <select id="demoThemeRoute"><option value="/shop/">Shop</option><option value="/">Homepage</option><option value="/bundles/">Boxes</option></select></label>
+      <label>Device <select id="demoThemeSize"><option value="100%">Desktop</option><option value="390px">Mobile</option></select></label>
+    </div>
+    <div class="action-row"><button type="button" class="btn primary" id="demoThemeApply">Preview sample theme</button><button type="button" class="btn secondary" id="demoThemeReset">Reset preview colors</button></div>
+    <p id="demoThemeStatus" role="status" aria-live="polite">No sample theme applied yet.</p>
+    <div class="admin-theme-frame"><iframe id="demoThemeFrame" src="/shop/" title="Sample storefront theme at selected width" loading="lazy"></iframe></div>
+  </section>
+</section>
 <section class="admin-view" id="view-studio" data-title="Image Studio" data-subtitle="Image editing and upload previews">
   <div class="panel"><div class="panel-head"><div><h2>Image Studio</h2><p>Image editing and upload previews</p></div></div>
   <p class="demo-notice"><b>Sample design only.</b> This preview intentionally has no authenticated records or working save/send controls.</p>
