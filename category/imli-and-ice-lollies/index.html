@@ -23,14 +23,15 @@
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 <script type="application/ld+json" id="category-breadcrumb-schema">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://chaskabox.online/"},{"@type":"ListItem","position":2,"name":"Imli & Ice Lollies","item":"https://chaskabox.online/category/imli-and-ice-lollies/"}]}</script>
+<link rel="stylesheet" href="/final-homepage.css?v=20261017-reference">
 </head>
-<body>
+<body class="reference-storefront">
 <a href="#main" class="skip-link">Skip to content</a>
 <div class="promo"><span class="promo-desktop">✓ Original sealed packs &nbsp;•&nbsp; 🚚 4–7 day delivery &nbsp;•&nbsp; 💵 COD + prepaid</span><span id="promoMsg" class="promo-mobile">Original sealed packs</span></div>
 <header>
   <div class="hwrap">
     <button class="tbtn mnav-btn" onclick="toggleMnav()" title="Menu" aria-label="Open menu"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg></button>
-    <a class="logo" href="/"><img src="/images/logo-navy.png" srcset="/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w" sizes="210px" alt="ChaskaBox" class="logo-img" fetchpriority="high" width="1624" height="776"></a>
+    <a class="logo" href="/"><img src="/images/logo-navy.png" srcset="/images/logo-navy-420.webp 420w, /images/logo-navy-840.webp 840w" sizes="210px" alt="ChaskaBox" class="logo-img" fetchpriority="high" decoding="async" width="1624" height="776"></a>
     <nav class="hnav" aria-label="Main navigation">
       <a href="/shop/">Shop</a>
       <div class="hdrop">
@@ -46,16 +47,39 @@
     </nav>
     <form class="header-search" role="search" onsubmit="submitHeaderSearch(event)" style="position:relative">
       <label class="sr-only" for="headerSearch">Search snacks</label>
-      <input id="headerSearch" type="search" autocomplete="off" placeholder="Search snacks..." oninput="renderHeaderSearchSuggestions(this.value)" onkeydown="headerSearchKey(event)">
+      <input id="headerSearch" type="search" autocomplete="off" placeholder="Search for your favourite snacks, brands or Chaska Boxes..." oninput="renderHeaderSearchSuggestions(this.value)" onkeydown="headerSearchKey(event)">
       <div id="headerSearchSuggestions" class="shop-search-suggestions" role="listbox" hidden style="position:absolute;top:100%;left:0;right:0;z-index:50"></div>
       <button type="submit" aria-label="Search">⌕</button>
     </form>
     <button class="tbtn search-btn" onclick="focusShopSearch()" title="Search" aria-label="Search snacks"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg></button>
     <button class="tbtn account-btn" id="acctBtn" onclick="toggleAccount()" title="Account" aria-label="Account"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg></button>
     <a class="tbtn" href="/wishlist/" title="Wishlist" aria-label="My wishlist" style="position:relative;text-decoration:none">🤍<span class="wishcount" style="display:none;position:absolute;top:-4px;right:-4px;background:#e5484d;color:#fff;font-size:10px;font-weight:800;min-width:16px;height:16px;border-radius:999px;display:flex;align-items:center;justify-content:center">0</span></a>
-    <button class="hbtn solid" onclick="openDrawer()" aria-label="Open shopping bag">🛍️ Bag <span class="cartcount" style="display:none">0</span></button>
+    <button class="hbtn solid" onclick="openDrawer()" aria-label="Open shopping bag"><svg class="cb-bag-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M5 7h14l2 14H3L5 7Z"/><path d="M8 8V5a4 4 0 0 1 8 0v3"/></svg><span class="cartcount" style="display:none">0</span></button>
   </div>
 </header>
+<nav class="cb-subnav" aria-label="Quick shopping navigation">
+  <div class="cb-subnav-inner">
+    <div class="cb-subnav-links">
+      <a class="cb-discover" href="/shop/">☰ &nbsp; Shop by Category</a>
+      <a href="/">Home</a>
+      <span class="cb-managed-nav"><a href="/shop/">All Products</a>
+      <a href="/bundles/">Chaska Boxes</a>
+      <a href="/brands/">Brands</a></span>
+      <a href="/shop/" onclick="goBadge('Sale');return false">Deals</a>
+      <a href="/shop/" onclick="goBadge('');shopState.sort='new';renderShopList();return false">New Arrivals</a>
+      <a href="/about/">About Us</a>
+      <a href="/contact/">Contact</a>
+    </div>
+    <a class="cb-contact" href="https://wa.me/923320005381">WhatsApp Order ↗</a>
+  </div>
+</nav>
+<form class="cb-mobile-search" action="/shop/" method="get" role="search">
+  <label class="sr-only" for="cbMobileSearch">Search snacks and brands</label>
+  <input id="cbMobileSearch" name="q" type="search" placeholder="Search snacks, brands, Chaska Boxes..." autocomplete="off">
+  <button type="submit" aria-label="Search products">⌕</button>
+</form>
+
+
 
 <!-- mobile nav drawer -->
 <div id="mnav" class="mnav" role="dialog" aria-label="Shop menu" aria-hidden="true" inert><div class="mnav-head"><b>Shop ChaskaBox</b><button class="mclose" aria-label="Close menu" onclick="toggleMnav()">✕</button></div><div id="mnavList" class="mnav-list"></div></div>
@@ -79,7 +103,7 @@
           <div class="hero-searchbox"><span aria-hidden="true">🔎</span><input id="homeSearch" autocomplete="off" placeholder="Search Slanty, Cocomo, chocolates..." oninput="renderHomeSearchSuggestions(this.value)" onkeydown="homeSearchKey(event)"><button type="button" onclick="submitHomeSearch()">Search</button></div>
           <div id="homeSearchSuggestions" class="home-search-suggestions" hidden></div>
         </div>
-        
+
       </div>
       <div class="heroimg"><div class="herocollage" id="heroCollage"></div></div>
     </div>
@@ -341,6 +365,13 @@
 
 <div id="view-404" style="display:none"></div>
 </main>
+  <nav class="cb-mobile-dock" aria-label="Mobile shopping shortcuts">
+    <a href="/"><span aria-hidden="true">⌂</span>Home</a>
+    <a href="/shop/"><span aria-hidden="true">▦</span>Categories</a>
+    <a href="/shop/" onclick="focusShopSearch();return false"><span aria-hidden="true">⌕</span>Search</a>
+    <a href="/wishlist/"><span aria-hidden="true">♡</span>Wishlist</a>
+    <a href="/account/"><span aria-hidden="true">♙</span>Account</a>
+  </nav>
 
 <footer>
   <div class="fwrap">
@@ -389,8 +420,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=3"></script>
 <script src="/photo-manifest.js?v=20261014-closeout"></script>
-<script src="/app.js?v=20261017-ux-p2"></script>
-<script src="/home-hero-carousel.js?v=20261017-p2"></script>
+<script src="/app.js?v=20261017-reference"></script>
+<script src="/home-hero-carousel.js?v=20261017-reference"></script>
 <script src="/reviews-widget.js?v=20261014-final-readiness"></script>
 <script src="/account.js?v=20261012-release?v=5"></script>
 <script src="/analytics.js?v=1"></script>
@@ -399,5 +430,6 @@
 /* Remove Netlify badge */
 (function(){function rm(){document.querySelectorAll('div[class*="netlify" i],a[href*="netlify.com"],iframe[src*="netlify"],[id*="netlify" i]').forEach(e=>e.remove());}rm();new MutationObserver(rm).observe(document.body,{childList:true,subtree:true});setInterval(rm,2000);})();
 </script>
-<script src="/site-runtime.js?v=20261015-runtime-sharing" defer></script></body>
+<script src="/site-runtime.js?v=20261017-reference" defer></script><script src="/reference-ui.js?v=20261017-reference" defer></script>
+</body>
 </html>

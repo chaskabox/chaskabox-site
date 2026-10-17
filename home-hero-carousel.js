@@ -28,8 +28,8 @@
     {label:'Bachpan Ka Zaiqa',kick:'Pakistan ka snack box, dil se',
      eyebrow:'PAKISTANI SNACKS · SOURCED AFTER ORDER',
      heading:'Bachpan Ka Zaiqa, ',highlight:'Ab Ghar Baithe.',
-     description:'Pakistan ke favourite snacks, order ke baad carefully source karke aapke darwaze tak. COD and prepaid options available nationwide.',
-     primary:'Shop All Snacks',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
+     description:'Pakistani snacks & curated Chaska Boxes. Sourced after your order, delivered across Pakistan.',
+     primary:'Shop Now',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
     {label:'Curated Chaska Boxes',kick:'Har mood ka Chaska Box',
      eyebrow:'CURATED SNACK BOXES · GIFTING & SHARING',
      heading:'Har Box Mein ',highlight:'Bachpan Ki Yaadein.',
@@ -75,7 +75,7 @@
   function start(){
     stop();
     if(media.matches||document.hidden||root.hidden||slides.length<2)return;
-    timer=setInterval(()=>show(current+1),7000);
+    // Banners advance only through the visible controls; no automatic rotation.
   }
   controls.addEventListener('click',event=>{
     const btn=event.target.closest('button');
