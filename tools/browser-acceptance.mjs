@@ -258,7 +258,8 @@ try{
     ||checkoutVisual.turnstileSize!==(width<=360?'compact':'flexible'))throw Error('Checkout visual audit failed '+JSON.stringify({width,checkoutVisual}));
   results.interactions.push({case:'premium checkout visually styled / '+width,pass:true});
   if(width===390||width===1440)await page.screenshot({path:path.join(output,'premium-checkout-'+width+'.png'),fullPage:true});
-  await page.getByLabel('City *',{exact:true}).fill('Lahore');
+  await page.locator('#f_province').selectOption('Punjab');
+  await page.locator('#f_city').fill('Lahore');
   await page.waitForFunction(()=>document.getElementById('quoteStatus')?.textContent==='Total confirmed for Lahore.');
   const fmt=n=>'Rs. '+n.toLocaleString('en-PK');
   const subtotal=99*products.find(p=>p.id===39).price;

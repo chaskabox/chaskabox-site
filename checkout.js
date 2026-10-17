@@ -12,6 +12,8 @@ let PRODUCTS = [], CART = {}, PAY = 'cod', placingOrder = false;
 let PAYMENT_ENABLED = {cod:true,jazzcash:true,bank_transfer:true};
 let checkoutStep = 1, furthestCheckoutStep = 1, checkoutNavigating = false;
 let checkoutTurnstileWidgetId = null;
+const CHECKOUT_REGIONS = Object.freeze(['Punjab','Sindh','Khyber Pakhtunkhwa','Balochistan','Islamabad','Azad Kashmir','Gilgit Baltistan']);
+let checkoutSelectedRegion = '';
 const $ = s => document.querySelector(s);
 const fmt = n => 'Rs. ' + Number(n).toLocaleString('en-PK');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -118,6 +120,7 @@ async function init() {
   document.querySelectorAll('[data-checkout-nav]').forEach(button=>{
     button.addEventListener('click',()=>goToCheckoutStep(Number(button.dataset.checkoutNav)));
   });
+  initCheckoutRegions();
   $('#f_city')?.addEventListener('input',()=>scheduleQuote());
   $('#f_coupon')?.addEventListener('input',()=>scheduleQuote());
   $('#applyCoupon')?.addEventListener('click',()=>refreshQuote().catch(e=>{if($('#quoteStatus'))$('#quoteStatus').textContent=e.message}));
@@ -197,6 +200,7 @@ function setPay(method) {
 let quoteTimer,quoteSequence=0;
 function scheduleQuote(){clearTimeout(quoteTimer);quoteTimer=setTimeout(()=>refreshQuote().catch(e=>{if($('#quoteStatus'))$('#quoteStatus').textContent=e.message;}),350);}
 async function refreshQuote(){
+ const region=$('#f_province')?.value||'';if(!validCheckoutRegion(region))throw new Error('Select your province or region first.');
  const city=$('#f_city')?.value.trim();if(!city)throw new Error('Enter your delivery city to confirm the total.');
  const seq=++quoteSequence,payload={items:Object.entries(CART).map(([id,qty])=>({product_id:Number(id),qty:Number(qty)})),payment_method:PAY,coupon_code:($('#f_coupon')?.value||'').trim().toUpperCase(),customer:{city,country:$('#f_country')?.value||'Pakistan'}};
  if($('#quoteStatus'))$('#quoteStatus').textContent='Checking your total…';
@@ -235,6 +239,63 @@ function renderSummary() {
   } else {
     hint.hidden = true;
   }
+}
+
+/* Province / region drives local suggestions; unsupported towns remain typeable. */
+function validCheckoutRegion(value){return CHECKOUT_REGIONS.includes(String(value||'').trim());}
+function citiesForCheckoutRegion(region){
+  const list=globalThis.CHASKABOX_PAKISTAN_LOCATIONS?.[region];
+  return Array.isArray(list)?list:[];
+}
+function regionForCheckoutCity(city){
+  const name=String(city||'').trim().toLocaleLowerCase('en');
+  if(!name)return '';
+  const matches=CHECKOUT_REGIONS.filter(r=>citiesForCheckoutRegion(r).some(c=>c.toLocaleLowerCase('en')===name));
+  return matches.length===1?matches[0]:'';
+}
+function renderCheckoutCitySuggestions(){
+  const city=$('#f_city'),province=$('#f_province'),list=$('#pkCities'),help=$('#cityHelp');
+  if(!city||!province||!list)return;
+  const region=province.value;
+  const options=citiesForCheckoutRegion(region);
+  const children=options.map(name=>{
+    const element=document.createElement('option');
+    element.value=name;
+    return element;
+  });
+  list.replaceChildren(...children);
+  city.disabled=!validCheckoutRegion(region);
+  city.placeholder=city.disabled?'Select province first':'Search or type your city / town';
+  if(help)help.textContent=city.disabled?'Choose a region to see cities and towns.':
+    (options.length?options.length+' cities, districts and towns to search.':'No city list loaded.')+' Not listed? Type your city or town.';
+}
+function setCheckoutRegion(region,cityValue){
+  const province=$('#f_province'),city=$('#f_city');
+  if(!province||!city)return;
+  if(!validCheckoutRegion(region))return;
+  province.value=region;
+  checkoutSelectedRegion=region;
+  renderCheckoutCitySuggestions();
+  if(cityValue && !city.value)city.value=cityValue;
+  scheduleQuote();
+}
+function initCheckoutRegions(){
+  const province=$('#f_province'),city=$('#f_city');
+  if(!province||!city)return;
+  checkoutSelectedRegion=province.value;
+  province.addEventListener('change',()=>{
+    const next=province.value;
+    if(checkoutSelectedRegion!==next){
+      city.value='';
+      checkoutSelectedRegion=next;
+      ++quoteSequence;
+      if($('#checkoutTotalLabel'))$('#checkoutTotalLabel').textContent='Estimated total';
+      if($('#quoteStatus'))$('#quoteStatus').textContent=next?'Enter your delivery city to confirm the total.':'Select a province / region first.';
+    }
+    renderCheckoutCitySuggestions();
+    if(next && city.value)scheduleQuote();
+  });
+  renderCheckoutCitySuggestions();
 }
 
 function getFullPhone(){
@@ -295,7 +356,8 @@ function checkForm(scope = 'all') {
     ['f_phone','e_phone',validPhone],
     ['f_email','e_email',validEmail],
     ['f_addr','e_addr',v=>v.trim().length>=8 && v.trim().length<=500 && !/[\u0000-\u001f\u007f]/.test(v)],
-    ['f_city','e_city',v=>v.trim().length>=2 && v.trim().length<=100 && !/[\u0000-\u001f\u007f0-9<>]/.test(v)],
+    ['f_province','e_province',validCheckoutRegion],
+    ['f_city','e_city',v=>validCheckoutRegion($('#f_province')?.value) && v.trim().length>=2 && v.trim().length<=100 && !/[\u0000-\u001f\u007f0-9<>]/.test(v)],
     ['f_postal','e_postal',v=>!v.trim() || /^[0-9]{5}$/.test(v.trim())],
     ['f_country','e_country',v=>v.trim()==='Pakistan']
   ];
@@ -363,7 +425,7 @@ function updateCheckoutReview(){
     reviewName:[($('#f_fname')?.value||'').trim(),($('#f_lname')?.value||'').trim()].filter(Boolean).join(' '),
     reviewPhone:($('#f_phone')?.value||'').trim(),
     reviewEmail:($('#f_email')?.value||'').trim(),
-    reviewAddress:[($('#f_addr')?.value||'').trim(),($('#f_city')?.value||'').trim(),($('#f_postal')?.value||'').trim(), 'Pakistan'].filter(Boolean).join(', '),
+    reviewAddress:[($('#f_addr')?.value||'').trim(),($('#f_city')?.value||'').trim(),($('#f_province')?.value||'').trim(),($('#f_postal')?.value||'').trim(), 'Pakistan'].filter(Boolean).join(', '),
     reviewPayment:PAYMENT_LABELS[PAY]||'Payment method not selected',
     reviewPaymentStatus:isPrepaid()?'Payment reference provided. Awaiting verification after your order is placed.':'Pay when your order arrives.'
   };
@@ -543,7 +605,8 @@ async function placeOrder() {
   // Until shipping address has a dedicated postal-code column, carry verified
   // optional code in the persisted address string (not pricing metadata).
   const postalCode=($('#f_postal')?.value||'').trim();
-  const deliveryAddress=$('#f_addr').value.trim()+(postalCode?', Postal code '+postalCode:'');
+  const region=($('#f_province')?.value||'').trim();
+  const deliveryAddress=$('#f_addr').value.trim()+', Province / Region: '+region+(postalCode?', Postal code '+postalCode:'');
   const _ph = getFullPhone();
   let phone;
   if(_ph.ccode === '+92'){
@@ -612,7 +675,8 @@ async function placeOrder() {
     phone: normalizePhone($('#f_phone').value),
     email: $('#f_email').value.trim(),
     address: $('#f_addr').value.trim(),
-    city: $('#f_city').value.trim()
+    city: $('#f_city').value.trim(),
+    province: ($('#f_province')?.value||'').trim()
   });
   CART = {};
   try {localStorage.removeItem('chaskabox-cart');localStorage.removeItem('chaskabox-cart-ts');}catch{}
@@ -692,7 +756,7 @@ async function autofillCustomerDetails(){
       if(ACCOUNT_SESSION.user.email && $('#f_email') && !$('#f_email').value) $('#f_email').value = ACCOUNT_SESSION.user.email;
       if(addrs){
         if($('#f_addr') && !$('#f_addr').value) $('#f_addr').value = addrs.address || '';
-        if($('#f_city') && !$('#f_city').value) $('#f_city').value = addrs.city || '';
+        if($('#f_city') && !$('#f_city').value){const city=addrs.city||'';setCheckoutRegion(regionForCheckoutCity(city),city);if(!$('#f_city').value)$('#f_city').value=city;}
       }
       return;
     }
@@ -704,7 +768,7 @@ async function autofillCustomerDetails(){
     if(saved.phone && $('#f_phone') && !$('#f_phone').value) $('#f_phone').value = saved.phone;
     if(saved.email && $('#f_email') && !$('#f_email').value) $('#f_email').value = saved.email;
     if(saved.address && $('#f_addr') && !$('#f_addr').value) $('#f_addr').value = saved.address;
-    if(saved.city && $('#f_city') && !$('#f_city').value) $('#f_city').value = saved.city;
+    if(saved.city && $('#f_city') && !$('#f_city').value){const city=saved.city;setCheckoutRegion(validCheckoutRegion(saved.province)?saved.province:regionForCheckoutCity(city),city);if(!$('#f_city').value)$('#f_city').value=city;}
   } catch(e){}
 }
 
