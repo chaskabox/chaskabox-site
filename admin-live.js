@@ -605,7 +605,7 @@
       const amount=Number(v.amount_pkr),fee=Number(v.processing_fee_pkr);
       if(!Number.isSafeInteger(amount)||amount<1||!Number.isSafeInteger(fee)||fee<0||amount+fee>max)
         throw Error('Payout and fee together cannot exceed remaining order amount');
-      if(!/^\\d{4}-\\d{2}-\\d{2}$/.test(v.received_on)||v.received_on>pkToday())
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(v.received_on)||v.received_on>pkToday())
         throw Error('Enter a valid settlement date not in the future');
       if(String(v.reference).trim().length<3)throw Error('Statement reference must be at least 3 characters');
       return api('/api/admin/online-payments/receipts',{method:'POST',body:{
