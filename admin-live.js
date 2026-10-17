@@ -505,7 +505,7 @@
   async function editCourierCompany(company){
     const saved=await courierDialog(company?'Edit courier rule':'Add courier company',[
       {id:'name',label:'Courier company name',required:true,value:company?.name||'',maxLength:100},
-      {id:'settlement_days',type:'number',label:'Calendar days after delivery until expected COD payment',required:true,min:0,max:120,value:company?.settlement_days??7},
+      {id:'settlement_days',type:'number',label:'Calendar days after delivery until expected COD payment',required:true,min:0,max:120,value:company?.settlement_days??''},
       {id:'deduction_per_order_pkr',type:'number',label:'Courier deduction per COD order (PKR; enter 0 if courier remits gross)',required:true,min:0,max:100000,value:company?.deduction_per_order_pkr??0},
       {id:'is_active',type:'checkbox',label:'Available for future dispatch',value:company?.is_active??true}
     ],async v=>{
