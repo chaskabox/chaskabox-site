@@ -94,7 +94,7 @@
 
           <label class="payopt sel" id="pay_cod">
             <input type="radio" name="pay" value="cod" checked>
-            <span><b>💵 Cash on Delivery</b><small>Pay cash when your order arrives · <span data-dynamic-delivery>Rs. 300</span> delivery</small></span>
+            <span><b>💵 Cash on Delivery</b><small><span id="codAdvancePayHint">Rs. 500 advance required before dispatch, rest COD</span> · <span data-dynamic-delivery>Rs. 300</span> delivery</small></span>
           </label>
 
           <label class="payopt" id="pay_jazz">
@@ -102,6 +102,7 @@
             <span><b>⚡ JazzCash (Advance)</b><small>Prepaid · FREE delivery on orders of <span data-dynamic-threshold>Rs. 5,000</span>+</small></span>
           </label>
 
+          <p id="codAdvanceExplainer" class="payment-help">COD requires a verified advance before dispatch. After placing your order, transfer the requested advance using JazzCash or Bank Transfer and send your proof to ChaskaBox. The advance is deducted from your order total.</p>
           <div id="jazzBox" class="payment-details" hidden>
             <div class="qrbox">
               <img src="/images/jazzcash-qr.webp" alt="JazzCash payment QR code">
@@ -168,6 +169,8 @@
             <div class="sumrow"><span>Discount</span><span id="s_discount">Rs. 0</span></div>
             <div class="sumrow"><span>Delivery</span><span id="s_del">Rs. 0</span></div>
             <div class="sumrow total"><span id="checkoutTotalLabel">Estimated total</span><strong id="s_tot">Rs. 0</strong></div>
+            <div class="sumrow" id="codAdvanceSummary" style="display:none"><span>COD advance before dispatch</span><strong id="s_cod_advance">Rs. 500</strong></div>
+            <div class="sumrow" id="codBalanceSummary" style="display:none"><span>Remaining on delivery</span><strong id="s_cod_balance">Rs. 0</strong></div>
           </div>
         </div>
         <div class="hint" id="freeHint" hidden></div>
@@ -193,6 +196,7 @@
       <div><span>Status</span><strong id="doneStatus">—</strong></div>
     </div>
     <p id="doneMsg" class="done-message"></p>
+    <div id="doneCodAdvanceBox" class="payment-details" style="display:none" aria-live="polite"></div>
     <div class="confirm-actions"><a class="cta" id="doneTrack" href="/track-order.html">Track order</a><a class="cta secondary" href="/">Continue Shopping</a><a class="cta secondary" id="doneWhatsApp" href="https://wa.me/923320005381" target="_blank" rel="noopener">WhatsApp Support</a></div>
     <div id="doneAccountOffer" class="co-card" style="display:none;margin-top:16px;text-align:center"><h3>Want to track all your orders?</h3><p class="amut">Create a free account to save your order history, wishlist and addresses.</p><button class="cta">Create free account</button></div>
     <p class="confirmation-tip">Tip: screenshot this screen or save your order number for support.</p>
