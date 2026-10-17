@@ -6,5 +6,5 @@ export const onRequestGet=withAdmin(['owner','manager'],async c=>{
  ]);
  const refs=new Set((ledger||[]).map(x=>x.order_id));
  const missing=(unassigned||[]).filter(o=>!refs.has(o.id));
- return json({ledger:ledger||[],unassigned:missing,warning:(ledger||[]).length>=1000||(unassigned||[]).length>=1000?'Showing first 1000 rows; export not yet available.':null},{},{'Cache-Control':'no-store'});
+ return json({ledger:ledger||[],unassigned:missing,warning:(ledger||[]).length>=1000||(unassigned||[]).length>=1000?'Showing first 1000 rows; export not yet available.':null},200,{'Cache-Control':'no-store'});
 });
