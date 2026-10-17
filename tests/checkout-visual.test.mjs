@@ -31,6 +31,7 @@ test('real Turnstile stays server-verified while compact mode protects extra-sma
  assert.match(html,/Edit shopping bag/);
  assert.match(html,/Estimated total/);
  assert.match(js,/Verified total/);
+  assert.match(js,/FREE_PREPAID_ENABLED/);
 });
 
 test('guided checkout has accessible separate delivery, payment and review stages',async()=>{
