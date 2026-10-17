@@ -370,7 +370,14 @@ function checkForm(scope = 'all') {
   need.forEach(([f,e,fn]) => {
     const good = fn($('#'+f)?.value || '');
     if ($('#'+e)) $('#'+e).style.display = good ? 'none' : 'block';
-    if ($('#'+f)) { $('#'+f).setAttribute('aria-invalid', good ? 'false' : 'true'); $('#'+f).setAttribute('aria-describedby', e); }
+    if ($('#'+f)) {
+      const field=$('#'+f);
+      field.setAttribute('aria-invalid',good?'false':'true');
+      // Preserve helpful field instructions while associating the error with this input.
+      const describedBy=(field.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
+      if(!describedBy.includes(e))describedBy.push(e);
+      field.setAttribute('aria-describedby',describedBy.join(' '));
+    }
     if(!good) ok=false;
   });
   if (scope !== 'delivery' && isPrepaid()) {
