@@ -53,3 +53,15 @@ test('Theme visual preview stays isolated in an iframe and does not write to sto
  assert.doesNotMatch(functionText,/method:\s*['"](?:PUT|POST|PATCH)|api\('/);
  assert.match(styles,/\.admin-theme-frame iframe/);
 });
+
+test('Credential-free theme sandbox has functional device, route and reset controls without live writes',()=>{
+ const html=read('admin-v4-demo.html'),js=read('admin-v4-demo.js');
+ for(const id of ['demoThemePrimary','demoThemeAccent','demoThemeBackground','demoThemeFont','demoThemeRoute','demoThemeSize','demoThemeApply','demoThemeReset','demoThemeFrame','demoThemeStatus'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(js,/demoFrame\?\.addEventListener\('load',applyDemoTheme\)/);
+ assert.match(js,/chaskaboxDemoThemeStyle/);
+ assert.match(js,/one\('#demoThemeApply'\)\?\.addEventListener\('click'/);
+ assert.match(js,/one\('#demoThemeReset'\)\?\.addEventListener\('click'/);
+ assert.match(js,/demoFrame\.style\.width=e\.target\.value/);
+ assert.doesNotMatch(js,/fetch\(|\/api\/admin\/|method:\s*['"](?:POST|PUT|PATCH)/);
+});
