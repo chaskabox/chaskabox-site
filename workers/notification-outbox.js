@@ -107,9 +107,97 @@ export async function runOwnerWahaCanary(env, fetcher = fetch) {
   return { status: outcome, error_code: code, provider_acknowledged: !!providerId };
 }
 
+
+// One-shot session webhook setup; no messages, restarts, or replays.
+// SQL claim is consumed before HTTP I/O so a timed-out configuration is never
+// blindly repeated. The existing WAHA configuration is preserved.
+export async function configureWahaWebhookOnce(env, fetcher = fetch) {
+  const id = 'chaskabox-waha-receipts-20261017';
+  if (env.WAHA_WEBHOOK_SETUP_ENABLED !== 'true') return { status: 'disabled' };
+  const claim = await privateRequest(env, '/rest/v1/rpc/waha_webhook_setup_claim', { p_id: id }, fetcher);
+  if (claim !== true) return { status: 'not_pending' };
+  let outcome='blocked', code='invalid_config', httpStatus=null, sessionStatus=null, present=false;
+  const url='https://notify.chaskabox.online/webhooks/waha';
+  try {
+    const auth=wahaAccessHeaders(env);
+    const base=String(env.WAHA_API_URL||'').replace(/\/+$/,'');
+    if (base !== 'https://waha.chaskabox.online' ||
+        env.WAHA_SESSION !== 'default' || !env.WAHA_API_KEY ||
+        !auth['CF-Access-Client-Id'] || !auth['CF-Access-Client-Secret'] ||
+        typeof env.WAHA_WEBHOOK_SECRET !== 'string' || env.WAHA_WEBHOOK_SECRET.length < 32) {
+      code='missing_gateway_or_webhook_credential';
+    } else {
+      const endpoint=base+'/api/sessions/default';
+      const headers={ 'X-Api-Key': env.WAHA_API_KEY, ...auth,
+        'Content-Type': 'application/json', Accept:'application/json' };
+      const get=async()=>{
+        const r=await fetcher.call(globalThis,endpoint,{method:'GET',headers,redirect:'manual',signal:AbortSignal.timeout(10000)});
+        const txt=await limitedText(r,32768);
+        let data=null;try{data=JSON.parse(txt)}catch{}
+        return {status:r.status,data};
+      };
+      const old=await get();httpStatus=old.status;
+      const s=old.data;
+      sessionStatus=typeof s?.status==='string' ? s.status.slice(0,30) : null;
+      if (old.status !== 200 || sessionStatus !== 'WORKING') {
+        code='waha_session_unavailable';
+      } else if (!s.config || typeof s.config !== 'object' || Array.isArray(s.config) ||
+                 (s.config.webhooks != null && !Array.isArray(s.config.webhooks))) {
+        code='session_config_unexpected';
+      } else {
+        const existing=s.config.webhooks || [];
+        const configured=existing.filter(h=>h?.url===url);
+        if (existing.length>10 || configured.length>1 ||
+            (configured.length===1 && (!configured[0].events?.includes('message.ack') ||
+            configured[0].hmac?.key !== env.WAHA_WEBHOOK_SECRET))) {
+          code='webhook_conflict_review';
+        } else if (configured.length===1) {
+          outcome='configured';code=null;present=true;
+        } else {
+          const engine=typeof s.engine==='string'?s.engine:s.engine?.engine;
+          const config={...s.config,webhooks:[...existing,{url,events:['message.ack'],
+            hmac:{key:env.WAHA_WEBHOOK_SECRET},
+            retries:{policy:'linear',delaySeconds:2,attempts:4}}]};
+          // WEBJS needs tag events for message.ack. Preserve other WEBJS options.
+          if (engine==='WEBJS') config.webjs={...(config.webjs||{}),tagsEventsOn:true};
+          const put=await fetcher.call(globalThis,endpoint,{
+            method:'PUT',headers,redirect:'manual',signal:AbortSignal.timeout(12000),
+            body:JSON.stringify({name:'default',config})
+          });
+          httpStatus=put.status;
+          await put.body?.cancel();
+          if (!put.ok) {
+            code='webhook_update_rejected';
+          } else {
+            const check=await get();
+            sessionStatus=typeof check.data?.status==='string'?check.data.status.slice(0,30):null;
+            present=!!check.data?.config?.webhooks?.some(h=>h?.url===url &&
+              h?.events?.includes('message.ack'));
+            outcome=present && sessionStatus==='WORKING'?'configured':'unverified';
+            code=outcome==='configured'?null:'post_update_verification_required';
+          }
+        }
+      }
+    }
+  } catch {
+    outcome='uncertain';code='webhook_update_or_check_unknown';
+  } finally {
+    await privateRequest(env,'/rest/v1/rpc/waha_webhook_setup_finish',{
+      p_id:id,p_status:outcome,p_http_status:httpStatus,
+      p_session_status:sessionStatus,p_webhook_present:present,p_error_code:code,
+    },fetcher);
+  }
+  return {status:outcome,error_code:code,http_status:httpStatus,session_status:sessionStatus,webhook_present:present};
+}
+
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }); }
 export default {
   async scheduled(_controller, env, ctx) {
+    if (env.WAHA_WEBHOOK_SETUP_ENABLED === 'true') {
+      ctx.waitUntil(configureWahaWebhookOnce(env).then(result => {
+        console.log(JSON.stringify({event:'waha_webhook_setup',...result}));
+      }).catch(() => console.log(JSON.stringify({event:'waha_webhook_setup',status:'diagnostic_error'}))));
+    }
     if (env.WAHA_OWNER_CANARY_ENABLED === 'true') {
       ctx.waitUntil(runOwnerWahaCanary(env).then(result => {
         console.log(JSON.stringify({ event: 'waha_owner_canary', ...result }));
