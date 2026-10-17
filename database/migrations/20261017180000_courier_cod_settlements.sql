@@ -38,7 +38,7 @@ ALTER TABLE public.courier_order_shipments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.courier_cod_receipts ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON public.courier_companies,public.courier_order_shipments,public.courier_cod_receipts FROM PUBLIC,anon,authenticated;
 GRANT SELECT,INSERT,UPDATE,DELETE ON public.courier_companies,public.courier_order_shipments,public.courier_cod_receipts TO service_role;
-GRANT USAGE,SELECT ON ALL SEQUENCES IN SCHEMA public TO service_role;
+GRANT USAGE,SELECT ON SEQUENCE public.courier_companies_id_seq,public.courier_cod_receipts_id_seq TO service_role;
 
 -- Only the service-role backend may read this ledger; courier charges are a
 -- forecast, not bank-cleared cash. Delivered timestamps come from status events.
