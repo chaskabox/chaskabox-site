@@ -570,6 +570,6 @@ test('checkout WhatsApp consent is visible beside email, remains unchecked and i
  assert.match(script,/reviewWhatsapp:\s*\$\('#f_whatsapp_optin'\)\?\.checked/);
  assert.match(script,/whatsapp_opt_in:\s*!!\$\('#f_whatsapp_optin'\)\?\.checked/);
  assert.match(css,/\.checkout-whatsapp-choice/);
- assert.match(html,/checkout-ui\.css\?v=20261017-checkout-ux-v2/);
+ assert.match(html,/checkout-ui\.css\?v=20261017-checkout-compact-v3/);
  assert.match(html,/checkout\.js\?v=20261017-checkout-ux-v2/);
 });
