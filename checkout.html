@@ -6,7 +6,7 @@
 <title>Checkout — ChaskaBox</title>
 <meta name="robots" content="noindex, follow">
 <link rel="stylesheet" href="/styles.css?v=20261015-az-validated">
-<link rel="stylesheet" href="/checkout-ui.css?v=20261017-checkout-ux-v2">
+<link rel="stylesheet" href="/checkout-ui.css?v=20261017-checkout-compact-v3">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=checkoutTurnstileReady" defer></script>
 </head>
@@ -40,15 +40,15 @@
     <div>
       <section class="co-card" id="checkoutDeliveryStep" aria-labelledby="detailsTitle">
         <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">01</span><div><h2 id="detailsTitle" class="co-step-title">Delivery details</h2><p>Where should we deliver your snacks?</p></div></div>
-        <div class="field"><label for="f_country">Delivery country</label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help">We currently deliver within Pakistan only. Overseas shipping is not yet available.</p><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
+        <div class="field"><label for="f_country">Delivery country</label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help">Pakistan only. Overseas shipping is not yet available.</p><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
         <div class="form-two">
           <div class="field"><label for="f_fname">First Name *</label><input id="f_fname" name="first_name" autocomplete="given-name" placeholder="e.g. Ahmed"><div class="err" id="e_fname">Enter first name</div></div>
           <div class="field"><label for="f_lname">Last Name <span class="optional">(optional)</span></label><input id="f_lname" name="last_name" autocomplete="family-name" maxlength="100" placeholder="e.g. Khan"><div class="err" id="e_lname">Name must be 100 characters or fewer in total.</div></div>
         </div>
         <!-- Hidden full name for backward compat -->
         <input type="hidden" id="f_name" name="name">
-        <div class="field"><label for="f_phone">Phone Number *</label><div class="phone-wrap"><select id="f_ccode" name="country_code" aria-label="Country code"><option value="+92" selected>🇵🇰 +92</option></select><input id="f_phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" placeholder="03XXXXXXXXX" aria-describedby="f_phoneHelp e_phone"></div><p id="f_phoneHelp" class="checkout-field-help">Only used for delivery coordination. Enter a Pakistani mobile number (03XXXXXXXXX).</p><div class="err" id="e_phone">Enter a valid Pakistani mobile number.</div></div>
-        <div class="field"><label for="f_email">Email Address *</label><input id="f_email" name="email" type="email" autocomplete="email" placeholder="you@example.com (for order updates)"><div class="err" id="e_email">Enter a valid email address</div></div>
+        <div class="field"><label for="f_phone">Mobile number <span class="optional">(required)</span></label><div class="phone-wrap"><select id="f_ccode" name="country_code" aria-label="Country code"><option value="+92" selected>🇵🇰 +92</option></select><input id="f_phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" placeholder="03XXXXXXXXX" aria-describedby="f_phoneHelp e_phone"></div><p id="f_phoneHelp" class="checkout-field-help">Used for delivery coordination and courier contact. Enter 03XXXXXXXXX; WhatsApp updates are optional below.</p><div class="err" id="e_phone">Enter a valid Pakistani mobile number.</div></div>
+        <div class="field"><label for="f_email">Email for order receipt <span class="optional">(required)</span></label><input id="f_email" name="email" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="emailHelp e_email"><p id="emailHelp" class="checkout-field-help">We send your order receipt and important order updates here.</p><div class="err" id="e_email">Enter a valid email address</div></div>
         <section class="checkout-contact-preferences" aria-labelledby="checkoutContactHeading">
           <div class="checkout-contact-preferences-heading">
             <span aria-hidden="true" class="checkout-contact-icon">💬</span>
@@ -56,11 +56,11 @@
           </div>
           <label class="checkout-whatsapp-choice" id="whatsappOrderOptIn">
             <input type="checkbox" id="f_whatsapp_optin" name="whatsapp_opt_in" value="true">
-            <span><b>Yes, send order updates on WhatsApp</b><small>Order confirmation and delivery-status updates to the number above. Optional, no marketing. Leave unticked for no WhatsApp messages.</small></span>
+            <span><b>Send my order updates on WhatsApp (optional)</b><small>Order confirmations and delivery updates only. No marketing. Leave unchecked to opt out.</small></span>
           </label>
-          <p class="checkout-contact-optout">Your delivery number stays the same whether or not you choose WhatsApp updates.</p>
+          <p class="checkout-contact-optout">This choice does not affect delivery calls.</p>
         </section>
-        <div class="field"><label for="f_addr">Address *</label><textarea id="f_addr" name="address" autocomplete="street-address" maxlength="440" rows="3" placeholder="House number, street, area / landmark..."></textarea><div class="err" id="e_addr">Please enter a complete delivery address</div></div>
+        <div class="field"><label for="f_addr">Complete delivery address <span class="optional">(required)</span></label><textarea id="f_addr" name="address" autocomplete="street-address" maxlength="440" rows="3" placeholder="House / flat, street, area and nearby landmark" aria-describedby="addressHelp e_addr"></textarea><p id="addressHelp" class="checkout-field-help">Include house or shop number, street and area so the courier can find you.</p><div class="err" id="e_addr">Please enter a complete delivery address</div></div>
         <div class="form-two checkout-location-grid">
           <div class="field"><label for="f_province">Province / Region *</label>
             <select id="f_province" name="province" autocomplete="address-level1" aria-describedby="provinceHelp e_province" required>
@@ -84,7 +84,7 @@
         <div class="field checkbox-field"><label><input type="checkbox" id="f_saveinfo"> Save this information for next time</label></div>
         <details class="checkout-optional-disclosure checkout-note-disclosure"><summary><span>Add a note for delivery <small>(optional)</small></span><span aria-hidden="true" class="checkout-disclosure-chevron">⌄</span></summary><div class="field"><label for="f_note">Instructions for your order</label><textarea id="f_note" name="note" rows="2" maxlength="300" placeholder="e.g. Call before delivery, gift note, no substitutions..."></textarea></div></details>
         <div class="availability-note">If any snack becomes unavailable after you order, ChaskaBox will contact you before removing or substituting it.</div>
-        <div class="checkout-step-actions"><span class="checkout-step-hint">Your details stay here when you go back.</span><button id="toPaymentBtn" type="button" class="checkout-next-btn">Continue to payment <span aria-hidden="true">→</span></button></div>
+        <div class="checkout-step-actions"><span class="checkout-step-hint">Next: choose how to pay. You can edit these details before placing your order.</span><button id="toPaymentBtn" type="button" class="checkout-next-btn">Continue to payment <span aria-hidden="true">→</span></button></div>
       </section>
 
       <section class="co-card" id="checkoutPaymentStep" hidden aria-labelledby="paymentTitle">
