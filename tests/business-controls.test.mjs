@@ -243,3 +243,54 @@ test('COD and online panel shows separate verified, recorded and unreconciled fi
  assert.match(receipts,/\['owner','manager'\]/);
  assert.doesNotMatch(js,/payment_method.*card.*create_order|saveCardNumber/);
 });
+
+
+test('BOP card gateway defaults disabled, requires verified integration, and records only vetted private ledger data',async()=>{
+ const db=await fixture();
+ try{
+  const read=async()=> (await db.query('SELECT * FROM card_gateway_control WHERE id=true')).rows[0];
+  const mutate=async(enabled,days=null,bps=null,fixed=null,who=actor)=> (await db.query(
+   'SELECT admin_card_gateway_update($1,$2,$3,$4,$5) r',[who,enabled,days,bps,fixed])).rows[0].r;
+  assert.equal((await read()).enabled,false,'Card starts OFF');
+  assert.equal((await read()).integration_verified,false,'Provider cannot be assumed connected');
+  assert.equal((await mutate(true)).status,409,'Unverified gateway can never be enabled');
+  assert.equal((await read()).enabled,false,'Failed enable must leave gateway disabled');
+  const saved=await mutate(false,2,250,25);
+  assert.equal(saved.gateway.enabled,false);
+  assert.equal(saved.gateway.settlement_days,2);
+  assert.equal(saved.gateway.fee_bps,250);
+  assert.equal(saved.gateway.fixed_fee_pkr,25);
+  assert.equal((await mutate(false,121)).status,400,'Invalid settlement delay rejected');
+  assert.equal((await mutate(false,1,100,0,'00000000-0000-4000-8000-000000000099')).status,403,'Unapproved actor cannot edit');
+  await db.exec("RESET ROLE; UPDATE card_gateway_control SET integration_verified=true WHERE id=true; SET ROLE service_role;");
+  assert.equal((await mutate(true,2,250,25)).gateway.enabled,true,'Enable works after audited integration verification');
+  assert.equal((await mutate(false,2,250,25)).gateway.enabled,false,'Owner can disable at any time');
+  assert.equal((await db.query('SELECT COUNT(*)::int n FROM card_gateway_transactions')).rows[0].n,0);
+  assert.equal((await db.query("SELECT COUNT(*)::int n FROM audit_log WHERE action='payment.card_gateway_settings_updated'")).rows[0].n,3);
+  await db.exec('SET ROLE anon');
+  await assert.rejects(db.query('SELECT * FROM card_gateway_transactions'),/permission denied/);
+  await assert.rejects(db.query('SELECT * FROM card_gateway_control'),/permission denied/);
+  await db.exec('RESET ROLE');
+ }finally{await db.close();}
+});
+test('card activation readiness must require all provider secrets, deployed processor and integration verification',async()=>{
+ const {cardGatewayReadiness}=await import('../functions/api/admin/_lib/card-gateway-readiness.js');
+ const env={BOP_CARD_GATEWAY_MERCHANT_ID:'synthetic-id',BOP_CARD_GATEWAY_SIGNING_KEY:'synthetic-key',
+  BOP_CARD_GATEWAY_CALLBACK_SECRET:'synthetic-callback',BOP_CARD_PROCESSOR_READY:'true'};
+ assert.equal(cardGatewayReadiness(env,{integration_verified:false}).ready,false);
+ assert.equal(cardGatewayReadiness({}, {integration_verified:true}).ready,false);
+ assert.equal(cardGatewayReadiness({...env,BOP_CARD_PROCESSOR_READY:'false'},{integration_verified:true}).ready,false);
+ assert.equal(cardGatewayReadiness(env,{integration_verified:true}).ready,true);
+ const html=await readFile(new URL('../admin.html',import.meta.url),'utf8');
+ const ui=await readFile(new URL('../admin-live.js',import.meta.url),'utf8');
+ const backend=await readFile(new URL('../functions/api/admin/online-payments/card-gateway.js',import.meta.url),'utf8');
+ const checkout=await readFile(new URL('../checkout.js',import.meta.url),'utf8');
+ const order=await readFile(new URL('../functions/api/orders.js',import.meta.url),'utf8');
+ assert.match(html,/id="cardGatewayControl"/);
+ assert.match(ui,/setCardGatewayEnabled/);
+ assert.match(ui,/saveCardGateway/);
+ assert.match(backend,/withAdmin\(\['owner'\]/);
+ assert.match(backend,/cardGatewayReadiness/);
+ assert.doesNotMatch(checkout,/payment_method:.*'card'/);
+ assert.doesNotMatch(order,/payment_method.*\bcard\b/);
+});
