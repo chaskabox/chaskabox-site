@@ -163,3 +163,87 @@ LEFT JOIN LATERAL (
 
 REVOKE ALL ON public.courier_cod_ledger FROM PUBLIC,anon,authenticated;
 GRANT SELECT ON public.courier_cod_ledger TO service_role;
+
+-- Keep verified courier COD collections separate from pre-dispatch advances.
+CREATE OR REPLACE FUNCTION public.admin_courier_dispatch(
+ p_actor uuid,p_order uuid,p_courier bigint,p_tracking text DEFAULT NULL,p_expected_updated_at timestamptz DEFAULT NULL
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_role text; v_order public.orders; v_courier public.courier_companies; v_result jsonb;
+BEGIN
+ SELECT role INTO v_role FROM public.admin_roles WHERE user_id=p_actor AND active FOR SHARE;
+ IF v_role IS NULL OR v_role NOT IN('owner','manager','fulfilment') THEN
+  RETURN jsonb_build_object('error','Active order staff required','status',403);
+ END IF;
+ IF p_tracking IS NOT NULL AND (length(btrim(p_tracking))>120 OR p_tracking !~ '^[A-Za-z0-9][A-Za-z0-9 /._-]*$') THEN
+  RETURN jsonb_build_object('error','Invalid tracking number','status',400);
+ END IF;
+ SELECT * INTO v_order FROM public.orders WHERE id=p_order FOR UPDATE;
+ IF NOT FOUND THEN RETURN jsonb_build_object('error','Order not found','status',404); END IF;
+ IF v_order.fulfilment_status<>'packed' THEN
+  RETURN jsonb_build_object('error','Order must be packed before courier dispatch','status',409);
+ END IF;
+ IF p_expected_updated_at IS NOT NULL AND v_order.updated_at IS DISTINCT FROM p_expected_updated_at THEN
+  RETURN jsonb_build_object('error','Order changed; reload first','status',409);
+ END IF;
+ IF EXISTS(SELECT 1 FROM public.courier_order_shipments WHERE order_id=p_order) THEN
+  RETURN jsonb_build_object('error','Courier already assigned','status',409);
+ END IF;
+ SELECT * INTO v_courier FROM public.courier_companies WHERE id=p_courier AND is_active FOR SHARE;
+ IF NOT FOUND THEN RETURN jsonb_build_object('error','Choose an active courier company','status',400); END IF;
+ IF v_order.payment_method='cod' AND v_courier.deduction_per_order_pkr>v_order.total-v_order.cod_advance_required_pkr THEN
+  RETURN jsonb_build_object('error','Courier deduction exceeds outstanding COD collection after advance','status',400);
+ END IF;
+ v_result:=public.admin_order_mutate(p_actor,p_order,'status','dispatched','',p_expected_updated_at);
+ IF v_result ? 'error' THEN RETURN v_result; END IF;
+ INSERT INTO public.courier_order_shipments(order_id,courier_id,courier_name_snapshot,tracking_number,
+ settlement_days_snapshot,deduction_snapshot_pkr,assigned_by)
+ VALUES(p_order,v_courier.id,v_courier.name,NULLIF(btrim(p_tracking),''),
+ v_courier.settlement_days,v_courier.deduction_per_order_pkr,p_actor);
+ INSERT INTO public.audit_log(actor_id,actor_role,action,entity_type,entity_id,after_data)
+ VALUES(p_actor,v_role,'courier.dispatched','order',p_order::text,
+ jsonb_build_object('courier_id',v_courier.id,'courier_name',v_courier.name,
+ 'tracking_number',NULLIF(btrim(p_tracking),''),'settlement_days',v_courier.settlement_days,
+ 'deduction_pkr',v_courier.deduction_per_order_pkr));
+ RETURN v_result;
+END $$;
+REVOKE ALL ON FUNCTION public.admin_courier_dispatch(uuid,uuid,bigint,text,timestamptz) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_courier_dispatch(uuid,uuid,bigint,text,timestamptz) TO service_role;
+CREATE OR REPLACE FUNCTION public.admin_courier_record_receipt(
+ p_actor uuid,p_order uuid,p_amount integer,p_received_on date,p_reference text
+) RETURNS jsonb LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
+DECLARE v_role text; v_order public.orders; v_shipment public.courier_order_shipments;
+ v_expected integer; v_paid bigint; v_receipt public.courier_cod_receipts;
+BEGIN
+ SELECT role INTO v_role FROM public.admin_roles WHERE user_id=p_actor AND active FOR SHARE;
+ IF v_role IS NULL OR v_role NOT IN('owner','manager') THEN
+  RETURN jsonb_build_object('error','Owner or manager required','status',403);
+ END IF;
+ IF p_amount IS NULL OR p_amount<1 OR p_received_on IS NULL OR p_received_on>(now() AT TIME ZONE 'Asia/Karachi')::date
+   OR p_reference IS NULL OR length(btrim(p_reference)) NOT BETWEEN 3 AND 120 THEN
+  RETURN jsonb_build_object('error','Amount, received date and bank/statement reference required','status',400);
+ END IF;
+ SELECT * INTO v_order FROM public.orders WHERE id=p_order FOR UPDATE;
+ IF NOT FOUND OR v_order.payment_method<>'cod' OR v_order.fulfilment_status<>'delivered'
+  OR v_order.payment_status='refunded' THEN
+  RETURN jsonb_build_object('error','Only delivered, non-refunded COD orders can receive courier remittance','status',409);
+ END IF;
+ SELECT * INTO v_shipment FROM public.courier_order_shipments WHERE order_id=p_order FOR UPDATE;
+ IF NOT FOUND THEN RETURN jsonb_build_object('error','Courier assignment missing','status',409); END IF;
+ v_expected:=greatest(v_order.total-v_order.cod_advance_required_pkr-v_shipment.deduction_snapshot_pkr,0);
+ SELECT coalesce(sum(amount_pkr),0) INTO v_paid FROM public.courier_cod_receipts WHERE order_id=p_order;
+ IF v_paid+p_amount>v_expected THEN
+  RETURN jsonb_build_object('error','Receipt exceeds outstanding expected remittance','status',409);
+ END IF;
+ IF EXISTS(SELECT 1 FROM public.courier_cod_receipts WHERE order_id=p_order AND lower(reference)=lower(btrim(p_reference))) THEN
+  RETURN jsonb_build_object('error','This receipt reference is already recorded','status',409);
+ END IF;
+ INSERT INTO public.courier_cod_receipts(order_id,amount_pkr,received_on,reference,recorded_by)
+ VALUES(p_order,p_amount,p_received_on,btrim(p_reference),p_actor) RETURNING * INTO v_receipt;
+ INSERT INTO public.audit_log(actor_id,actor_role,action,entity_type,entity_id,after_data)
+ VALUES(p_actor,v_role,'courier.cod_received','order',p_order::text,
+ jsonb_build_object('receipt_id',v_receipt.id,'amount_pkr',p_amount,'received_on',p_received_on,
+ 'reference',btrim(p_reference),'courier_id',v_shipment.courier_id));
+ RETURN jsonb_build_object('receipt',to_jsonb(v_receipt),'outstanding_pkr',v_expected-v_paid-p_amount);
+END $$;
+REVOKE ALL ON FUNCTION public.admin_courier_record_receipt(uuid,uuid,integer,date,text) FROM PUBLIC,anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_courier_record_receipt(uuid,uuid,integer,date,text) TO service_role;
