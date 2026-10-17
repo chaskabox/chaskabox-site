@@ -147,7 +147,9 @@ function renderHomeContent(){
     const list=c==='All'?act:(cats[c]||[]);
     const n=c==='All'?allCount:list.length;
     if(c!=='All'&&!n) return '';
-    const inner=TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
+    const featured=c==='All'?null:list.find(p=>hasPhoto(p)&&!p.bundle)||list.find(hasPhoto);
+    const inner=featured? `<img ${photoAttributes(featured.img,'90px')} alt="" loading="lazy" width="90" height="90" decoding="async">` :
+      TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
     const href=c==='All'?'/shop/':categoryPath(c);
     return `<a class="cat reveal" href="${href}">
       <div class="ci" style="background:${st.bg}">${inner}</div>
@@ -184,6 +186,13 @@ function renderHomeContent(){
   if(chatpata.length) html+=shelf('🌶️ Chatpata Picks',chatpata,'#276a45','Snacks & Nimco','','chatpata_picks');
   if(newest.length) html+=shelf('✨ New & Recently Added',newest,'#6b4f9d','','','new_items');
   $('#shelves').innerHTML=html;
+  // Editorial promotional artwork uses the same authentic pack photos as the catalogue.
+  const boxMedia=document.getElementById('cbBoxMedia');
+  if(boxMedia)boxMedia.innerHTML=bundles.slice(0,2).map(p=>`<img ${photoAttributes(p.img,'150px')} alt="" loading="lazy" width="150" height="150" decoding="async">`).join('');
+  const dealMedia=document.getElementById('cbDealsMedia');
+  if(dealMedia)dealMedia.innerHTML=sale.slice(0,2).map(p=>`<img ${photoAttributes(p.img,'150px')} alt="" loading="lazy" width="150" height="150" decoding="async">`).join('');
+  const dealBanner=document.querySelector('.cb-offer-deals');
+  if(dealBanner)dealBanner.hidden=!sale.length;
   const wp=$('#weeklyPick');
   if(wp){
     const pick=sale[0]||picks[0]||actImg[0];
@@ -601,11 +610,12 @@ function applyHomeCms(){
   const rows=STORE_CONFIG?.sections||[]; const by=Object.fromEntries(rows.map(r=>[r.section_key,r]));
   const selectors={
     announcement_bar:['.promo'], hero:['#view-home .hero'], categories:['#view-home .discover'],
+    deals:['#view-home [data-home-section="deals"]','#view-home .cb-offer-deals'], 
     chaska_picks:['#view-home [data-home-section="chaska_picks"]'], boxes:['#view-home .box-spotlight','#view-home [data-home-section="boxes"]'],
     chatpata_picks:['#view-home [data-home-section="chatpata_picks"]'], new_items:['#view-home [data-home-section="new_items"]'],
     how_it_works:['#view-home .fresh'], faq:['#view-home .faq-section']
   };
-  const positions={hero:0,categories:1,chaska_picks:2,boxes:3,chatpata_picks:4,new_items:5,how_it_works:6,faq:7};
+  const positions={hero:0,categories:1,chaska_picks:2,deals:2.4,boxes:3,chatpata_picks:4,new_items:5,how_it_works:6,faq:7};
   const home=document.getElementById('view-home');if(home){home.style.flexDirection='column';const shelves=home.querySelector('#shelves');if(shelves)shelves.style.display='contents';home.querySelector('.why-section')?.style.setProperty('order',String((by.faq?.position??7)*10-1));}
   for(const [key,sels] of Object.entries(selectors)){
     const row=by[key]||{enabled:true,position:positions[key],config:{}};
