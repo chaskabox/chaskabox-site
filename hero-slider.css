@@ -1,0 +1,10 @@
+/* Three-message hero carousel: preserve the original storefront grid and real catalog collage. */
+.hero-slider-controls{max-width:1400px;margin:0 auto;padding:0 12px 14px;display:flex;align-items:center;justify-content:center;gap:10px}
+.hero-slider-controls button{font:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.48);color:#fff;background:rgba(255,255,255,.1);border-radius:999px;min-width:34px;min-height:34px}
+.hero-slider-controls button[data-hero-dot]{min-width:12px;min-height:12px;width:12px;height:12px;padding:0;background:rgba(255,255,255,.45);border:0}
+.hero-slider-controls button[data-hero-dot][aria-current="true"]{width:32px;background:#f8a400}
+.hero-slider-controls button:focus-visible{outline:3px solid #ffcb47;outline-offset:3px}
+.hero[data-hero-slide="2"]{background:linear-gradient(110deg,#101a3a 0%,#273663 65%,#6b3e2c 100%)}
+.hero[data-hero-slide="3"]{background:linear-gradient(110deg,#101a3a 0%,#223466 65%,#823626 100%)}
+@media(max-width:760px){.hero-slider-controls{padding-bottom:12px}.hero-slider-controls button{min-width:40px;min-height:40px}.hero-slider-controls button[data-hero-dot]{min-width:12px;min-height:12px}}
+@media(prefers-reduced-motion:reduce){.hero-slider-controls *{transition:none!important}}
