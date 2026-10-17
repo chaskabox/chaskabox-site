@@ -316,6 +316,7 @@ function removeBrandChip(el){
 function renderFilterChips(){
   const el=$('#filterChips'); if(!el)return;
   let h='';
+  if(shopState.q)h+='<button class="fchip" onclick="shopState.q=\'\';syncShopSearchUrl();renderShopContent()" aria-label="Remove search filter">Search: '+esc(shopState.q)+' <span>✕</span></button>';
   shopState.brands.forEach(b=>{h+='<button class="fchip" data-v="'+esc(b)+'" onclick="removeBrandChip(this)">'+esc(b)+' <span>\u2715</span></button>';});
   if(shopState.maxPrice)h+='<button class="fchip" onclick="shopState.maxPrice=0;renderShopContent()">Under '+fmt(shopState.maxPrice)+' <span>\u2715</span></button>';
   if(shopState.pack)h+='<button class="fchip" onclick="shopState.pack=\'\';renderShopContent()">'+esc(shopState.pack)+' <span>\u2715</span></button>';
