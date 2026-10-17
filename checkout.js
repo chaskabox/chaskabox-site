@@ -37,7 +37,8 @@ async function checkoutIdempotencyKey(payload) {
       email:String(payload.customer.email||'').trim().toLowerCase(), address:String(payload.customer.address||'').trim(),
       city:String(payload.customer.city||'').trim(), country:String(payload.customer.country||'Pakistan').trim().toLowerCase()
     }, coupon_code:payload.coupon_code||'',payment_method:payload.payment_method,
-    transaction_reference:payload.transaction_reference||'', customer_note:payload.customer_note||''
+    transaction_reference:payload.transaction_reference||'', customer_note:payload.customer_note||'',
+    whatsapp_opt_in:payload.whatsapp_opt_in===true
   };
   const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(intent)));
   const fingerprint=[...new Uint8Array(hash)].map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -640,6 +641,7 @@ async function placeOrder() {
     payment_method: PAY === 'cod' ? 'cod' : (PAY === 'jazzcash' ? 'jazzcash' : 'bank_transfer'),
     transaction_reference: reference,
     turnstile_token: turnstileToken,
+    whatsapp_opt_in: !!$('#f_whatsapp_optin')?.checked,
     customer_note: (wantVideo ? (note ? note + ' ' : '') + '[Packing video requested]' : note) || undefined
   };
 

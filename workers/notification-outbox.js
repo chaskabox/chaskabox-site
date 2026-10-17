@@ -33,6 +33,28 @@ export async function runNotifications(env, fetcher = fetch) {
         payload = await rpc('notification_prepare', { p_id: job.id, p_token: job.lease_token, p_payload: payload });
         if (!payload) throw new Error('notification_lease_lost');
       }
+      if (job.target === 'owner_whatsapp' || job.target === 'customer_whatsapp') {
+        // Do not replay older pending WhatsApp jobs at activation. Owner email
+        // keeps its existing cutoff and normal delivery behavior.
+        const cutoff = Date.parse(String(env.NOTIFICATION_WHATSAPP_ACTIVATED_AFTER || ''));
+        const created = Date.parse(String(job.created_at || ''));
+        let blockReason = (!Number.isFinite(cutoff) || !Number.isFinite(created) || created < cutoff)
+          ? 'whatsapp_before_activation' : null;
+        if (!blockReason && job.target === 'customer_whatsapp') {
+          const rows = await privateRequest(env,
+            '/rest/v1/orders?id=eq.' + encodeURIComponent(job.order_id) + '&select=whatsapp_opt_in&limit=1',
+            undefined, fetcher);
+          if (rows?.[0]?.whatsapp_opt_in !== true) blockReason = 'customer_whatsapp_opt_in_missing';
+        }
+        if (blockReason) {
+          const saved = await rpc('notification_finish', {
+            p_id: job.id, p_token: job.lease_token, p_status: 'blocked', p_error: blockReason,
+          });
+          if (!saved?.saved) throw new Error('notification_lease_lost');
+          counts[saved.status]++;
+          continue;
+        }
+      }
       const begun = (await rpc('notification_begin', { p_id: job.id, p_token: job.lease_token, p_after: config.after }))?.[0];
       if (!begun) throw new Error('notification_begin_denied');
       const result = await sendNotification(env, { ...begun, request_payload: payload }, fetcher);

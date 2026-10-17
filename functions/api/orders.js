@@ -94,6 +94,7 @@ async function createViaRpc(env, value, orderNumber) {
         payment_method: value.payment_method,
         transaction_reference: value.transaction_reference,
         customer_note: value.customer_note,
+        whatsapp_opt_in: value.whatsapp_opt_in === true,
         coupon_code: value.coupon_code,
         user_id: value.user_id || null,
       },

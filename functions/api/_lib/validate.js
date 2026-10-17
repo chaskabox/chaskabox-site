@@ -81,6 +81,12 @@ export function validateOrderPayload(body) {
     need('items', 'items must contain at least one valid line.');
   }
 
+  // Explicit per-order WhatsApp opt-in; absent/false stays OFF.
+  if (body.whatsapp_opt_in !== undefined && typeof body.whatsapp_opt_in !== 'boolean') {
+    need('whatsapp_opt_in', 'WhatsApp opt-in must be a boolean.');
+  }
+  const whatsapp_opt_in = body.whatsapp_opt_in === true;
+
   // ---- customer ----
   const c = body.customer || {};
   const name = s(c.name);
@@ -150,6 +156,7 @@ export function validateOrderPayload(body) {
       payment_method,
       transaction_reference: PREPAID_METHODS.includes(payment_method) ? transaction_reference : null,
       customer_note,
+      whatsapp_opt_in,
       turnstile_token,
     },
   };

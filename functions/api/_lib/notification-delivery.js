@@ -30,6 +30,12 @@ export function notificationConfig(env) {
   if (targets.some(t => t.endsWith('whatsapp')) && (!env.WAHA_API_URL || !env.WAHA_API_KEY || !env.WAHA_SESSION)) errors.push('waha_configuration_missing');
   if (targets.some(t => t.endsWith('whatsapp')) && protectedWahaOrigin(env) && !Object.keys(wahaAccessHeaders(env)).length) errors.push('waha_access_configuration_missing');
   if (targets.includes('owner_whatsapp') && !chatId(env.OWNER_WHATSAPP)) errors.push('owner_whatsapp_invalid');
+  if (targets.some(t => t.endsWith('whatsapp'))) {
+    const waAfter = String(env.NOTIFICATION_WHATSAPP_ACTIVATED_AFTER || '');
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(waAfter) ||
+        !Number.isFinite(Date.parse(waAfter))) errors.push('whatsapp_activation_cutoff_invalid');
+    if (!env.WAHA_WEBHOOK_SECRET) errors.push('waha_signed_receipt_configuration_missing');
+  }
   for (const value of [env.SUPABASE_URL, targets.some(t => t.endsWith('whatsapp')) && env.WAHA_API_URL].filter(Boolean)) {
     try { const u = new URL(value); if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash) throw new Error(); }
     catch { errors.push('private_endpoint_invalid'); }

@@ -37,7 +37,7 @@ export async function rpc(db,name,params={}) {
   if(['notification_claim','notification_begin'].includes(name)) return (await db.query('select * from public.'+name+'('+placeholders+')',Object.values(params))).rows;
   return (await db.query('select public.'+name+'('+placeholders+') as value',Object.values(params))).rows[0].value;
 }
-export function env(after) {return {SUPABASE_URL:'https://db.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'synthetic-service-key',NOTIFICATION_DISPATCH_ENABLED:'true',NOTIFICATION_DISPATCH_AFTER:after,NOTIFICATION_CHANNELS:'owner_email,owner_whatsapp,customer_whatsapp',RESEND_API_KEY:'synthetic-resend-key',RESEND_FROM_EMAIL:'Fixture <from@example.invalid>',OWNER_ORDER_EMAIL:'owner@example.invalid',WAHA_API_URL:'https://waha.example.invalid',WAHA_API_KEY:'synthetic-waha-key',WAHA_SESSION:'fixture',OWNER_WHATSAPP:'+923111111111'};}
+export function env(after) {return {SUPABASE_URL:'https://db.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'synthetic-service-key',NOTIFICATION_DISPATCH_ENABLED:'true',NOTIFICATION_DISPATCH_AFTER:after,NOTIFICATION_CHANNELS:'owner_email,owner_whatsapp,customer_whatsapp',RESEND_API_KEY:'synthetic-resend-key',RESEND_FROM_EMAIL:'Fixture <from@example.invalid>',OWNER_ORDER_EMAIL:'owner@example.invalid',WAHA_API_URL:'https://waha.example.invalid',WAHA_API_KEY:'synthetic-waha-key',WAHA_SESSION:'fixture',OWNER_WHATSAPP:'+923111111111',WAHA_WEBHOOK_SECRET:'fixture-hmac',NOTIFICATION_WHATSAPP_ACTIVATED_AFTER:after};}
 export function router(db,provider=()=>new Response(JSON.stringify({id:'synthetic-provider-'+crypto.randomUUID()}))) {
   const calls=[];
   const fetcher=async(url,init={})=>{

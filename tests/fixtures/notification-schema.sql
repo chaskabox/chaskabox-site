@@ -7,6 +7,7 @@ create table public.orders (
  total integer default 500,payment_method text default 'cod',payment_status text default 'cod_due',fulfilment_status text default 'new',
  email_sent boolean default false,email_error text,email_sent_at timestamptz,
  whatsapp_sent boolean default false,whatsapp_error text,whatsapp_sent_at timestamptz,
+ whatsapp_opt_in boolean not null default true, -- synthetic fixtures explicitly opted in
  created_at timestamptz default now(),updated_at timestamptz default now()
 );
 create table public.order_items(order_id uuid references orders(id),product_name text,pack text,quantity integer,unit_price integer);
