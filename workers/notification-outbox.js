@@ -1,4 +1,4 @@
-import { notificationConfig, notificationHealth, privateRequest, buildNotificationPayload, sendNotification, equalSecret, activationMatches,providerReadiness } from '../functions/api/_lib/notification-delivery.js';
+import { notificationConfig, notificationHealth, privateRequest, buildNotificationPayload, sendNotification, equalSecret, activationMatches,providerReadiness, wahaAccessHeaders, chatId, wahaEndpoint, limitedText } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt } from '../functions/api/_lib/notification-receipts.js';
 
 export async function runNotifications(env, fetcher = fetch) {
@@ -49,9 +49,72 @@ export async function runNotifications(env, fetcher = fetch) {
     throw error;
   }
 }
+
+// A single, explicitly approved owner test. The database claim consumes the
+// attempt atomically before any WAHA I/O; an uncertain result is never retried.
+export async function runOwnerWahaCanary(env, fetcher = fetch) {
+  const id = 'chaskabox-owner-20261017';
+  if (env.WAHA_OWNER_CANARY_ENABLED !== 'true') return { status: 'disabled' };
+  const claim = await privateRequest(env, '/rest/v1/rpc/waha_owner_canary_claim', { p_id: id }, fetcher);
+  if (claim !== true) return { status: 'not_pending' };
+  let outcome = 'blocked', code = 'configuration_invalid', providerId = null;
+  try {
+    const exactGateway = String(env.WAHA_API_URL || '').replace(/\/+$/, '');
+    const auth = wahaAccessHeaders(env);
+    const recipient = chatId(env.OWNER_WHATSAPP);
+    if (exactGateway !== 'https://waha.chaskabox.online' ||
+        !auth['CF-Access-Client-Id'] || !auth['CF-Access-Client-Secret'] ||
+        !env.WAHA_API_KEY || env.WAHA_SESSION !== 'default' || !recipient) {
+      code = 'gateway_or_owner_configuration_invalid';
+    } else {
+      const statusUrl = exactGateway + '/api/sessions/default';
+      const statusResponse = await fetcher.call(globalThis, statusUrl, {
+        method: 'GET', redirect: 'manual', signal: AbortSignal.timeout(10000),
+        headers: { 'X-Api-Key': env.WAHA_API_KEY, ...auth, Accept: 'application/json' },
+      });
+      let data;
+      try { data = JSON.parse(await limitedText(statusResponse, 8192)); }
+      catch { data = null; }
+      if (statusResponse.status !== 200 || data?.status !== 'WORKING') {
+        code = 'waha_session_not_working_or_unreachable_' + statusResponse.status;
+      } else {
+        const request_payload = {
+          endpoint: wahaEndpoint(env),
+          body: {
+            session: 'default', chatId: recipient,
+            text: 'ChaskaBox WhatsApp integration test (owner only). No customer messages, orders or payments were created. Ref: CB-WAHA-20261017.',
+            linkPreview: false,
+          },
+        };
+        const result = await sendNotification(env, {
+          target: 'owner_whatsapp',
+          order_id: '3a9d41bf-f9d7-41a6-b2d4-d42deca3d302',
+          request_payload,
+        }, fetcher);
+        outcome = result.status === 'accepted' ? 'accepted' : result.status === 'uncertain' ? 'uncertain' : 'blocked';
+        code = result.error || null;
+        providerId = result.provider_id || null;
+      }
+    }
+  } catch {
+    outcome = 'uncertain';
+    code = 'gateway_network_or_response_error';
+  } finally {
+    await privateRequest(env, '/rest/v1/rpc/waha_owner_canary_finish', {
+      p_id: id, p_status: outcome, p_provider_id: providerId, p_error_code: code,
+    }, fetcher);
+  }
+  return { status: outcome, error_code: code, provider_acknowledged: !!providerId };
+}
+
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }); }
 export default {
   async scheduled(_controller, env, ctx) {
+    if (env.WAHA_OWNER_CANARY_ENABLED === 'true') {
+      ctx.waitUntil(runOwnerWahaCanary(env).then(result => {
+        console.log(JSON.stringify({ event: 'waha_owner_canary', ...result }));
+      }).catch(() => console.log(JSON.stringify({ event: 'waha_owner_canary', status: 'diagnostic_error' }))));
+    }
     if(String(env.ANALYTICS_RETENTION_ENABLED)==='true'&&new Date(_controller.scheduledTime).getUTCMinutes()===0){
       ctx.waitUntil(privateRequest(env,'/rest/v1/rpc/analytics_retention_run',{}).then(async result=>{console.log(JSON.stringify({event:'analytics_retention',...result}));const ai=await privateRequest(env,'/rest/v1/rpc/ai_maintenance_run',{});console.log(JSON.stringify({event:'ai_retention',...ai}));}));
     }
