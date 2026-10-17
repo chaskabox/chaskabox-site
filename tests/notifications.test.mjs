@@ -546,7 +546,7 @@ test('order item formatting bounds the preview output and sanitizes item names',
  const order={id:'00000000-0000-4000-8000-000000000001',order_number:'CB-TEST',customer_name:'A Customer',
  customer_phone:'03001234567',total:100,subtotal:100,delivery_fee:0,discount:0,payment_method:'cod',payment_status:'cod_due',
  items:[{product_name:'Snack\nInjected Heading',pack:'pack',quantity:2,unit_price:50}]};
- const template={name:'order_thankyou_customer',channel:'whatsapp',body:'{{items_summary}}'};
+ const template={name:'order_thankyou_customer',channel:'whatsapp',is_active:true,body:'{{items_summary}}'};
  const payload=buildNotificationPayload({WAHA_API_URL:'https://waha.example.invalid',WAHA_SESSION:'default'},order,
   {target:'customer_whatsapp',event_type:'order_created',event_data:{}},[template]);
  assert.match(payload.body.text,/Snack Injected Heading/);
