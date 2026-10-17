@@ -1,0 +1,58 @@
+/* ChaskaBox storefront visual refresh, phase 1.
+   Scope: public storefront. No change to the approved-but-not-live logo asset. */
+#view-home .hero{
+  background:
+    radial-gradient(circle at 82% 16%,rgba(252,181,66,.15),transparent 27%),
+    linear-gradient(112deg,#101d40 0%,#1c3063 57%,#263e74 100%);
+  box-shadow:0 14px 40px rgba(18,32,70,.12);
+}
+#view-home .herowrap{gap:clamp(24px,4vw,64px);padding:clamp(30px,4vw,54px) clamp(18px,3.2vw,52px) 26px}
+#view-home .herotxt{min-width:0}
+#view-home .herotxt h1{font-size:clamp(34px,4vw,60px);line-height:1.08;letter-spacing:-.9px;text-wrap:balance}
+#view-home .herotxt h1 .hl{color:#ffb52f}
+#view-home .herotxt p{max-width:54ch;font-size:clamp(14px,1.15vw,17px);line-height:1.68;color:#eef2ff;opacity:1}
+#view-home .heroimg{flex:0 1 350px;min-width:260px}
+#view-home .hero .cta{border-radius:12px;min-height:46px;justify-content:center}
+#view-home .hero .cta:focus-visible,#view-home .hero-searchbox button:focus-visible{outline:3px solid #ffcb47;outline-offset:3px}
+#view-home .hero-searchbox{box-shadow:0 8px 22px rgba(0,0,0,.12)}
+#view-home .discover{padding-top:34px;padding-bottom:24px}
+#view-home .section-head h2{letter-spacing:-.5px}
+#view-home .cat{padding:6px 5px 10px;border-radius:18px}
+#view-home .cat .ci{box-shadow:0 6px 16px rgba(25,39,79,.1);border:1px solid rgba(18,36,79,.08)}
+#view-home .cat b{font-size:13px}
+#view-home .cat:focus-visible{outline:3px solid #2458a8;outline-offset:3px}
+#view-home .shelf{margin-bottom:18px}
+#view-home .shelfband{background:#1e3468!important}
+#view-home .shelfw{min-height:68px}
+#view-home .shelfband h2{letter-spacing:-.3px}
+#view-home .card,#view-shop .card{border:1px solid #e9edf3;border-radius:16px;box-shadow:0 3px 13px rgba(16,32,67,.07)}
+#view-home .card:hover,#view-shop .card:hover{box-shadow:0 9px 24px rgba(17,39,77,.12)}
+#view-home .pimg,#view-shop .pimg{background:#fffdf9;aspect-ratio:1/1;padding:15px 12px}
+#view-home .pimg img,#view-shop .pimg img{width:100%;height:100%;max-height:86%;object-fit:contain}
+#view-home .pbody,#view-shop .pbody{padding:12px 13px 14px;gap:7px}
+#view-home .pname,#view-shop .pname{font-size:14px;line-height:1.4;font-weight:750;-webkit-line-clamp:3;min-height:58px}
+#view-home .price,#view-shop .price{font-size:16px}
+#view-home .card a:focus-visible,#view-shop .card a:focus-visible,#view-brands .card:focus-visible{outline:3px solid #2760ae;outline-offset:-3px}
+#view-brands .card{border:1px solid #e8edf4;border-radius:16px;box-shadow:0 3px 13px rgba(16,32,67,.07)}
+/* Keep the customer assistance launcher useful without hiding product controls. */
+.aifab{right:14px;bottom:16px;max-width:calc(100vw - 24px);padding:10px 14px;font-size:13px}
+@media(min-width:900px){
+  /* Header search already exists on desktop; keep hero focused on shopping CTAs. */
+  #view-home .hero-search{display:none}
+  #view-home .herowrap{padding-bottom:34px}
+}
+@media(max-width:760px){
+  #view-home .herowrap{padding:22px 14px 16px!important;gap:10px}
+  #view-home .herotxt h1{font-size:clamp(26px,7vw,36px)!important;line-height:1.12}
+  #view-home .herotxt p{font-size:14px;line-height:1.55}
+  #view-home .heroimg{min-width:0;flex:none}
+  #view-home .hero-search{display:block}
+  #view-home .discover{padding-top:26px}
+  #view-home .cat{width:114px}
+  #view-home .pname,#view-shop .pname{font-size:13px;min-height:56px}
+  .aifab{right:10px;bottom:calc(12px + env(safe-area-inset-bottom,0px));padding:9px 11px;font-size:12px;box-shadow:0 4px 16px rgba(0,0,0,.22)}
+  .aimodal{right:10px;bottom:calc(62px + env(safe-area-inset-bottom,0px));max-height:min(65vh,550px)}
+}
+@media(prefers-reduced-motion:reduce){
+  #view-home .card,#view-shop .card,#view-home .cat{transition:none!important}
+}
