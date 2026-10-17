@@ -11,7 +11,7 @@ body.reference-storefront{background:white;color:#152c4d}
 .reference-storefront .hwrap .logo-img{width:245px!important;height:80px!important;max-width:100%;object-fit:contain;object-position:left center}
 .reference-storefront .header-search{display:flex;flex:1;min-width:0;width:auto;max-width:none;margin:0 16px 0 0;border:3px solid #eef2f7;background:white;border-radius:16px;height:52px;overflow:visible;box-shadow:none}
 .reference-storefront .header-search input{font-size:13px;min-width:0;width:100%;padding:12px 16px;border:0;background:transparent;color:#304b6a}
-.reference-storefront .header-search button{border:0;margin:3px;border-radius:10px;background:#d74700;color:white;min-width:46px;font-size:26px;flex:none}
+.reference-storefront .header-search button{border:0;margin:3px;border-radius:10px;background:#c83b00;color:white;min-width:46px;font-size:26px;flex:none}
 .reference-storefront .hwrap>.tbtn,.reference-storefront .hwrap>.hbtn{width:54px;min-width:44px;height:56px;background:transparent;color:#082b55;border:0;border-radius:8px;box-shadow:none;position:relative;display:flex;align-items:center;justify-content:center;margin:0;flex:none}
 .reference-storefront .hwrap>.tbtn svg{width:25px;height:25px}
 .reference-storefront .hwrap>.hbtn{background:transparent;font-size:0}
@@ -20,7 +20,7 @@ body.reference-storefront{background:white;color:#152c4d}
 .reference-storefront .hwrap>a[aria-label="My wishlist"]{font-size:26px}
 .reference-storefront .hwrap>a[aria-label="My wishlist"]::after{content:'Wishlist'}
 .reference-storefront .hwrap>.hbtn::after{content:'Cart'}
-.reference-storefront .cartcount{background:#d74700!important;right:0!important;top:0!important;color:white!important;font-size:10px}
+.reference-storefront .cartcount{background:#c83b00!important;right:0!important;top:0!important;color:white!important;font-size:10px}
 .cb-subnav{max-width:var(--cb-width);margin:auto;background:#f6f8fc;border-radius:12px 12px 0 0;position:relative;z-index:40}
 .cb-subnav-inner{min-height:49px;padding:3px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
 .cb-subnav-links{display:flex;align-items:center;gap:2px;min-width:0}
@@ -96,7 +96,7 @@ body.reference-storefront{background:white;color:#152c4d}
 .reference-storefront :is(#view-home,#view-shop,#view-cart,#view-product) .card .price{font-size:17px;font-weight:850;color:#c52b15}
 .reference-storefront :is(#view-home,#view-shop,#view-cart,#view-product) .card .oldprice{font-size:11px;color:#607189}
 .reference-storefront :is(#view-home,#view-shop,#view-cart,#view-product) .card .savepill{display:none}
-.reference-storefront :is(#view-home,#view-shop,#view-cart,#view-product) .card .addcart{min-height:40px;background:#d74700;color:white;border-radius:9px;font-size:12px;font-weight:750;box-shadow:none}
+.reference-storefront :is(#view-home,#view-shop,#view-cart,#view-product) .card .addcart{min-height:40px;background:#c83b00;color:white;border-radius:9px;font-size:12px;font-weight:750;box-shadow:none}
 .reference-storefront :is(#view-home,#view-shop,#view-cart,#view-product) .card .addcart:disabled{background:#e9eef4;color:#40536b}
 .reference-storefront :is(#view-home,#view-shop,#view-cart,#view-product) .card .badge{background:#e32229;color:white;border-radius:7px;font-size:10px;top:8px;left:8px;max-width:70%}
 .reference-storefront :is(#view-home,#view-shop,#view-cart,#view-product) .card .wishbtn{background:white;color:#52647b;border:0}
@@ -115,7 +115,7 @@ body.reference-storefront{background:white;color:#152c4d}
 .cb-offer b{display:block;font-size:25px;line-height:1.12;letter-spacing:-.7px;color:#8a260b}
 .cb-offer-deals b{color:white}
 .cb-offer small{display:block;font-size:12px;line-height:1.45;margin:8px 0 13px}
-.cb-offer-link{display:inline-flex;align-items:center;min-height:40px;padding:9px 17px;border-radius:25px;background:#d74700;color:white;font-size:11px;font-weight:800}
+.cb-offer-link{display:inline-flex;align-items:center;min-height:40px;padding:9px 17px;border-radius:25px;background:#c83b00;color:white;font-size:11px;font-weight:800}
 .cb-offer-deals .cb-offer-link{background:#ffd458;color:#5a0820}
 .cb-offer-media{position:absolute;right:1%;bottom:0;width:43%;height:95%;display:flex;align-items:center;justify-content:center;pointer-events:none}
 .cb-offer-media img{width:60%;height:88%;object-fit:contain;transform:rotate(-12deg);margin-right:-15%;filter:drop-shadow(0 7px 8px #3a0e1733)}
@@ -136,7 +136,7 @@ body.reference-storefront{background:white;color:#152c4d}
 .reference-storefront .promo{font-size:10px;min-height:29px;padding:6px 9px}.reference-storefront .hwrap{padding:5px 10px;gap:7px;min-height:65px}.reference-storefront .logo{flex:1;min-width:0}.reference-storefront .hwrap .logo-img{width:176px!important;height:54px!important;object-position:left center}
 .reference-storefront .hwrap>.tbtn,.reference-storefront .hwrap>.hbtn{width:34px;height:44px;min-width:34px}.reference-storefront .hwrap>.mnav-btn{display:flex!important;flex:none;order:0}.reference-storefront .hwrap .header-search,.reference-storefront .hwrap>.tbtn::after,.reference-storefront .hwrap>.hbtn::after,.reference-storefront .hwrap>a[aria-label="My wishlist"]{display:none!important}
 .cb-subnav{display:none}.cb-mobile-search{display:flex;gap:3px;align-items:center;margin:0 10px 10px;width:calc(100% - 20px);height:43px;border:3px solid #edf1f7;border-radius:12px;background:white}
-.cb-mobile-search input{flex:1;width:100%;min-width:0;border:0;outline:none;background:transparent;padding:9px;font-size:12px;color:#12365e}.cb-mobile-search button{height:35px;width:42px;min-width:42px;border:0;border-radius:8px;background:#d74700;color:white;font-size:24px;margin-right:1px}
+.cb-mobile-search input{flex:1;width:100%;min-width:0;border:0;outline:none;background:transparent;padding:9px;font-size:12px;color:#12365e}.cb-mobile-search button{height:35px;width:42px;min-width:42px;border:0;border-radius:8px;background:#c83b00;color:white;font-size:24px;margin-right:1px}
 #view-home>.hero{width:calc(100% - 20px);border-radius:12px;margin:0 auto;background-position:center!important;background-size:cover!important}
 #view-home .herowrap{min-height:200px!important;padding:18px 12px 30px!important;display:flex!important}
 #view-home .herotxt{width:48%;flex:0 0 48%}#view-home .herotxt h1{font-size:clamp(22px,6.1vw,32px)!important;line-height:1.04;letter-spacing:-.4px}#view-home .herotxt>p{font-size:10px;line-height:1.4;margin:9px 0 12px;max-width:23ch}
