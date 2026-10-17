@@ -246,7 +246,28 @@ try{
   await page.getByRole('button',{name:'Close shopping bag'}).click();
   results.interactions.push({case:'cart and drawer cap quantity at 99 / '+width,pass:true});
   await inspect(page,'/checkout.html',width);
-  // Visual regression: new branded header, 2-step progress and a non-default coupon CTA.
+  const checkoutSpacing=await page.evaluate(()=>{
+    const promo=document.querySelector('.promo').getBoundingClientRect();
+    const header=document.querySelector('header').getBoundingClientRect();
+    const intro=document.querySelector('.checkout-intro').getBoundingClientRect();
+    const field=document.querySelector('#checkoutDeliveryStep .field');
+    const control=document.querySelector('#f_phone');
+    const card=document.querySelector('#checkoutDeliveryStep');
+    return {
+      headerGap:Math.round(header.top-promo.bottom),
+      introGap:Math.round(intro.top-header.bottom),
+      fieldGap:parseFloat(getComputedStyle(field).marginBottom),
+      inputHeight:Math.round(control.getBoundingClientRect().height),
+      cardPadding:parseFloat(getComputedStyle(card).paddingTop),
+      footerMargin:parseFloat(getComputedStyle(document.querySelector('footer')).marginTop)
+    };
+  });
+  if(Math.abs(checkoutSpacing.headerGap)>2 || checkoutSpacing.introGap>26 ||
+    checkoutSpacing.fieldGap>14 || checkoutSpacing.inputHeight<44 ||
+    checkoutSpacing.cardPadding>24 || checkoutSpacing.footerMargin>1)
+    throw Error('Checkout compact spacing regressed '+JSON.stringify({width,checkoutSpacing}));
+  results.interactions.push({case:'compact checkout spacing, flush header and 44px+ mobile inputs / '+width,pass:true});
+  // Visual regression: branded header, three-step progress and a non-default coupon CTA.
   const checkoutVisual=await page.evaluate(()=>{
    const intro=document.querySelector('.checkout-intro'),coupon=document.querySelector('#applyCoupon'),
     grid=document.querySelector('.co-grid'),total=document.querySelector('.checkout-totals .sumrow.total');
@@ -281,10 +302,21 @@ try{
   });
   if(!preferenceLayout.visible||!preferenceLayout.afterEmail||!preferenceLayout.withinScreen||preferenceLayout.tapHeight<48)
     throw Error('WhatsApp consent placement or tap target failed '+JSON.stringify({width,preferenceLayout}));
+  if(width===390){
+    await page.locator('#toPaymentBtn').click();
+    const fields=await page.evaluate(()=>Object.fromEntries(['f_phone','f_email','f_addr'].map(id=>{
+      const node=document.getElementById(id);
+      const described=(node.getAttribute('aria-describedby')||'').split(/\s+/);
+      return [id,{invalid:node.getAttribute('aria-invalid')==='true',help:described.includes({f_phone:'f_phoneHelp',f_email:'emailHelp',f_addr:'addressHelp'}[id]),error:described.includes({f_phone:'e_phone',f_email:'e_email',f_addr:'e_addr'}[id])}];
+    })));
+    if(await page.locator('#checkoutPaymentStep').isVisible()||Object.values(fields).some(f=>!f.invalid||!f.help||!f.error))
+      throw Error('Invalid delivery details bypassed validation or lost accessible help: '+JSON.stringify(fields));
+    results.interactions.push({case:'invalid delivery details remain on step 1 and retain help/error descriptions',pass:true});
+  }
   await page.locator('#f_whatsapp_optin').check();
-  await page.getByLabel('First Name *').fill('Ali');
-  await page.getByLabel('Phone Number *').fill('03000000000');
-  await page.getByLabel('Email Address *').fill('ali@example.invalid');
+  await page.locator('#f_fname').fill('Ali');
+  await page.locator('#f_phone').fill('03000000000');
+  await page.locator('#f_email').fill('ali@example.invalid');
   await page.locator('#f_addr').fill('Fixture Street 123, Lahore');
   await page.locator('#toPaymentBtn').click();
   if(!await page.locator('#checkoutPaymentStep').isVisible()||await page.locator('#checkoutDeliveryStep').isVisible())
