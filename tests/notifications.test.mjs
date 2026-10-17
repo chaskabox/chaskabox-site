@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { fixture, activate, order, rpc, env, router, actor } from './notification-fixture.mjs';
-import worker,{runNotifications,runOwnerWahaCanary} from '../workers/notification-outbox.js';
+import worker,{runNotifications,runOwnerWahaCanary,configureWahaWebhookOnce} from '../workers/notification-outbox.js';
 import { buildNotificationPayload,sendNotification,notificationConfig,notificationHealth,limitedText,privateRequest,providerReadiness,wahaAccessHeaders } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt,verifyResend,verifyWaha } from '../functions/api/_lib/notification-receipts.js';
 import { onRequestGet as adminNotifications } from '../functions/api/admin/notifications/index.js';
@@ -381,4 +381,57 @@ test('owner-only WAHA canary never sends without a WORKING session', async () =>
  };
  assert.equal((await runOwnerWahaCanary(env,fetcher)).status,'blocked');
  assert.equal(sends,0);
+});
+
+test('signed WAHA receipt webhook setup runs exactly once and preserves existing configuration',async()=>{
+ const env={WAHA_WEBHOOK_SETUP_ENABLED:'true',SUPABASE_URL:'https://db.example.invalid',
+   SUPABASE_SERVICE_ROLE_KEY:'fixture-role',WAHA_API_URL:'https://waha.chaskabox.online',
+   WAHA_CF_ACCESS_CLIENT_ID:'fixture-client',WAHA_CF_ACCESS_CLIENT_SECRET:'fixture-access-secret',
+   WAHA_API_KEY:'fixture-waha-key',WAHA_SESSION:'default',WAHA_WEBHOOK_SECRET:'s'.repeat(64)};
+ let claims=0,puts=0,gets=0,finished=[],storedConfig=null;
+ const fetcher=async(url,options)=>{
+  if(url.endsWith('/rpc/waha_webhook_setup_claim'))return Response.json(claims++===0);
+  if(url.endsWith('/rpc/waha_webhook_setup_finish')){finished.push(JSON.parse(options.body));return Response.json(true);}
+  if(url.endsWith('/api/sessions/default')){
+   assert.equal(options.headers['CF-Access-Client-Id'],'fixture-client');
+   if(options.method==='GET'){
+    gets++;
+    return Response.json({name:'default',status:'WORKING',engine:{engine:'WEBJS'},
+      config:storedConfig||{metadata:{original:'keep'},webjs:{other:true},webhooks:[]}});}
+   if(options.method==='PUT'){
+    puts++;storedConfig=JSON.parse(options.body).config;
+    assert.equal(storedConfig.metadata.original,'keep');
+    assert.equal(storedConfig.webjs.other,true);
+    assert.equal(storedConfig.webjs.tagsEventsOn,true);
+    assert.equal(storedConfig.webhooks.length,1);
+    assert.deepEqual(storedConfig.webhooks[0].events,['message.ack']);
+    assert.equal(storedConfig.webhooks[0].hmac.key,env.WAHA_WEBHOOK_SECRET);
+    return Response.json({ok:true});
+   }
+  }
+  throw new Error('Unexpected endpoint');
+ };
+ assert.equal((await configureWahaWebhookOnce(env,fetcher)).status,'configured');
+ assert.equal((await configureWahaWebhookOnce(env,fetcher)).status,'not_pending');
+ assert.equal(puts,1);
+ assert.equal(gets,2);
+ assert.equal(finished[0].p_status,'configured');
+ assert.equal(finished[0].p_webhook_present,true);
+ assert.equal((await configureWahaWebhookOnce({...env,WAHA_WEBHOOK_SETUP_ENABLED:'false'},fetcher)).status,'disabled');
+});
+test('signed WAHA webhook setup refuses disconnected sessions and never changes their config',async()=>{
+ const env={WAHA_WEBHOOK_SETUP_ENABLED:'true',SUPABASE_URL:'https://db.example.invalid',
+  SUPABASE_SERVICE_ROLE_KEY:'fixture-role',WAHA_API_URL:'https://waha.chaskabox.online',
+  WAHA_CF_ACCESS_CLIENT_ID:'fixture-client',WAHA_CF_ACCESS_CLIENT_SECRET:'fixture-access-secret',
+  WAHA_API_KEY:'fixture-waha-key',WAHA_SESSION:'default',WAHA_WEBHOOK_SECRET:'s'.repeat(64)};
+ let finished=0,puts=0;
+ const fetcher=async(url,options)=>{
+  if(url.endsWith('/rpc/waha_webhook_setup_claim'))return Response.json(true);
+  if(url.endsWith('/rpc/waha_webhook_setup_finish')){finished++;assert.equal(JSON.parse(options.body).p_status,'blocked');return Response.json(true);}
+  if(options.method==='GET' && url.endsWith('/api/sessions/default'))return Response.json({status:'SCAN_QR_CODE',config:{webhooks:[]}});
+  if(options.method==='PUT')puts++;
+  throw new Error('Unexpected request');
+ };
+ assert.equal((await configureWahaWebhookOnce(env,fetcher)).status,'blocked');
+ assert.equal(finished,1);assert.equal(puts,0);
 });
