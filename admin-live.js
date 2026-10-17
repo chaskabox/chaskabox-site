@@ -1782,13 +1782,56 @@
       announcement_text: $('#themeAnnText').value,
     };
   }
+  // Isolated iframe preview: never styles the authenticated admin chrome or writes to the CMS.
   async function previewTheme(){
-    let t;try{t=(await import('/theme-contract.js?v=6')).validateTheme(collectTheme());}catch(e){toast(e.message);return;}
-    const style=document.getElementById('themePreviewStyle')||document.createElement('style');
-    style.id='themePreviewStyle';
-    style.textContent=`:root{--primary:${t.primary_color};--navy:${t.primary_color};--gold:${t.accent_color};--accent:${t.accent_color};--bg:${t.background_color};--text:${t.text_color};--ink:${t.text_color};--radius:${t.border_radius}px} body{font-family:${t.font_family}}`;
-    document.head.appendChild(style);
-    toast('Preview applied (not saved)');
+    let t;
+    try{t=(await import('/theme-contract.js?v=6')).validateTheme(collectTheme());}
+    catch(e){toast('Theme preview validation failed: '+e.message);return;}
+    const view=$('#view-theme');
+    if(!view)return;
+    let host=$('#themeStorefrontPreview');
+    if(!host){
+      host=document.createElement('section');
+      host.id='themeStorefrontPreview';
+      host.className='panel admin-theme-preview';
+      const heading=document.createElement('h2');heading.textContent='Unsaved storefront theme preview';
+      const note=document.createElement('p');note.textContent='This preview is local to this browser tab. No theme, product or payment change is saved.';
+      const bar=document.createElement('div');bar.className='admin-theme-preview-actions';
+      const route=document.createElement('select');route.id='themePreviewRoute';route.setAttribute('aria-label','Preview storefront page');
+      for(const [value,name] of [['/','Homepage'],['/shop/','Shop'],['/bundles/','Chaska Boxes']]){
+        const option=document.createElement('option');option.value=value;option.textContent=name;route.append(option);
+      }
+      const size=document.createElement('select');size.id='themePreviewSize';size.setAttribute('aria-label','Preview width');
+      for(const [value,name] of [['100%','Desktop'],['768px','Tablet'],['390px','Mobile']]){
+        const option=document.createElement('option');option.value=value;option.textContent=name;size.append(option);
+      }
+      const reset=document.createElement('button');reset.type='button';reset.className='btn secondary';reset.textContent='Close unsaved preview';
+      reset.onclick=()=>host.remove();
+      const status=document.createElement('p');status.id='themePreviewStatus';status.setAttribute('role','status');status.setAttribute('aria-live','polite');
+      const frame=document.createElement('iframe');frame.id='themePreviewFrame';frame.title='Unsaved storefront theme preview';frame.loading='lazy';
+      const wrap=document.createElement('div');wrap.className='admin-theme-frame';wrap.append(frame);
+      bar.append(route,size,reset);host.append(heading,note,bar,status,wrap);view.append(host);
+      route.onchange=()=>{frame.src=route.value;};
+      size.onchange=()=>{frame.style.width=size.value;};
+    }
+    const frame=host.querySelector('#themePreviewFrame');
+    const status=host.querySelector('#themePreviewStatus');
+    const css=`:root{--primary:${t.primary_color};--navy:${t.primary_color};--gold:${t.accent_color};--accent:${t.accent_color};--bg:${t.background_color};--text:${t.text_color};--ink:${t.text_color};--radius:${t.border_radius}px}body{font-family:${t.font_family}}`;
+    const apply=()=>{
+      try{
+        const doc=frame.contentDocument;
+        if(!doc||!doc.head)throw Error('Frame unavailable');
+        let style=doc.getElementById('adminThemePreviewStyle');
+        if(!style){style=doc.createElement('style');style.id='adminThemePreviewStyle';doc.head.append(style);}
+        style.textContent=css;
+        status.textContent='Unsaved design preview applied. Review desktop and mobile before saving separately.';
+      }catch(error){status.textContent='Preview unavailable in this browser: '+error.message+'. No changes were saved.';}
+    };
+    frame.onload=apply;
+    const src=host.querySelector('#themePreviewRoute').value;
+    if(new URL(frame.src||'about:blank',location.origin).pathname!==src)frame.src=src;
+    else apply();
+    host.scrollIntoView({block:'start',behavior:'auto'});
   }
 
   /* ============ COUPONS ============ */
