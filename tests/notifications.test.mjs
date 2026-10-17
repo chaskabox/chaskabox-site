@@ -552,3 +552,24 @@ test('order item formatting bounds the preview output and sanitizes item names',
  assert.match(payload.body.text,/Snack Injected Heading/);
  assert.doesNotMatch(payload.body.text,/Snack\nInjected/);
 });
+
+test('checkout WhatsApp consent is visible beside email, remains unchecked and is reflected in final review',async()=>{
+ const html=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
+ const script=await readFile(new URL('../checkout.js',import.meta.url),'utf8');
+ const css=await readFile(new URL('../checkout-ui.css',import.meta.url),'utf8');
+ assert.equal((html.match(/id="f_whatsapp_optin"/g)||[]).length,1);
+ const deliveryStart=html.indexOf('id="checkoutDeliveryStep"');
+ const paymentStart=html.indexOf('id="checkoutPaymentStep"');
+ const checkbox=html.indexOf('id="f_whatsapp_optin"');
+ const email=html.indexOf('id="f_email"');
+ assert.ok(deliveryStart>=0&&email>deliveryStart&&checkbox>email&&checkbox<paymentStart);
+ assert.match(html,/id="f_whatsapp_optin"[^>]*name="whatsapp_opt_in"[^>]*value="true"/);
+ assert.doesNotMatch(html.match(/<input[^>]*id="f_whatsapp_optin"[^>]*>/)?.[0]||'',/\bchecked\b/);
+ assert.ok(html.includes('id="reviewWhatsapp"'));
+ assert.ok(!html.includes('id="checkoutExtrasStep"'));
+ assert.match(script,/reviewWhatsapp:\s*\$\('#f_whatsapp_optin'\)\?\.checked/);
+ assert.match(script,/whatsapp_opt_in:\s*!!\$\('#f_whatsapp_optin'\)\?\.checked/);
+ assert.match(css,/\.checkout-whatsapp-choice/);
+ assert.match(html,/checkout-ui\.css\?v=20261017-checkout-ux-v2/);
+ assert.match(html,/checkout\.js\?v=20261017-checkout-ux-v2/);
+});
