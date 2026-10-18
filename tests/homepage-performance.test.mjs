@@ -24,4 +24,6 @@ test('initial product thumbnails use the same responsive assets as hydrated cont
  assert.match(html,/<img class="cb-offer-art"[^>]*loading="lazy"/);
  const css=readFileSync(new URL('../final-homepage.css',import.meta.url),'utf8');
  assert.doesNotMatch(css,/\.cb-offer-box\{[^}]*url\(/);
+ assert.ok(html.indexOf('/storefront-bundle.css')<html.indexOf('<title>'),'Critical stylesheet is discovered before copy-dependent metadata');
+ assert.ok(html.indexOf('as="image" href="/images/chaskabox-approved-hero-01')<html.indexOf('<title>'),'LCP art is discovered before copy-dependent metadata');
 });

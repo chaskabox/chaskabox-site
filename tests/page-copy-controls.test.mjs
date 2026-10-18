@@ -72,7 +72,7 @@ test('page endpoints enforce owner live MFA, role and validation before any muta
  }finally{globalThis.fetch=original;}
 });
 test('native Cloudflare HTMLRewriter applies SEO/text/placeholders before JavaScript, escapes text and preserves price/schema/canonical',async()=>{
- const files=['tests/fixtures/page-copy-worker.js','functions/api/_lib/page-copy.js','functions/api/_lib/db.js','functions/api/_lib/storefront-html.js','page-copy-contract.js','page-copy-defaults.js'];
+ const files=['tests/fixtures/page-copy-worker.js','functions/_middleware.js','functions/api/_lib/page-copy.js','functions/api/_lib/db.js','functions/api/_lib/storefront-html.js','page-copy-contract.js','page-copy-defaults.js'];
  const mf=new Miniflare(convertV4MiniflareOptions({host:'127.0.0.1',workers:[{modules:files.map(p=>({type:'ESModule',path:path.resolve(p)})),modulesRoot:path.resolve('.'),compatibilityDate:'2026-10-04'}]}));
  try{const response=await mf.dispatchFetch('https://chaskabox.online/about/'),html=await response.text();assert.equal(response.status,200);assert.match(html,/<title>Owner SEO title<\/title>/);assert.match(html,/Reviewed copy &lt;script&gt;alert\(1\)&lt;\/script&gt;/);assert.match(html,/placeholder="Find your snacks"/);assert.match(html,/class="price">Rs\. 499/);assert.match(html,/"price":499/);assert.match(html,/rel="canonical" href="https:\/\/chaskabox.online\/about\/"/);assert.match(html,/id="published-page-copy"/);assert.equal(response.headers.get('etag'),null);assert.equal(response.headers.get('cache-control'),'no-store');}
  finally{await mf.dispose();}
@@ -80,6 +80,19 @@ test('native Cloudflare HTMLRewriter applies SEO/text/placeholders before JavaSc
 test('function responses and Pages previews get security/noindex headers; admin APIs never cache',async()=>{
  const ctx={request:new Request('https://release.chaskabox-site.pages.dev/api/admin/pages'),env:{},next:async()=>Response.json({error:'Authentication required'},{status:401})};
  const r=await middleware(ctx);assert.equal(r.status,401);assert.equal(r.headers.get('X-Robots-Tag'),'noindex, nofollow');assert.equal(r.headers.get('Cache-Control'),'no-store');assert.equal(r.headers.get('X-Content-Type-Options'),'nosniff');assert.equal(r.headers.get('X-Frame-Options'),'SAMEORIGIN');
+});
+test('native copy rewriting returns headers before a delayed read and preserves published SEO with public asset hints',async()=>{
+ const files=['tests/fixtures/page-copy-worker.js','functions/_middleware.js','functions/api/_lib/page-copy.js','functions/api/_lib/db.js','functions/api/_lib/storefront-html.js','page-copy-contract.js','page-copy-defaults.js'];
+ const mf=new Miniflare(convertV4MiniflareOptions({host:'127.0.0.1',workers:[{modules:files.map(p=>({type:'ESModule',path:path.resolve(p)})),modulesRoot:path.resolve('.'),compatibilityDate:'2026-10-04'}]}));
+ let timer;const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error('Critical asset stream waited for copy data')),10000);});
+ try{
+  const response=await Promise.race([mf.dispatchFetch('https://chaskabox.online/about/?delayed=1'),deadline]);
+  const state=await mf.dispatchFetch('https://chaskabox.online/copy-state');assert.equal((await state.json()).ready,false,'Response headers must not wait for the copy read');
+  await mf.dispatchFetch('https://chaskabox.online/release');
+  const html=await response.text();
+  assert.match(html,/<title>Owner SEO title<\/title>/);assert.match(html,/Reviewed copy &lt;script&gt;/);assert.match(html,/id="published-page-copy"/);
+  const hints=await mf.dispatchFetch('https://chaskabox.online/head-hints');assert.match(hints.headers.get('Link'),/storefront-bundle.*as=style/);assert.match(hints.headers.get('Link'),/hero-01.*as=image/);await hints.text();
+ }finally{clearTimeout(timer);await mf.dispatchFetch('https://chaskabox.online/release').catch(()=>{});await mf.dispose();}
 });
 test('dedicated FAQ uses current commerce switches without stale free-delivery or COD claims',()=>{
  const rows=storeFaqs({cod_enabled:false,prepaid_free_delivery_enabled:false,prepaid_delivery_fee_pkr:450,delivery_estimate:'5–8 days'});assert.match(rows[1].a,/paused/);assert.doesNotMatch(rows[2].a,/qualify for free/);assert.match(rows[2].a,/450/);assert.match(rows[3].a,/5–8 days/);
