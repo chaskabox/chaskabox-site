@@ -3,8 +3,8 @@
  function markNavigation(){
   const current=location.pathname.replace(/\/$/,'')||'/';
   document.querySelectorAll('.cb-subnav-links a,.cb-mobile-dock a').forEach(link=>{
-   const path=new URL(link.href,location.origin).pathname.replace(/\/$/,'')||'/';
-   const match=path===current&&!link.hasAttribute('onclick')&&!link.classList.contains('cb-discover');
+   const url=new URL(link.href,location.origin),path=url.pathname.replace(/\/$/,'')||'/';
+   const match=path===current&&url.search===location.search&&!link.hasAttribute('onclick')&&!link.classList.contains('cb-discover');
    if(match)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
   });
  }

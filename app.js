@@ -180,7 +180,7 @@ function renderHomeContent(){
   let html='';
   // Homepage shelves: only products WITH real photos (no "Photo coming soon" on showcase)
   const actImg=act.filter(hasPhoto);
-  const sale=distinctBrandPicks(actImg.filter(p=>p.oldPrice&&p.oldPrice>p.price),10);
+  const sale=curatedProducts('deals',distinctBrandPicks(actImg.filter(p=>p.oldPrice&&p.oldPrice>p.price),10)).filter(p=>p.oldPrice>p.price);
   const picks=curatedProducts('chaska_picks',distinctBrandPicks(actImg.filter(p=>p.category!=='Bundles'),10));
   const bundles=curatedProducts('boxes',distinctBrandPicks((cats['Bundles']||[]).filter(hasPhoto),10));
   const chatpata=curatedProducts('chatpata_picks',distinctBrandPicks(actImg.filter(p=>p.category==='Snacks & Nimco'),10));
@@ -209,7 +209,7 @@ function renderHomeContent(){
 }
 let shelfSeq=0;
 function shelf(title,items,color,cat,badge,homeKey){
-  const href=badge?'/shop/':(cat?categoryPath(cat):'/shop/');
+  const href=badge?'/shop/?badge='+encodeURIComponent(badge):(homeKey==='new_items'?'/shop/?sort=new':cat?categoryPath(cat):'/shop/');
   const action=badge?`onclick="goBadge('${esc(badge)}');return false"`:'';
   const sid='hs'+(++shelfSeq);
   return `<section class="shelf reveal"${homeKey?` data-home-section="${esc(homeKey)}"`:``}>
@@ -229,6 +229,10 @@ function shelfScroll(id,dir){
 
 /* ---------- shop ---------- */
 let shopState={q:'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''};
+function shopRouteFilters(cat=''){
+  const p=new URLSearchParams(location.search),sort=p.get('sort'),badge=p.get('badge');
+  return {q:p.get('q')||'',cat,sort:['feat','lo','hi','az','new','pop'].includes(sort)?sort:'feat',brands:p.getAll('brand').map(v=>v.trim()).filter(Boolean),maxPrice:0,pack:'',badge:['Sale','Bestseller'].includes(badge)?badge:''};
+}
 /* navigation is defined in the clean History API router below */
 /* populate desktop header dropdowns (categories + top brands) */
 function renderHeaderDropdowns(){
@@ -305,7 +309,8 @@ function renderShopContent(){
   if(headerSearch&&document.activeElement!==headerSearch)headerSearch.value=shopState.q||'';
   const {cat,badge}=shopState;
   let title=cat||'All Snacks';
-  if(badge) title=(badge==='Sale'?'🔥 ':'⭐ ')+title;
+  if(badge) title=badge==='Sale'?'Snack Deals':'Bestsellers';
+  else if(!cat&&shopState.sort==='new')title='New Arrivals';
   $('#crumbCat').textContent=title;
   $('#catTitle').textContent=title;
   renderShopCategoryRail();
@@ -370,7 +375,7 @@ function toggleBrand(el){
 function filteredShop(){
   let list=publicProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
   if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>category?category.product_ids.includes(Number(p.id)):(cat==='Bundles'?p.bundle:p.category===cat));}
-  if(badge)list=list.filter(p=>p.badge===badge);
+  if(badge)list=list.filter(p=>badge==='Sale'?p.oldPrice>p.price:p.badge===badge);
   if(q){const n=q.toLowerCase().trim();list=list.filter(p=>[p.name,p.pack,p.category,getBrand(p),p.desc].filter(Boolean).join(' ').toLowerCase().includes(n));}
   if(brands.length)list=list.filter(p=>brands.includes(getBrand(p)));
   if(maxPrice)list=list.filter(p=>p.price<=maxPrice);
@@ -536,7 +541,7 @@ function renderProductDetail(id){
         <dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||'ChaskaBox')}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack||'See listed contents')}</dd></div><div><dt>Availability</dt><dd>${p.stockState==='sourced_after_order'?'Sourced after order; confirmed before fulfilment':p.stockState==='unavailable'?'Currently unavailable':'See current order details'}</dd></div></dl>
         ${bundleContentsHTML(p)}
         <div class="dbox"><b>Estimated delivery</b><small>Pakistan-wide delivery window<br><span class="ddates">${deliveryRange()}</span></small></div>
-        <div class="pd-meta"><span>🚚 COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery</span><span>Delivery fees confirmed at checkout for your city</span><span>✅ Original sealed packs</span></div>
+        <div class="pd-meta"><span>🚚 ${esc(deliveryFeeCopy())}</span><span>Delivery fees confirmed at checkout for your city</span><span>✅ Original sealed packs</span></div>${codAdvanceNote()}
         <div class="product-help"><b>Need ingredients, allergen or best-before details?</b><span>Read the original pack label. <a href="${esc(productSupportHref(p))}" target="_blank" rel="noopener">Ask ChaskaBox before ordering</a>. If an item becomes unavailable, we contact you before any substitution.</span></div>
         <nav class="pd-policy-links" aria-label="Product and order help"><a href="/shipping-policy/">Delivery and charges</a><a href="/refund-policy/">Refund and resolution</a><a href="/track-order.html">Track your order</a></nav>
       </div>
@@ -603,6 +608,17 @@ async function loadStorefrontConfig(){
   return STORE_CONFIG;
 }
 function settingNum(key,fallback){const v=STORE_CONFIG?.settings?.[key];const n=Number(v);return Number.isFinite(n)?n:fallback;}
+function prepaidThreshold(){return STORE_CONFIG?.settings?.prepaid_free_delivery_enabled===false?null:Math.max(0,settingNum('prepaid_free_delivery_threshold_pkr',5000));}
+function deliveryFeeCopy(){
+  const threshold=prepaidThreshold(),cod=STORE_CONFIG?.settings?.cod_enabled===false?'COD currently unavailable':`COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery`;
+  return cod+' · '+(threshold===null?`Prepaid: ${fmt(settingNum('prepaid_delivery_fee_pkr',300))} delivery`:threshold===0?'Prepaid delivery: FREE':`Prepaid ${fmt(threshold)}+: free delivery; below: ${fmt(settingNum('prepaid_delivery_fee_pkr',300))}`);
+}
+function codAdvanceCopy(total=null){
+  if(STORE_CONFIG?.settings?.cod_enabled===false||STORE_CONFIG?.settings?.cod_advance_enabled===false)return '';
+  const configured=settingNum('cod_advance_amount_pkr',500),amount=Number.isSafeInteger(configured)&&configured>=1&&configured<=100000?configured:500;
+  return `COD: ${total===null?'up to ':''}${fmt(total===null?amount:Math.min(amount,Math.max(0,total)))} advance after ordering, verified before dispatch; adjusted within your total. Remaining balance on delivery.`;
+}
+function codAdvanceNote(total=null){const copy=codAdvanceCopy(total);return copy?'<p class="cart-note cod-advance-note">'+esc(copy)+'</p>':'';}
 function sectionConfig(key){return (STORE_CONFIG?.sections||[]).find(r=>r.section_key===key)?.config||{};}
 function curatedProducts(key,fallback){
   const ids=sectionConfig(key)?.product_ids;
@@ -615,25 +631,44 @@ function applyHomeCms(){
   const rows=STORE_CONFIG?.sections||[]; const by=Object.fromEntries(rows.map(r=>[r.section_key,r]));
   const selectors={
     announcement_bar:['.promo'], hero:['#view-home .hero'], categories:['#view-home .discover'],
-    deals:['#view-home [data-home-section="deals"]','#view-home .cb-offer-deals'], 
-    chaska_picks:['#view-home [data-home-section="chaska_picks"]'], boxes:['#view-home .box-spotlight','#view-home [data-home-section="boxes"]'],
+    deals:['#view-home [data-home-section="deals"]','#view-home .cb-offer-deals'],
+    trust_bar:['#view-home .cb-trust-rail'],why_chaskabox:['#view-home .why-section'],promotions:['#view-home .cb-offers'],box_spotlight:['#view-home .box-spotlight'],
+    chaska_picks:['#view-home [data-home-section="chaska_picks"]'], boxes:['#view-home [data-home-section="boxes"]','#view-home .cb-offer-box'],
     chatpata_picks:['#view-home [data-home-section="chatpata_picks"]'], new_items:['#view-home [data-home-section="new_items"]'],
     how_it_works:['#view-home .fresh'], faq:['#view-home .faq-section']
   };
-  const positions={hero:0,categories:1,chaska_picks:2,deals:2.4,boxes:3,chatpata_picks:4,new_items:5,how_it_works:6,faq:7};
-  const home=document.getElementById('view-home');if(home){home.style.flexDirection='column';const shelves=home.querySelector('#shelves');if(shelves)shelves.style.display='contents';home.querySelector('.why-section')?.style.setProperty('order',String((by.faq?.position??7)*10-1));}
+  const positions={hero:0,categories:10,trust_bar:20,chaska_picks:30,promotions:40,new_items:50,deals:60,boxes:70,chatpata_picks:80,box_spotlight:90,how_it_works:100,why_chaskabox:110,faq:120};
+  const home=document.getElementById('view-home');if(home){home.style.flexDirection='column';const shelves=home.querySelector('#shelves');if(shelves)shelves.style.display='contents';}
   for(const [key,sels] of Object.entries(selectors)){
     const row=by[key]||{enabled:true,position:positions[key],config:{}};
     for(const sel of sels){
       const el=document.querySelector(sel); if(!el) continue;
       el.hidden=row.enabled===false;
-      if(key!=='announcement_bar')el.style.order=key==='hero'?'-100':String(row.position*10);
+      // Inline priority makes the protected editor authoritative over theme defaults.
+      if(key!=='announcement_bar')el.style.setProperty('order',String(row.position*10),'important');
       const cfg=row.config||{};if(key==='hero'){const link=el.querySelector('.hero-actions a');if(link){if(cfg.button_text!==undefined)link.textContent=cfg.button_text;if(cfg.button_url&&/^(\/[^/]|https:\/\/)/.test(cfg.button_url))link.href=cfg.button_url;}}
       if(row.heading!==null&&row.heading!==undefined){const h=el.querySelector('h1,h2');if(h)h.textContent=row.heading;}
       if(row.subheading!==null&&row.subheading!==undefined){const text=el.querySelector('p,.freshdesc');if(text)text.textContent=row.subheading;}
     }
   }
-
+  const offers=document.querySelector('#view-home .cb-offers');
+  if(offers&&Array.from(offers.querySelectorAll('.cb-offer')).every(el=>el.hidden))offers.hidden=true;
+  const faq=by.faq?.config?.items;
+  if(Array.isArray(faq)){
+    const section=document.querySelector('#view-home .faq-section'),target=section?.querySelector('.faq-grid')||section;
+    if(target){
+      if(!target.dataset.defaultFaq)target.dataset.defaultFaq=Array.from(target.querySelectorAll('details')).map(el=>el.outerHTML).join('');
+      target.querySelectorAll('details').forEach(el=>el.remove());
+      for(const item of faq.slice(0,10)){
+        if(typeof item?.q!=='string'||typeof item?.a!=='string')continue;
+        const details=document.createElement('details'),summary=document.createElement('summary'),answer=document.createElement('p');
+        summary.textContent=item.q;answer.textContent=item.a;details.append(summary,answer);target.append(details);
+      }
+    }
+  }else{
+    const section=document.querySelector('#view-home .faq-section'),target=section?.querySelector('.faq-grid')||section;
+    if(target?.dataset.defaultFaq){target.querySelectorAll('details').forEach(el=>el.remove());target.insertAdjacentHTML('beforeend',target.dataset.defaultFaq);delete target.dataset.defaultFaq;}
+  }
   window.applyStorefrontManifest?.(STORE_CONFIG);
   const heroRow=by.hero||{};
   if(typeof window.CustomEvent==='function'&&typeof window.dispatchEvent==='function')window.dispatchEvent(new window.CustomEvent('chaskabox:home-config',{detail:{
@@ -729,7 +764,7 @@ function renderShopRoute(){
   setPageMeta(SEO_CATEGORY_DATA.shop.title,'/shop/',false,SEO_CATEGORY_DATA.shop.description);
   setCategorySeoCopy(SEO_CATEGORY_DATA.shop);
   setCategoryBreadcrumb('All Snacks','/shop/');
-  shopState.cat='';
+  shopState=shopRouteFilters();
   const urlQ=new URLSearchParams(location.search).get('q'); if(urlQ!==null) shopState.q=urlQ;
   const params=new URLSearchParams(location.search);
   if(params.get('sort')==='new')shopState.sort='new';
@@ -743,7 +778,7 @@ function renderBundlesRoute(){
   setPageMeta(SEO_CATEGORY_DATA.bundles.title,'/bundles/',false,SEO_CATEGORY_DATA.bundles.description);
   setCategorySeoCopy(SEO_CATEGORY_DATA.bundles);
   setCategoryBreadcrumb('Chaska Boxes','/bundles/');
-  shopState.cat='Bundles';
+  shopState=shopRouteFilters('Bundles');
   showView('shop');
   renderShopContent();
   // Box view tracking
@@ -798,6 +833,8 @@ async function renderBrandsDirectory(){
 async function renderBrandRoute(slug){
   if(!slug){ render404('/brand/'); return; }
   const v=document.getElementById('view-brand');
+  document.getElementById('brandExtras')?.remove();
+  for(const id of ['brandHero','brandIntro','brandFAQ']){const el=document.getElementById(id);if(el)el.replaceChildren();}
   showView('brand');
   const titleEl=document.getElementById('brandTitle');
   if(titleEl) titleEl.textContent='Loading...';
@@ -833,10 +870,10 @@ async function renderBrandRoute(slug){
     // Best sellers section
     const bestSellers=products.filter(p=>p.badge==='Bestseller').slice(0,8);
     // Featured products section
-    const featuredIds=brand.featuredProductIds||[];
+    const featuredIds=(brand.featured||[]).map(Number);
     const featured=featuredIds.length?products.filter(p=>featuredIds.includes(p.id)).slice(0,8):[];
     // Deals section
-    const deals=products.filter(p=>p.badge==='Sale'||p.mrp>p.price).slice(0,8);
+    const deals=products.filter(p=>p.oldPrice>p.price).slice(0,8);
     let extraHTML='';
     if(bestSellers.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">⭐ Best Sellers</h2><div class="grid">${bestSellers.map(cardHTML).join('')}</div></section>`;
     if(deals.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">🏷️ Deals</h2><div class="grid">${deals.map(cardHTML).join('')}</div></section>`;
@@ -845,22 +882,24 @@ async function renderBrandRoute(slug){
     try{
       const br=await fetch('/api/brands',{headers:{'Accept':'application/json'}});
       const bd=await br.json();
-      const others=((bd&&bd.brands)||[]).filter(b=>b.slug!==slug&&b.isVisible!==false).slice(0,6);
+      const others=((bd&&bd.brands)||[]).filter(b=>b.slug!==slug&&Number(b.productCount)>0).slice(0,6);
       if(others.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">🔗 Related Brands</h2><div style="display:flex;gap:12px;flex-wrap:wrap">${others.map(b=>`<a href="/brand/${esc(b.slug)}/" style="padding:10px 16px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit">${b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name)}" style="height:24px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(b.name)}</b></a>`).join('')}</div></section>`;
     }catch(e){}
     // FAQ section
     const faqEl=document.getElementById('brandFAQ');
     if(faqEl){
       const faqs=[
-        {q:`Where can I buy ${brand.name} snacks online in Pakistan?`,a:`You can buy original ${brand.name} snacks online at ChaskaBox with cash on delivery and 4-7 day nationwide delivery.`},
+        {q:`Where can I buy ${brand.name} snacks online in Pakistan?`,a:`You can order listed ${brand.name} snacks at ChaskaBox Pakistan. Estimated nationwide delivery: ${fallbackDeliveryEstimate()}. ${codAdvanceCopy()}`},
         {q:`Are ${brand.name} products original?`,a:`Yes, all ${brand.name} products at ChaskaBox are original sealed packs sourced from the market on order.`},
-        {q:`What is the delivery time for ${brand.name} products?`,a:`Delivery takes 4-7 days nationwide. COD orders pay Rs. 300 delivery; prepaid orders over Rs. 5,000 get free delivery.`}
+        {q:`What is the delivery time for ${brand.name} products?`,a:`Estimated delivery: ${fallbackDeliveryEstimate()}. ${deliveryFeeCopy()}. Checkout confirms the final total for your city.`}
       ];
       faqEl.innerHTML=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">❓ Frequently Asked Questions</h2>${faqs.map(f=>`<details style="margin-bottom:8px;border:1px solid var(--line);border-radius:10px;padding:12px"><summary style="cursor:pointer;font-weight:600">${esc(f.q)}</summary><p style="margin:8px 0 0;color:var(--muted)">${esc(f.a)}</p></details>`).join('')}</section>`;
     }
     if(extraHTML){
       const grid2=document.getElementById('brandProductGrid');
-      if(grid2) grid2.insertAdjacentHTML('afterend',extraHTML);
+      let extras=document.getElementById('brandExtras');
+      if(!extras&&grid2){extras=document.createElement('div');extras.id='brandExtras';grid2.after(extras);}
+      if(extras)extras.innerHTML=extraHTML;
     }
   }catch(e){
     if(titleEl) titleEl.textContent='Brand unavailable';
@@ -904,7 +943,7 @@ function renderCategoryRoute(slug){
   setPageMeta(seo?.title||catName+' | ChaskaBox',categoryPath(catName),false,seo?.description||'Shop '+catName+' from ChaskaBox.');
   setCategorySeoCopy(seo);
   setCategoryBreadcrumb(catName,'/category/'+slug+'/');
-  shopState.cat=catName;
+  shopState=shopRouteFilters(catName);
   showView('shop');
   renderShopContent();
 }
@@ -926,14 +965,14 @@ function renderCartPage(){
     subtotal+=p.price*qty;
     return `<div class="cart-page-item"><a href="${productHref(p.id)}"><img src="${esc(assetUrl(p.img||''))}" alt="${esc(p.name)}"></a><div class="cart-page-copy"><a href="${productHref(p.id)}"><b>${esc(p.name)}</b></a><small>${esc(p.pack||'')}</small><span>${fmt(p.price)}</span></div><div class="qty"><button onclick="setCartPageQty(${p.id},${qty-1})" aria-label="Decrease">−</button><b>${qty}</b><button onclick="setCartPageQty(${p.id},${qty+1})" aria-label="Increase" ${qty>=MAX_CART_QTY?'disabled':''}>+</button></div><b>${fmt(p.price*qty)}</b><button class="cart-remove" onclick="setCartPageQty(${p.id},0)" aria-label="Remove ${esc(p.name)}">Remove</button></div>`;
   }).join('');
-  const threshold=Math.max(0,settingNum('prepaid_free_delivery_threshold_pkr',5000));
+  const threshold=prepaidThreshold();
   const remaining=Math.max(0,threshold-subtotal), pct=threshold<=0?100:Math.min(100,Math.round(subtotal/threshold*100));
-  const progress=remaining?`<p><b>${fmt(remaining)}</b> more to unlock FREE delivery with prepaid payment.</p>`:'<p><b>🎉 Free delivery unlocked</b> for prepaid payment.</p>';
+  const progress=threshold===null?'':remaining?`<p><b>${fmt(remaining)}</b> more to unlock FREE delivery with prepaid payment.</p>`:'<p><b>🎉 Free delivery unlocked</b> for prepaid payment.</p>';
   const cartIds=new Set(items.map(([id])=>String(id)));
   const cartCats=[...new Set(items.map(([id])=>{const pr=PRODUCTS.find(x=>x.id==id);return pr&&pr.category;}).filter(Boolean))];
   const crossSell=activeProducts().filter(p=>!cartIds.has(String(p.id))&&cartCats.indexOf(p.category)>=0).slice(0,4);
   const crossHTML=crossSell.length?`<section class="cart-cross"><h2>Complete your chaska</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr))">${crossSell.map(cardHTML).join('')}</div></section>`:'';
-  el.innerHTML=`<div class="section cart-page"><div class="crumbs"><a href="/">Home</a> <span>›</span> Bag</div><div class="section-head"><div><span class="eyebrow">YOUR CHASKA</span><h1>Your Snack Bag</h1></div><a href="/shop/">Continue shopping →</a></div><div class="cart-page-layout"><div class="cart-page-items">${rows}</div><aside class="cart-summary"><h3>Order summary</h3><div class="drow"><span>Subtotal</span><b>${fmt(subtotal)}</b></div><div class="shipping-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div>${progress}</div><p class="cart-note">COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery · ${threshold>0?'Prepaid '+fmt(threshold)+'+: free delivery; below: '+fmt(settingNum('prepaid_delivery_fee_pkr',300)):'Prepaid delivery: FREE'}</p><a class="checkoutbtn cart-checkout" href="/checkout.html">Proceed to Checkout →</a></aside></div>${crossHTML}</div>`;
+  el.innerHTML=`<div class="section cart-page"><div class="crumbs"><a href="/">Home</a> <span>›</span> Bag</div><div class="section-head"><div><span class="eyebrow">YOUR CHASKA</span><h1>Your Snack Bag</h1></div><a href="/shop/">Continue shopping →</a></div><div class="cart-page-layout"><div class="cart-page-items">${rows}</div><aside class="cart-summary"><h3>Order summary</h3><div class="drow"><span>Subtotal</span><b>${fmt(subtotal)}</b></div><div class="shipping-progress"${threshold===null?' hidden':''}><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div>${progress}</div><p class="cart-note">${esc(deliveryFeeCopy())}</p>${codAdvanceNote(subtotal+settingNum('cod_delivery_fee_pkr',300))}<a class="checkoutbtn cart-checkout" href="/checkout.html">Proceed to Checkout →</a></aside></div>${crossHTML}</div>`;
   animateProgressIn(el,'cart',pct);
 }
 function setCartPageQty(id,qty){
@@ -1001,12 +1040,12 @@ function goShop(cat){
   const slug=CATEGORY_SLUGS[cat]?cat:CATEGORY_NAMES_TO_SLUG[cat];
   if(slug&&CATEGORY_SLUGS[slug]) navigate('/category/'+slug+'/'); else navigate('/shop/');
 }
-function goBadge(badge){ closeMnav(); shopState={q:'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:badge||''}; navigate('/shop/'); }
+function goBadge(badge){ closeMnav(); shopState={q:'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:badge||''}; navigate('/shop/'+(badge?'?badge='+encodeURIComponent(badge):'')); }
 function goShopBadge(cat,badge){
   closeMnav(); shopState={q:'',cat:cat||'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:badge||''};
-  navigate(cat==='Bundles'?'/bundles/':categoryPath(cat));
+  navigate((cat==='Bundles'?'/bundles/':categoryPath(cat))+(badge?'?badge='+encodeURIComponent(badge):''));
 }
-function goFlavor(q){ closeMnav(); shopState={q:q||'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''}; navigate('/shop/'); }
+function goFlavor(q){ closeMnav(); navigate('/shop/'+(q?'?q='+encodeURIComponent(q):'')); }
 function goBrand(b){closeMnav();navigate('/shop/'+(b?'?brand='+encodeURIComponent(b):''));}
 function goBundles(){ closeMnav(); shopState={q:'',cat:'Bundles',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''}; navigate('/bundles/'); }
 function goCart(){ navigate('/cart/'); }
@@ -1352,9 +1391,9 @@ function renderDrawer(){
     <div class="qty"><button onclick="chQty(${id},-1)" aria-label="Decrease ${esc(p.name)}">−</button><b>${CART[id]}</b><button onclick="chQty(${id},1)" aria-label="Increase ${esc(p.name)}" ${CART[id]>=MAX_CART_QTY?'disabled':''}>+</button></div></div>`;
   }).join('');
   const sub=cartSubtotal();
-  const threshold=Math.max(0,settingNum('prepaid_free_delivery_threshold_pkr',5000));
+  const threshold=prepaidThreshold();
   const rem=Math.max(0,threshold-sub), pct=threshold<=0?100:Math.min(100,Math.round(sub/threshold*100));
-  $('#dfoot').innerHTML=`<div class="drow total"><span>Subtotal</span><span>${fmt(sub)}</span></div><div class="drawer-progress"><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div><small>${rem?fmt(rem)+' more for FREE prepaid delivery':'🎉 FREE prepaid delivery unlocked'}</small></div><p class="cart-note">COD: ${fmt(settingNum('cod_delivery_fee_pkr',300))} delivery · ${threshold>0?'Prepaid below '+fmt(threshold)+': '+fmt(settingNum('prepaid_delivery_fee_pkr',300))+' delivery':'Prepaid delivery: FREE'}</p><div class="drawer-actions"><a class="drawer-viewcart" href="/cart/" onclick="closeDrawer()">View Bag</a><a class="checkoutbtn" href="/checkout.html">Checkout →</a></div>`;
+  $('#dfoot').innerHTML=`<div class="drow total"><span>Subtotal</span><span>${fmt(sub)}</span></div><div class="drawer-progress"${threshold===null?' hidden':''}><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div><small>${rem?fmt(rem)+' more for FREE prepaid delivery':'🎉 FREE prepaid delivery unlocked'}</small></div><p class="cart-note">${esc(deliveryFeeCopy())}</p>${codAdvanceNote(sub+settingNum('cod_delivery_fee_pkr',300))}<div class="drawer-actions"><a class="drawer-viewcart" href="/cart/" onclick="closeDrawer()">View Bag</a><a class="checkoutbtn" href="/checkout.html">Checkout →</a></div>`;
   animateProgressIn($('#dfoot'),'drawer',pct);
 }
 function chQty(id,d){setCartPageQty(id,Number(CART[id]||0)+d);}
@@ -1372,8 +1411,8 @@ function animateProgressIn(scope,key,pct){
 
 /* ---------- Chaska Help (FAQ + product finder) ---------- */
 function fallbackDeliveryEstimate(){return String(STORE_CONFIG?.settings?.delivery_estimate||'4-7 days').replace(/^"|"$/g,'');}
-function fallbackDeliveryCopy(){const cod=settingNum('cod_delivery_fee_pkr',300),pre=settingNum('prepaid_delivery_fee_pkr',300),thr=settingNum('prepaid_free_delivery_threshold_pkr',5000);return `COD par ${fmt(cod)} delivery fee hai. JazzCash ya Bank Transfer prepaid order ${fmt(thr)}+ ho to delivery FREE hai — is se kam par ${fmt(pre)}.`;}
-function fallbackJazzCopy(){const thr=settingNum('prepaid_free_delivery_threshold_pkr',5000);return `Checkout par JazzCash select karein, screen par dikhaye gaye official payment details par exact total bhejein, phir transaction/reference number enter karein. ${fmt(thr)}+ prepaid order par delivery FREE hai. ✅`;}
+function fallbackDeliveryCopy(){return deliveryFeeCopy()+'. '+codAdvanceCopy();}
+function fallbackJazzCopy(){return `Checkout par JazzCash select karein, screen par dikhaye gaye official payment details par exact total bhejein, phir transaction/reference number enter karein. ${deliveryFeeCopy()}.`;}
 const AI_QA=[
  {q:'Delivery kitne din mein hogi?',k:['deliver','din','kitne','time','pohnch','kab'],a:()=>`Pakistan-wide estimated delivery ${fallbackDeliveryEstimate()} hai. 🚚 Order ke waqt available estimate bhi dikhaya jata hai.`},
  {q:'Delivery charges kya hain?',k:['charge','fee','delivery charges','kitna'],a:()=>fallbackDeliveryCopy()},

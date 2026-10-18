@@ -33,8 +33,8 @@ test('hero image priorities reserve square space and delay nonessential download
  assert.match(app,/fetchpriority="\$\{i===0\?'high':'low'\}"/);
 });
 
-test('primary homepage hero does not shift below dynamically ordered CMS sections',()=>{
+test('homepage has a stable fallback order while explicit CMS ordering takes priority',()=>{
  const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
  assert.match(css,/#view-home\s*>\s*\.hero\s*\{\s*order:-100\s*\}/);
- assert.match(app,/el\.style\.order=key==='hero'\?'-100':String\(row\.position\*10\)/);
+ assert.match(app,/el\.style\.setProperty\('order',String\(row\.position\*10\),'important'\)/);
 });

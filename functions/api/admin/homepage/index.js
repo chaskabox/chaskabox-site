@@ -14,11 +14,9 @@
 import { withAdmin, sb, json, httpError, readJson, audit } from '../_lib/auth.js';
 import { cmsMutate } from '../_lib/cms-mutate.js';
 import { packingVideoSource } from '../../../../packing-video.js';
+import {HOMEPAGE_KEYS,validateHomepageConfig} from '../../../../homepage-config.js';
 
-const KNOWN_KEYS = new Set([
-  'hero', 'categories', 'chaska_picks', 'boxes', 'chatpata_picks',
-  'new_items', 'how_it_works', 'faq', 'announcement_bar',
-]);
+const KNOWN_KEYS = HOMEPAGE_KEYS;
 
 const SELECT = 'section_key,enabled,position,heading,subheading,config,draft_config,updated_at';
 
@@ -40,6 +38,7 @@ export const onRequestPatch = withAdmin(['owner', 'manager', 'content'], async (
     const data={updated_by:user.id,updated_at:new Date().toISOString()};
     if(s.draft_config!==undefined){
       if(!s.draft_config||typeof s.draft_config!=='object'||Array.isArray(s.draft_config))httpError('Draft must be an object',400,'invalid_draft');
+      try{validateHomepageConfig(key,s.draft_config);}catch(e){httpError(e.message,400,'invalid_draft');}
       if(Object.hasOwn(s.draft_config,'packing_video_url')){
         if(key!=='how_it_works')httpError('Packing video belongs in How it works',400,'invalid_video_section');
         try{packingVideoSource(s.draft_config.packing_video_url);}catch(e){httpError(e.message,400,'invalid_video');}

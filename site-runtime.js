@@ -46,15 +46,20 @@
   }
   window.applyStorefrontManifest=function(d){
     if(Array.isArray(d.navigation)){
-      for(const [location,selector] of [['header','.hnav'],['header','.cb-managed-nav'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
+      for(const [location,selector] of [['header','.hnav'],['header','.cb-subnav-links'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
         document.querySelectorAll(selector).forEach(el=>{
           el.replaceChildren();
+          let destination=el;
+          if(selector==='.cb-subnav-links'){
+            const category=document.createElement('a');category.className='cb-discover';category.href='/shop/';category.textContent='☰ Shop by Category';el.append(category);
+            destination=document.createElement('span');destination.className='cb-managed-nav';el.append(destination);
+          }
           for(const row of d.navigation.filter(r=>r.location===location&&r.is_enabled).sort((a,b)=>a.position-b.position)){
             if(!safeUrl(row.url))continue;
             const a=document.createElement('a');a.textContent=row.label;a.href=row.url;
             if(row.is_external){a.target='_blank';a.rel='noopener noreferrer';}
             if(row.parent_id)a.style.paddingInlineStart='24px';
-            if(location==='footer')a.style.display='block';el.append(a);
+            if(location==='footer')a.style.display='block';destination.append(a);
           }
         });
       }
@@ -134,6 +139,14 @@
     const advanceEnabled=s.cod_enabled!==false&&s.cod_advance_enabled!==false;
     document.querySelectorAll('[data-cod-advance-amount]').forEach(el=>el.textContent=safeAmount.toLocaleString('en-PK'));
     document.querySelectorAll('[data-cod-advance-note]').forEach(el=>{el.hidden=!advanceEnabled;});
+    const free=s.prepaid_free_delivery_enabled!==false;
+    const prepaid=free?(threshold<=0?'Enabled prepaid methods: FREE delivery':`Prepaid ${money(threshold)}+: FREE delivery; below: ${money(pre)}`):`Prepaid: ${money(pre)} delivery. Free delivery is currently unavailable.`;
+    document.querySelectorAll('[data-prepaid-shipping-copy]').forEach(el=>el.textContent=prepaid);
+    document.querySelectorAll('[data-cod-fee-copy]').forEach(el=>el.textContent=s.cod_enabled===false?'COD currently unavailable':`COD: ${money(cod)} delivery`);
+    const advance=advanceEnabled?`Up to ${money(safeAmount)} advance after ordering, verified before dispatch and adjusted within the total. Remaining balance on delivery. `:'';
+    document.querySelectorAll('[data-cod-policy-copy]').forEach(el=>el.textContent=s.cod_enabled===false?'Cash on Delivery is currently unavailable. Check the enabled payment methods at checkout.':advance+`COD delivery: ${money(cod)}. Checkout confirms the final amount for your city.`);
+    const methods=[s.cod_enabled!==false?(advanceEnabled?`COD: up to ${money(safeAmount)} advance before dispatch`:'COD'):null,s.jazzcash_enabled!==false?'JazzCash':null,s.bank_transfer_enabled!==false?'Bank Transfer':null].filter(Boolean);
+    document.querySelectorAll('[data-payment-options-copy]').forEach(el=>el.textContent=methods.join(' · ')||'See current payment options at checkout');
   }
   async function run(){
     try{
