@@ -58,3 +58,21 @@ test('read-only preflight recognizes an exact waha Docker container name even wh
   assert.match(result.stdout,/^waha Up 2 days/m);
   assert.match(result.stdout,/chaskabox-waha-1 Up 7 hours/);
 });
+
+test('single-run named tunnel connector validates backup and session before service install', () => {
+  const connect = readFileSync(new URL('../ops/waha/connect-named-tunnel.sh', import.meta.url), 'utf8');
+  const parse = spawnSync('bash', ['-n'], {input:connect,encoding:'utf8'});
+  assert.equal(parse.status, 0, parse.stderr);
+  assert.match(connect,/docker inspect -f/);
+  assert.match(connect,/WORKING/);
+  assert.match(connect,/tar -tzf/);
+  assert.match(connect,/--token-file/);
+  assert.match(connect,/Tunnel identity verified/);
+  assert.match(connect,/Type CONNECT/);
+  assert.match(connect,/ProtectSystem=strict/);
+  assert.match(connect,/systemctl enable --now "\$SVC"/);
+  assert.doesNotMatch(connect,/\bdocker\s+(?:rm|restart|stop|compose|pull|run|system\s+prune)\b/);
+  assert.doesNotMatch(connect,/\bpm2\s+(?:stop|restart|delete|kill)\b/);
+  assert.doesNotMatch(connect,/\bcloudflared\s+service\s+install\b/);
+  assert.doesNotMatch(connect,/echo\s+"\$TKN"/);
+});
