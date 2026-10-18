@@ -88,9 +88,9 @@ const server=createServer(async(req,res)=>{try{
  if(/\.\.|(^|\/)\./.test(p)){res.writeHead(403);return res.end('Forbidden');}
  const assetPath=p==='/cart/'?'/index.html':p==='/admin/'?'/admin.html':/^\/brand\/[^/]+\/$/.test(p)?'/brand/index.html':p;
  let file=path.join(root,decodeURIComponent(assetPath));if((await stat(file).catch(()=>null))?.isDirectory())file=path.join(file,'index.html');
- if(!/\.(html|css|js|json|png|webp|svg|mp4|woff2)$/.test(file)){res.writeHead(404);return res.end('Not found');}
+ if(!/\.(html|css|js|json|png|webp|avif|svg|mp4|woff2)$/.test(file)){res.writeHead(404);return res.end('Not found');}
  let data=await readFile(file);if(file.endsWith('.html'))data=Buffer.from(data.toString().replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
- const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'application/json','.png':'image/png','.webp':'image/webp','.svg':'image/svg+xml','.woff2':'font/woff2'};
+ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'application/json','.png':'image/png','.webp':'image/webp','.avif':'image/avif','.svg':'image/svg+xml','.woff2':'font/woff2'};
  res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'});res.end(data);
 }catch{res.writeHead(404);res.end('Not found');}});
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+server.address().port;
@@ -212,12 +212,15 @@ try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
   await page.evaluate(()=>document.fonts.ready);
+  // The desktop/mobile approved AVIF banner may finish decoding after DOMContentLoaded.
+  // Wait for the actual hero artwork to decode before measuring it.
+  await page.locator('#view-home .hero-scene').evaluate(async img=>{await img.decode()});
   const layout=await page.evaluate(()=>{
    const hero=document.querySelector('#view-home .hero'),box=hero.getBoundingClientRect();
-   return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundImage,font:getComputedStyle(hero.querySelector('h1')).fontFamily};
+   return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundColor,font:getComputedStyle(hero.querySelector('h1 .hl')).fontFamily,showcase:!!hero.querySelector('.hero-scene'),imageLoaded:hero.querySelector('.hero-scene')?.naturalWidth>0,cta:hero.querySelectorAll('.hero-actions a').length};
   });
-  if(layout.width<width-60||layout.width>width||layout.height>(width<=760?320:540))throw Error('Reference hero layout mismatch '+JSON.stringify({width,...layout}));
-  if(!layout.background.includes('hero-approved-brand-polish-20261017.webp')||!layout.font.includes('Kalam'))throw Error('Reference hero artwork or type is missing');
+  if(layout.width<width-60||layout.width>width||layout.height>(width<=760?760:610))throw Error('Editorial hero layout mismatch '+JSON.stringify({width,...layout}));
+  if(!/(system-ui|Segoe UI)/i.test(layout.font)||!layout.showcase||!layout.imageLoaded||layout.cta!==2)throw Error('Approved hero artwork or shopping actions missing '+JSON.stringify({width,...layout}));
   const polish=await page.evaluate(()=>({
    duplicateTrust:getComputedStyle(document.querySelector('#view-home .herotrust')).display,
    firstCardTop:Math.min(...[...document.querySelectorAll('#view-home .card')].map(el=>el.getBoundingClientRect().top)),
@@ -226,8 +229,8 @@ try{
    categorySymbols:document.querySelectorAll('#catTiles .ci-category-symbol').length,
    headerLogo:document.querySelector('.logo img')?.currentSrc
   }));
-  if(polish.duplicateTrust!=='none'||polish.packSize<11||polish.buttonHeight<44||!polish.headerLogo.includes('logo-header-polish-20261017-'))throw Error('Design polish accessibility/branding mismatch '+JSON.stringify({width,...polish}));
-  if(width===1440&&(layout.height>370||polish.firstCardTop>780))throw Error('Products remain too low in the desktop layout '+JSON.stringify(polish));
+  if(polish.duplicateTrust==='none'||polish.packSize<11||polish.buttonHeight<44||!polish.headerLogo.includes('logo-header-polish-20261017-'))throw Error('Design polish accessibility/branding mismatch '+JSON.stringify({width,...polish}));
+  if(width===1440&&(layout.height>610||polish.firstCardTop>1080))throw Error('Products remain too low in the desktop layout '+JSON.stringify(polish));
   if(!polish.categorySymbols)throw Error('Category discovery symbol missing');
   results.interactions.push({case:'compact hero, legible packs, 44px purchase controls and approved header branding / '+width,pass:true});
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');

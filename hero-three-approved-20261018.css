@@ -1,0 +1,188 @@
+/* Three owner-approved screenshot-based homepage heroes.
+   Desktop uses the exact art framing, while real DOM headings and links remain accessible.
+   Mobile reflows content above an unzoomed, right-side product crop.
+   One common trust bar is outside the changing artwork. */
+.reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three{
+  border-color:#dae2ec!important;background:#fff8ee!important;gap:0!important;
+}
+@media(min-width:761px){
+  .reference-storefront #view-home .hero-approved-three>.herowrap{
+    position:relative!important;z-index:3!important;display:block!important;flex:none!important;
+    width:100%!important;height:auto!important;aspect-ratio:1600/470!important;
+    min-height:0!important;max-width:none!important;padding:0!important;margin:0!important;
+  }
+  .reference-storefront #view-home .hero-approved-three>.hero-scene{
+    position:absolute!important;inset:0 auto auto 0!important;width:100%!important;height:auto!important;
+    max-width:none!important;max-height:none!important;object-fit:contain!important;
+    object-position:left top!important;transform:none!important;
+  }
+  .reference-storefront #view-home .hero-approved-three::before{display:none!important}
+  .reference-storefront #view-home .hero-approved-three .herotxt{
+    position:absolute!important;inset:0!important;display:block!important;
+    width:100%!important;max-width:none!important;flex:none!important;
+    padding:0!important;margin:0!important;z-index:4!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-eyebrow,
+  .reference-storefront #view-home .hero-approved-three .herotxt h1,
+  .reference-storefront #view-home .hero-approved-three .herotxt>p:not(.hero-microcopy){
+    position:absolute!important;width:1px!important;height:1px!important;
+    padding:0!important;margin:-1px!important;overflow:hidden!important;
+    clip-path:inset(50%)!important;white-space:nowrap!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions{
+    position:absolute!important;z-index:7!important;left:6.2%!important;top:77%!important;
+    width:39%!important;height:12%!important;display:flex!important;
+    flex-wrap:nowrap!important;align-items:stretch!important;gap:2%!important;
+    padding:0!important;margin:0!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta,
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta.ghost{
+    position:relative!important;flex:0 0 42%!important;width:42%!important;min-width:0!important;
+    height:100%!important;min-height:0!important;padding:0!important;
+    border:1px solid transparent!important;border-radius:10px!important;
+    background:transparent!important;box-shadow:none!important;
+    font-size:0!important;color:transparent!important;text-shadow:none!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta.ghost{
+    flex-basis:49%!important;width:49%!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta:hover{
+    background:rgba(255,255,255,.12)!important;border-color:rgba(255,255,255,.6)!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta:focus-visible{
+    outline:3px solid #ffb933!important;outline-offset:3px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="2"] .hero-actions{
+    left:4.1%!important;top:86.5%!important;width:40%!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .hero-actions{
+    left:6.6%!important;top:77%!important;width:38%!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-slider-controls{
+    position:absolute!important;inset:auto 14px 8px auto!important;
+    margin:0!important;z-index:9!important;background:#071d36ab!important;
+    padding:2px 5px!important;border-radius:12px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-art-note{display:none!important}
+  .reference-storefront #view-home .hero-approved-three .herotrust{
+    position:relative!important;z-index:9!important;margin:0!important;
+    padding:12px 25px!important;background:#082b50!important;
+    min-height:66px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .htrustwrap{
+    grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:12px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"]::after{
+    content:"ORIGINAL BRANDS"!important;display:grid!important;place-items:center!important;
+    position:absolute!important;top:2%!important;right:2.8%!important;z-index:5!important;
+    width:clamp(62px,8.2vw,119px)!important;height:clamp(62px,8.2vw,119px)!important;
+    border-radius:50%!important;background:#07335d!important;color:#fff4cf!important;
+    border:3px solid #07335d!important;text-align:center!important;
+    font:800 clamp(10px,1.2vw,16px)/1.15 system-ui,sans-serif!important;
+    padding:11px!important;box-sizing:border-box!important;pointer-events:none!important;
+  }
+}
+@media(min-width:761px) and (max-width:1050px){
+  .reference-storefront #view-home .hero-approved-three>.herowrap{
+    aspect-ratio:1600/470!important;padding:0!important;min-height:0!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt{width:100%!important}
+}
+@media(max-width:760px){
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three{
+    width:calc(100% - 18px)!important;border-radius:15px!important;
+    background:#fff7e9!important;display:flex!important;flex-direction:column!important;
+  }
+  .reference-storefront #view-home .hero-approved-three::before,
+  .reference-storefront #view-home .hero-approved-three::after{display:none!important}
+  .reference-storefront #view-home .hero-approved-three>.herowrap{
+    order:1!important;position:relative!important;width:100%!important;
+    height:auto!important;min-height:0!important;max-width:none!important;
+    padding:23px 18px 14px!important;background:#fff7e9!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="2"]>.herowrap{
+    background:#fcf2df!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"]>.herowrap{
+    background:#082b52!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt{
+    width:100%!important;max-width:none!important;flex:none!important;text-align:left!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-eyebrow{
+    display:inline-flex!important;background:#fff0d8!important;color:#8c390e!important;
+    margin:0 0 12px!important;font-size:9px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt h1{
+    position:static!important;clip-path:none!important;overflow:visible!important;
+    display:block!important;max-width:none!important;
+    color:#062c55!important;font-size:clamp(29px,7.6vw,42px)!important;
+    letter-spacing:-.045em!important;text-shadow:none!important;margin:0!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt h1 .hl{
+    color:#ee4d12!important;display:block!important;line-height:1.08!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .herotxt h1{color:#fff!important}
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .herotxt h1 .hl{color:#ffc03b!important}
+  .reference-storefront #view-home .hero-approved-three .herotxt>p:not(.hero-microcopy){
+    color:#25435b!important;font-size:12px!important;line-height:1.55!important;
+    margin:11px 0 14px!important;max-width:46ch!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .herotxt>p:not(.hero-microcopy){
+    color:#eaf2ff!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions{
+    position:static!important;display:flex!important;width:100%!important;height:auto!important;
+    gap:8px!important;flex-wrap:nowrap!important;margin:0!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta{
+    display:inline-flex!important;flex:1 1 50%!important;align-items:center!important;justify-content:center!important;
+    font-size:11px!important;min-width:0!important;min-height:45px!important;
+    color:#fff!important;background:#c9420d!important;border:1px solid #c9420d!important;
+    padding:9px 7px!important;text-align:center!important;border-radius:9px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta.ghost{
+    background:transparent!important;border-color:#d96a35!important;color:#07325b!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .hero-actions .cta.ghost{
+    border-color:#f0bf62!important;color:#fff!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-slider-controls{
+    position:static!important;display:flex!important;justify-content:flex-start!important;
+    gap:3px!important;width:max-content!important;margin:12px 0 0!important;padding:0!important;
+    transform:none!important;background:none!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-slider-controls button{
+    min-height:34px!important;min-width:30px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three>.hero-scene{
+    order:2!important;position:relative!important;left:0!important;top:0!important;inset:auto!important;
+    width:200%!important;min-width:200%!important;max-width:none!important;
+    height:195px!important;max-height:none!important;flex:none!important;
+    transform:translateX(-50%)!important;object-fit:cover!important;
+    object-position:center 40%!important;margin:0!important;
+  }
+  .reference-storefront #view-home .hero-approved-three>.herotrust{
+    order:3!important;position:relative!important;z-index:8!important;
+    margin:0!important;padding:13px 11px!important;min-height:0!important;background:#082b50!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .htrustwrap{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px 8px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-trust-item.hero-trust-cod{grid-column:auto!important}
+  .reference-storefront #view-home .hero-approved-three .hero-art-note{display:none!important}
+}
+@media(max-width:360px){
+  .reference-storefront #view-home .hero-approved-three>.herowrap{padding:18px 13px 11px!important}
+  .reference-storefront #view-home .hero-approved-three .herotxt h1{font-size:28px!important}
+  .reference-storefront #view-home .hero-approved-three>.hero-scene{height:168px!important}
+}
+
+/* Hero 3 has an owner-approved 1411×554 original image, unlike 1600×550 slides.
+   Preserve its natural framing and let the shared trust strip cover its baked-in footer,
+   rather than clipping the shopping buttons or zooming the products. */
+@media(min-width:761px){
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"]>.herowrap{
+    aspect-ratio:1411/490!important;
+  }
+}
