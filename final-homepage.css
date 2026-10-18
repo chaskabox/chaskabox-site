@@ -108,10 +108,11 @@ body.reference-storefront{background:white;color:#152c4d}
 #view-home [data-home-section="chatpata_picks"]{order:-20!important}
 .cb-offers{width:calc(100% - 24px);max-width:var(--cb-width);margin:0 auto 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:0}
 .cb-offer{position:relative;display:flex;align-items:center;min-height:150px;overflow:hidden;border-radius:22px;padding:24px 26px;background:#fff0d5;isolation:isolate}
-.cb-offer-box{background:#fff0d5 url('/images/hero-approved-brand-polish-20261017.webp') right center/auto 160% no-repeat}
+.cb-offer-box{background:#fff0d5}
+.cb-offer-art{position:absolute;right:0;top:-30%;height:160%;width:auto;max-width:none;z-index:-2;pointer-events:none}
 .cb-offer-box::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,#fff0d5 0%,#fff0d5 44%,transparent 74%);z-index:-1}
 .cb-offer-deals{background:linear-gradient(120deg,#9d0524,#d41331);color:white}
-.cb-offer>div:first-child{z-index:2;width:58%}
+.cb-offer>div:first-of-type{z-index:2;width:58%}
 .cb-offer b{display:block;font-size:25px;line-height:1.12;letter-spacing:-.7px;color:#8a260b}
 .cb-offer-deals b{color:white}
 .cb-offer small{display:block;font-size:12px;line-height:1.45;margin:8px 0 13px}
