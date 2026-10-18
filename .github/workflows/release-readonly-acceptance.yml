@@ -1,7 +1,7 @@
 name: Final release read-only production and preview acceptance
 on:
   push:
-    branches: ['release/phase3-trust-verified-20261019']
+    branches: ['audit/phase3-postrelease-readonly-20261019']
 permissions:
   contents: read
 jobs:
