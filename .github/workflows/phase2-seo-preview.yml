@@ -1,0 +1,29 @@
+name: Phase 2 SEO preview smoke
+on:
+  push:
+    branches: ['improve/phase2-verified-technical-seo-20261018']
+permissions:
+  contents: read
+jobs:
+  seo-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Check branch preview robots, canonical, H1, JSON-LD and sitemap
+        env:
+          PHASE2_PREVIEW_URL: https://improve-phase2-verified-tech.chaskabox-site.pages.dev
+        run: node tools/phase2-seo-smoke.mjs
+      - name: Store SEO screenshots and results
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: phase2-seo-browser-evidence
+          path: test-results/phase2-seo/
+          retention-days: 7
