@@ -9,7 +9,7 @@ test('all storefront entry routes load the same versioned UX application and car
     assert.match(html,/\/app\.js\?v=20261018-audit2/,path);
     assert.match(html,/\/storefront-ux-refresh\.css\?v=20261017-p[12]/,path);
     assert.match(html,/\/home-hero-carousel\.css\?v=20261017-p2/,path);
-    assert.match(html,/\/home-hero-carousel\.js\?v=20261018-audit1/,path);
+    assert.match(html,/\/home-hero-carousel\.js\?v=20261018-approved-heroes/,path);
     assert.doesNotMatch(html,/\/(?:styles\.css|app\.js)\?v=20261012-release\?v=/,path);
   }
 });
