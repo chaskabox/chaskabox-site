@@ -49,15 +49,17 @@
       for(const [location,selector] of [['header','.hnav'],['header','.cb-subnav-links'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
         document.querySelectorAll(selector).forEach(el=>{
           el.replaceChildren();
+          let destination=el;
           if(selector==='.cb-subnav-links'){
             const category=document.createElement('a');category.className='cb-discover';category.href='/shop/';category.textContent='☰ Shop by Category';el.append(category);
+            destination=document.createElement('span');destination.className='cb-managed-nav';el.append(destination);
           }
           for(const row of d.navigation.filter(r=>r.location===location&&r.is_enabled).sort((a,b)=>a.position-b.position)){
             if(!safeUrl(row.url))continue;
             const a=document.createElement('a');a.textContent=row.label;a.href=row.url;
             if(row.is_external){a.target='_blank';a.rel='noopener noreferrer';}
             if(row.parent_id)a.style.paddingInlineStart='24px';
-            if(location==='footer')a.style.display='block';el.append(a);
+            if(location==='footer')a.style.display='block';destination.append(a);
           }
         });
       }
