@@ -34,8 +34,18 @@ await audit(production,'/shop/',async(p,e)=>{
  if(e.cards<1)throw Error('Public catalogue cards missing');
 });
 await audit(production,'/brands/',async(p,e)=>{
- e.brandLinks=await p.locator('a[href^="/brand/"]').count();
- if(e.brandLinks<1)throw Error('Brand directory empty');
+ await p.waitForTimeout(2600);
+ e.brandLinks=await p.locator('#brandGrid a[href^="/brand/"]').count();
+ e.brandGridText=(await p.locator('#brandGrid').innerText().catch(()=>'' )).slice(0,180);
+ e.brandCount=await p.locator('#brandCount').innerText().catch(()=>'');
+ e.brandRouter=await p.evaluate(()=>({render:typeof window.renderBrandsRoute,fetch:typeof window.fetchBrands}));
+ try{
+  const data=await p.request.get(production+'/api/brands',{timeout:12000});
+  e.brandsAPIStatus=data.status();const json=data.ok()?await data.json():{};
+  e.apiTotal=(json.brands||[]).length;
+  e.apiPublic=(json.brands||[]).filter(b=>Number(b.productCount)>0).length;
+ }catch(error){e.brandsAPIError=String(error).slice(0,150)}
+ if(e.brandLinks<1)throw Error('Brand directory empty after API/hydration check');
 });
 await audit(production,'/product/233/',async(p,e)=>{
  e.heading=await p.locator('h1:visible').first().innerText();
@@ -50,8 +60,10 @@ await audit(production,'/track-order.html',async(p,e)=>{
  if(!e.noindex?.includes('noindex'))throw Error('Tracking utility page indexable');
 });
 await audit(production,'/checkout.html',async(p,e)=>{
- e.hasForms=await p.locator('form').count();
- if(!e.hasForms)throw Error('Checkout form missing');
+ e.inputs=await p.locator('#f_fname,#f_phone,#f_addr,#f_city').count();
+ e.placeButton=await p.locator('#placeBtn').count();
+ e.checkoutWizard=await p.locator('#coMain').count();
+ if(e.inputs!==4||e.placeButton!==1||e.checkoutWizard!==1)throw Error('Checkout delivery fields/wizard missing');
 });
 await audit(production,'/admin.html',async(p,e)=>{
  e.noindex=await p.locator('meta[name="robots"]').getAttribute('content');
