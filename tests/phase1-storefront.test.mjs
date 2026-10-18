@@ -82,4 +82,8 @@ test('isolated preview mode is opt-in AND refuses production credentials',async(
  const manifest=await rpc(env,'storefront_manifest',{});
  assert.ok(manifest.categories.length>0);
  assert.ok((await sbRequest(env,'/brands',{query:'?is_visible=eq.true'})).length>0);
+ const hilal=previewRead('/brands',{query:'?slug=eq.hilal'})[0];
+ const brandRows=previewRead('/products',{query:'?brand_id=eq.'+hilal.id+'&visibility=eq.visible'});
+ assert.ok(brandRows.length>0);
+ assert.ok(brandRows.every(p=>p.brand==='Hilal'), 'Preview mock must never mix unrelated brands');
 });
