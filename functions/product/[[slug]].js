@@ -3,7 +3,7 @@ import {imageAttributes} from '../api/_lib/responsive-images.js';
 import {cataloguePhoto,photoUnderReview} from '../api/_lib/catalogue-photos.js';
 import { sbRequest } from '../api/_lib/db.js';
 import { LOCAL_PHOTOS } from '../api/_lib/local-photos.js';
-import { productImage, productSchema, breadcrumbSchema, CATEGORY_PATHS } from '../api/_lib/seo.js';
+import { productImage, productSchema, breadcrumbSchema, CATEGORY_PATHS, productPageTitle } from '../api/_lib/seo.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const json=s=>JSON.stringify(s).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 const image=s=>productImage(s,LOCAL_PHOTOS);
