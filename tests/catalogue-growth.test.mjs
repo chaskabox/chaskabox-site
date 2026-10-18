@@ -45,6 +45,8 @@ test('bundle details use public components and current prices without a fixed di
  p=bundleDetails(products.map(p=>p.id===1?{...p,price:400}:p),links)[0];assert.equal(p.bundle_savings,0);assert.equal(p.old_price,null);
  p=bundleDetails(products,links.concat({bundle_product_id:1,component_product_id:999,quantity:1}))[0];assert.equal(p.bundle_contents.length,0);assert.equal(p.old_price,null);assert.match(p.bundle_warning,/checked/);
 });
-test('organization return information refers to the actual policy without inventing a blanket return window',()=>{
- const p=organizationSchema().hasMerchantReturnPolicy;assert.equal(p.merchantReturnLink,'https://chaskabox.online/refund-policy/');assert.equal(p.merchantReturnDays,undefined);
+test('store schema does not misrepresent case-by-case resolution as guaranteed merchandise returns',()=>{
+ const p=organizationSchema();
+ assert.equal(p.hasMerchantReturnPolicy,undefined);
+ assert.equal(p.url,'https://chaskabox.online/');
 });
