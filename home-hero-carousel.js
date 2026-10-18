@@ -38,7 +38,7 @@
     {label:'Snack Picks',kick:'Snacks jo dil khush kar dein',
      eyebrow:'CHATPATA, MEETHA, CRUNCHY · PICK YOUR CHASKA',
      heading:'Apni Cravings Ka ',highlight:'Chaska Chuno!',
-     description:'Chatpatay, meethay aur crunchy favourites ek hi jagah. Apna next Chaska discover karein.'
+     description:'Chatpatay, meethay aur crunchy favourites ek hi jagah. Apna next Chaska discover karein.',
      primary:'Shop Snacks',href:'/shop/',secondary:'Browse Chaska Boxes',secondHref:'/bundles/'}
   ];
   const safeLink=s=>typeof s==='string'&&(/^(?:\/(?!\/)|https:\/\/)[^"'<>\s]*$/.test(s));
