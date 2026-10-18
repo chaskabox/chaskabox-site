@@ -20,7 +20,7 @@ ChaskaBox Pakistan (https://chaskabox.online/) is an online store for packaged P
 ChaskaBox sources products **after** an order is received, checks sealed retail packs and quantities, and packs for dispatch. If an item cannot be sourced, support contacts the customer before substitution. A product being listed does not imply existing warehouse inventory.
 
 ## Shipping and payments
-ChaskaBox delivers across Pakistan. Delivery times are estimates, not guaranteed courier deadlines. Depending on the currently enabled checkout settings, Cash on Delivery can require a verified advance before dispatch; delivery fees, advance amounts and prepaid free-shipping thresholds are configurable and may change. See the [current shipping policy](https://chaskabox.online/shipping-policy/), [FAQ](https://chaskabox.online/faq/) and checkout for exact terms. A payment screenshot alone does not confirm receipt of funds.
+ChaskaBox delivers across Pakistan. Delivery times are estimates and not fixed courier deadlines. Depending on the currently enabled checkout settings, Cash on Delivery can require a verified advance before dispatch; delivery fees, advance amounts and prepaid free-shipping thresholds are configurable and may change. See the [current shipping policy](https://chaskabox.online/shipping-policy/), [FAQ](https://chaskabox.online/faq/) and checkout for exact terms. A payment screenshot alone does not confirm receipt of funds.
 
 ## Questions and policies
 - [FAQ](https://chaskabox.online/faq/): Ordering and delivery guidance.
