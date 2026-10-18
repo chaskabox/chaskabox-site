@@ -146,6 +146,11 @@
   }
   function wireNav(){
     $$('.admin-nav-btn').forEach(btn=>btn.addEventListener('click',()=>setTimeout(()=>{ $('#adminSidebar').classList.remove('open'); $('#sidebarBackdrop')?.classList.remove('show'); loadView(btn.dataset.view); },0),true));
+    // Dashboard quick links must load the same protected data as sidebar links.
+    document.addEventListener('click',event=>{
+      const jump=event.target.closest?.('[data-jump]');
+      if(jump)setTimeout(()=>loadView(jump.dataset.jump),0);
+    });
   }
   async function loadView(name){
     if(!canOpenAdminView(name)){toast('Your staff role does not allow this panel.');return;}
