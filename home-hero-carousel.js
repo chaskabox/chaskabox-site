@@ -48,6 +48,9 @@
   let slides=defaults.map(s=>({...s}));
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');
   const dots=Array.from(controls.querySelectorAll('[data-hero-dot]'));
+  // Five-second rotation within the owner's requested 4–6 second window.
+  // Respect reduced motion, hidden tabs, hover and keyboard focus.
+  const AUTO_ADVANCE_MS=5000;
   let current=0,timer=null;
   const stop=()=>{if(timer!==null){clearInterval(timer);timer=null;}};
   function show(index){
@@ -89,8 +92,15 @@
   }
   function start(){
     stop();
-    if(media.matches||document.hidden||root.hidden||slides.length<2)return;
-    // Banners advance only through the visible controls; no automatic rotation.
+    if(media.matches||document.hidden||root.hidden||!root.getClientRects().length||slides.length<2)return;
+    if(root.matches(':hover')||root.contains(document.activeElement))return;
+    timer=setInterval(()=>{
+      if(media.matches||document.hidden||root.hidden||!root.getClientRects().length){
+        stop();
+        return;
+      }
+      show(current+1);
+    },AUTO_ADVANCE_MS);
   }
   controls.addEventListener('click',event=>{
     const btn=event.target.closest('button');

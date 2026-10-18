@@ -209,3 +209,106 @@ body.reference-storefront{background:white;color:#152c4d}
 }
 
 @media(max-width:760px){#view-home .herotxt>p{display:none}#view-home .herotxt h1{margin-bottom:14px}}
+
+
+/* 2026-10-18: compact balanced header / navigation refinement.
+   Existing links, WhatsApp CTA, approved logo and mobile menu remain intact. */
+@media(min-width:761px){
+  .reference-storefront .hwrap{
+    gap:clamp(9px,1.25vw,20px)!important;
+    justify-content:space-between!important;
+  }
+  .reference-storefront .header-search{
+    flex:1 1 540px!important;
+    width:auto!important;
+    max-width:575px!important;
+    min-width:230px!important;
+    height:50px!important;
+    margin:0 auto!important;
+    border-width:2px!important;
+    border-radius:13px!important;
+    box-shadow:0 2px 9px rgba(9,44,85,.04)!important;
+  }
+  .reference-storefront .header-search input{
+    padding-inline:15px!important;
+    font-size:13px!important;
+    min-width:0!important;
+  }
+  .reference-storefront .header-search:focus-within{
+    border-color:#b7cadf!important;
+    box-shadow:0 0 0 3px #1c5e951c!important;
+  }
+  .reference-storefront .cb-subnav{
+    background:#f8fafc!important;
+    border:1px solid #e8eef5!important;
+    border-bottom-color:#e0e8f1!important;
+    border-radius:10px 10px 0 0!important;
+    box-shadow:0 2px 10px #09284708!important;
+  }
+  .reference-storefront .cb-subnav-inner{
+    min-height:54px!important;
+    padding:4px 15px!important;
+    gap:12px!important;
+  }
+  .reference-storefront .cb-subnav-links{
+    flex:1 1 auto!important;
+    min-width:0!important;
+    gap:clamp(1px,.34vw,6px)!important;
+    overflow-x:auto!important;
+    overscroll-behavior-x:contain;
+    scrollbar-width:thin;
+  }
+  .reference-storefront .cb-subnav a{
+    padding:10px clamp(7px,.86vw,13px)!important;
+    min-height:43px!important;
+    font-size:clamp(11px,.83vw,12.5px)!important;
+    line-height:1.35!important;
+    border-radius:8px!important;
+  }
+  .reference-storefront .cb-subnav a[aria-current=page]{
+    background:#fff3e8!important;
+    color:#b9360b!important;
+    box-shadow:inset 0 -2px #f06a18!important;
+  }
+  .reference-storefront .cb-subnav .cb-discover{
+    padding-inline:12px!important;
+    background:#ecf2f8!important;
+    border-radius:8px!important;
+  }
+  .reference-storefront .cb-subnav .cb-contact{
+    flex:0 0 auto!important;
+    margin-left:auto!important;
+    min-height:43px!important;
+    padding:10px 15px!important;
+    background:#087d3b!important;
+    color:#fff!important;
+    white-space:nowrap!important;
+  }
+  .reference-storefront .cb-subnav a:focus-visible,
+  .reference-storefront .header-search button:focus-visible{
+    outline:3px solid #f09b2b!important;
+    outline-offset:2px!important;
+  }
+}
+@media(min-width:761px) and (max-width:1080px){
+  .reference-storefront .header-search{
+    max-width:450px!important;
+    flex:1 1 320px!important;
+  }
+  .reference-storefront .cb-subnav-inner{gap:8px!important;padding-inline:10px!important}
+  .reference-storefront .cb-subnav .cb-contact{padding-inline:11px!important}
+}
+@media(max-width:760px){
+  .reference-storefront .cb-mobile-search{
+    height:46px!important;
+    border-width:2px!important;
+    border-radius:12px!important;
+    box-shadow:0 2px 9px #082b5508!important;
+  }
+  .reference-storefront .cb-mobile-search input{
+    font-size:14px!important;
+  }
+  .reference-storefront .cb-mobile-search:focus-within{
+    border-color:#b7cadf!important;
+  }
+}
