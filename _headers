@@ -56,3 +56,12 @@
 
 /product-runtime.js
   Cache-Control: public, max-age=300
+
+# Reusable static assets: keep the mutable product-photo cache unchanged.
+# Change the date-stamped category sprite URL whenever the artwork changes.
+/category-art/approved-category-sprite-hq-20261018.webp
+  Cache-Control: public, max-age=604800
+
+# Font bytes remain the same across store visits; avoid revalidation on every page.
+/fonts/*
+  Cache-Control: public, max-age=2592000
