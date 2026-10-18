@@ -212,12 +212,15 @@ try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
   await page.evaluate(()=>document.fonts.ready);
+  // The desktop/mobile approved AVIF banner may finish decoding after DOMContentLoaded.
+  // Wait for the actual hero artwork to decode before measuring it.
+  await page.locator('#view-home .hero-scene').evaluate(async img=>{await img.decode()});
   const layout=await page.evaluate(()=>{
    const hero=document.querySelector('#view-home .hero'),box=hero.getBoundingClientRect();
    return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundColor,font:getComputedStyle(hero.querySelector('h1 .hl')).fontFamily,showcase:!!hero.querySelector('.hero-scene'),imageLoaded:hero.querySelector('.hero-scene')?.naturalWidth>0,cta:hero.querySelectorAll('.hero-actions a').length};
   });
   if(layout.width<width-60||layout.width>width||layout.height>(width<=760?760:610))throw Error('Editorial hero layout mismatch '+JSON.stringify({width,...layout}));
-  if(!/(system-ui|Segoe UI)/i.test(layout.font)||!layout.showcase||!layout.imageLoaded||layout.cta!==2)throw Error('Nostalgic packing hero photo or shopping actions missing');
+  if(!/(system-ui|Segoe UI)/i.test(layout.font)||!layout.showcase||!layout.imageLoaded||layout.cta!==2)throw Error('Approved hero artwork or shopping actions missing '+JSON.stringify({width,...layout}));
   const polish=await page.evaluate(()=>({
    duplicateTrust:getComputedStyle(document.querySelector('#view-home .herotrust')).display,
    firstCardTop:Math.min(...[...document.querySelectorAll('#view-home .card')].map(el=>el.getBoundingClientRect().top)),
