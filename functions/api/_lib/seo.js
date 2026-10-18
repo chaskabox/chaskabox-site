@@ -30,6 +30,15 @@ export function stockAvailability(state) {
   }
 }
 
+// Presentation-only title guard; catalog records and explicit pack data remain untouched.
+export function productPageTitle(p) {
+  const name=String(p.name||''),pack=String(p.pack||'').trim();
+  const fallback=name+(pack&&!name.toLowerCase().includes(pack.toLowerCase())?' — '+pack:'')+' | ChaskaBox';
+  return String(p.seo_title||fallback).trim()
+    .replace(/(Pack of\s+(\d+))(?:\s*[—-]\s*Pack of\s+\2)+/gi,'$1')
+    .replace(/(?:\s*\|\s*ChaskaBox){2,}$/i,' | ChaskaBox')
+    .replace(/^(ChaskaBox\s*\|.+?)\s*\|\s*ChaskaBox$/i,'$1');
+}
 export function productSchema(p, canonical, photo) {
   const n = Number(p.price);
   const offer = {

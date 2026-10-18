@@ -294,6 +294,9 @@ function renderShopCategoryRail(){
     const key=String(product.category||'').trim();
     if(key)totals.set(key,(totals.get(key)||0)+1);
   }
+  // Bundles route uses the bundle flag, which includes Top Pops bundles in other categories.
+  const bundleCount=products.filter(p=>p.bundle).length;
+  if(bundleCount)totals.set('Bundles',bundleCount);
   const configured=Array.isArray(STORE_CONFIG?.categories)?STORE_CONFIG.categories
     .map(c=>String(c.name||'').trim()).filter(Boolean):CAT_ORDER.filter(x=>x!=='Bundles');
   const categories=[...new Set([...configured,...totals.keys()])].filter(c=>totals.has(c));
@@ -378,7 +381,7 @@ function toggleBrand(el){
 }
 function filteredShop(){
   let list=publicProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
-  if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>category?category.product_ids.includes(Number(p.id)):(cat==='Bundles'?p.bundle:p.category===cat));}
+  if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>cat==='Bundles'?p.bundle:(category?category.product_ids.includes(Number(p.id)):p.category===cat));}
   if(badge)list=list.filter(p=>badge==='Sale'?p.oldPrice>p.price:p.badge===badge);
   if(q){const n=q.toLowerCase().trim();list=list.filter(p=>[p.name,p.pack,p.category,getBrand(p),p.desc].filter(Boolean).join(' ').toLowerCase().includes(n));}
   if(brands.length)list=list.filter(p=>brands.includes(getBrand(p)));
@@ -463,8 +466,8 @@ async function renderSmartSearchResults(query,seq){
 }
 function renderShopResults(){
   const list=filteredShop();
-  $('#catCount').textContent=list.length+' products';
-  const cnt=document.getElementById('shopResultCount');if(cnt)cnt.textContent=list.length+' products';
+  $('#catCount').textContent=list.length+' '+(list.length===1?'product':'products');
+  const cnt=document.getElementById('shopResultCount');if(cnt)cnt.textContent=list.length+' '+(list.length===1?'product':'products');
   const canSmart=!list.length&&String(shopState.q||'').trim().length>=2&&!shopState.cat&&!shopState.brands.length&&!shopState.maxPrice&&!shopState.pack&&!shopState.badge;
   if(list.length){clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML=list.map((p,i)=>cardHTML(p,i===0?'high':i===1?'eager':undefined)).join('');}
   else if(canSmart){const seq=++smartSearchSeq;clearTimeout(smartSearchTimer);$('#shopGrid').innerHTML='<div class="empty">✦ Looking for smart matches…</div>';smartSearchTimer=setTimeout(()=>renderSmartSearchResults(shopState.q,seq),420);}
@@ -542,7 +545,7 @@ function renderProductDetail(id){
           <button class="pdbtn" ${p.stockState==='unavailable'?'disabled':''} onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">${p.stockState==='unavailable'?'Currently unavailable':'Add to Bag'}</button>
           <button class="pdwish${typeof isWished==='function'&&isWished(p.id)?' on':''}" aria-label="Add ${esc(p.name)} to wishlist" onclick="toggleWishlist(${p.id},this)">♥</button>
         </div>
-        <dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||'ChaskaBox')}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack||'See listed contents')}</dd></div><div><dt>Availability</dt><dd>${p.stockState==='sourced_after_order'?'Sourced after order; confirmed before fulfilment':p.stockState==='unavailable'?'Currently unavailable':'See current order details'}</dd></div></dl>
+        <dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||'Not specified')}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack||'See listed contents')}</dd></div><div><dt>Availability</dt><dd>${p.stockState==='sourced_after_order'?'Sourced after order; confirmed before fulfilment':p.stockState==='unavailable'?'Currently unavailable':'See current order details'}</dd></div></dl>
         ${bundleContentsHTML(p)}
         <div class="dbox"><b>Estimated delivery</b><small>Pakistan-wide delivery window<br><span class="ddates">${deliveryRange()}</span></small></div>
         <div class="pd-meta"><span>🚚 ${esc(deliveryFeeCopy())}</span><span>Delivery fees confirmed at checkout for your city</span><span>✅ Original sealed packs</span></div>${codAdvanceNote()}
@@ -582,15 +585,20 @@ function bundleContentsHTML(p){
  const items=p.bundleContents.map(i=>'<li>'+Number(i.quantity)+' × <a href="'+productHref(i.product_id)+'">'+esc(i.name)+'</a> — '+esc(i.pack)+'</li>').join('');
  return '<section class="bundle-contents"><h2>Included packs</h2><ul>'+items+'</ul><p>'+((Number(p.retailValue)>0)?'Current individual pack total: '+fmt(p.retailValue)+'. ':'')+((Number(p.bundleSavings)>0)?'Save '+fmt(p.bundleSavings)+' against these current packs.':'')+'</p></section>';
 }
+function productPageTitle(p){
+ const name=String(p.name||''),pack=String(p.pack||'').trim();
+ const raw=String(p.seoTitle||name+(pack&&!name.toLowerCase().includes(pack.toLowerCase())?' — '+pack:'')+' | ChaskaBox').trim();
+ return raw.replace(/(Pack of\s+(\d+))(?:\s*[—-]\s*Pack of\s+\2)+/gi,'$1').replace(/(?:\s*\|\s*ChaskaBox){2,}$/i,' | ChaskaBox').replace(/^(ChaskaBox\s*\|.+?)\s*\|\s*ChaskaBox$/i,'$1');
+}
 function setProductMeta(p){
- const pack=String(p.pack||''),title=p.seoTitle||p.name+(pack&&!String(p.name).toLowerCase().includes(pack.toLowerCase())?' — '+pack:'')+' | ChaskaBox';
+ const title=productPageTitle(p);
  const description=p.seoDescription||p.desc||'Compare the listed pack and order details at ChaskaBox Pakistan.';
  setPageMeta(title,productHref(p.id),false,description);setMetaTag('property','og:type','product');
  const photo=hasPhoto(p)?new URL(assetUrl(p.img),'https://chaskabox.online').href:'https://chaskabox.online/images/logo-approved-20261017.png';
  setMetaTag('property','og:image',photo);setMetaTag('name','twitter:image',photo);
  const canonical='https://chaskabox.online'+productHref(p.id),offer={'@type':'Offer',url:canonical,priceCurrency:'PKR',price:String(p.price),seller:{'@type':'Organization',name:'ChaskaBox'}};
  const availability={available:'InStock',limited:'LimitedAvailability',unavailable:'OutOfStock'}[p.stockState];if(availability)offer.availability='https://schema.org/'+availability;
- const schema={'@context':'https://schema.org','@type':'Product',name:p.name,description,sku:String(p.id),url:canonical,brand:{'@type':'Brand',name:p.brand||'ChaskaBox'},...(hasPhoto(p)?{image:[photo]}:{}),offers:offer};
+ const schema={'@context':'https://schema.org','@type':'Product',name:p.name,description,sku:String(p.id),url:canonical,...(String(p.brand||'').trim()?{brand:{'@type':'Brand',name:String(p.brand).trim()}}:{}),...(hasPhoto(p)?{image:[photo]}:{}),...(Number.isFinite(Number(p.price))&&Number(p.price)>=0?{offers:offer}:{})};
  for(const [id,data] of [['product-schema',schema],['breadcrumb-schema',{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:'https://chaskabox.online/'},{'@type':'ListItem',position:2,name:p.category||'Shop',item:'https://chaskabox.online'+categoryPath(p.category)},{'@type':'ListItem',position:3,name:p.name,item:canonical}]}]]){
   let el=document.getElementById(id);if(!el){el=document.createElement('script');el.type='application/ld+json';el.id=id;document.head.appendChild(el);}el.textContent=JSON.stringify(data);
  }
@@ -765,7 +773,8 @@ function renderHomeRoute(){
   // fetch and a destructive re-render of images/shelves in the first viewport.
 }
 function renderShopRoute(){
-  setPageMeta(SEO_CATEGORY_DATA.shop.title,'/shop/',false,SEO_CATEGORY_DATA.shop.description);
+  const saleRoute=new URLSearchParams(location.search).get('badge')==='Sale';
+  setPageMeta(saleRoute?'Snack Deals | ChaskaBox Pakistan':SEO_CATEGORY_DATA.shop.title,'/shop/',false,saleRoute?'Browse current snack deals and compare listed prices at ChaskaBox Pakistan.':SEO_CATEGORY_DATA.shop.description);
   setCategorySeoCopy(SEO_CATEGORY_DATA.shop);
   setCategoryBreadcrumb('All Snacks','/shop/');
   shopState=shopRouteFilters();
@@ -1779,7 +1788,7 @@ function renderMnav(){
   $('#mnavList').innerHTML=catsHtml+brandsHtml+`
     <div style="border-top:1px solid var(--border);margin:8px 0"></div>
     <a href="/bundles/">Chaska Boxes</a>
-    <a href="/shop/" onclick="goBadge('Sale');return false">🔥 Deals</a>
+    <a href="/shop/?badge=Sale" onclick="goBadge('Sale');return false">🔥 Deals</a>
     <div style="border-top:1px solid var(--border);margin:8px 0"></div>
     <a href="/account/" onclick="closeMnav()">👤 My Account</a>`;
 }
