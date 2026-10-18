@@ -14,11 +14,11 @@ const entries=[
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const catalog=()=>{try{return typeof activeProducts==='function'?activeProducts():[]}catch{return[]}};
 const matches=(q,s)=>typeof fuzzyMatch==='function'?fuzzyMatch(q,s):s.includes(q);
-const nav=document.querySelector('.cb-subnav-inner');
+const nav=document.querySelector('#view-home .section.discover .section-head');
 if(nav){
 const holder=document.createElement('div');holder.className='cbx-cat-holder';
-holder.innerHTML='<button type="button" class="cbx-cat-trigger" aria-expanded="false" aria-controls="cbxCatPanel"><span aria-hidden="true">▦</span> Shop by Category <span aria-hidden="true">⌄</span></button><section class="cbx-cat-panel" id="cbxCatPanel" aria-label="Snack categories" hidden><div class="cbx-cat-heading"><div><strong>Find your Chaska</strong><small>Explore original Pakistani snacks</small></div><a href="/shop/">View all snacks →</a></div><div class="cbx-cat-grid"></div></section>';
-nav.prepend(holder);
+holder.innerHTML='<button type="button" class="cbx-cat-trigger" aria-expanded="false" aria-controls="cbxCatPanel"><span aria-hidden="true">▦</span> All Categories <span aria-hidden="true">⌄</span></button><section class="cbx-cat-panel" id="cbxCatPanel" aria-label="Snack categories" hidden><div class="cbx-cat-heading"><div><strong>Find your Chaska</strong><small>Explore original Pakistani snacks</small></div><a href="/shop/">View all snacks →</a></div><div class="cbx-cat-grid"></div></section>';
+nav.insertBefore(holder,nav.lastElementChild);
 const btn=holder.querySelector('button'),panel=holder.querySelector('section'),grid=holder.querySelector('.cbx-cat-grid');
 const render=()=>{const counts=new Set(catalog().map(p=>p.category));const available=counts.size?entries.filter(e=>counts.has(e[0])):entries;grid.innerHTML=(available.length?available:entries).map(e=>'<a href="'+e[1]+'" class="cbx-cat-card"><span class="cbx-cat-photo" style="--cbx-pos:'+e[2]+'" aria-hidden="true"></span><span class="cbx-cat-name">'+esc(e[0])+'<small>Explore products →</small></span></a>').join('')};
 const set=open=>{if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open)};
@@ -30,6 +30,29 @@ document.addEventListener('pointerdown',e=>{if(!holder.contains(e.target))set(fa
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){set(false);btn.focus()}});
 render();
 }
+// Move the REAL admin-managed navigation into the header: subsequent CMS updates
+// still target .cb-subnav-links, so no separate stale or hard-coded nav copy exists.
+const mainHeader=document.querySelector('header .hwrap');
+const managedNav=document.querySelector('.cb-subnav-links');
+const whatsapp=document.querySelector('.cb-subnav .cb-contact');
+if(mainHeader&&managedNav&&whatsapp){
+  managedNav.classList.add('cbx-header-links');
+  managedNav.setAttribute('role','navigation');
+  managedNav.setAttribute('aria-label','Shopping navigation');
+  whatsapp.classList.add('cbx-header-whatsapp');
+  whatsapp.setAttribute('aria-label','Order via WhatsApp');
+  mainHeader.append(managedNav,whatsapp);
+}
+// The old stylesheet hid all floating-help text on mobile. Keep a readable
+// accessible text label; do not alter AI answers, chat handlers or notifications.
+const fab=document.getElementById('helpFab');
+if(fab){
+  fab.textContent='✦ Chaska AI';
+  fab.setAttribute('aria-label','Open Chaska AI assistant');
+  fab.setAttribute('title','Chaska AI – snack shopping help');
+}
+const aiTitle=document.querySelector('#aimodal .aihead b');
+if(aiTitle)aiTitle.textContent='✦ Chaska AI';
 // Original desktop autocomplete remains attached to the existing catalog and search form.
 // Extend arrow/enter support to brands, categories and products (not products only).
 const input=document.getElementById('headerSearch'),suggestions=document.getElementById('headerSearchSuggestions');
@@ -55,7 +78,7 @@ document.addEventListener('pointerdown',e=>{if(!e.target.closest('.header-search
 const form=document.querySelector('.cb-mobile-search');
 if(form){
 const row=document.createElement('div');row.className='cbx-mobile-row';form.before(row);row.append(form);
-const cat=document.createElement('button');cat.type='button';cat.className='cbx-mobile-cat';cat.textContent='☷ Categories';cat.addEventListener('click',()=>{if(typeof toggleMnav==='function')toggleMnav(true)});row.prepend(cat);
+// Mobile category browsing remains available in the hamburger menu and in the section below the hero.
 const field=form.querySelector('input[name="q"]'),box=document.createElement('div');box.className='cbx-mobile-results';box.id='cbxMobileResults';box.setAttribute('role','listbox');box.hidden=true;form.append(box);
 if(field){
 field.setAttribute('role','combobox');field.setAttribute('aria-controls',box.id);field.setAttribute('aria-autocomplete','list');field.setAttribute('aria-expanded','false');
