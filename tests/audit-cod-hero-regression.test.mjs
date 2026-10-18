@@ -22,8 +22,8 @@ test('public COD amount follows owner settings rather than hardcoded marketing v
 });
 
 test('three approved hero assets preserve their reference compositions and consistent trust disclosures',()=>{
-  assert.match(root,/hero-editorial-20261018\.css/);
-  assert.match(root,/hero-three-approved-20261018\.css/);
+  assert.match(readFileSync(new URL('../storefront-bundle.css',import.meta.url),'utf8'),/hero-editorial-20261018\.css/);
+  assert.match(readFileSync(new URL('../storefront-bundle.css',import.meta.url),'utf8'),/hero-three-approved-20261018\.css/);
   assert.match(root,/<section class="hero hero-editorial hero-packing-preview hero-approved-three"/);
   assert.match(root,/<img class="hero-scene"[^>]*chaskabox-approved-hero-01-20261018\.avif"[^>]*fetchpriority="high"/);
   const slider=readFileSync(new URL('../home-hero-carousel.js',import.meta.url),'utf8');

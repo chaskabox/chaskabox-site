@@ -7,16 +7,16 @@ const load=path=>readFileSync(new URL(path,root),'utf8');
 
 const expectedViews=[
  'dashboard','orders','couriers','resolutions','coupons','shipping','analytics','backup','studio','products',
- 'categories','brands','boxes','homepage','navigation','theme','customers','reviews','media',
+ 'categories','brands','boxes','pages','homepage','navigation','theme','customers','reviews','media',
  'notifications','agents','assistant','health','preview','settings','security'
 ];
-test('V4 preserves all 26 admin view bindings exactly once in six accessible groups',()=>{
+test('V4 preserves all 27 admin view bindings exactly once in six accessible groups',()=>{
  const html=load('admin.html');
  const nav=html.match(/<nav class="admin-nav"[^>]*>[\s\S]*?<\/nav>/)?.[0];
  assert.ok(nav,'navigation exists');
  const bindings=[...nav.matchAll(/class="admin-nav-btn[^"]*"[^>]*data-view="([^"]+)"/g)].map(x=>x[1]);
  assert.deepEqual(bindings.slice().sort(),expectedViews.slice().sort());
- assert.equal(new Set(bindings).size,26);
+ assert.equal(new Set(bindings).size,27);
  assert.equal((nav.match(/<details class="admin-nav-group"/g)||[]).length,6);
  assert.equal((nav.match(/<summary>/g)||[]).length,6);
  assert.match(html,/id="adminNavSearch"[^>]*aria-controls="adminNavGroups"/);

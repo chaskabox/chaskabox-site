@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const content=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('final preview renders navigation and trust messaging without unsupported offers',()=>{
   const html=content('index.html');
-  for(const token of ['class="cb-subnav"','class="cb-trust-rail"','cbBoxMedia','cbDealsMedia','final-homepage.css'])
+  for(const token of ['class="cb-subnav"','class="cb-trust-rail"','cbBoxMedia','cbDealsMedia','storefront-bundle.css'])
     assert.ok(html.includes(token),token);
   assert.doesNotMatch(html,/Free Delivery on Orders Above Rs\. 2,500|Easy Returns|100% Guaranteed Savings/);
 });

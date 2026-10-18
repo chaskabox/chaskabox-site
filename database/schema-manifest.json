@@ -23,7 +23,8 @@
     "database/migrations/20261017180000_courier_cod_settlements.sql",
     "database/migrations/20261017190000_online_payment_reconciliation.sql",
     "database/migrations/20261017210000_bop_card_gateway_readiness.sql",
-    "database/migrations/20261017230000_mandatory_cod_advance.sql"
+    "database/migrations/20261017230000_mandatory_cod_advance.sql",
+    "database/migrations/20261018100000_page_copy_controls.sql"
   ],
   "managed_history_observed": [
     {

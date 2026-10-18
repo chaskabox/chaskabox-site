@@ -8,6 +8,8 @@ import {cataloguePhoto,photoUnderReview} from '../functions/api/_lib/catalogue-p
 import {renderCataloguePage,renderBrandPage} from '../functions/api/_lib/catalogue-page.js';
 import {onRequestGet as occasionPage} from '../functions/snack-boxes/[[slug]].js';
 import {onRequestGet as productPage} from '../functions/product/[[slug]].js';
+import {onRequestGet as faqPage} from '../functions/faq/index.js';
+import {PAGE_COPY_DEFINITIONS,validatePageCopy} from '../page-copy-contract.js';
 const args=process.argv.slice(2),option=(name,fallback)=>args.includes(name)?args[args.indexOf(name)+1]:fallback;
 const root=path.resolve('.'),output=path.resolve(option('--output','test-results/browser'));await mkdir(output,{recursive:true});
 const raw=JSON.parse(await readFile(option('--catalogue','tests/fixtures/browser-catalogue.json'),'utf8'));
@@ -71,14 +73,17 @@ const server=createServer(async(req,res)=>{try{
   if(p==='/api/admin/theme')return json(res,{theme:{}});
   if(p==='/api/admin/navigation')return json(res,{menus:[]});
   if(p==='/api/admin/brands')return json(res,{brands});
-  if(p==='/api/admin/ai-status')return json(res,{enabled:false,features:{},index:{remaining:1}});
+  if(p==='/api/admin/ai-status')return json(res,{enabled:false,reasons:['Synthetic paused state'],models:{text:'synthetic'},budget:{accounted_neuron_estimate:0,effective_budget:4000,features:{text:false,image:false,embedding:false}},index:{current:0,visible:products.length,remaining:products.length},checked_at:new Date().toISOString()});
+  if(p==='/api/admin/pages'){
+   const key=u.searchParams.get('key');return json(res,key?{definition:PAGE_COPY_DEFINITIONS[key],page:{key,revision:0,published:{fields:{}},draft:null,versions:[]}}:{pages:Object.entries(PAGE_COPY_DEFINITIONS).map(([key,d])=>({key,name:d.name,path:d.path,fields:Object.keys(d.fields).length}))});
+  }
   if(req.method!=='GET')return json(res,{error:{message:'Mutations disabled in browser fixture'}},503);
   return json(res,{});
  }
  const parts=p.split('/').filter(Boolean);
- if(p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'){
+ if(p==='/faq/'||p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'){
   const ctx={params:{slug:parts[0]==='snack-boxes'?parts.slice(1):parts[1]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async request=>{let filename=path.join(root,new URL(request.url).pathname,'index.html');return new Response(await readFile(filename).catch(()=>Buffer.from(shell)));}}}};
-  const response=parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
+  const response=p==='/faq/'?await faqPage(ctx):parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
   res.writeHead(response.status,{'Content-Type':'text/html'});return res.end((await response.text()).replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
  }
  if(/^\/product\/\d+\/$/.test(p)){
@@ -510,6 +515,40 @@ try{
   results.interactions.push({case:'media assignment and upload handlers initialize for original photos',pass:await page.locator('[data-assign-media]').evaluate(e=>typeof e.onclick==='function')&&await page.locator('[data-delete-media]').evaluate(e=>typeof e.onclick==='function')&&!await page.locator('#mediaUpload').isDisabled()});
   await context.close();
  }
+ // Synthetic browser acceptance for copy persistence and the AI UI contract.
+ // Production Auth/provider/payment acceptance remains a separate live check.
+ {
+  const {context,page}=await contextFor(390,'owner');
+  let state={key:'about',revision:0,published:{fields:{}},draft:null,versions:[]},lastAI=null;
+  await context.route('**/api/admin/pages**',async route=>{
+   const request=route.request(),u=new URL(request.url());
+   if(request.method()==='GET')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(u.searchParams.has('key')?{page:state,definition:PAGE_COPY_DEFINITIONS[u.searchParams.get('key')]}:{pages:[{key:'about',name:'About',path:'/about/',fields:Object.keys(PAGE_COPY_DEFINITIONS.about.fields).length}]})});
+   const b=request.postDataJSON();if(b.expected_revision!==state.revision)return route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({error:{message:'Synthetic stale revision'}})});
+   if(b.action==='draft')state={...state,draft:validatePageCopy('about',b.content),revision:state.revision+1};
+   else{const next=b.action==='rollback'?state.versions.find(v=>v.id===b.version_id).before_content:state.draft;const version={id:state.versions.length+1,before_content:structuredClone(state.published),after_content:structuredClone(next),created_at:new Date().toISOString()};state={...state,published:next,draft:null,revision:state.revision+1,versions:[version,...state.versions]};}
+   return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({page:state})});
+  });
+  await context.route('**/api/admin/ai-status',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({enabled:true,reasons:[],models:{text:'synthetic-provider'},budget:{accounted_neuron_estimate:3,effective_budget:4000,features:{text:true,image:false,embedding:true}},index:{current:products.length,visible:products.length,remaining:0},checked_at:new Date().toISOString()})}));
+  await context.route('**/api/admin/ai',route=>{lastAI=route.request().postDataJSON();return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({draft:'Synthetic reviewed copy from supplied facts.',model:'synthetic-provider',budget:{accounted_neuron_estimate:3,policy_budget:4000}})});});
+  await context.route('**/api/admin/ai-selftest',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({passed:true,response:'ChaskaBox AI is ready.',model:'synthetic-provider',cached:false})}));
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');await openAdminPanel(page,'pages');
+  const field=Object.keys(PAGE_COPY_DEFINITIONS.about.fields).find(k=>PAGE_COPY_DEFINITIONS.about.fields[k].text.startsWith('ChaskaBox is a Pakistani'))||Object.keys(PAGE_COPY_DEFINITIONS.about.fields)[0];
+  const input=page.locator('[data-copy-field="'+field+'"]');await input.fill('Synthetic public page copy reviewed by owner.');await page.locator('[data-copy-meta="seo_title"]').fill('Synthetic owner page title');
+  await page.getByRole('button',{name:'Save draft',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#pageCopyEditor .safe-note')?.textContent.includes('Revision 1'));
+  results.interactions.push({case:'page copy draft is read back and remains unpublished',pass:state.draft.fields[field]==='Synthetic public page copy reviewed by owner.'&&Object.keys(state.published.fields).length===0});
+  await page.getByRole('button',{name:'Publish saved draft',exact:true}).click();await page.getByRole('dialog').getByText('Synthetic public page copy reviewed by owner.',{exact:true}).waitFor();await page.getByRole('button',{name:'Confirm publish',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#pageCopyEditor .safe-note')?.textContent.includes('Revision 2'));
+  results.interactions.push({case:'reviewed page draft publishes with SEO and fresh readback',pass:state.published.fields[field]==='Synthetic public page copy reviewed by owner.'&&state.published.seo_title==='Synthetic owner page title'&&state.draft===null});
+  await page.getByText('Published version history (1 recent)',{exact:true}).click();await page.getByRole('button',{name:'Review restore',exact:true}).click();await page.getByRole('button',{name:'Confirm publish',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#pageCopyEditor .safe-note')?.textContent.includes('Revision 3'));
+  results.interactions.push({case:'page restore reviews prior copy and creates another version',pass:Object.keys(state.published.fields).length===0&&state.versions.length===2});
+  await page.locator('[data-copy-field="'+field+'"]').click();await page.getByRole('button',{name:'AI rewrite selected text',exact:true}).click();await page.getByRole('dialog').getByRole('button',{name:'Use in draft editor',exact:true}).click();
+  results.interactions.push({case:'AI page rewrite changes editor only and never auto-publishes',pass:await page.locator('[data-copy-field="'+field+'"]').inputValue()==='Synthetic reviewed copy from supplied facts.'&&Object.keys(state.published.fields).length===0});
+  if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Page copy editor overflows mobile width');
+  await openAdminPanel(page,'assistant');await page.locator('#aiLiveState').getByText('Text AI ready',{exact:true}).waitFor();await page.locator('#aiContextProduct').selectOption(String(products[0].id));await page.locator('[data-ai="description"]').click();await page.locator('#runAiBtn').click();await page.locator('#aiOutput').getByText('Synthetic reviewed copy from supplied facts.',{exact:true}).waitFor();
+  results.interactions.push({case:'AI Center sends selected saved product ID to grounded draft API',pass:lastAI?.context?.product_id===products[0].id&&lastAI?.task==='product_description'});
+  await page.getByRole('button',{name:'Test actual AI response',exact:true}).click();await page.waitForFunction(()=>document.getElementById('aiLiveTest')?.textContent.startsWith('Passed:'));
+  results.interactions.push({case:'AI connection result and current budget/index render from endpoint evidence',pass:(await page.locator('#aiLiveTest').innerText()).includes('ChaskaBox AI is ready.')});
+  await context.close();
+ }
  if(!args.includes('--quick'))for(const role of ['owner','manager','fulfilment','content']){
   const {context,page}=await contextFor(1440,role);await inspect(page,'/admin/',1440,role);
   results.interactions.push({case:role+' bootstrap',pass:(await page.locator('#backendState').innerText()).includes(role)});
@@ -517,7 +556,7 @@ try{
    // One synthetic navigation pass over every owner-facing panel; source wiring
    // only. This does not replace authenticated persistence/provider acceptance.
    const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
-   if(panelKeys.length!==26)throw Error('Expected Dashboard plus 25 owner panel targets, got '+panelKeys.length);
+   if(panelKeys.length!==27)throw Error('Expected Dashboard plus 26 owner panel targets, got '+panelKeys.length);
    for(const key of panelKeys){
     await openAdminPanel(page,key);
     const target=page.locator('#view-'+key);

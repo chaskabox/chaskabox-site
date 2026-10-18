@@ -9,7 +9,7 @@ import {
 import { runTextAI, aiAvailable } from '../_lib/ai.js';
 
 import {TASKS as ALLOWED_TASKS,SENSITIVE_TASKS as SENSITIVE_INSIGHT_TASKS,draftContext,structuredDraft} from './_lib/ai-contract.js';
-import {publicCatalogue} from '../_lib/catalogue-search.js';
+import {publicCatalogue,publicSettings} from '../_lib/catalogue-search.js';
 import {parseRange} from './analytics/_lib/helpers.js';
 
 const BLOCKLIST = [
@@ -58,6 +58,15 @@ const SYSTEM_GUARDRAILS = [
 ].join('\n');
 
 async function serverContextForTask(context, task, client) {
+  if(['product_description','seo_meta','category_tags','pricing_suggest'].includes(task)&&client.product_id){
+    const rows=await sb(context,'/rest/v1/products?id=eq.'+client.product_id+'&select=id,name,brand,category,pack,description,price,stock_state,tags&limit=1');
+    if(!rows?.[0])httpError('Select an existing product',404,'not_found');
+    return {product:rows[0],facts:'Confirmed saved catalogue fields. No ingredients/allergens are confirmed unless explicitly listed.'};
+  }
+  if(['support_reply','faq_reply'].includes(task)){
+    const settings=await publicSettings(context.env),keys=['delivery_estimate','cod_enabled','jazzcash_enabled','bank_transfer_enabled','cod_delivery_fee_pkr','prepaid_delivery_fee_pkr','prepaid_free_delivery_enabled','prepaid_free_delivery_threshold_pkr','cod_advance_enabled','cod_advance_amount_pkr'];
+    return {policy:Object.fromEntries(keys.filter(k=>settings[k]!==undefined).map(k=>[k,settings[k]])),facts:'COD advance is deducted from the total, capped at that total. Do not invent order status, courier guarantees, ingredients or allergens.'};
+  }
   if (['sales_summary','customer_insight','order_insight','analytics_insight'].includes(task)) {
     const url=new URL(context.request.url);
     for(const [k,v] of Object.entries(client.range||{}))url.searchParams.set(k,v);
