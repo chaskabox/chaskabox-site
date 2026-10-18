@@ -171,8 +171,13 @@
   .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three::after{
     display:none!important;background:none!important;
   }
-  .reference-storefront #view-home .hero-approved-three>.hero-scene{
+  /* Override desktop image reset: mobile shows the PRODUCT half, not
+     the baked-in left-side text. No scaling of the source file itself. */
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three>.hero-scene{
     filter:none!important;opacity:1!important;
+    width:200%!important;min-width:200%!important;max-width:none!important;
+    height:190px!important;transform:translateX(-50%)!important;
+    object-fit:cover!important;object-position:center 38%!important;
   }
   .reference-storefront #view-home .hero-approved-three>.herowrap{order:1!important}
   .reference-storefront #view-home .hero-approved-three>.hero-scene{order:2!important}
@@ -204,4 +209,10 @@
 .reference-storefront #view-home .cat b{font-size:clamp(11px,.9vw,13px)!important;line-height:1.25!important}
 @media(prefers-reduced-motion:reduce){
   .reference-storefront #view-home .hero-approved-three .hero-actions .cta{transition:none!important}
+}
+
+@media(max-width:360px){
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three>.hero-scene{
+    height:165px!important;
+  }
 }
