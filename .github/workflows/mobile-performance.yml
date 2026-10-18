@@ -27,6 +27,43 @@ jobs:
           export CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "playwright-core"; console.log(chromium.executablePath())')"
           test -x "$CHROME_PATH"
           npx --yes lighthouse@12.8.2 https://chaskabox.online/ --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance,seo --output=json --output-path=perf-results/prod-home.json --quiet
+      - name: Preview mobile Lighthouse for this pull request
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        env:
+          PR_HEAD_REF: ${{ github.head_ref }}
+        run: |
+          set -euo pipefail
+          # Cloudflare Pages preview aliases use a sanitized 28-character branch prefix.
+          # This checks candidate source instead of mistakenly treating production as the PR.
+          branch_slug="$(printf '%s' "$PR_HEAD_REF" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9-]+/-/g; s/^-+//; s/-+$//' | cut -c1-28)"
+          test -n "$branch_slug"
+          preview_url="https://${branch_slug}.chaskabox-site.pages.dev/"
+          printf '%s\n' "$preview_url" > perf-results/preview-url.txt
+          curl --location --fail --silent --show-error --retry 4 --retry-delay 3 --output /dev/null "$preview_url"
+          export CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "playwright-core"; console.log(chromium.executablePath())')"
+          test -x "$CHROME_PATH"
+          npx --yes lighthouse@12.8.2 "$preview_url" --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance,seo --output=json --output-path=perf-results/preview-home.json --quiet
+      - name: Compare production and preview lab results
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        run: |
+          if [ -s perf-results/preview-home.json ]; then
+            node tools/performance-audit-summary.mjs perf-results/preview-home.json
+            node --input-type=module -e '
+              import {readFileSync} from "node:fs";
+              const files=["prod-home","preview-home"];
+              const values=files.map(name=> {
+                const j=JSON.parse(readFileSync("perf-results/"+name+".json","utf8"));
+                return {environment:name,performance:Math.round((j.categories?.performance?.score||0)*100),
+                  LCP:Math.round(j.audits?.["largest-contentful-paint"]?.numericValue||0),
+                  CLS:j.audits?.["cumulative-layout-shift"]?.numericValue};
+              });
+              console.log("PROD_VS_PREVIEW_LAB "+JSON.stringify(values));
+              console.log("Lab results vary: evaluate repeated runs before attributing a score change to this PR.");
+            '
+          else
+            echo "::warning::Preview Lighthouse unavailable; do not claim candidate performance improvement."
+          fi
       - name: Report LCP, CLS shifts, blocking resources and large assets
         if: always()
         run: node tools/performance-audit-summary.mjs perf-results/prod-home.json
