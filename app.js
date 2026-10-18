@@ -545,7 +545,7 @@ function renderProductDetail(id){
           <button class="pdbtn" ${p.stockState==='unavailable'?'disabled':''} onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">${p.stockState==='unavailable'?'Currently unavailable':'Add to Bag'}</button>
           <button class="pdwish${typeof isWished==='function'&&isWished(p.id)?' on':''}" aria-label="Add ${esc(p.name)} to wishlist" onclick="toggleWishlist(${p.id},this)">♥</button>
         </div>
-        <dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||'ChaskaBox')}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack||'See listed contents')}</dd></div><div><dt>Availability</dt><dd>${p.stockState==='sourced_after_order'?'Sourced after order; confirmed before fulfilment':p.stockState==='unavailable'?'Currently unavailable':'See current order details'}</dd></div></dl>
+        <dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||'Not specified')}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack||'See listed contents')}</dd></div><div><dt>Availability</dt><dd>${p.stockState==='sourced_after_order'?'Sourced after order; confirmed before fulfilment':p.stockState==='unavailable'?'Currently unavailable':'See current order details'}</dd></div></dl>
         ${bundleContentsHTML(p)}
         <div class="dbox"><b>Estimated delivery</b><small>Pakistan-wide delivery window<br><span class="ddates">${deliveryRange()}</span></small></div>
         <div class="pd-meta"><span>🚚 ${esc(deliveryFeeCopy())}</span><span>Delivery fees confirmed at checkout for your city</span><span>✅ Original sealed packs</span></div>${codAdvanceNote()}
@@ -598,7 +598,7 @@ function setProductMeta(p){
  setMetaTag('property','og:image',photo);setMetaTag('name','twitter:image',photo);
  const canonical='https://chaskabox.online'+productHref(p.id),offer={'@type':'Offer',url:canonical,priceCurrency:'PKR',price:String(p.price),seller:{'@type':'Organization',name:'ChaskaBox'}};
  const availability={available:'InStock',limited:'LimitedAvailability',unavailable:'OutOfStock'}[p.stockState];if(availability)offer.availability='https://schema.org/'+availability;
- const schema={'@context':'https://schema.org','@type':'Product',name:p.name,description,sku:String(p.id),url:canonical,brand:{'@type':'Brand',name:p.brand||'ChaskaBox'},...(hasPhoto(p)?{image:[photo]}:{}),offers:offer};
+ const schema={'@context':'https://schema.org','@type':'Product',name:p.name,description,sku:String(p.id),url:canonical,...(String(p.brand||'').trim()?{brand:{'@type':'Brand',name:String(p.brand).trim()}}:{}),...(hasPhoto(p)?{image:[photo]}:{}),...(Number.isFinite(Number(p.price))&&Number(p.price)>=0?{offers:offer}:{})};
  for(const [id,data] of [['product-schema',schema],['breadcrumb-schema',{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:'https://chaskabox.online/'},{'@type':'ListItem',position:2,name:p.category||'Shop',item:'https://chaskabox.online'+categoryPath(p.category)},{'@type':'ListItem',position:3,name:p.name,item:canonical}]}]]){
   let el=document.getElementById(id);if(!el){el=document.createElement('script');el.type='application/ld+json';el.id=id;document.head.appendChild(el);}el.textContent=JSON.stringify(data);
  }
