@@ -18,7 +18,7 @@ command -v curl >/dev/null || fail 'curl missing'
 [[ "$(uname -m)" == 'aarch64' ]] || fail 'Unexpected machine architecture'
 CF="$(command -v cloudflared)"
 [[ -x "$CF" ]] || fail 'cloudflared binary not executable'
-cloudflared tunnel run --help 2>&1 | grep -q -- '--token-file' || fail 'cloudflared is too old for secure --token-file mode'
+cloudflared tunnel run --help 2>&1 | grep -- '--token-file' >/dev/null || fail 'cloudflared is too old for secure --token-file mode'
 
 # Read-only local endpoint check. WAHA /health returns HTTP 401 if authenticated.
 HEALTH="$(curl --silent --output /dev/null --write-out '%{http_code}' --max-time 5 http://127.0.0.1:3001/health || true)"
@@ -43,7 +43,7 @@ printf '%s' "$TKN" | python3 -c '
 import sys,json,base64
 token=sys.stdin.read().strip()
 try: d=json.loads(base64.urlsafe_b64decode(token+"="*(-len(token)%4)))
-except (ValueError,TypeError): raise SystemExit("STOP: bad token encoding")
+except (ValueError,TypeError,base64.binascii.Error): raise SystemExit("STOP: bad token encoding")
 if d.get("a")!="16d9379f99684cfc5cad2e5a1b6a4363" or d.get("t")!="b83a32c9-4ed0-482a-9703-89181fe29717" or not d.get("s"):
  raise SystemExit("STOP: wrong Cloudflare account or tunnel token")
 print("Cloudflare tunnel identity verified (token remains private)")
