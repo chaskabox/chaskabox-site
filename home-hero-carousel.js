@@ -26,17 +26,17 @@
   if(!title||!desc||!eyebrow||!primary||!secondary||!controls)return;
   const defaults=[
     {label:'Bachpan Ka Zaiqa',kick:'Pakistan ka snack box, dil se',
-     eyebrow:'ORIGINAL PAKISTANI SNACKS · CURATED WITH CARE',
+     eyebrow:'ORIGINAL PAKISTANI SNACKS',
      heading:'Bachpan Ka Zaiqa, ',highlight:'Ab Ghar Baithe.',
      description:'Woh bachpan wali favourites, ab ek jagah. Sealed branded packs, order ke baad carefully sourced.',
      primary:'Shop All Snacks',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
     {label:'Curated Chaska Boxes',kick:'Har mood ka Chaska Box',
-     eyebrow:'CURATED CHASKA BOXES · GIFTING & SHARING',
+     eyebrow:'CURATED CHASKA BOXES',
      heading:'Har Box Mein ',highlight:'Bachpan Ki Yaadein.',
      description:'Apne favourite childhood snacks ka box explore karein. Original branded packs, gifting aur sharing ke liye.',
      primary:'Explore Chaska Boxes',href:'/bundles/',secondary:'Shop All Snacks',secondHref:'/shop/'},
     {label:'Snack Picks',kick:'Snacks jo dil khush kar dein',
-     eyebrow:'CHATPATA, MEETHA, CRUNCHY · PICK YOUR CHASKA',
+     eyebrow:'SNACKS FOR EVERY CRAVING',
      heading:'Apni Cravings Ka ',highlight:'Chaska Chuno!',
      description:'Chatpatay, meethay aur crunchy favourites ek hi jagah. Apna next Chaska discover karein.',
      primary:'Shop Snacks',href:'/shop/',secondary:'Browse Chaska Boxes',secondHref:'/bundles/'}
