@@ -70,6 +70,15 @@ test('all static info/guides desktop nav uses existing real public routes',()=>{
  }
 });
 
+test('guide copy removes unverified social account prompt in both static HTML and CMS defaults',()=>{
+ const html=read('guides/bachpan-snacks-pakistan/index.html');
+ const defaults=read('page-copy-defaults.js');
+ for(const content of [html,defaults]){
+  assert.doesNotMatch(content,/tag ChaskaBox on Instagram/);
+  assert.match(content,/photos are used only with permission/);
+ }
+});
+
 test('FAQ remains visible content, not a promised Google FAQ-rich-result snippet',()=>{
  const code=read('functions/faq/index.js');
  assert.match(code,/<details><summary>/);
