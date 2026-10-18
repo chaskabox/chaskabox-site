@@ -238,6 +238,23 @@ try{
   if(polish.duplicateTrust==='none'||polish.packSize<11||polish.buttonHeight<44||!polish.headerLogo.includes('logo-header-polish-20261017-'))throw Error('Design polish accessibility/branding mismatch '+JSON.stringify({width,...polish}));
   if(width===1440&&(layout.height>610||polish.firstCardTop>1080))throw Error('Products remain too low in the desktop layout '+JSON.stringify(polish));
   if(!polish.categoryVisuals||!polish.categoryBackground.includes('approved-category-sprite-hq-20261018.webp'))throw Error('Approved category photography missing');
+  const headerV3=await page.evaluate(()=>{
+    const nav=document.querySelector('header .hwrap .cbx-header-links');
+    const category=document.querySelector('#view-home .discover .section-head .cbx-cat-trigger');
+    const whatsapp=document.querySelector('header .hwrap .cbx-header-whatsapp');
+    const fab=document.getElementById('helpFab');
+    const style=fab?getComputedStyle(fab):null;
+    return {navInHeader:!!nav,navVisible:nav&&getComputedStyle(nav).display!=='none',
+      categoryBelowHero:!!category,categoryInHeader:!!document.querySelector('header .cbx-cat-trigger'),
+      whatsappInHeader:!!whatsapp,aiLabel:fab?.textContent?.trim(),
+      aiLabelSize:style?parseFloat(style.fontSize):0,
+      aiButtonWidth:fab?.getBoundingClientRect().width||0};
+  });
+  if(!headerV3.navInHeader||!headerV3.categoryBelowHero||headerV3.categoryInHeader||
+     !headerV3.whatsappInHeader||!headerV3.aiLabel?.includes('Chaska AI')||
+     headerV3.aiLabelSize<11||headerV3.aiButtonWidth<106||
+     (width>760&&!headerV3.navVisible))throw Error('Compact header/category/AI regression '+JSON.stringify({width,...headerV3}));
+  results.interactions.push({case:'category menu below hero, compact CMS navigation + WhatsApp in header, visible Chaska AI / '+width,pass:true});
   results.interactions.push({case:'compact hero, legible packs, 44px purchase controls and approved header branding / '+width,pass:true});
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');
   if(width>760&&!await page.locator('.header-search').isVisible())throw Error('Desktop search missing');
