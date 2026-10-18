@@ -31,7 +31,8 @@ await check('/shop/?badge=Sale',390,async(page,e)=>{
 await check('/brand/hilal/',1280,async(page,e)=>{
  e.canonical=await page.locator('link[rel=canonical]').getAttribute('href');
  e.products=await page.locator('#brandProductGrid .card').count();
- if(e.canonical!=='https://chaskabox.online/brand/hilal/'||!e.products)throw Error('Brand canonical or public products missing');
+ e.listedNames=await page.locator('#brandProductGrid .pname').allTextContents();
+ if(e.canonical!=='https://chaskabox.online/brand/hilal/'||!e.products||e.listedNames.some(name=>!name.trim().toLowerCase().startsWith('hilal')))throw Error('Brand canonical or brand-specific filtering failed');
 });
 await check('/product/233/',390,async(page,e)=>{
  e.canonical=await page.locator('link[rel=canonical]').getAttribute('href');
