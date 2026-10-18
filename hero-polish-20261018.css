@@ -1,0 +1,218 @@
+/* Owner-requested hero visual repair: 18 Oct 2026.
+   Keep approved original banner files unmodified; render real CMS-managed
+   marketing copy over a neutral left-side matte and retain real CTA links.
+   Keep identical real trust facts on every slide.
+*/
+.reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three{
+  isolation:isolate!important;overflow:hidden!important;
+  background:#fff7e9!important;border:1px solid #e7e0d7!important;
+}
+.reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three>.hero-scene{
+  filter:none!important;opacity:1!important;transform:none!important;
+  object-position:top left!important;
+}
+/* Suppress the conflicting dark global overlay and cover the baked-in copy
+   with a color-matched matte. Product collage and approved framing stay intact. */
+@media(min-width:761px){
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three::before{
+    display:block!important;content:""!important;inset:0!important;
+    position:absolute!important;z-index:2!important;pointer-events:none!important;
+    background:linear-gradient(90deg,#f8f1e7 0%,#f8f1e7 38%,rgba(248,241,231,.99) 45%,rgba(248,241,231,.82) 50%,transparent 64%)!important;
+  }
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three[data-hero-slide="2"]::before{
+    background:linear-gradient(90deg,#fcf4e8 0%,#fcf4e8 42%,rgba(252,244,232,.99) 48%,rgba(252,244,232,.8) 53%,transparent 65%)!important;
+  }
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three[data-hero-slide="3"]::before{
+    background:linear-gradient(90deg,#06294e 0%,#06294e 40%,rgba(6,41,78,.99) 47%,rgba(6,41,78,.9) 52%,transparent 66%)!important;
+  }
+  .reference-storefront #view-home .hero-approved-three>.herowrap{
+    aspect-ratio:1600/480!important;min-height:0!important;padding:0!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"]>.herowrap{
+    aspect-ratio:1411/458!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt{
+    left:0!important;right:auto!important;top:0!important;bottom:0!important;
+    height:100%!important;width:55%!important;max-width:none!important;
+    display:flex!important;flex-direction:column!important;align-items:flex-start!important;
+    justify-content:center!important;gap:clamp(7px,1.1vw,16px)!important;
+    padding:clamp(14px,2.9vw,44px) clamp(18px,4vw,65px)!important;
+    box-sizing:border-box!important;text-align:left!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-eyebrow{
+    position:static!important;display:inline-flex!important;clip-path:none!important;
+    width:auto!important;height:auto!important;margin:0!important;overflow:visible!important;
+    white-space:normal!important;max-width:100%!important;
+    color:#7a390f!important;background:#fff1df!important;
+    font-size:clamp(9px,.75vw,12px)!important;letter-spacing:.08em!important;
+    border-color:#f5d2ab!important;padding:7px 11px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt h1{
+    position:static!important;clip-path:none!important;overflow:visible!important;
+    width:auto!important;height:auto!important;max-width:100%!important;
+    color:#072f59!important;margin:0!important;letter-spacing:-.035em!important;
+    white-space:normal!important;font-family:system-ui,-apple-system,"Segoe UI",sans-serif!important;
+    font-size:clamp(29px,3.55vw,54px)!important;font-weight:900!important;
+    line-height:1.04!important;text-shadow:none!important;text-wrap:balance;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt h1 .hl{
+    color:#e84b0c!important;font-family:Kalam,"Trebuchet MS",system-ui,sans-serif!important;
+    font-style:italic!important;font-weight:800!important;letter-spacing:-.02em!important;
+    display:block!important;line-height:1.11!important;margin-top:1px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt>p:not(.hero-microcopy){
+    position:static!important;clip-path:none!important;overflow:visible!important;
+    display:block!important;width:auto!important;height:auto!important;
+    color:#273d52!important;white-space:normal!important;opacity:1!important;
+    max-width:49ch!important;margin:0!important;
+    font:500 clamp(11px,1.02vw,15px)/1.52 system-ui,-apple-system,sans-serif!important;
+    text-shadow:none!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .hero-eyebrow{
+    background:#103e6b!important;color:#fff1dc!important;border-color:#447197!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .herotxt h1{
+    color:#fff!important;font-size:clamp(27px,3.25vw,48px)!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .herotxt h1 .hl{
+    color:#ffc541!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .herotxt>p:not(.hero-microcopy){
+    color:#e5effc!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions,
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="2"] .hero-actions,
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .hero-actions{
+    position:static!important;width:auto!important;height:auto!important;
+    display:flex!important;align-items:center!important;flex-wrap:nowrap!important;
+    gap:9px!important;margin:4px 0 0!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta,
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta.ghost{
+    position:static!important;display:inline-flex!important;flex:0 1 auto!important;
+    width:auto!important;min-height:43px!important;height:auto!important;
+    border:1px solid #c9420d!important;border-radius:10px!important;
+    font:800 clamp(10px,.87vw,13px)/1.2 system-ui,sans-serif!important;
+    color:white!important;background:#c9420d!important;
+    padding:11px clamp(11px,1.2vw,19px)!important;text-decoration:none!important;
+    text-align:center!important;white-space:nowrap!important;
+    box-shadow:0 3px 10px #092d4b0d!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta.ghost{
+    background:#fffcf6!important;border-color:#d35626!important;color:#08315a!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"] .hero-actions .cta.ghost{
+    background:transparent!important;border-color:#ffc360!important;color:#fff!important;
+  }
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"]::after{
+    top:2%!important;right:1.5%!important;
+    width:clamp(85px,10vw,144px)!important;height:clamp(85px,10vw,144px)!important;
+  }
+}
+/* Dedicated accessible controls BELOW the photograph, not on top of food or CTAs. */
+.reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three>.hero-slider-controls{
+  position:relative!important;inset:auto!important;left:auto!important;right:auto!important;
+  top:auto!important;bottom:auto!important;transform:none!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  order:2!important;z-index:8!important;width:100%!important;min-height:48px!important;
+  padding:4px 12px!important;margin:0!important;
+  background:#fff9f1!important;border-top:1px solid #f0e2cf!important;
+  border-radius:0!important;gap:8px!important;
+}
+.reference-storefront #view-home .hero-approved-three>.hero-slider-controls button[data-hero-direction]{
+  width:40px!important;height:40px!important;min-width:40px!important;
+  background:#0c345d!important;border-color:#0c345d!important;
+  border-radius:10px!important;color:#fff!important;font-size:22px!important;
+}
+.reference-storefront #view-home .hero-approved-three>.hero-slider-controls button[data-hero-dot]{
+  width:32px!important;height:40px!important;min-width:32px!important;
+  border:0!important;background:transparent!important;
+}
+.reference-storefront #view-home .hero-approved-three>.hero-slider-controls button[data-hero-dot]::before{
+  width:8px!important;height:8px!important;background:#97a5b3!important;border-radius:99px!important;
+}
+.reference-storefront #view-home .hero-approved-three>.hero-slider-controls button[data-hero-dot][aria-pressed="true"]::before{
+  width:25px!important;background:#d04a0a!important;
+}
+.reference-storefront #view-home .hero-approved-three>.herotrust{
+  order:3!important;position:relative!important;z-index:9!important;
+  margin:0!important;border-top:0!important;
+  background:#082b50!important;
+}
+.reference-storefront #view-home .hero-approved-three .htrustwrap{
+  display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  gap:14px!important;
+}
+@media(min-width:761px) and (max-width:1080px){
+  .reference-storefront #view-home .hero-approved-three .herotxt{
+    width:57%!important;padding:10px 3.4%!important;gap:6px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt h1{
+    font-size:clamp(22px,3.3vw,35px)!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt h1 .hl{
+    font-size:inherit!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .herotxt>p:not(.hero-microcopy){
+    font-size:11px!important;line-height:1.4!important;
+    display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:2;
+    overflow:hidden!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta,
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta.ghost{
+    min-height:35px!important;font-size:10px!important;padding:8px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-eyebrow{
+    font-size:9px!important;padding:5px 8px!important;
+  }
+}
+@media(max-width:760px){
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three::before,
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three::after{
+    display:none!important;background:none!important;
+  }
+  /* Override desktop image reset: mobile shows the PRODUCT half, not
+     the baked-in left-side text. No scaling of the source file itself. */
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three>.hero-scene{
+    filter:none!important;opacity:1!important;
+    width:200%!important;min-width:200%!important;max-width:none!important;
+    height:190px!important;transform:translateX(-50%)!important;
+    object-fit:cover!important;object-position:center 38%!important;
+  }
+  .reference-storefront #view-home .hero-approved-three>.herowrap{order:1!important}
+  .reference-storefront #view-home .hero-approved-three>.hero-scene{order:2!important}
+  .reference-storefront #view-home .hero-approved-three>.hero-slider-controls{
+    order:3!important;min-height:47px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three>.herotrust{order:4!important}
+  .reference-storefront #view-home .hero-approved-three .herotxt>p:not(.hero-microcopy){
+    display:-webkit-box!important;-webkit-box-orient:vertical;-webkit-line-clamp:3;
+    overflow:hidden!important;max-width:46ch!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .htrustwrap{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;
+  }
+  .reference-storefront #view-home .hero-approved-three .hero-trust-icon{flex-basis:27px!important}
+  .reference-storefront #view-home .hero-approved-three>.hero-scene{
+    object-position:60% 35%!important;height:190px!important;
+  }
+}
+@media(max-width:360px){
+  .reference-storefront #view-home .hero-approved-three>.hero-scene{height:165px!important}
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta{font-size:10px!important}
+}
+/* More legible discovery tiles, without substituting or inventing product art. */
+.reference-storefront #view-home .cat .ci img{
+  width:96%!important;height:96%!important;max-width:96%!important;max-height:96%!important;
+  object-fit:contain!important;padding:1px!important;
+}
+.reference-storefront #view-home .cat b{font-size:clamp(11px,.9vw,13px)!important;line-height:1.25!important}
+@media(prefers-reduced-motion:reduce){
+  .reference-storefront #view-home .hero-approved-three .hero-actions .cta{transition:none!important}
+}
+
+@media(max-width:360px){
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three>.hero-scene{
+    height:165px!important;
+  }
+}
