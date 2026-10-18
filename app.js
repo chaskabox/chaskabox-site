@@ -463,8 +463,8 @@ async function renderSmartSearchResults(query,seq){
 }
 function renderShopResults(){
   const list=filteredShop();
-  $('#catCount').textContent=list.length+' products';
-  const cnt=document.getElementById('shopResultCount');if(cnt)cnt.textContent=list.length+' products';
+  $('#catCount').textContent=list.length+' '+(list.length===1?'product':'products');
+  const cnt=document.getElementById('shopResultCount');if(cnt)cnt.textContent=list.length+' '+(list.length===1?'product':'products');
   const canSmart=!list.length&&String(shopState.q||'').trim().length>=2&&!shopState.cat&&!shopState.brands.length&&!shopState.maxPrice&&!shopState.pack&&!shopState.badge;
   if(list.length){clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML=list.map((p,i)=>cardHTML(p,i===0?'high':i===1?'eager':undefined)).join('');}
   else if(canSmart){const seq=++smartSearchSeq;clearTimeout(smartSearchTimer);$('#shopGrid').innerHTML='<div class="empty">✦ Looking for smart matches…</div>';smartSearchTimer=setTimeout(()=>renderSmartSearchResults(shopState.q,seq),420);}
@@ -765,7 +765,8 @@ function renderHomeRoute(){
   // fetch and a destructive re-render of images/shelves in the first viewport.
 }
 function renderShopRoute(){
-  setPageMeta(SEO_CATEGORY_DATA.shop.title,'/shop/',false,SEO_CATEGORY_DATA.shop.description);
+  const saleRoute=new URLSearchParams(location.search).get('badge')==='Sale';
+  setPageMeta(saleRoute?'Snack Deals | ChaskaBox Pakistan':SEO_CATEGORY_DATA.shop.title,'/shop/',false,saleRoute?'Browse current snack deals and compare listed prices at ChaskaBox Pakistan.':SEO_CATEGORY_DATA.shop.description);
   setCategorySeoCopy(SEO_CATEGORY_DATA.shop);
   setCategoryBreadcrumb('All Snacks','/shop/');
   shopState=shopRouteFilters();
@@ -1779,7 +1780,7 @@ function renderMnav(){
   $('#mnavList').innerHTML=catsHtml+brandsHtml+`
     <div style="border-top:1px solid var(--border);margin:8px 0"></div>
     <a href="/bundles/">Chaska Boxes</a>
-    <a href="/shop/" onclick="goBadge('Sale');return false">🔥 Deals</a>
+    <a href="/shop/?badge=Sale" onclick="goBadge('Sale');return false">🔥 Deals</a>
     <div style="border-top:1px solid var(--border);margin:8px 0"></div>
     <a href="/account/" onclick="closeMnav()">👤 My Account</a>`;
 }
