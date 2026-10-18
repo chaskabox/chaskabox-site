@@ -62,6 +62,19 @@
     else primary.textContent=s.primary+' ›';
     primary.href=s.href;
     secondary.textContent=s.secondary;secondary.href=s.secondHref;
+    // These three artworks are the owner's approved reference banners, not
+    // interchangeable backgrounds. Keep original framing; CSS adapts mobile crop.
+    const artworks=[
+      ['/images/chaskabox-approved-hero-01-20261018.avif',1600,550,'ChaskaBox nostalgic snack-box banner (illustrative artwork)'],
+      ['/images/chaskabox-approved-hero-02-20261018.avif',1600,550,'ChaskaBox gifting banner (illustrative artwork)'],
+      ['/images/chaskabox-approved-hero-03-20261018.avif',1411,554,'ChaskaBox favourite snacks banner, original approved crop']
+    ];
+    const art=root.querySelector('.hero-scene');
+    const selected=artworks[current];
+    if(art&&selected){
+      if(art.getAttribute('src')!==selected[0])art.setAttribute('src',selected[0]);
+      art.width=selected[1];art.height=selected[2];art.alt=selected[3];
+    }
     const collage=root.querySelector('#heroCollage');
     const authenticImages=window.CHASKABOX_HERO_MARKUP?.[current];
     if(collage&&authenticImages&&collage.dataset.heroMarkupKey!==String(current)){
