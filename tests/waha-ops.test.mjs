@@ -88,7 +88,8 @@ test('no-sudo WAHA PM2 connector is syntactically valid and non-disruptive',()=>
   assert.match(script,/WORKING|health response/);
   assert.match(script,/type CONNECT/);
   assert.match(script,/chmod 600 "\$TOKENFILE"/);
-  assert.doesNotMatch(script,/\bsudo\b/);
+  const active=script.split('\n').filter(line=>!line.trimStart().startsWith('#')).join('\n');
+  assert.doesNotMatch(active,/\bsudo\b/);
   assert.doesNotMatch(script,/\bdocker (?:stop|restart|rm|compose|pull|run)\b/);
   assert.doesNotMatch(script,/\bpm2 (?:stop|restart|delete|kill)\b/);
   assert.doesNotMatch(script,/--token "\$TKN"/);
