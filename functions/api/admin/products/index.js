@@ -81,7 +81,7 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'content'], async (co
   if (sp.get('is_bundle') === 'true') filters.push('is_bundle=eq.true');
   if (sp.get('is_bundle') === 'false') filters.push('is_bundle=eq.false');
 
-  const query = [`select=${LIST_COLS}`, 'order=updated_at.desc', ...filters].join('&');
+  const query = [`select=${LIST_COLS}`, 'order=updated_at.desc,id.desc', ...filters].join('&');
   const { data, total } = await sb(context, `/rest/v1/products?${query}`, {
     headers: { Range: rangeHeader },
     count: true,

@@ -164,7 +164,7 @@
       if(name==='resolutions' && roleAllows('owner','manager')) await loadResolutions();
       if(name==='customers' && roleAllows('owner','manager')) await loadCustomers();
       if(name==='reviews' && roleAllows('owner','manager','content')) await loadReviews();
-      if(name==='pages') await (await import('./admin-pages.js?v=20261018-cms1')).mountPageEditor($('#view-pages'),{api,toast,canPublish:roleAllows('owner','manager')});
+      if(name==='pages') await (await import('./admin-pages.js?v=20261018-content2')).mountPageEditor($('#view-pages'),{api,toast,canPublish:roleAllows('owner','manager')});
       if(name==='homepage' && roleAllows('owner','manager','content')) await loadHomepage();
       if(name==='media' && roleAllows('owner','manager','content')) await loadMedia();
       if(name==='settings' && roleAllows('owner')) await loadSettings();
@@ -987,6 +987,7 @@
   }
   function wireHomepage(){}
   async function loadHomepage(){
+    const selectedKey=$('#homeKey')?.value;
     const {buildHomepageDraft,PRODUCT_SECTIONS}=await import('/homepage-config.js?v=20261018-audit1');
     const d=await api('/api/admin/homepage'),view=$('#view-homepage'); view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Homepage sections</h2><p>Visibility, order and headings save immediately; content configuration uses Save draft, Preview and Publish.</p></div></div><div class="section-manager">${(d.sections||[]).map(s=>`<div data-home-key="${esc(s.section_key)}"><span class="drag" aria-hidden="true">⋮⋮</span><b>${esc(s.section_key.replaceAll('_',' '))}</b><em>${esc(s.heading||'')}</em><span class="home-position-actions"><button type="button" data-home-move="${esc(s.section_key)}" data-home-direction="-1" ${s.section_key==='announcement_bar'?'disabled':''} aria-label="Move section up">↑</button><button type="button" data-home-move="${esc(s.section_key)}" data-home-direction="1" ${s.section_key==='announcement_bar'?'disabled':''} aria-label="Move section down">↓</button></span><button class="home-toggle ${s.enabled?'on':''}" data-home-toggle="${esc(s.section_key)}">${s.enabled?'On':'Off'}</button></div>`).join('')}</div></section><section class="panel"><div class="panel-head"><div><h2>Edit selected section</h2><p>Save draft, preview, then publish.</p></div></div><label>Section<select id="homeKey">${(d.sections||[]).map(s=>`<option value="${esc(s.section_key)}">${esc(s.section_key)}</option>`).join('')}</select></label><div id="homeCopyFields"><label>Heading<input id="homeHeading" maxlength="500"></label><label>Subheading<textarea id="homeSub" rows="4" maxlength="500"></textarea></label></div><div id="homeProductsField"><label><input type="checkbox" id="homeAutoProducts"> Use automatic product picks</label><label>Featured product IDs <small>(comma-separated; turn automatic off and leave blank for no products)</small><input id="homeProductIds" placeholder="e.g. 30, 54, 179"></label></div><div id="homeHeroFields" hidden><label>First banner button text<input id="homeButtonText" maxlength="160"></label><label>First banner button link<input id="homeButtonUrl" maxlength="500" placeholder="/shop/"></label><label>Banner overrides (JSON, optional)<textarea id="homeSlides" rows="8" maxlength="12000" placeholder='[ {"heading":"Your headline", "href":"/shop/"} ]'></textarea></label><p class="safe-note">Override up to three banners. Omitted fields and banners retain the standard copy. Supported fields: label, kick, eyebrow, heading, highlight, description, primary, href, secondary, secondHref. No HTML.</p></div><div id="homeFaqField" hidden><label>FAQ questions and answers (JSON, optional)<textarea id="homeFaq" rows="8" maxlength="16000" placeholder='[ {"q":"Your question?", "a":"Your answer."} ]'></textarea></label><p class="safe-note">Leave blank for standard answers, or enter [] for no questions. Up to 10 questions; plain text only.</p></div><div id="homePackingField" hidden><label>Original packing video URL<input id="homePackingVideo" maxlength="500" placeholder="ChaskaBox MP4 or YouTube video link"></label><p class="safe-note">Use your original video and permission from anyone shown. Remove customer names, phone numbers and shipping labels. Leave blank to hide. Saving creates a draft; publish this section to make it public.</p></div><div class="action-row"><button class="btn secondary" id="homeSave">Save</button>${roleAllows('owner','manager')?'<button class="btn primary" id="homePublish">Publish section</button>':''}</div></section></div>`;
     const rows=d.sections||[];
@@ -1004,6 +1005,7 @@
       $('#homeFaqField').hidden=x.section_key!=='faq';$('#homeFaq').value=Array.isArray(cfg.items)?JSON.stringify(cfg.items,null,2):'';
       $('#homePackingField').hidden=x.section_key!=='how_it_works';$('#homePackingVideo').value=cfg.packing_video_url||'';
     }
+    if(rows.some(row=>row.section_key===selectedKey))$('#homeKey').value=selectedKey;
     hydrate();$('#homeKey').onchange=hydrate;
     $('#homeAutoProducts').onchange=()=>{$('#homeProductIds').disabled=$('#homeAutoProducts').checked;};
     $$('[data-home-move]',view).forEach(button=>button.onclick=async()=>{
@@ -1818,7 +1820,7 @@
 
   // ============ AI CENTER ============
   async function loadAICenter(){
-    await (await import('./admin-ai-center.js?v=20261018-cms1')).mountAIStatus($('#view-assistant'),{api,toast,canManage:roleAllows('owner')});
+    await (await import('./admin-ai-center.js?v=20261018-content2')).mountAIStatus($('#view-assistant'),{api,toast,canManage:roleAllows('owner')});
   }
 
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
