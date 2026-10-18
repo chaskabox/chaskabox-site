@@ -85,6 +85,7 @@ setTimeout(function(){
       <details class="admin-nav-group" data-group="storefront">
         <summary><span>Storefront & media</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
         <div class="admin-nav-group-links">
+          <button class="admin-nav-btn" data-view="pages"><span>✎</span> Pages &amp; Text</button>
           <button class="admin-nav-btn" data-view="homepage"><span>⌂</span> Homepage Builder</button>
           <button class="admin-nav-btn" data-view="navigation"><span>🧭</span> Navigation</button>
           <button class="admin-nav-btn" data-view="theme"><span>🎨</span> Theme Studio</button>
@@ -171,6 +172,7 @@ setTimeout(function(){
               <button data-jump="boxes">📦 Build a Chaska Box</button>
               <button data-jump="orders">▤ Review orders</button>
               <button data-jump="homepage">⌂ Curate homepage</button>
+              <button data-jump="pages">✎ Edit pages &amp; text</button>
               <button data-jump="preview">◉ Preview storefront</button>
               <button data-jump="assistant">✦ Ask Admin Copilot</button>
             </div>
@@ -504,6 +506,7 @@ setTimeout(function(){
         <div id="agentsM05Signals" class="agent-m05-grid"></div>
         <div class="panel"><h2>Marketing proposals (review only)</h2><form id="agentsM05Propose" class="toolbar"><label>Public product ID <input id="agentsM05ProductId" type="number" min="1" step="1" required></label><label>Channel <select id="agentsM05Channel"><option value="social">Social</option><option value="email">Email draft</option><option value="whatsapp">WhatsApp draft</option></select></label><button class="btn primary" type="submit">Create review draft</button></form><p class="safe-note">Approving a draft does NOT send, publish, or create a marketing campaign.</p><div id="agentsM05Drafts" class="agent-m05-grid"></div></div>
       </section>
+      <section class="admin-view" id="view-pages" data-title="Pages &amp; Text" data-subtitle="Public page copy and SEO with drafts, review and version history."><section class="panel"><h2>Pages &amp; Text</h2><p role="status">Loading protected page controls…</p></section></section>
       <section class="admin-view" id="view-assistant" data-title="Admin Copilot" data-subtitle="AI-assisted catalogue and merchandising work — always reviewed by you before saving.">
         <div class="admin-grid two copilot-grid">
           <section class="panel">
@@ -519,10 +522,10 @@ setTimeout(function(){
               <button data-ai="attention">Summarize Needs Attention</button>
               <button data-ai="catalogue">Summarize catalogue health</button>
               <button data-ai="translate">Translate (EN ↔ Roman Urdu)</button>
-              <button data-ai="pricing">Suggest pricing range</button>
+              <button data-ai="pricing">Review current price evidence</button>
               <button data-ai="review">Draft review reply</button>
             </div>
-            <label>Instructions<textarea id="aiPrompt" rows="6" placeholder="Example: Write a concise nostalgic product description for Cocomo, mentioning pack size but no claims we cannot verify."></textarea></label>
+            <label>Saved product context<select id="aiContextProduct"><option value="">Choose a saved product for product tasks</option></select></label><label>Instructions<textarea id="aiPrompt" maxlength="1500" rows="6" placeholder="Example: Write a concise nostalgic product description for Cocomo, mentioning pack size but no claims we cannot verify."></textarea></label>
             <div class="action-row"><button class="btn primary" id="runAiBtn">✦ Generate draft / insight</button><button class="btn secondary" id="reindexAiSearch" type="button">Refresh AI product search</button></div>
           </section>
           <section class="panel ai-output-panel">

@@ -29,8 +29,8 @@ test('homepage does not refetch CMS and render hero products twice per route',()
 
 test('hero image priorities reserve square space and delay nonessential downloads',()=>{
  assert.match(app,/width="150" height="150"/);
- assert.match(app,/loading="\$\{i===0\?'eager':'lazy'\}"/);
- assert.match(app,/fetchpriority="\$\{i===0\?'high':'low'\}"/);
+ assert.match(app,/loading="lazy" fetchpriority="low"/);
+ assert.doesNotMatch(app,/width="150" height="150" loading="\$\{i===0\?'eager'/);
 });
 
 test('homepage has a stable fallback order while explicit CMS ordering takes priority',()=>{

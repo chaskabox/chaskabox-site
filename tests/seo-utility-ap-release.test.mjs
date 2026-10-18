@@ -38,7 +38,7 @@ test('static storefront shells do not advertise hidden Family Pack 269',()=>{
    const html=read(path);
    assert.doesNotMatch(html,/ChaskaBox Family Pack|\/product\/269\/|Rs\. 2,039/,path);
    assert.doesNotMatch(html,/>106 products</,path);
-   assert.match(html,/<div id="view-shop"/,path);
+   if(path==='faq/index.html')assert.match(html,/Frequently asked questions/,path);else assert.match(html,/<div id="view-shop"/,path);
  }
 });
 

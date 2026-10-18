@@ -166,12 +166,12 @@ function renderHomeContent(){
   for(const p of candidates){if(!heroPicks.some(x=>x.category===p.category))heroPicks.push(p);if(heroPicks.length===3)break;}
   for(const p of candidates){if(heroPicks.length===3)break;if(!heroPicks.includes(p))heroPicks.push(p);}
   const hi=$('#heroCollage');
-  if(hi){hi.innerHTML=heroPicks.map((p,i)=>`<img ${photoAttributes(p.img,"150px")} alt="${esc(p.name)}" width="150" height="150" loading="${i===0?'eager':'lazy'}" fetchpriority="${i===0?'high':'low'}" decoding="async" class="hc${i+1}">`).join('');const wrap=hi.closest('.heroimg');if(wrap)wrap.hidden=!heroPicks.length;}
+  if(hi){hi.innerHTML=heroPicks.map((p,i)=>`<img ${photoAttributes(p.img,"150px")} alt="${esc(p.name)}" width="150" height="150" loading="lazy" fetchpriority="low" decoding="async" class="hc${i+1}">`).join('');const wrap=hi.closest('.heroimg');if(wrap)wrap.hidden=!heroPicks.length;}
   // Each banner uses only authentic pack images already present in the product catalogue.
   if(hi && heroPicks.length){
     const boxPicks=distinctBrandPicks(act.filter(p=>p.bundle&&hasPhoto(p)),3);
     const snackPicks=distinctBrandPicks(act.filter(p=>p.category==='Snacks & Nimco'&&hasPhoto(p)),3);
-    const markup=items=>items.map((p,i)=>`<img ${photoAttributes(p.img,"150px")} alt="${esc(p.name)}" width="150" height="150" loading="${i===0?'eager':'lazy'}" fetchpriority="${i===0?'high':'low'}" decoding="async" class="hc${i+1}">`).join('');
+    const markup=items=>items.map((p,i)=>`<img ${photoAttributes(p.img,"150px")} alt="${esc(p.name)}" width="150" height="150" loading="lazy" fetchpriority="low" decoding="async" class="hc${i+1}">`).join('');
     window.CHASKABOX_HERO_MARKUP=[hi.innerHTML,markup(boxPicks.length?boxPicks:heroPicks),markup(snackPicks.length?snackPicks:heroPicks)];
     if(typeof window.Event==='function'&&typeof window.dispatchEvent==='function')window.dispatchEvent(new window.Event('chaskabox:hero-imagery-ready'));
   }
@@ -1234,6 +1234,7 @@ function route(){
     render404(path);
   }
 
+  window.ChaskaPageCopy?.navigate(location.pathname);
   if(scrollTop) window.scrollTo(0, 0);
   route._isPopstate = false;
 }

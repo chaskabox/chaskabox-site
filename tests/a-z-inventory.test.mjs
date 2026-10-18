@@ -4,11 +4,11 @@ import {readFile} from 'node:fs/promises';
 import {execFileSync} from 'node:child_process';
 import {AGENTS} from '../functions/api/admin/_lib/agent-policy.js';
 
-test('Dashboard plus 25 admin navigation controls have corresponding unique live view panels',async()=>{
+test('Dashboard plus 26 admin navigation controls have corresponding unique live view panels',async()=>{
  const html=await readFile(new URL('../admin.html',import.meta.url),'utf8');
  const buttons=[...html.matchAll(/class="[^"]*\badmin-nav-btn\b[^"]*"[^>]*data-view="([^"]+)"/g)].map(m=>m[1]);
  const views=[...html.matchAll(/class="[^"]*\badmin-view\b[^"]*"[^>]*id="view-([^"]+)"/g)].map(m=>m[1]);
- assert.equal(buttons.length,26);
+ assert.equal(buttons.length,27);
  assert.deepEqual([...new Set(buttons)].sort(),[...new Set(views)].sort());
  assert.equal(new Set(buttons).size,buttons.length);
  assert.equal(new Set(views).size,views.length);
@@ -27,7 +27,7 @@ test('A-Z static form/script inventory runs and distinguishes source evidence fr
  assert.ok(result.pages>=25);
  assert.ok(result.fields>=20);
  assert.ok(result.forms>=1);
- assert.equal(result.admin.buttons,26);
+ assert.equal(result.admin.buttons,27);
  assert.deepEqual(result.admin.missingAdmin,[]);
  assert.deepEqual(result.admin.orphanedAdmin,[]);
  assert.equal(result.sourceOnly,true);

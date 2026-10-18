@@ -1,0 +1,24 @@
+export async function mountAIStatus(view,{api,toast,canManage=false}){
+ let panel=view.querySelector('#aiLiveControls');
+ if(!panel){panel=document.createElement('section');panel.id='aiLiveControls';panel.className='panel';panel.innerHTML='<div class="panel-head"><div><h2>AI connection &amp; usage</h2><p id="aiLiveState" role="status">Checking server switches and budget…</p></div><button class="btn secondary compact" id="refreshAiState">Refresh status</button></div><p id="aiLiveDetails"></p><div class="action-row"><button class="btn secondary" id="testAiConnection">Test actual AI response</button></div><p id="aiLiveTest" role="status"></p>';view.prepend(panel);}
+ if(canManage&&!panel.querySelector('#aiFeatureControls')){
+  const controls=document.createElement('details');controls.id='aiFeatureControls';controls.innerHTML='<summary>Owner AI controls</summary><label class="checkline"><input id="aiOwnerGlobal" type="checkbox"> Enable AI globally</label><label class="checkline"><input id="aiOwnerText" type="checkbox"> Text drafts and insights</label><label class="checkline"><input id="aiOwnerImage" type="checkbox"> Decorative image drafts</label><label class="checkline"><input id="aiOwnerEmbedding" type="checkbox"> Product embeddings</label><label>Daily app budget (estimated neurons)<input id="aiOwnerBudget" type="number" min="1" max="8000"></label><p class="safe-note">These switches use the protected owner settings API. The server switch and provider binding are required. Publishing and payments require their own reviewed actions.</p><button class="btn primary" id="saveAiOwnerControls">Save AI controls</button>';panel.append(controls);
+  controls.querySelector('#saveAiOwnerControls').onclick=async()=>{const button=controls.querySelector('#saveAiOwnerControls');button.disabled=true;try{await api('/api/admin/settings',{method:'PATCH',body:{settings:{ai_enabled:controls.querySelector('#aiOwnerGlobal').checked,ai_text_enabled:controls.querySelector('#aiOwnerText').checked,ai_images_enabled:controls.querySelector('#aiOwnerImage').checked,ai_embeddings_enabled:controls.querySelector('#aiOwnerEmbedding').checked,ai_daily_budget_neurons:Number(controls.querySelector('#aiOwnerBudget').value)}}});await refresh();toast('AI controls saved and read back.');}catch(e){toast(e.message);}finally{button.disabled=false;}};
+ }
+ async function refresh(){
+  try{const s=await api('/api/admin/ai-status');panel.querySelector('#aiLiveState').textContent=s.enabled?'Text AI ready':('AI paused: '+s.reasons.join('; '));
+   panel.querySelector('#aiLiveDetails').textContent='Model: '+s.models.text+' · Estimated app usage: '+s.budget.accounted_neuron_estimate+' / '+s.budget.effective_budget+' · Search index: '+s.index.current+' / '+s.index.visible+' current · Image drafts: '+(s.budget.features.image?'enabled':'paused')+' · Checked '+new Date(s.checked_at).toLocaleTimeString();
+   view.querySelector('#runAiBtn').disabled=!s.enabled;panel.querySelector('#testAiConnection').disabled=!s.enabled;view.querySelector('#reindexAiSearch').disabled=!s.enabled||!s.budget.features.embedding;
+   if(canManage){for(const [id,value]of [['aiOwnerGlobal',s.budget.enabled],['aiOwnerText',s.budget.features.text],['aiOwnerImage',s.budget.features.image],['aiOwnerEmbedding',s.budget.features.embedding]])panel.querySelector('#'+id).checked=value===true;panel.querySelector('#aiOwnerBudget').value=s.budget.policy_budget;}
+  }catch(e){panel.querySelector('#aiLiveState').textContent='AI status unavailable: '+e.message;view.querySelector('#runAiBtn').disabled=true;panel.querySelector('#testAiConnection').disabled=true;}
+ }
+ panel.querySelector('#refreshAiState').onclick=refresh;
+ panel.querySelector('#testAiConnection').onclick=async()=>{const button=panel.querySelector('#testAiConnection'),out=panel.querySelector('#aiLiveTest');button.disabled=true;out.textContent='Calling the real provider through your protected admin session…';try{const result=await api('/api/admin/ai-selftest',{method:'POST',body:{}});out.textContent=(result.passed?'Passed: ':'Unexpected response: ')+result.response+' · '+result.model+(result.cached?' · cached response':' · fresh provider response');}catch(e){out.textContent='Check failed: '+e.message;}finally{await refresh();}};
+ const select=view.querySelector('#aiContextProduct');
+ if(select&&!select.dataset.loaded){
+  try{let products=[],pages=1;for(let page=1;page<=Math.min(pages,10);page++){const d=await api('/api/admin/products?per_page=100&page='+page);products.push(...(d.products||[]));pages=d.total_pages||1;}
+   select.replaceChildren(new Option('Choose a saved product for product tasks',''));for(const p of products)select.add(new Option('#'+p.id+' · '+p.name,p.id));select.dataset.loaded='true';
+  }catch(e){toast('AI product context could not load: '+e.message);}
+ }
+ await refresh();
+}

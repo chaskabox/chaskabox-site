@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="/checkout-ui.css?v=20261017-checkout-compact-v3">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&amp;onload=checkoutTurnstileReady" defer></script>
+<script src="/page-copy-runtime.js?v=20261018-cms1" defer></script>
 </head>
 <body class="checkout-page">
 <div class="promo">🔒 Encrypted connection · COD, JazzCash &amp; Bank Transfer</div>
@@ -20,9 +21,9 @@
 <main class="co-wrap" id="coMain">
   <section class="checkout-intro" aria-labelledby="checkoutTitle">
   <div class="checkout-intro-copy">
-    <p class="checkout-kicker">CHASKABOX &nbsp; / &nbsp; EASY CHECKOUT</p>
-    <h1 class="checkout-title" id="checkoutTitle">Your delivery<span class="checkout-title-period">.</span></h1>
-    <p class="checkout-lead" id="checkoutLead">Three simple steps to your ChaskaBox delivery. No account required.</p>
+    <p class="checkout-kicker"><cb-copy data-cb-copy="t_d9bc0483" style="display:contents">CHASKABOX</cb-copy> &nbsp; / &nbsp; <cb-copy data-cb-copy="t_38b3d075" style="display:contents">EASY CHECKOUT</cb-copy></p>
+    <h1 class="checkout-title" id="checkoutTitle"><cb-copy data-cb-copy="t_e24f256e" style="display:contents">Your delivery</cb-copy><span class="checkout-title-period">.</span></h1>
+    <p class="checkout-lead" id="checkoutLead"><cb-copy data-cb-copy="t_597d0da3" style="display:contents">Three simple steps to your ChaskaBox delivery. No account required.</cb-copy></p>
   </div>
   <nav class="checkout-progress" aria-label="Checkout steps">
     <button type="button" class="checkout-progress-item current" data-checkout-nav="1" aria-label="Step 1: Delivery details" aria-current="step"><span class="checkout-progress-circle" aria-hidden="true">1</span><span>Delivery</span></button>
@@ -31,153 +32,153 @@
     <span class="checkout-progress-line" aria-hidden="true"></span>
     <button type="button" class="checkout-progress-item" data-checkout-nav="3" aria-label="Step 3: Final review" disabled><span class="checkout-progress-circle" aria-hidden="true">3</span><span>Review</span></button>
   </nav>
-  <span class="sr-only" id="checkoutStepAnnounce" role="status" aria-live="polite">Step 1 of 3: Delivery details</span>
-  <a class="checkout-back-link" href="/cart/">← Edit shopping bag</a>
+  <span class="sr-only" id="checkoutStepAnnounce" role="status" aria-live="polite"><cb-copy data-cb-copy="t_129324b0" style="display:contents">Step 1 of 3: Delivery details</cb-copy></span>
+  <a class="checkout-back-link" href="/cart/"><cb-copy data-cb-copy="t_3df0438d" style="display:contents">← Edit shopping bag</cb-copy></a>
 </section>
-<div class="checkout-guest-note"><span class="checkout-guest-icon" aria-hidden="true">✓</span><span><strong>Guest checkout</strong> — No account needed. Your total is verified before you place the order.</span></div>
+<div class="checkout-guest-note"><span class="checkout-guest-icon" aria-hidden="true">✓</span><span><strong><cb-copy data-cb-copy="t_7113bfed" style="display:contents">Guest checkout</cb-copy></strong> <cb-copy data-cb-copy="t_bb74bd33" style="display:contents">— No account needed. Your total is verified before you place the order.</cb-copy></span></div>
   <div id="orderError" class="order-error" role="alert" hidden></div>
   <div class="co-grid">
     <div>
       <section class="co-card" id="checkoutDeliveryStep" aria-labelledby="detailsTitle">
-        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">01</span><div><h2 id="detailsTitle" class="co-step-title">Delivery details</h2><p>Where should we deliver your snacks?</p></div></div>
-        <div class="field"><label for="f_country">Delivery country</label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help">Pakistan only. Overseas shipping is not yet available.</p><div class="err" id="e_country">Delivery is currently available within Pakistan.</div></div>
+        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">01</span><div><h2 id="detailsTitle" class="co-step-title"><cb-copy data-cb-copy="t_e3faec47" style="display:contents">Delivery details</cb-copy></h2><p><cb-copy data-cb-copy="t_6f62e58f" style="display:contents">Where should we deliver your snacks?</cb-copy></p></div></div>
+        <div class="field"><label for="f_country"><cb-copy data-cb-copy="t_2b60adaf" style="display:contents">Delivery country</cb-copy></label><select id="f_country" name="country" autocomplete="country-name" aria-describedby="countryDeliveryNote"><option value="Pakistan" data-code="+92" data-cc="PK" selected>Pakistan</option></select><p id="countryDeliveryNote" class="checkout-field-help"><cb-copy data-cb-copy="t_fbb95764" style="display:contents">Pakistan only. Overseas shipping is not yet available.</cb-copy></p><div class="err" id="e_country"><cb-copy data-cb-copy="t_57b4e3d6" style="display:contents">Delivery is currently available within Pakistan.</cb-copy></div></div>
         <div class="form-two">
-          <div class="field"><label for="f_fname">First Name *</label><input id="f_fname" name="first_name" autocomplete="given-name" placeholder="e.g. Ahmed"><div class="err" id="e_fname">Enter first name</div></div>
-          <div class="field"><label for="f_lname">Last Name <span class="optional">(optional)</span></label><input id="f_lname" name="last_name" autocomplete="family-name" maxlength="100" placeholder="e.g. Khan"><div class="err" id="e_lname">Name must be 100 characters or fewer in total.</div></div>
+          <div class="field"><label for="f_fname"><cb-copy data-cb-copy="t_6f46bbc6" style="display:contents">First Name *</cb-copy></label><input id="f_fname" name="first_name" autocomplete="given-name" placeholder="e.g. Ahmed" data-cb-placeholder="t_9166b28e"><div class="err" id="e_fname"><cb-copy data-cb-copy="t_23ac0802" style="display:contents">Enter first name</cb-copy></div></div>
+          <div class="field"><label for="f_lname"><cb-copy data-cb-copy="t_99e25be0" style="display:contents">Last Name</cb-copy> <span class="optional"><cb-copy data-cb-copy="t_182d8232" style="display:contents">(optional)</cb-copy></span></label><input id="f_lname" name="last_name" autocomplete="family-name" maxlength="100" placeholder="e.g. Khan" data-cb-placeholder="t_d8936175"><div class="err" id="e_lname"><cb-copy data-cb-copy="t_b9d537c2" style="display:contents">Name must be 100 characters or fewer in total.</cb-copy></div></div>
         </div>
         <!-- Hidden full name for backward compat -->
         <input type="hidden" id="f_name" name="name">
-        <div class="field"><label for="f_phone">Mobile number <span class="optional">(required)</span></label><div class="phone-wrap"><select id="f_ccode" name="country_code" aria-label="Country code"><option value="+92" selected>🇵🇰 +92</option></select><input id="f_phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" placeholder="03XXXXXXXXX" aria-describedby="f_phoneHelp e_phone"></div><p id="f_phoneHelp" class="checkout-field-help">Used for delivery coordination and courier contact. Enter 03XXXXXXXXX; WhatsApp updates are optional below.</p><div class="err" id="e_phone">Enter a valid Pakistani mobile number.</div></div>
-        <div class="field"><label for="f_email">Email for order receipt <span class="optional">(required)</span></label><input id="f_email" name="email" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="emailHelp e_email"><p id="emailHelp" class="checkout-field-help">We send your order receipt and important order updates here.</p><div class="err" id="e_email">Enter a valid email address</div></div>
+        <div class="field"><label for="f_phone"><cb-copy data-cb-copy="t_0bb78ab0" style="display:contents">Mobile number</cb-copy> <span class="optional"><cb-copy data-cb-copy="t_2e184401" style="display:contents">(required)</cb-copy></span></label><div class="phone-wrap"><select id="f_ccode" name="country_code" aria-label="Country code"><option value="+92" selected>🇵🇰 +92</option></select><input id="f_phone" name="phone" type="tel" inputmode="tel" autocomplete="tel-national" maxlength="15" placeholder="03XXXXXXXXX" aria-describedby="f_phoneHelp e_phone"></div><p id="f_phoneHelp" class="checkout-field-help"><cb-copy data-cb-copy="t_ea473341" style="display:contents">Used for delivery coordination and courier contact. Enter 03XXXXXXXXX; WhatsApp updates are optional below.</cb-copy></p><div class="err" id="e_phone"><cb-copy data-cb-copy="t_cfe94401" style="display:contents">Enter a valid Pakistani mobile number.</cb-copy></div></div>
+        <div class="field"><label for="f_email"><cb-copy data-cb-copy="t_1bd5c8bc" style="display:contents">Email for order receipt</cb-copy> <span class="optional"><cb-copy data-cb-copy="t_2e184401" style="display:contents">(required)</cb-copy></span></label><input id="f_email" name="email" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="emailHelp e_email"><p id="emailHelp" class="checkout-field-help"><cb-copy data-cb-copy="t_ab7431d1" style="display:contents">We send your order receipt and important order updates here.</cb-copy></p><div class="err" id="e_email"><cb-copy data-cb-copy="t_c59a1640" style="display:contents">Enter a valid email address</cb-copy></div></div>
         <section class="checkout-contact-preferences" aria-labelledby="checkoutContactHeading">
           <div class="checkout-contact-preferences-heading">
             <span aria-hidden="true" class="checkout-contact-icon">💬</span>
-            <div><h3 id="checkoutContactHeading">WhatsApp order updates</h3><p>Choose how you want to hear about this order.</p></div>
+            <div><h3 id="checkoutContactHeading"><cb-copy data-cb-copy="t_05def095" style="display:contents">WhatsApp order updates</cb-copy></h3><p><cb-copy data-cb-copy="t_10bff1bd" style="display:contents">Choose how you want to hear about this order.</cb-copy></p></div>
           </div>
           <label class="checkout-whatsapp-choice" id="whatsappOrderOptIn">
             <input type="checkbox" id="f_whatsapp_optin" name="whatsapp_opt_in" value="true">
-            <span><b>Send my order updates on WhatsApp (optional)</b><small>Order confirmations and delivery updates only. No marketing. Leave unchecked to opt out.</small></span>
+            <span><b><cb-copy data-cb-copy="t_e58e5bef" style="display:contents">Send my order updates on WhatsApp (optional)</cb-copy></b><small><cb-copy data-cb-copy="t_e9816c2c" style="display:contents">Order confirmations and delivery updates only. No marketing. Leave unchecked to opt out.</cb-copy></small></span>
           </label>
-          <p class="checkout-contact-optout">This choice does not affect delivery calls.</p>
+          <p class="checkout-contact-optout"><cb-copy data-cb-copy="t_1359a7f0" style="display:contents">This choice does not affect delivery calls.</cb-copy></p>
         </section>
-        <div class="field"><label for="f_addr">Complete delivery address <span class="optional">(required)</span></label><textarea id="f_addr" name="address" autocomplete="street-address" maxlength="440" rows="3" placeholder="House / flat, street, area and nearby landmark" aria-describedby="addressHelp e_addr"></textarea><p id="addressHelp" class="checkout-field-help">Include house or shop number, street and area so the courier can find you.</p><div class="err" id="e_addr">Please enter a complete delivery address</div></div>
+        <div class="field"><label for="f_addr"><cb-copy data-cb-copy="t_162b137a" style="display:contents">Complete delivery address</cb-copy> <span class="optional"><cb-copy data-cb-copy="t_2e184401" style="display:contents">(required)</cb-copy></span></label><textarea id="f_addr" name="address" autocomplete="street-address" maxlength="440" rows="3" placeholder="House / flat, street, area and nearby landmark" aria-describedby="addressHelp e_addr"></textarea><p id="addressHelp" class="checkout-field-help"><cb-copy data-cb-copy="t_582c860a" style="display:contents">Include house or shop number, street and area so the courier can find you.</cb-copy></p><div class="err" id="e_addr"><cb-copy data-cb-copy="t_a75be95f" style="display:contents">Please enter a complete delivery address</cb-copy></div></div>
         <div class="form-two checkout-location-grid">
-          <div class="field"><label for="f_province">Province / Region *</label>
+          <div class="field"><label for="f_province"><cb-copy data-cb-copy="t_fe530dc2" style="display:contents">Province / Region *</cb-copy></label>
             <select id="f_province" name="province" autocomplete="address-level1" aria-describedby="provinceHelp e_province" required>
-              <option value="">Select province / region</option>
-              <option value="Punjab">Punjab</option>
-              <option value="Sindh">Sindh</option>
-              <option value="Khyber Pakhtunkhwa">Khyber Pakhtunkhwa</option>
-              <option value="Balochistan">Balochistan</option>
-              <option value="Islamabad">Islamabad Capital Territory</option>
-              <option value="Azad Kashmir">Azad Jammu &amp; Kashmir</option>
-              <option value="Gilgit Baltistan">Gilgit-Baltistan</option>
-            </select><p id="provinceHelp" class="checkout-field-help">Select your delivery province or region first.</p><div class="err" id="e_province">Select a province or region.</div>
+              <option value=""><cb-copy data-cb-copy="t_0480bcfa" style="display:contents">Select province / region</cb-copy></option>
+              <option value="Punjab"><cb-copy data-cb-copy="t_7e5e08fd" style="display:contents">Punjab</cb-copy></option>
+              <option value="Sindh"><cb-copy data-cb-copy="t_369a1bf9" style="display:contents">Sindh</cb-copy></option>
+              <option value="Khyber Pakhtunkhwa"><cb-copy data-cb-copy="t_78608a2e" style="display:contents">Khyber Pakhtunkhwa</cb-copy></option>
+              <option value="Balochistan"><cb-copy data-cb-copy="t_d940f9cd" style="display:contents">Balochistan</cb-copy></option>
+              <option value="Islamabad"><cb-copy data-cb-copy="t_efdb2501" style="display:contents">Islamabad Capital Territory</cb-copy></option>
+              <option value="Azad Kashmir"><cb-copy data-cb-copy="t_dbdf49f5" style="display:contents">Azad Jammu</cb-copy> &amp; <cb-copy data-cb-copy="t_6a60a822" style="display:contents">Kashmir</cb-copy></option>
+              <option value="Gilgit Baltistan"><cb-copy data-cb-copy="t_abcab6fc" style="display:contents">Gilgit-Baltistan</cb-copy></option>
+            </select><p id="provinceHelp" class="checkout-field-help"><cb-copy data-cb-copy="t_0f6c5719" style="display:contents">Select your delivery province or region first.</cb-copy></p><div class="err" id="e_province"><cb-copy data-cb-copy="t_59a9e8b5" style="display:contents">Select a province or region.</cb-copy></div>
           </div>
-          <div class="field"><label for="f_city">City / Town *</label>
-            <input id="f_city" name="city" autocomplete="address-level2" list="pkCities" placeholder="Select province first" aria-describedby="cityHelp e_city" maxlength="100" disabled required>
+          <div class="field"><label for="f_city"><cb-copy data-cb-copy="t_72d4afeb" style="display:contents">City / Town *</cb-copy></label>
+            <input id="f_city" name="city" autocomplete="address-level2" list="pkCities" placeholder="Select province first" aria-describedby="cityHelp e_city" maxlength="100" disabled required data-cb-placeholder="t_33964a85">
             <datalist id="pkCities"></datalist>
-            <p id="cityHelp" class="checkout-field-help" aria-live="polite">Choose a region to see cities and towns.</p><div class="err" id="e_city">Enter a city or town for the selected region.</div>
+            <p id="cityHelp" class="checkout-field-help" aria-live="polite"><cb-copy data-cb-copy="t_abebe7b2" style="display:contents">Choose a region to see cities and towns.</cb-copy></p><div class="err" id="e_city"><cb-copy data-cb-copy="t_0ecfee0d" style="display:contents">Enter a city or town for the selected region.</cb-copy></div>
           </div>
         </div>
-        <div class="field"><label for="f_postal">Postal Code <span class="optional">(optional)</span></label><input id="f_postal" name="postal_code" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 34200" aria-describedby="e_postal"><div class="err" id="e_postal">Use a 5-digit Pakistan postal code, or leave blank.</div></div>
-        <div class="field checkbox-field"><label><input type="checkbox" id="f_saveinfo"> Save this information for next time</label></div>
-        <details class="checkout-optional-disclosure checkout-note-disclosure"><summary><span>Add a note for delivery <small>(optional)</small></span><span aria-hidden="true" class="checkout-disclosure-chevron">⌄</span></summary><div class="field"><label for="f_note">Instructions for your order</label><textarea id="f_note" name="note" rows="2" maxlength="300" placeholder="e.g. Call before delivery, gift note, no substitutions..."></textarea></div></details>
-        <div class="availability-note">If any snack becomes unavailable after you order, ChaskaBox will contact you before removing or substituting it.</div>
-        <div class="checkout-step-actions"><span class="checkout-step-hint">Next: choose how to pay. You can edit these details before placing your order.</span><button id="toPaymentBtn" type="button" class="checkout-next-btn">Continue to payment <span aria-hidden="true">→</span></button></div>
+        <div class="field"><label for="f_postal"><cb-copy data-cb-copy="t_05d6add3" style="display:contents">Postal Code</cb-copy> <span class="optional"><cb-copy data-cb-copy="t_182d8232" style="display:contents">(optional)</cb-copy></span></label><input id="f_postal" name="postal_code" inputmode="numeric" autocomplete="postal-code" maxlength="5" pattern="[0-9]{5}" placeholder="e.g. 34200" aria-describedby="e_postal" data-cb-placeholder="t_927761bc"><div class="err" id="e_postal"><cb-copy data-cb-copy="t_5dca5bb7" style="display:contents">Use a 5-digit Pakistan postal code, or leave blank.</cb-copy></div></div>
+        <div class="field checkbox-field"><label><input type="checkbox" id="f_saveinfo"> <cb-copy data-cb-copy="t_c0128aa3" style="display:contents">Save this information for next time</cb-copy></label></div>
+        <details class="checkout-optional-disclosure checkout-note-disclosure"><summary><span><cb-copy data-cb-copy="t_5a487eb6" style="display:contents">Add a note for delivery</cb-copy> <small><cb-copy data-cb-copy="t_182d8232" style="display:contents">(optional)</cb-copy></small></span><span aria-hidden="true" class="checkout-disclosure-chevron">⌄</span></summary><div class="field"><label for="f_note"><cb-copy data-cb-copy="t_4150a572" style="display:contents">Instructions for your order</cb-copy></label><textarea id="f_note" name="note" rows="2" maxlength="300" placeholder="e.g. Call before delivery, gift note, no substitutions..."></textarea></div></details>
+        <div class="availability-note"><cb-copy data-cb-copy="t_93854af3" style="display:contents">If any snack becomes unavailable after you order, ChaskaBox will contact you before removing or substituting it.</cb-copy></div>
+        <div class="checkout-step-actions"><span class="checkout-step-hint"><cb-copy data-cb-copy="t_bfa334d8" style="display:contents">Next: choose how to pay. You can edit these details before placing your order.</cb-copy></span><button id="toPaymentBtn" type="button" class="checkout-next-btn"><cb-copy data-cb-copy="t_7021b11b" style="display:contents">Continue to payment</cb-copy> <span aria-hidden="true">→</span></button></div>
       </section>
 
       <section class="co-card" id="checkoutPaymentStep" hidden aria-labelledby="paymentTitle">
-        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">02</span><div><h2 id="paymentTitle" class="co-step-title">Payment method</h2><p>Pick the way you'd like to pay.</p></div></div>
+        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">02</span><div><h2 id="paymentTitle" class="co-step-title"><cb-copy data-cb-copy="t_5b8fb9b2" style="display:contents">Payment method</cb-copy></h2><p><cb-copy data-cb-copy="t_107cbec0" style="display:contents">Pick the way you'd like to pay.</cb-copy></p></div></div>
         <fieldset class="payment-fieldset">
-          <legend class="sr-only">Choose a payment method</legend>
+          <legend class="sr-only"><cb-copy data-cb-copy="t_f689218e" style="display:contents">Choose a payment method</cb-copy></legend>
 
           <label class="payopt sel" id="pay_cod">
             <input type="radio" name="pay" value="cod" checked>
-            <span><b>💵 Cash on Delivery</b><small><span id="codAdvancePayHint">Rs. 500 advance required before dispatch, rest COD</span> · <span data-dynamic-delivery>Rs. 300</span> delivery</small></span>
+            <span><b><cb-copy data-cb-copy="t_c1e7c804" style="display:contents">💵 Cash on Delivery</cb-copy></b><small><span id="codAdvancePayHint"><cb-copy data-cb-copy="t_26b8553d" style="display:contents">Rs. 500 advance required before dispatch, rest COD</cb-copy></span> · <span data-dynamic-delivery><cb-copy data-cb-copy="t_ee590545" style="display:contents">Rs. 300</cb-copy></span> <cb-copy data-cb-copy="t_f9c53a55" style="display:contents">delivery</cb-copy></small></span>
           </label>
 
           <label class="payopt" id="pay_jazz">
             <input type="radio" name="pay" value="jazzcash">
-            <span><b>⚡ JazzCash (Advance)</b><small>Prepaid · FREE delivery on orders of <span data-dynamic-threshold>Rs. 5,000</span>+</small></span>
+            <span><b><cb-copy data-cb-copy="t_6889dcc3" style="display:contents">⚡ JazzCash (Advance)</cb-copy></b><small><cb-copy data-cb-copy="t_9620f87a" style="display:contents">Prepaid · FREE delivery on orders of</cb-copy> <span data-dynamic-threshold><cb-copy data-cb-copy="t_8a1459a7" style="display:contents">Rs. 5,000</cb-copy></span>+</small></span>
           </label>
 
-          <p id="codAdvanceExplainer" class="payment-help">COD requires a verified advance before dispatch. After placing your order, transfer the requested advance using JazzCash or Bank Transfer and send your proof to ChaskaBox. The advance is deducted from your order total.</p>
+          <p id="codAdvanceExplainer" class="payment-help"><cb-copy data-cb-copy="t_e5f2283f" style="display:contents">COD requires a verified advance before dispatch. After placing your order, transfer the requested advance using JazzCash or Bank Transfer and send your proof to ChaskaBox. The advance is deducted from your order total.</cb-copy></p>
           <div id="jazzBox" class="payment-details" hidden>
             <div class="qrbox">
               <img src="/images/jazzcash-qr.webp" alt="JazzCash payment QR code">
-              <div class="tillid">Till ID: 981716438</div>
-              <div class="payment-help">Scan the QR or use the Till ID to transfer the exact checkout total.</div>
+              <div class="tillid"><cb-copy data-cb-copy="t_0cad6972" style="display:contents">Till ID: 981716438</cb-copy></div>
+              <div class="payment-help"><cb-copy data-cb-copy="t_a166a3ef" style="display:contents">Scan the QR or use the Till ID to transfer the exact checkout total.</cb-copy></div>
             </div>
           </div>
 
           <label class="payopt" id="pay_bank">
             <input type="radio" name="pay" value="bank_transfer">
-            <span><b>🏦 Bank Transfer (Advance)</b><small>Punjab Bank · FREE delivery on orders of <span data-dynamic-threshold>Rs. 5,000</span>+</small></span>
+            <span><b><cb-copy data-cb-copy="t_208f87b1" style="display:contents">🏦 Bank Transfer (Advance)</cb-copy></b><small><cb-copy data-cb-copy="t_447b8a75" style="display:contents">Punjab Bank · FREE delivery on orders of</cb-copy> <span data-dynamic-threshold><cb-copy data-cb-copy="t_8a1459a7" style="display:contents">Rs. 5,000</cb-copy></span>+</small></span>
           </label>
 
           <div id="bankBox" class="payment-details" hidden>
             <div class="bank-card">
-              <div><span>Bank</span><strong>Punjab Bank</strong></div>
-              <div><span>Account title</span><strong>RAMEEZ ASLAM</strong></div>
-              <div><span>Account number</span><strong id="bankAccount">6050435151500017</strong></div>
-              <button type="button" class="copybtn" id="copyBankBtn">Copy account number</button>
+              <div><span><cb-copy data-cb-copy="t_a274c5b7" style="display:contents">Bank</cb-copy></span><strong><cb-copy data-cb-copy="t_f4cb1a35" style="display:contents">Punjab Bank</cb-copy></strong></div>
+              <div><span><cb-copy data-cb-copy="t_d4ad7662" style="display:contents">Account title</cb-copy></span><strong><cb-copy data-cb-copy="t_fb7ce12b" style="display:contents">RAMEEZ ASLAM</cb-copy></strong></div>
+              <div><span><cb-copy data-cb-copy="t_4ced0dc5" style="display:contents">Account number</cb-copy></span><strong id="bankAccount">6050435151500017</strong></div>
+              <button type="button" class="copybtn" id="copyBankBtn"><cb-copy data-cb-copy="t_ccb360e4" style="display:contents">Copy account number</cb-copy></button>
             </div>
           </div>
 
           <div id="prepaidRef" class="prepaid-ref" hidden>
-            <div class="hint">After transferring the exact total, enter the transaction/reference number below. Your payment remains <b>awaiting verification</b> until ChaskaBox confirms it.</div>
+            <div class="hint"><cb-copy data-cb-copy="t_bc044143" style="display:contents">After transferring the exact total, enter the transaction/reference number below. Your payment remains</cb-copy> <b><cb-copy data-cb-copy="t_6d742f82" style="display:contents">awaiting verification</cb-copy></b> <cb-copy data-cb-copy="t_466efbe9" style="display:contents">until ChaskaBox confirms it.</cb-copy></div>
             <div class="field">
-              <label for="f_reference">Transaction / Reference Number *</label>
-              <input id="f_reference" name="payment_reference" maxlength="80" autocomplete="off" placeholder="Enter payment reference">
-              <div class="err" id="e_reference">Please enter the payment transaction/reference number</div>
+              <label for="f_reference"><cb-copy data-cb-copy="t_603d6be2" style="display:contents">Transaction / Reference Number *</cb-copy></label>
+              <input id="f_reference" name="payment_reference" maxlength="80" autocomplete="off" placeholder="Enter payment reference" data-cb-placeholder="t_cd694b46">
+              <div class="err" id="e_reference"><cb-copy data-cb-copy="t_3d7dc90b" style="display:contents">Please enter the payment transaction/reference number</cb-copy></div>
             </div>
           </div>
         </fieldset>
         <details class="checkout-optional-disclosure" id="checkoutPackingOption">
-          <summary><span>🎬 Packing video request <small>(optional)</small></span><span aria-hidden="true" class="checkout-disclosure-chevron">⌄</span></summary>
+          <summary><span><cb-copy data-cb-copy="t_40bdd00a" style="display:contents">🎬 Packing video request</cb-copy> <small><cb-copy data-cb-copy="t_182d8232" style="display:contents">(optional)</cb-copy></small></span><span aria-hidden="true" class="checkout-disclosure-chevron">⌄</span></summary>
           <label class="checkout-packing-choice" id="videoOpt">
             <input type="checkbox" id="f_video">
-            <span>I'd like a free packing video, if available.<small>This is a request only, not a guaranteed service. It is separate from WhatsApp order notifications.</small></span>
+            <span><cb-copy data-cb-copy="t_fb2e11d1" style="display:contents">I'd like a free packing video, if available.</cb-copy><small><cb-copy data-cb-copy="t_03df410c" style="display:contents">This is a request only, not a guaranteed service. It is separate from WhatsApp order notifications.</cb-copy></small></span>
           </label>
         </details>
-        <div class="checkout-step-actions"><button type="button" id="backDeliveryBtn" class="checkout-back-btn">← Delivery details</button><button id="toReviewBtn" type="button" class="checkout-next-btn">Review my order <span aria-hidden="true">→</span></button></div>
+        <div class="checkout-step-actions"><button type="button" id="backDeliveryBtn" class="checkout-back-btn"><cb-copy data-cb-copy="t_771c798f" style="display:contents">← Delivery details</cb-copy></button><button id="toReviewBtn" type="button" class="checkout-next-btn"><cb-copy data-cb-copy="t_e3fff79d" style="display:contents">Review my order</cb-copy> <span aria-hidden="true">→</span></button></div>
       </section>
 
 
       <section class="co-card checkout-review-card" id="checkoutReviewStep" hidden aria-labelledby="reviewTitle">
-        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">03</span><div><h2 id="reviewTitle" class="co-step-title">Review &amp; confirm</h2><p>Make sure everything looks right before placing your order.</p></div></div>
-        <div class="checkout-review-block"><div class="checkout-review-block-title"><h3>Delivery details</h3><button type="button" id="editDeliveryBtn" class="checkout-edit-btn">Edit</button></div><p id="reviewName"></p><p id="reviewPhone"></p><p id="reviewEmail"></p><p id="reviewAddress"></p><p id="reviewWhatsapp" class="checkout-review-note" aria-live="polite"></p></div>
-        <div class="checkout-review-block"><div class="checkout-review-block-title"><h3>Payment method</h3><button type="button" id="editPaymentBtn" class="checkout-edit-btn">Edit</button></div><p id="reviewPayment"></p><p id="reviewPaymentStatus" class="checkout-review-note"></p></div>
-        <p class="checkout-review-reminder">Please verify the final total in the order summary. Your order is placed only when you press “Place order”.</p>
-        <div class="checkout-step-actions"><button type="button" id="backPaymentBtn" class="checkout-back-btn">← Payment method</button><span class="checkout-step-hint">Final confirmation is in your order summary.</span></div>
+        <div class="checkout-section-heading"><span class="checkout-section-number" aria-hidden="true">03</span><div><h2 id="reviewTitle" class="co-step-title"><cb-copy data-cb-copy="t_6ae55601" style="display:contents">Review</cb-copy> &amp; <cb-copy data-cb-copy="t_70daee4f" style="display:contents">confirm</cb-copy></h2><p><cb-copy data-cb-copy="t_2f0f519d" style="display:contents">Make sure everything looks right before placing your order.</cb-copy></p></div></div>
+        <div class="checkout-review-block"><div class="checkout-review-block-title"><h3><cb-copy data-cb-copy="t_e3faec47" style="display:contents">Delivery details</cb-copy></h3><button type="button" id="editDeliveryBtn" class="checkout-edit-btn"><cb-copy data-cb-copy="t_c2c76cb1" style="display:contents">Edit</cb-copy></button></div><p id="reviewName"></p><p id="reviewPhone"></p><p id="reviewEmail"></p><p id="reviewAddress"></p><p id="reviewWhatsapp" class="checkout-review-note" aria-live="polite"></p></div>
+        <div class="checkout-review-block"><div class="checkout-review-block-title"><h3><cb-copy data-cb-copy="t_5b8fb9b2" style="display:contents">Payment method</cb-copy></h3><button type="button" id="editPaymentBtn" class="checkout-edit-btn"><cb-copy data-cb-copy="t_c2c76cb1" style="display:contents">Edit</cb-copy></button></div><p id="reviewPayment"></p><p id="reviewPaymentStatus" class="checkout-review-note"></p></div>
+        <p class="checkout-review-reminder"><cb-copy data-cb-copy="t_0677a13b" style="display:contents">Please verify the final total in the order summary. Your order is placed only when you press “Place order”.</cb-copy></p>
+        <div class="checkout-step-actions"><button type="button" id="backPaymentBtn" class="checkout-back-btn"><cb-copy data-cb-copy="t_6019e08a" style="display:contents">← Payment method</cb-copy></button><span class="checkout-step-hint"><cb-copy data-cb-copy="t_1b159394" style="display:contents">Final confirmation is in your order summary.</cb-copy></span></div>
       </section>
     </div>
 
     <div>
       <section class="co-card order-summary-card" aria-labelledby="summaryTitle">
-        <div class="checkout-summary-heading"><div><p class="checkout-summary-kicker">YOUR BAG</p><h2 id="summaryTitle" class="co-step-title">Order summary</h2></div><span class="checkout-summary-lock" aria-hidden="true">✓</span></div>
+        <div class="checkout-summary-heading"><div><p class="checkout-summary-kicker"><cb-copy data-cb-copy="t_6a42df78" style="display:contents">YOUR BAG</cb-copy></p><h2 id="summaryTitle" class="co-step-title"><cb-copy data-cb-copy="t_848d7a63" style="display:contents">Order summary</cb-copy></h2></div><span class="checkout-summary-lock" aria-hidden="true">✓</span></div>
         <div id="coItems"></div>
         <div class="checkout-summary-body">
           <div class="checkout-coupon">
-            <label for="f_coupon">Have a promo code? <span class="optional">(optional)</span></label>
-            <div class="checkout-coupon-row"><input id="f_coupon" maxlength="32" autocomplete="off" placeholder="Enter your code"><button type="button" id="applyCoupon">Apply code</button></div>
+            <label for="f_coupon"><cb-copy data-cb-copy="t_f992de91" style="display:contents">Have a promo code?</cb-copy> <span class="optional"><cb-copy data-cb-copy="t_182d8232" style="display:contents">(optional)</cb-copy></span></label>
+            <div class="checkout-coupon-row"><input id="f_coupon" maxlength="32" autocomplete="off" placeholder="Enter your code" data-cb-placeholder="t_79ee93a9"><button type="button" id="applyCoupon"><cb-copy data-cb-copy="t_6051c8a8" style="display:contents">Apply code</cb-copy></button></div>
           </div>
-          <p id="quoteStatus" class="checkout-quote-status" role="status" aria-live="polite">Enter your city to confirm your final total.</p>
+          <p id="quoteStatus" class="checkout-quote-status" role="status" aria-live="polite"><cb-copy data-cb-copy="t_7883096d" style="display:contents">Enter your city to confirm your final total.</cb-copy></p>
           <div class="checkout-totals">
-            <div class="sumrow"><span>Subtotal</span><span id="s_sub">Rs. 0</span></div>
-            <div class="sumrow"><span>Discount</span><span id="s_discount">Rs. 0</span></div>
-            <div class="sumrow"><span>Delivery</span><span id="s_del">Rs. 0</span></div>
-            <div class="sumrow total"><span id="checkoutTotalLabel">Estimated total</span><strong id="s_tot">Rs. 0</strong></div>
-            <div class="sumrow" id="codAdvanceSummary" style="display:none"><span>COD advance before dispatch</span><strong id="s_cod_advance">Rs. 500</strong></div>
-            <div class="sumrow" id="codBalanceSummary" style="display:none"><span>Remaining on delivery</span><strong id="s_cod_balance">Rs. 0</strong></div>
+            <div class="sumrow"><span><cb-copy data-cb-copy="t_d361488d" style="display:contents">Subtotal</cb-copy></span><span id="s_sub"><cb-copy data-cb-copy="t_1b6e1904" style="display:contents">Rs. 0</cb-copy></span></div>
+            <div class="sumrow"><span><cb-copy data-cb-copy="t_b7a4a87e" style="display:contents">Discount</cb-copy></span><span id="s_discount"><cb-copy data-cb-copy="t_1b6e1904" style="display:contents">Rs. 0</cb-copy></span></div>
+            <div class="sumrow"><span><cb-copy data-cb-copy="t_48f38d75" style="display:contents">Delivery</cb-copy></span><span id="s_del"><cb-copy data-cb-copy="t_1b6e1904" style="display:contents">Rs. 0</cb-copy></span></div>
+            <div class="sumrow total"><span id="checkoutTotalLabel"><cb-copy data-cb-copy="t_2cc3997b" style="display:contents">Estimated total</cb-copy></span><strong id="s_tot"><cb-copy data-cb-copy="t_1b6e1904" style="display:contents">Rs. 0</cb-copy></strong></div>
+            <div class="sumrow" id="codAdvanceSummary" style="display:none"><span><cb-copy data-cb-copy="t_595e4df0" style="display:contents">COD advance before dispatch</cb-copy></span><strong id="s_cod_advance"><cb-copy data-cb-copy="t_d5deeb43" style="display:contents">Rs. 500</cb-copy></strong></div>
+            <div class="sumrow" id="codBalanceSummary" style="display:none"><span><cb-copy data-cb-copy="t_ce85cabc" style="display:contents">Remaining on delivery</cb-copy></span><strong id="s_cod_balance"><cb-copy data-cb-copy="t_1b6e1904" style="display:contents">Rs. 0</cb-copy></strong></div>
           </div>
         </div>
         <div class="hint" id="freeHint" hidden></div>
-        <div class="checkout-verification" id="checkoutVerification" hidden><p class="checkout-verification-title"><span aria-hidden="true">◈</span> Bot protection</p><div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light" data-size="flexible"></div><p class="checkout-verification-help">Verification unavailable? Try refreshing, or disable blockers for this site. We cannot accept orders without required security checks.</p></div>
-        <button class="placebtn" id="placeBtn" type="button" hidden disabled>Place order <span aria-hidden="true">→</span></button>
-        <div class="checkout-trust"><span aria-hidden="true">✓</span> Secure checkout <span class="checkout-trust-divider" aria-hidden="true">·</span> Final pricing checked before order</div>
-        <p class="checkout-policy" id="checkoutPolicy" hidden>By placing your order, you agree to our <a href="/terms/">Terms</a>, <a href="/shipping-policy/">Shipping Policy</a> and <a href="/refund-policy/">Refund &amp; Resolution Policy</a>.</p>
+        <div class="checkout-verification" id="checkoutVerification" hidden><p class="checkout-verification-title"><span aria-hidden="true">◈</span> <cb-copy data-cb-copy="t_3a4568b9" style="display:contents">Bot protection</cb-copy></p><div class="cf-turnstile" data-sitekey="0x4AAAAAAFSB7MA4c2HdDcdf" data-theme="light" data-size="flexible"></div><p class="checkout-verification-help"><cb-copy data-cb-copy="t_6b2eaf15" style="display:contents">Verification unavailable? Try refreshing, or disable blockers for this site. We cannot accept orders without required security checks.</cb-copy></p></div>
+        <button class="placebtn" id="placeBtn" type="button" hidden disabled><cb-copy data-cb-copy="t_77ad1ecc" style="display:contents">Place order</cb-copy> <span aria-hidden="true">→</span></button>
+        <div class="checkout-trust"><span aria-hidden="true">✓</span> <cb-copy data-cb-copy="t_bab7af8c" style="display:contents">Secure checkout</cb-copy> <span class="checkout-trust-divider" aria-hidden="true">·</span> <cb-copy data-cb-copy="t_a13197f3" style="display:contents">Final pricing checked before order</cb-copy></div>
+        <p class="checkout-policy" id="checkoutPolicy" hidden><cb-copy data-cb-copy="t_8e9e1331" style="display:contents">By placing your order, you agree to our</cb-copy> <a href="/terms/"><cb-copy data-cb-copy="t_9435adcc" style="display:contents">Terms</cb-copy></a>, <a href="/shipping-policy/"><cb-copy data-cb-copy="t_14942e13" style="display:contents">Shipping Policy</cb-copy></a> <cb-copy data-cb-copy="t_0f29c2a6" style="display:contents">and</cb-copy> <a href="/refund-policy/"><cb-copy data-cb-copy="t_7900117f" style="display:contents">Refund</cb-copy> &amp; <cb-copy data-cb-copy="t_6d4a5f77" style="display:contents">Resolution Policy</cb-copy></a>.</p>
       </section>
     </div>
   </div>
@@ -186,20 +187,20 @@
 <section class="co-wrap" id="coDone" style="display:none" aria-live="polite">
   <div class="co-card confirm confirmation-card">
     <div class="ok">✅</div>
-    <span class="eyebrow">ORDER RECEIVED</span>
-    <h2>Shukriya! Your Chaska is in the queue.</h2>
-    <p class="confirm-label">Order number</p>
+    <span class="eyebrow"><cb-copy data-cb-copy="t_971b2122" style="display:contents">ORDER RECEIVED</cb-copy></span>
+    <h2><cb-copy data-cb-copy="t_21b20331" style="display:contents">Shukriya! Your Chaska is in the queue.</cb-copy></h2>
+    <p class="confirm-label"><cb-copy data-cb-copy="t_60f734d0" style="display:contents">Order number</cb-copy></p>
     <div class="orderno" id="doneNo"></div>
     <div class="confirm-facts">
-      <div><span>Total</span><strong id="doneTotal">—</strong></div>
-      <div><span>Payment</span><strong id="donePayment">—</strong></div>
-      <div><span>Status</span><strong id="doneStatus">—</strong></div>
+      <div><span><cb-copy data-cb-copy="t_ad066d9d" style="display:contents">Total</cb-copy></span><strong id="doneTotal">—</strong></div>
+      <div><span><cb-copy data-cb-copy="t_20f64111" style="display:contents">Payment</cb-copy></span><strong id="donePayment">—</strong></div>
+      <div><span><cb-copy data-cb-copy="t_005ef20f" style="display:contents">Status</cb-copy></span><strong id="doneStatus">—</strong></div>
     </div>
     <p id="doneMsg" class="done-message"></p>
     <div id="doneCodAdvanceBox" class="payment-details" style="display:none" aria-live="polite"></div>
-    <div class="confirm-actions"><a class="cta" id="doneTrack" href="/track-order.html">Track order</a><a class="cta secondary" href="/">Continue Shopping</a><a class="cta secondary" id="doneWhatsApp" href="https://wa.me/923320005381" target="_blank" rel="noopener">WhatsApp Support</a></div>
-    <div id="doneAccountOffer" class="co-card" style="display:none;margin-top:16px;text-align:center"><h3>Want to track all your orders?</h3><p class="amut">Create a free account to save your order history, wishlist and addresses.</p><button class="cta">Create free account</button></div>
-    <p class="confirmation-tip">Tip: screenshot this screen or save your order number for support.</p>
+    <div class="confirm-actions"><a class="cta" id="doneTrack" href="/track-order.html"><cb-copy data-cb-copy="t_0463528c" style="display:contents">Track order</cb-copy></a><a class="cta secondary" href="/"><cb-copy data-cb-copy="t_bc2e86b8" style="display:contents">Continue Shopping</cb-copy></a><a class="cta secondary" id="doneWhatsApp" href="https://wa.me/923320005381" target="_blank" rel="noopener"><cb-copy data-cb-copy="t_eefe12e8" style="display:contents">WhatsApp Support</cb-copy></a></div>
+    <div id="doneAccountOffer" class="co-card" style="display:none;margin-top:16px;text-align:center"><h3><cb-copy data-cb-copy="t_61f8c775" style="display:contents">Want to track all your orders?</cb-copy></h3><p class="amut"><cb-copy data-cb-copy="t_b93894cc" style="display:contents">Create a free account to save your order history, wishlist and addresses.</cb-copy></p><button class="cta"><cb-copy data-cb-copy="t_fc6e49ea" style="display:contents">Create free account</cb-copy></button></div>
+    <p class="confirmation-tip"><cb-copy data-cb-copy="t_591af3bc" style="display:contents">Tip: screenshot this screen or save your order number for support.</cb-copy></p>
   </div>
 </section>
 

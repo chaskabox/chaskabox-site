@@ -113,6 +113,7 @@
     brands:['owner','manager'],
     boxes:['owner','manager','content'],
     homepage:['owner','manager','content'],
+    pages:['owner','manager','content'],
     navigation:['owner','manager','content'],
     theme:['owner','manager'],
     customers:['owner','manager'],
@@ -145,6 +146,11 @@
   }
   function wireNav(){
     $$('.admin-nav-btn').forEach(btn=>btn.addEventListener('click',()=>setTimeout(()=>{ $('#adminSidebar').classList.remove('open'); $('#sidebarBackdrop')?.classList.remove('show'); loadView(btn.dataset.view); },0),true));
+    // Dashboard quick links must load the same protected data as sidebar links.
+    document.addEventListener('click',event=>{
+      const jump=event.target.closest?.('[data-jump]');
+      if(jump)setTimeout(()=>loadView(jump.dataset.jump),0);
+    });
   }
   async function loadView(name){
     if(!canOpenAdminView(name)){toast('Your staff role does not allow this panel.');return;}
@@ -158,6 +164,7 @@
       if(name==='resolutions' && roleAllows('owner','manager')) await loadResolutions();
       if(name==='customers' && roleAllows('owner','manager')) await loadCustomers();
       if(name==='reviews' && roleAllows('owner','manager','content')) await loadReviews();
+      if(name==='pages') await (await import('./admin-pages.js?v=20261018-cms1')).mountPageEditor($('#view-pages'),{api,toast,canPublish:roleAllows('owner','manager')});
       if(name==='homepage' && roleAllows('owner','manager','content')) await loadHomepage();
       if(name==='media' && roleAllows('owner','manager','content')) await loadMedia();
       if(name==='settings' && roleAllows('owner')) await loadSettings();
@@ -1811,16 +1818,7 @@
 
   // ============ AI CENTER ============
   async function loadAICenter(){
-    // AI Center enhancements: health indicator
-    try{
-      const h=await api('/api/admin/health').catch(()=>null);
-      const aiStatus=h?.ai?.status||'unknown';
-      const banner=$('#view-assistant .panel-head');
-      if(banner && !$('#aiHealthBadge')){
-        banner.insertAdjacentHTML('beforeend',
-          `<span id="aiHealthBadge" class="box-badge ${aiStatus==='connected'?'visible':'hidden'}">AI: ${esc(aiStatus)}</span>`);
-      }
-    }catch{}
+    await (await import('./admin-ai-center.js?v=20261018-cms1')).mountAIStatus($('#view-assistant'),{api,toast,canManage:roleAllows('owner')});
   }
 
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
@@ -2461,6 +2459,7 @@
   let lastGeneratedImage=null,lastGeneratedMime='image/jpeg';
   const STUDIO_PRESETS={chaskabox:'Colorful snack-inspired abstract shapes, studio lighting, decorative background, no logos or readable packaging',boxitem:'Festive abstract gift shapes, clean backdrop, decorative art, no brand labels',single:'Minimal colorful geometric snack-inspired illustration, no product packaging or logos'};
   function initImageStudio(){
+    const view=$('#view-studio');if(view?.dataset.studioReady==='true')return;if(view)view.dataset.studioReady='true';
     document.querySelectorAll('[data-preset]').forEach(b=>b.addEventListener('click',()=>{$('#studioPrompt').value=STUDIO_PRESETS[b.dataset.preset]||'';}));
     $('#generateImageBtn')?.addEventListener('click',async()=>{
       const prompt=$('#studioPrompt').value.trim(),button=$('#generateImageBtn'),label=button.textContent;

@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test --test-reporter=spec tests/*.test.mjs",
-    "check": "node tools/check-syntax.mjs && node tools/build-photo-manifest.mjs --check",
+    "check": "node tools/check-syntax.mjs && node tools/build-photo-manifest.mjs --check && node tools/build-storefront-css.mjs --check",
     "build:functions": "wrangler pages functions build functions --outdir .wrangler/build --compatibility-date 2026-10-04",
     "build:notifications": "wrangler deploy --dry-run --config cloudflare/wrangler.notification-outbox.jsonc --outdir .wrangler/notification-build",
     "build:media": "wrangler deploy --dry-run --config cloudflare/wrangler.media-transform.jsonc --outdir .wrangler/media-build",
@@ -15,6 +15,7 @@
     "@axe-core/playwright": "4.13.0",
     "@electric-sql/pglite": "0.5.8",
     "@electric-sql/pglite-pgvector": "0.0.9",
+    "esbuild": "0.28.2",
     "miniflare": "5.20261006.1-alpha",
     "playwright-core": "1.62.1",
     "wrangler": "4.149.0"

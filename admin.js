@@ -353,7 +353,10 @@
       $('#aiOutput').innerHTML='<p class="muted">Workers AI is preparing a draft…</p>';
       try{
         const task=$('#aiPrompt').dataset.aiTask||state.aiTask||'general_draft';
-        const data=await window.chaskaAdminApi('/api/admin/ai',{method:'POST',body:{task,context:{instructions:prompt}}});
+        const productId=Number($('#aiContextProduct')?.value||0);
+        if(['product_description','seo_meta','category_tags','pricing_suggest'].includes(task)&&!productId)throw Error('Choose a saved product so the draft uses confirmed catalogue facts.');
+        const context={instructions:prompt};if(productId)context.product_id=productId;
+        const data=await window.chaskaAdminApi('/api/admin/ai',{method:'POST',body:{task,context}});
         const safe=escapeHtml(data.draft||'').replace(/\n/g,'<br>');
         // Store draft for potential apply
         window._lastAiDraft={task,draft:data.draft||'',structured:data.structured,model:data.model||'Workers AI'};
