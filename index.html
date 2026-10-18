@@ -5,7 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preload" as="font" href="/fonts/kalam-latin-700.woff2" type="font/woff2" crossorigin data-home-preload>
 <link rel="stylesheet" href="/storefront-bundle.css?v=20261018-perf2">
-<link rel="stylesheet" href="/approved-category-art.css?v=20261018-category2">
+<!-- Small below-hero sprite rules inlined to avoid a separate render-blocking CSS request.
+     Kept byte-equivalent with approved-category-art.css by the performance regression test. -->
+<style id="cb-category-art-critical">
+/* High-resolution approved category photography, 9 × 192px frames, scoped to homepage only. */
+#catTiles .ci.ci-approved-art { width:108px; height:108px; background:transparent!important; box-shadow:none; overflow:hidden; border-radius:50%; }
+#catTiles .ci.ci-approved-art::after { display:none; }
+#catTiles .cb-category-art { display:block; width:100%; height:100%; background-image:url('/category-art/approved-category-sprite-hq-20261018.webp'); background-size:900% 100%; background-position:var(--category-art-position,0%) center; background-repeat:no-repeat; }
+@media (max-width:760px) { #catTiles .ci.ci-approved-art { width:94px; height:94px; } }
+</style>
 <link rel="preload" as="image" href="/images/chaskabox-approved-hero-01-20261018.avif" fetchpriority="high" data-home-preload>
 <title>ChaskaBox — Pakistani Snacks Online</title>
 <meta name="description" content="Shop original Pakistani snacks at ChaskaBox. Browse Hilal, Mayfair, Kolson, jellies and nimco, with COD or prepaid delivery across Pakistan.">
