@@ -76,3 +76,20 @@ test('single-run named tunnel connector validates backup and session before serv
   assert.doesNotMatch(connect,/\bcloudflared\s+service\s+install\b/);
   assert.doesNotMatch(connect,/echo\s+"\$TKN"/);
 });
+
+
+test('no-sudo WAHA PM2 connector is syntactically valid and non-disruptive',()=>{
+  const script=readFileSync(new URL('../ops/waha/connect-named-tunnel-pm2.sh',import.meta.url),'utf8');
+  const parsed=spawnSync('bash',['-n'],{input:script,encoding:'utf8'});
+  assert.equal(parsed.status,0,parsed.stderr);
+  assert.match(script,/--token-file/);
+  assert.match(script,/pm2 start "\$LAUNCH"/);
+  assert.match(script,/pm2 save/);
+  assert.match(script,/WORKING|health response/);
+  assert.match(script,/type CONNECT/);
+  assert.match(script,/chmod 600 "\$TOKENFILE"/);
+  assert.doesNotMatch(script,/\bsudo\b/);
+  assert.doesNotMatch(script,/\bdocker (?:stop|restart|rm|compose|pull|run)\b/);
+  assert.doesNotMatch(script,/\bpm2 (?:stop|restart|delete|kill)\b/);
+  assert.doesNotMatch(script,/--token "\$TKN"/);
+});
