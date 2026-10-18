@@ -5,6 +5,7 @@ import {readFile} from 'node:fs/promises';
 const root = new URL('../', import.meta.url);
 const homepage = await readFile(new URL('index.html', root), 'utf8');
 const headers = await readFile(new URL('_headers', root), 'utf8');
+const categoryCSS = await readFile(new URL('approved-category-art.css', root), 'utf8');
 
 test('homepage LCP image keeps high priority and is not lazy loaded', () => {
   const hero = homepage.match(/<img class="hero-scene"[^>]*>/)?.[0] || '';
@@ -37,4 +38,12 @@ test('only non-product assets get new caching rules', () => {
   assert.match(headers, /\/fonts\/\*\n  Cache-Control: public, max-age=2592000/);
   assert.match(headers, /\/images\/\*\n  Cache-Control: public, max-age=86400, immutable/);
   assert.match(headers, /\/checkout\.html\n  Cache-Control: no-store/);
+});
+
+
+test('inlined category artwork CSS matches approved file exactly', () => {
+  const inline = homepage.match(/<style id="cb-category-art-critical">([\\s\\S]*?)<\\/style>/)?.[1].trim();
+  assert.ok(inline, 'missing inlined category artwork CSS');
+  assert.equal(inline, categoryCSS.trim());
+  assert.doesNotMatch(homepage, /<link rel="stylesheet" href="\\/approved-category-art\\.css/);
 });
