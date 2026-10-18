@@ -52,7 +52,7 @@ test('One-time WAHA launch script is syntax valid, backs up data, and keeps WAHA
 test('read-only preflight recognizes an exact waha Docker container name even when output includes status', () => {
   const grepPattern=preflight.match(/docker ps -a --format '[^']+' \| grep -Ei '([^']+)' \|\|/);
   assert.ok(grepPattern, 'WAHA container diagnostic grep rule exists');
-  const sample='waha Up 2 days\\nchaskabox-waha-1 Up 7 hours\\n';
+  const sample=['waha Up 2 days','chaskabox-waha-1 Up 7 hours'].join(String.fromCharCode(10));
   const result=spawnSync('grep',['-Ei',grepPattern[1]],{input:sample,encoding:'utf8'});
   assert.equal(result.status,0,result.stderr);
   assert.match(result.stdout,/^waha Up 2 days/m);
