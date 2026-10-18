@@ -23,7 +23,7 @@
       '<button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>';
     root.querySelector('.herotrust')?.before(controls);
   }
-  if(!title||!desc||!eyebrow||!kick||!primary||!secondary||!controls)return;
+  if(!title||!desc||!eyebrow||!primary||!secondary||!controls)return;
   const defaults=[
     {label:'Bachpan Ka Zaiqa',kick:'Pakistan ka snack box, dil se',
      eyebrow:'ORIGINAL PAKISTANI SNACKS · CURATED WITH CARE',
@@ -51,7 +51,7 @@
   function show(index){
     current=(index+slides.length)%slides.length;
     const s=slides[current];
-    kick.lastChild.textContent=' '+s.kick;
+    if(kick)kick.lastChild.textContent=' '+s.kick;
     eyebrow.textContent=s.eyebrow;
     title.replaceChildren(document.createTextNode(s.heading));
     const high=document.createElement('span');high.className='hl';high.textContent=s.highlight;title.append(high);
