@@ -21,7 +21,7 @@ test('secondary images do not contend explicitly with the LCP image', () => {
   assert.match(offer, /loading="lazy"/);
   assert.match(offer, /fetchpriority="low"/);
   assert.match(offer, /data-src="\/images\/hero-approved-brand-polish-20261017\.webp"/);
-  assert.doesNotMatch(offer, /\\ssrc="/);
+  assert.doesNotMatch(offer, /\ssrc="/);
   assert.match(homepage, /new IntersectionObserver/);
   assert.match(homepage, /rootMargin: '300px 0px'/);
   assert.match(homepage, /<noscript><img class="cb-offer-art" src="\/images\/hero-approved-brand-polish-20261017\.webp"/);
@@ -42,8 +42,8 @@ test('only non-product assets get new caching rules', () => {
 
 
 test('inlined category artwork CSS matches approved file exactly', () => {
-  const inline = homepage.match(/<style id="cb-category-art-critical">([\\s\\S]*?)<\\/style>/)?.[1].trim();
+  const inline = homepage.match(/<style id="cb-category-art-critical">([\s\S]*?)<\/style>/)?.[1].trim();
   assert.ok(inline, 'missing inlined category artwork CSS');
   assert.equal(inline, categoryCSS.trim());
-  assert.doesNotMatch(homepage, /<link rel="stylesheet" href="\\/approved-category-art\\.css/);
+  assert.doesNotMatch(homepage, /<link rel="stylesheet" href="\/approved-category-art\.css/);
 });
