@@ -21,10 +21,11 @@ test('public COD amount follows owner settings rather than hardcoded marketing v
   assert.match(runtime,/data-cod-advance-note/);
 });
 
-test('responsive hero shows real snack imagery without loading the old CSS background',()=>{
+test('nostalgic hero uses the approved snack-filled box visual without faking individual product listings',()=>{
   assert.match(root,/hero-editorial-20261018\.css/);
-  assert.match(root,/<section class="hero hero-editorial"/);
-  assert.match(root,/<img src="\/images\/p5\.webp"[^>]*fetchpriority="high"/);
+  assert.match(root,/<section class="hero hero-editorial hero-packing-preview"/);
+  assert.match(root,/<img class="hero-scene"[^>]*hero-approved-brand-polish-20261017\.webp"[^>]*fetchpriority="high"/);
+  assert.match(root,/Illustrative hero artwork/);
   assert.doesNotMatch(root,/data-home-preload/);
   const shop=routeShell(root,'shop');
   assert.match(shop,/id="view-shop"/);
