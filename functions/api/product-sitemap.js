@@ -2,6 +2,7 @@ import { sbRequest } from './_lib/db.js';
 import { productImage } from './_lib/seo.js';
 import { LOCAL_PHOTOS } from './_lib/local-photos.js';
 import { cataloguePhoto } from './_lib/catalogue-photos.js';
+import { validLastmod, sitemapPublicBrands } from './_lib/sitemap-helpers.js';
 // Public products and nonempty visible brands; match the actual public routes.
 const x = s => String(s ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c]));
 export async function onRequestGet({ env }) {
@@ -15,7 +16,8 @@ export async function onRequestGet({ env }) {
       if(page===99)throw Error('Public catalogue exceeds sitemap pagination limit');
     }
     const urls = (rows || []).map(p => {
-      const lastmod = p.updated_at ? `<lastmod>${x(String(p.updated_at).slice(0, 10))}</lastmod>` : '';
+      const date = validLastmod(p.updated_at);
+      const lastmod = date ? `<lastmod>${date}</lastmod>` : '';
       const validImage = productImage(cataloguePhoto(p), LOCAL_PHOTOS);
       const img = validImage ? `<image:image><image:loc>${x(validImage)}</image:loc></image:image>` : '';
       return `  <url><loc>https://chaskabox.online/product/${x(p.id)}/</loc>${lastmod}${img}</url>`;
@@ -26,10 +28,10 @@ export async function onRequestGet({ env }) {
       const brands = await sbRequest(env, '/brands', {
         query: '?select=name,slug,updated_at&is_visible=eq.true&order=slug.asc&limit=200',
       });
-      const publicBrands=new Set(rows.map(p=>p.brand).filter(Boolean));
-      brandUrls += '\n' + (brands || []).filter(b=>publicBrands.has(b.name)).map(b =>
-        `  <url><loc>https://chaskabox.online/brand/${x(b.slug)}/</loc></url>`
-      ).join('\n');
+      brandUrls += '\n' + sitemapPublicBrands(rows,brands).map(b => {
+        const date=validLastmod(b.updated_at);
+        return `  <url><loc>https://chaskabox.online/brand/${x(b.slug)}/</loc>${date?`<lastmod>${date}</lastmod>`:''}</url>`;
+      }).join('\n');
     } catch { /* brands table may not have new columns yet; directory URL still listed */ }
     const body = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n${urls}\n${brandUrls}\n</urlset>`;
     return new Response(body, { headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'public,max-age=300' } });

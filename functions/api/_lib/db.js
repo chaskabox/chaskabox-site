@@ -11,6 +11,8 @@
  *   (who may call which endpoint) happen in the endpoint handlers.
  */
 
+import {previewCatalogueAllowed,previewRead,previewManifest} from './preview-catalogue-fixtures.js';
+
 export function getSupabaseConfig(env) {
   const url = (env.SUPABASE_URL || '').replace(/\/+$/, '');
   const serviceKey = env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -33,6 +35,8 @@ function baseHeaders(serviceKey, extra = {}) {
 
 /** Low-level PostgREST request. Throws DbError on non-2xx. */
 export async function sbRequest(env, path, { method = 'GET', query = '', body, prefer } = {}) {
+  // Test-only path: no production credentials, no writes, allowlisted public fixture responses.
+  if (previewCatalogueAllowed(env)) return previewRead(path, {method, query});
   const { url, serviceKey } = getSupabaseConfig(env);
   const res = await fetch(`${url}/rest/v1${path}${query}`, {
     method,
@@ -90,6 +94,7 @@ export async function insertRows(env, table, rows) {
 
 /** Call a Postgres function via /rpc. */
 export async function rpc(env, fnName, params) {
+  if(previewCatalogueAllowed(env)) return previewManifest(fnName);
   return sbRequest(env, `/rpc/${fnName}`, { method: 'POST', body: params });
 }
 
