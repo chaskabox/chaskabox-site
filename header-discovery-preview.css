@@ -28,7 +28,7 @@
 .cbx-cat-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .cbx-cat-card{display:flex;flex-direction:column;align-items:center;min-width:0;gap:6px;padding:12px 5px!important;border:1px solid transparent;border-radius:13px;text-decoration:none!important;white-space:normal!important;text-align:center;min-height:144px!important}
 .cbx-cat-card:hover,.cbx-cat-card:focus-visible{background:#f5f9fd!important;border-color:#dceaf5!important}
-.cbx-cat-photo{display:block;flex:none;width:75px;height:75px;border-radius:50%;background-image:url('/category-art/approved-category-sprite-20261018.webp');background-size:900% 100%;background-position:var(--cbx-pos) center;background-repeat:no-repeat;background-color:#f5f6f8}
+.cbx-cat-photo{display:block;flex:none;width:75px;height:75px;border-radius:50%;background-image:url('/category-art/approved-category-sprite-hq-20261018.webp');background-size:900% 100%;background-position:var(--cbx-pos) center;background-repeat:no-repeat;background-color:#f5f6f8}
 .cbx-cat-name{display:block;font-size:12px;font-weight:780;color:#082b55;line-height:1.32;white-space:normal}
 .cbx-cat-name small{display:block;margin-top:4px;color:#8496a9;font-size:10px;font-weight:550}
 .reference-storefront .header-search .shop-search-suggestions{top:calc(100% + 7px)!important;border:1px solid #dfe9f2!important;border-radius:14px!important;box-shadow:0 16px 40px #09294d26!important;overflow-y:auto!important;max-height:min(480px,65vh)!important;z-index:100!important}
