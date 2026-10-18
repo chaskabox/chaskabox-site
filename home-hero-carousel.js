@@ -24,22 +24,24 @@
     root.querySelector('.herotrust')?.before(controls);
   }
   if(!title||!desc||!eyebrow||!primary||!secondary||!controls)return;
+  // Approved slider copy (2026-10-18). Art files must be separately approved and attached.
+  // Shared trust/delivery strip is outside this carousel and NEVER changes with slide.
   const defaults=[
     {label:'Bachpan Ka Zaiqa',kick:'Pakistan ka snack box, dil se',
      eyebrow:'ORIGINAL PAKISTANI SNACKS',
-     heading:'Bachpan Ka Zaiqa, ',highlight:'Ab Ghar Baithe.',
-     description:'Woh bachpan wali favourites, ab ek jagah. Sealed branded packs, order ke baad carefully sourced.',
+     heading:'Bachpan Ka Zaiqa, ',highlight:'Ab Ghar Baithe!',
+     description:'Woh bachpan ki pasandeeda candies, nimco, chips aur meethay snacks — ab phir se discover karein. Har bite ke saath purani yaadon ka maza, ChaskaBox ke saath!',
      primary:'Shop All Snacks',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
-    {label:'Curated Chaska Boxes',kick:'Har mood ka Chaska Box',
-     eyebrow:'CURATED CHASKA BOXES',
-     heading:'Har Box Mein ',highlight:'Bachpan Ki Yaadein.',
-     description:'Apne favourite childhood snacks ka box explore karein. Original branded packs, gifting aur sharing ke liye.',
-     primary:'Explore Chaska Boxes',href:'/bundles/',secondary:'Shop All Snacks',secondHref:'/shop/'},
-    {label:'Snack Picks',kick:'Snacks jo dil khush kar dein',
-     eyebrow:'SNACKS FOR EVERY CRAVING',
-     heading:'Apni Cravings Ka ',highlight:'Chaska Chuno!',
-     description:'Chatpatay, meethay aur crunchy favourites ek hi jagah. Apna next Chaska discover karein.',
-     primary:'Shop Snacks',href:'/shop/',secondary:'Browse Chaska Boxes',secondHref:'/bundles/'}
+    {label:'Gift Nahi, Ek Pyari Si Yaad',kick:'A little box of happiness',
+     eyebrow:'A LITTLE BOX OF HAPPINESS',
+     heading:'Sirf Gift Nahi, ',highlight:'Ek Pyari Si Yaad!',
+     description:'Kuch tohfay sirf diye nahi jaate, yaad bhi rakhe jaate hain. Apno ko unke favourite snacks ka surprise dein, ChaskaBox ke saath.',
+     primary:'Explore Gift Boxes',href:'/bundles/',secondary:'Shop All Snacks',secondHref:'/shop/'},
+    {label:'Favourite Snacks',kick:'Original Pakistani snacks',
+     eyebrow:'ORIGINAL PAKISTANI SNACKS',
+     heading:'Pakistan Ke Favourite Snacks, ',highlight:'Ab Ghar Baithe!',
+     description:'Chips, chocolates, nimco, candies aur bachpan ke favourites — original branded snacks, carefully sourced after your order aur Pakistan bhar mein delivered.',
+     primary:'Shop All Snacks',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'}
   ];
   const safeLink=s=>typeof s==='string'&&(/^(?:\/(?!\/)|https:\/\/)[^"'<>\s]*$/.test(s));
   const field=(value,fallback,max=180)=>typeof value==='string'&&value.trim()?value.trim().slice(0,max):fallback;
