@@ -143,7 +143,10 @@ function renderHomeContent(){
   const allCount=act.length;
   const cmsCats=STORE_CONFIG?.categories;
   if(Array.isArray(cmsCats))for(const c of cmsCats)cats[c.name]=act.filter(p=>c.product_ids.includes(Number(p.id)));
-  const tileOrder=['All',...(Array.isArray(cmsCats)?cmsCats.filter(c=>c.show_on_homepage&&(cats[c.name]||[]).length>0).map(c=>c.name):CAT_ORDER.filter(c=>cats[c]&&cats[c].length))];
+  const categoryOrder=['Biscuits & Wafers','Bundles','Bunties & Cakes','Chews & Gums','Chocolates & Candies','Imli & Ice Lollies','Jellies & Marshmallow','Snacks & Nimco'];
+  const eligibleCats=Array.isArray(cmsCats)?cmsCats.filter(c=>c.show_on_homepage&&(cats[c.name]||[]).length>0).map(c=>c.name):CAT_ORDER.filter(c=>cats[c]&&cats[c].length);
+  const tileOrder=['All',...categoryOrder.filter(c=>eligibleCats.includes(c)),...eligibleCats.filter(c=>!categoryOrder.includes(c))];
+  const categoryArt={"All":"0%","Biscuits & Wafers":"12.5%","Bundles":"25%","Bunties & Cakes":"37.5%","Chews & Gums":"50%","Chocolates & Candies":"62.5%","Imli & Ice Lollies":"75%","Jellies & Marshmallow":"87.5%","Snacks & Nimco":"100%"};
   // ensure 'All' pseudo-category first, then fixed original order
   $('#catTiles').innerHTML=tileOrder.map(c=>{
     const st=CAT_STYLE[c]||{bg:'#8a94a6'};
@@ -153,11 +156,12 @@ function renderHomeContent(){
     const matchers={'Biscuits & Wafers':/wafer|biscuit/i,'Bunties & Cakes':/cupkake|cake/i,'Chews & Gums':/bubble|gum/i,'Chocolates & Candies':/chocolate|toffee|candy/i,'Snacks & Nimco':/top pops|nimco|slanty|chewra/i};
     const members=list.filter(p=>p.category===c&&!p.bundle&&hasPhoto(p));
     const featured=(c==='All'||c==='Bundles')?null:members.find(p=>matchers[c]?.test(p.name))||members[0]||list.find(p=>hasPhoto(p)&&!p.bundle);
-    const inner=featured? `<img ${photoAttributes(featured.img,'90px')} alt="" loading="lazy" width="90" height="90" decoding="async">` :
+    const artPos=categoryArt[c];
+    const inner=artPos!==undefined? `<span class="cb-category-art" style="--category-art-position:${artPos}" aria-hidden="true"></span>` : featured? `<img ${photoAttributes(featured.img,'90px')} alt="" loading="lazy" width="90" height="90" decoding="async">` :
       (c==='All'||c==='Bundles')?`<span class="ci-svg ci-category-symbol">${cbIcon(c==='All'?'grid':'box')}</span>`:TILE_SVG[c]?`<span class="ci-svg">${TILE_SVG[c]}</span>`:`<span class="ci-emoji">🛍️</span>`;
     const href=c==='All'?'/shop/':categoryPath(c);
     return `<a class="cat reveal" href="${href}">
-      <div class="ci" style="background:${st.bg}">${inner}</div>
+      <div class="ci${artPos!==undefined?' ci-approved-art':''}" style="background:${st.bg}">${inner}</div>
       <b>${esc(c)}</b><small>${n} ${n===1?'item':'items'}</small></a>`;
   }).join('');
   // hero collage: 3 product images
