@@ -3,7 +3,7 @@
 import {chromium} from 'playwright-core';
 import {mkdir,writeFile} from 'node:fs/promises';
 
-const base=(process.env.PHASE3_PREVIEW_URL||'https://improve-phase3-aio-geo-aeo-t.chaskabox-site.pages.dev').replace(/\/$/,'');
+const base=(process.env.PHASE3_PREVIEW_URL||'https://release-phase3-trust-verifie.chaskabox-site.pages.dev').replace(/\/$/,'');
 if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(base))throw Error('Only Cloudflare Pages preview is allowed');
 const output='test-results/phase3-aio';
 await mkdir(output,{recursive:true});
