@@ -1,0 +1,29 @@
+name: Phase 1 Pages preview smoke
+on:
+  push:
+    branches: ['improve/phase1-confirmed-storefront-fixes-20261018']
+permissions:
+  contents: read
+jobs:
+  preview-smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Smoke test Cloudflare Pages preview (never production)
+        env:
+          PHASE1_PREVIEW_URL: https://improve-phase1-confirmed-sto.chaskabox-site.pages.dev
+        run: node tools/phase1-preview-smoke.mjs
+      - name: Save staging test evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: phase1-preview-evidence
+          path: test-results/phase1-staging/
+          retention-days: 7
