@@ -8,6 +8,7 @@ import {PAGE_COPY_DEFINITIONS,validatePageCopy,pageKeyForPath,copyKey} from '../
 import {onRequestGet,onRequestPost} from '../functions/api/admin/pages/index.js';
 import {onRequest as middleware} from '../functions/_middleware.js';
 import {storeFaqs} from '../functions/api/_lib/faq-content.js';
+import {onRequestGet as faqPage} from '../functions/faq/index.js';
 const owner='00000000-0000-4000-8000-000000000001',content='00000000-0000-4000-8000-000000000002',session='00000000-0000-4000-8000-000000000010';
 const field=Object.keys(PAGE_COPY_DEFINITIONS.about.fields)[0];
 async function fixture(){
@@ -82,4 +83,13 @@ test('function responses and Pages previews get security/noindex headers; admin 
 });
 test('dedicated FAQ uses current commerce switches without stale free-delivery or COD claims',()=>{
  const rows=storeFaqs({cod_enabled:false,prepaid_free_delivery_enabled:false,prepaid_delivery_fee_pkr:450,delivery_estimate:'5–8 days'});assert.match(rows[1].a,/paused/);assert.doesNotMatch(rows[2].a,/qualify for free/);assert.match(rows[2].a,/450/);assert.match(rows[3].a,/5–8 days/);
+});
+
+test('dedicated FAQ renders the published Homepage Builder items contract',async()=>{
+ const original=globalThis.fetch;
+ globalThis.fetch=async()=>Response.json({theme:{},settings:{},sections:[{section_key:'faq',heading:'Owner FAQ heading',config:{items:[{q:'Owner question & details?',a:'Owner reviewed answer <plain text>.'}]}}]});
+ try{
+  const result=await faqPage({request:new Request('https://chaskabox.online/faq/'),env:{SUPABASE_URL:'https://fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture'},next:async()=>new Response('<html><head></head><body><main>Old shell</main></body></html>')});
+  const html=await result.text();assert.equal(result.status,200);assert.match(html,/Owner question &amp; details\?/);assert.match(html,/Owner reviewed answer &lt;plain text&gt;/);assert.match(html,/Owner FAQ heading/);assert.doesNotMatch(html,/How does ChaskaBox source my order\?/);
+ }finally{globalThis.fetch=original;}
 });
