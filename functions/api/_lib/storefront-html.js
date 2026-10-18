@@ -8,6 +8,8 @@ export function replaceMount(html,id,content){
  throw Error('Unclosed route mount');
 }
 export function routeShell(html,active){
+ // Non-home catalogue pages must not download the homepage-only hero image.
+ if(active!=='home')html=html.replace(/<link\b[^>]*\bdata-home-preload\b[^>]*>/gi,'');
  return html.replace(/<div\b[^>]*\bid="view-([^"]+)"[^>]*>/gi,(tag,id)=>{tag=tag.replace(/\s(?:style|hidden|inert|aria-hidden)(?:="[^"]*")?/g,'');return id===active?tag:tag.slice(0,-1)+' style="display:none" hidden inert aria-hidden="true">';});
 }
 export function organizationSchema(){return {'@context':'https://schema.org','@type':'OnlineStore','@id':SITE+'/#organization',name:'ChaskaBox',alternateName:'ChaskaBox Pakistan',url:SITE+'/',logo:SITE+'/images/logo-approved-20261017.png',description:'Pakistani packaged snacks and curated retail snack boxes sourced after order, with delivery across Pakistan.',slogan:'Bachpan Ka Zaiqa, Ab Ghar Baithe',telephone:'+92-332-0005381',email:'Chaskabox.mzg@gmail.com',currenciesAccepted:'PKR',paymentAccepted:'Cash on Delivery, JazzCash, Bank Transfer',address:{'@type':'PostalAddress',streetAddress:'Near Ahmad Drink Corner, Railway Road, Bhatti Hussainabad',addressLocality:'Muzaffargarh',addressRegion:'Punjab',addressCountry:'PK'},areaServed:{'@type':'Country',name:'Pakistan'},contactPoint:{'@type':'ContactPoint',contactType:'customer support',telephone:'+92-332-0005381',email:'Chaskabox.mzg@gmail.com',areaServed:'PK',availableLanguage:['English','Urdu']},hasMerchantReturnPolicy:{'@type':'MerchantReturnPolicy',merchantReturnLink:SITE+'/refund-policy/'}};}
