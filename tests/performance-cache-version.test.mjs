@@ -11,3 +11,11 @@ test('all storefront entry routes load the same versioned UX application and car
     assert.doesNotMatch(html,/\/(?:styles\.css|app\.js)\?v=20261012-release\?v=/,path);
   }
 });
+test('admin content modules are revalidated after a release and avoid long-lived browser caching',()=>{
+ const live=readFileSync(new URL('admin-live.js',root),'utf8');
+ const headers=readFileSync(new URL('_headers',root),'utf8');
+ for(const module of ['admin-pages','admin-ai-center']){
+  assert.ok(live.includes('./'+module+'.js?v=20261018-content2'),module);
+  assert.ok(headers.includes('/'+module+'.js\n  Cache-Control: no-store'),module);
+ }
+});

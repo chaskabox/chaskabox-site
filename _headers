@@ -45,6 +45,12 @@
 /admin-live.js
   Cache-Control: no-store
 
+/admin-pages.js
+  Cache-Control: no-store
+
+/admin-ai-center.js
+  Cache-Control: no-store
+
 /admin.css
   Cache-Control: no-store
 

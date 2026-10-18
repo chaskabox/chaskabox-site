@@ -164,7 +164,7 @@
       if(name==='resolutions' && roleAllows('owner','manager')) await loadResolutions();
       if(name==='customers' && roleAllows('owner','manager')) await loadCustomers();
       if(name==='reviews' && roleAllows('owner','manager','content')) await loadReviews();
-      if(name==='pages') await (await import('./admin-pages.js?v=20261018-cms1')).mountPageEditor($('#view-pages'),{api,toast,canPublish:roleAllows('owner','manager')});
+      if(name==='pages') await (await import('./admin-pages.js?v=20261018-content2')).mountPageEditor($('#view-pages'),{api,toast,canPublish:roleAllows('owner','manager')});
       if(name==='homepage' && roleAllows('owner','manager','content')) await loadHomepage();
       if(name==='media' && roleAllows('owner','manager','content')) await loadMedia();
       if(name==='settings' && roleAllows('owner')) await loadSettings();
@@ -1818,7 +1818,7 @@
 
   // ============ AI CENTER ============
   async function loadAICenter(){
-    await (await import('./admin-ai-center.js?v=20261018-cms1')).mountAIStatus($('#view-assistant'),{api,toast,canManage:roleAllows('owner')});
+    await (await import('./admin-ai-center.js?v=20261018-content2')).mountAIStatus($('#view-assistant'),{api,toast,canManage:roleAllows('owner')});
   }
 
   document.readyState==='loading'?document.addEventListener('DOMContentLoaded',init):init();
