@@ -70,15 +70,18 @@ await audit(production,'/admin.html',async(p,e)=>{
  e.headerRobots=await p.locator('meta[name="robots"]').count();
  // Login verification requires owner credentials and must not be automated against production.
 });
-await audit(preview,'/faq/',async(p,e)=>{
+await audit(production,'/faq/',async(p,e)=>{
  e.questions=await p.locator('main details').count();
- if(e.questions<5)throw Error('Release-preview FAQ missing source answers');
+ const json=JSON.parse(await p.locator('#store-schema').textContent());
+ e.unverifiedReturnPolicy=Boolean(json.hasMerchantReturnPolicy);
+ if(e.unverifiedReturnPolicy)throw Error('Old merchant policy schema is still live');
+ if(e.questions<5)throw Error('Production FAQ missing source answers');
 });
-await audit(preview,'/guides/how-chaskabox-orders-work/',async(p,e)=>{
+await audit(production,'/guides/how-chaskabox-orders-work/',async(p,e)=>{
  e.breadcrumb=await p.locator('[aria-label="Breadcrumb"]').count();
  if(e.breadcrumb!==1)throw Error('Release-preview guide breadcrumb absent');
 });
-await audit(preview,'/llms.txt',async(_p,e)=>{
+await audit(production,'/llms.txt',async(_p,e)=>{
  const text=await _p.locator('body').innerText();
  e.sourceLinks=text.includes('https://chaskabox.online/shop/')&&text.includes('https://chaskabox.online/refund-policy/');
  if(!e.sourceLinks)throw Error('AI directory source links missing');
