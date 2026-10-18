@@ -11,7 +11,7 @@ const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const currencyFormatter=new Intl.NumberFormat('en-PK');
 const fmt=n=>'Rs. '+currencyFormatter.format(Number(n));
 function assetUrl(src){ if(!src) return ''; if(/^(https?:|data:|blob:|\/)/i.test(src)) return src; return '/'+String(src).replace(/^\.\//,''); }
-function photoAttributes(src,sizes='(max-width:700px) 45vw, 260px'){
+function photoAttributes(src,sizes='(max-width:700px) calc(50vw - 36px), 260px'){
  const path=String(src||'').replace(/^https:\/\/chaskabox\.online\//,'').replace(/^\//,'');
  const sources=window.CHASKABOX_IMAGE_VARIANTS?.[path];
  return sources?'src="'+esc(sources[0].src)+'" srcset="'+sources.map(v=>esc(v.src)+' '+v.width+'w').join(', ')+'" sizes="'+esc(sizes)+'"':'src="'+esc(assetUrl(src))+'"';
@@ -48,13 +48,13 @@ function productHref(id){return '/product/'+encodeURIComponent(id)+'/';}
 
 /* ---------- cards ---------- */
 function bundleFanHTML(p){
-  if(!p?.bundle || !p?.desc) return '';
+  if(!p?.bundle || !p?.desc || matchMedia('(max-width:760px), (hover:none), (prefers-reduced-motion:reduce)').matches) return '';
   const m=String(p.desc).match(/Bundle pack with:\s*(.+?)(?:\.\s|$)/i);
   if(!m) return '';
   const wanted=m[1].split(',').map(s=>s.trim()).filter(Boolean);
   const picks=wanted.map(name=>PRODUCTS.find(x=>String(x.name||'').trim().toLowerCase()===name.toLowerCase())).filter(x=>x&&x.img).slice(0,3);
   if(picks.length<2) return '';
-  return `<span class="bundle-fan" aria-hidden="true">${picks.map((x,i)=>`<img src="${esc(assetUrl(x.img))}" alt="" loading="lazy" width="80" height="80" class="bf${i+1}">`).join('')}</span>`;
+  return `<span class="bundle-fan" aria-hidden="true">${picks.map((x,i)=>`<img ${photoAttributes(x.img,"80px")} alt="" loading="lazy" width="80" height="80" class="bf${i+1}">`).join('')}</span>`;
 }
 function cardHTML(p,priority){
   const src=hasPhoto(p)?assetUrl(p.img):'';

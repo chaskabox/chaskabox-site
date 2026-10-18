@@ -31,8 +31,9 @@ export async function mountPageEditor(view,{api,toast,canPublish}){
   host.querySelector('#pageCopyReset').onclick=()=>{if(!selectedField?.isConnected)return toast('Select a text field first.');selectedField.value=definition.fields[selectedField.dataset.copyField].text;};
   host.querySelector('#pageCopyAI').onclick=async()=>{
    if(!selectedField?.isConnected)return toast('Select a text field first.');
+   if(selectedField.value.length>1500)return toast('AI rewrite supports up to 1,500 characters. Edit this longer field manually.');
    const target=selectedField,button=host.querySelector('#pageCopyAI');button.disabled=true;
-   try{const result=await api('/api/admin/ai',{method:'POST',body:{task:'general_draft',context:{instructions:'Rewrite this existing public page text concisely in friendly Roman Urdu + simple English. Preserve all facts, numbers and policy. Return only the replacement text.',text:target.value.slice(0,1500)}}});
+   try{const result=await api('/api/admin/ai',{method:'POST',body:{task:'page_rewrite',context:{text:target.value}}});
     const dialog=document.createElement('dialog');dialog.className='panel';dialog.innerHTML='<h3>Review AI suggestion</h3><textarea rows="8" maxlength="3000" aria-label="AI text suggestion"></textarea><div class="action-row"><button class="btn primary" data-use>Use in draft editor</button><button class="btn secondary" data-close>Close</button></div>';
     dialog.querySelector('textarea').value=result.draft;dialog.querySelector('[data-use]').onclick=()=>{target.value=dialog.querySelector('textarea').value;dialog.close();dialog.remove();toast('Suggestion added to editor. Save and preview before publishing.');};dialog.querySelector('[data-close]').onclick=()=>{dialog.close();dialog.remove();};view.append(dialog);dialog.showModal();
    }catch(e){toast(e.message);}finally{button.disabled=false;}

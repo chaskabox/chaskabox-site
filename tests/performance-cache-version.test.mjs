@@ -5,8 +5,8 @@ for(const slug of ['betel-nuts-and-pan-masala','biscuits-and-wafers','bunties-an
 test('all storefront entry routes load the same versioned UX application and carousel',()=>{
   for(const path of pages){
     const html=readFileSync(new URL(path,root),'utf8');
-    assert.match(html,/\/storefront-bundle\.css\?v=20261018-cms1/,path);
-    assert.match(html,/\/app\.js\?v=20261018-cms1/,path);
+    assert.match(html,/\/storefront-bundle\.css\?v=20261018-perf2/,path);
+    assert.match(html,/\/app\.js\?v=20261018-perf2/,path);
     assert.match(html,/\/home-hero-carousel\.js\?v=20261018-autoplay5/,path);
     assert.doesNotMatch(html,/\/(?:styles\.css|app\.js)\?v=20261012-release\?v=/,path);
   }

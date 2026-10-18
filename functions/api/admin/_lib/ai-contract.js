@@ -1,6 +1,6 @@
 import { httpError } from './auth.js';
 import { containsSensitiveText } from '../../_lib/ai.js';
-export const TASKS=new Set(['general_draft','product_description','seo_meta','category_tags','box_ideas','faq_reply','support_reply','merchandising','sales_summary','attention_summary','catalogue_summary','translate','pricing_suggest','inventory_insight','customer_insight','order_insight','review_reply','brand_description','brand_seo','brand_featured','brand_faq','analytics_insight']);
+export const TASKS=new Set(['general_draft','page_rewrite','product_description','seo_meta','category_tags','box_ideas','faq_reply','support_reply','merchandising','sales_summary','attention_summary','catalogue_summary','translate','pricing_suggest','inventory_insight','customer_insight','order_insight','review_reply','brand_description','brand_seo','brand_featured','brand_faq','analytics_insight']);
 export const SENSITIVE_TASKS=new Set(['sales_summary','attention_summary','customer_insight','order_insight','analytics_insight','inventory_insight']);
 const TEXT_KEYS=new Set(['name','brand','category','pack','description','text','instructions','question','language','review']);
 export function draftContext(value={}) {
@@ -16,6 +16,14 @@ export function draftContext(value={}) {
   return out;
 }
 function boundedString(v,limit) { return typeof v==='string'&&v.trim()&&v.length<=limit&&!containsSensitiveText(v); }
+export function pageRewrite(text,original){
+ const value=String(text||'').replace(/^\s*DRAFT(?: TEXT)?\s*:\s*/i,'').trim();
+ const numbers=s=>(String(s).match(/\b\d+(?:[,.]\d+)*\b/g)||[]).sort().join('|');
+ if(!boundedString(value,3000)||/[<>]/.test(value)||numbers(value)!==numbers(original)||
+   (!/[\p{Script=Arabic}\p{Script=Devanagari}]/u.test(original)&&/[\p{Script=Arabic}\p{Script=Devanagari}]/u.test(value)))
+  httpError('AI changed the script, numbers or text format. Existing page text was preserved.',422,'invalid_draft');
+ return value;
+}
 export function structuredDraft(task,text,allowedIds=[]) {
   if(!['seo_meta','brand_seo','category_tags','brand_featured','brand_faq'].includes(task))return null;
   let value;try{value=JSON.parse(text.replace(/^.*?\x60{3}(?:json)?\s*/s,'').replace(/\s*\x60{3}.*$/s,''));}catch{httpError('AI returned invalid structured text. Existing fields were preserved.',422,'invalid_draft');}

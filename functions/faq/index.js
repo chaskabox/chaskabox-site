@@ -5,7 +5,8 @@ import {copyKey} from '../../page-copy-contract.js';
 export async function onRequestGet(context){
  try{
   const manifest=await storefrontConfig(context.env),section=manifest.sections?.find(s=>s.section_key==='faq');
-  const faqs=Array.isArray(section?.config?.faqs)&&section.config.faqs.length?section.config.faqs:storeFaqs(manifest.settings);
+  const items=section?.config?.items;
+  const faqs=Array.isArray(items)?items:storeFaqs(manifest.settings);
   const req=new Request(new URL('/about/',context.request.url)),response=context.next?await context.next(req):await context.env.ASSETS.fetch(req);if(!response.ok)throw Error('FAQ shell unavailable');
   let html=await response.text();const heading=section?.heading||'Frequently asked questions',intro=section?.subheading||'ChaskaBox answers your snack and order questions.';
   const text=s=>'<cb-copy data-cb-copy="'+copyKey(s)+'" style="display:contents">'+esc(s)+'</cb-copy>';

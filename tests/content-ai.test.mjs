@@ -5,7 +5,7 @@ import {PGlite} from '@electric-sql/pglite';
 import {vector} from '@electric-sql/pglite-pgvector';
 import {pgcrypto} from '@electric-sql/pglite/contrib/pgcrypto';
 import {replayPlan} from '../tools/schema-replay.mjs';
-import {productDraft,draftContext,structuredDraft,TASKS,SENSITIVE_TASKS} from '../functions/api/admin/_lib/ai-contract.js';
+import {productDraft,draftContext,structuredDraft,pageRewrite,TASKS,SENSITIVE_TASKS} from '../functions/api/admin/_lib/ai-contract.js';
 import {runTextAI,runEmbeddings,runImageAI,imageOutput,IMAGE_MODEL,DEFAULT_EMBEDDING_MODEL} from '../functions/api/_lib/ai.js';
 import {priceBounds,rankProducts,publicCatalogue} from '../functions/api/_lib/catalogue-search.js';
 import {validAssistantAnswer,groundedAnswer} from '../functions/api/ai/assistant.js';
@@ -14,6 +14,12 @@ import {buildNotificationPayload,previewNotificationTemplate} from '../functions
 import {onRequestPost as imageEndpoint} from '../functions/api/admin/ai-image.js';
 import {onRequestPost as draftEndpoint} from '../functions/api/admin/ai.js';
 const actor='00000000-0000-4000-8000-000000000001';
+test('page rewrite preserves numbers and Latin script and rejects markup before editor application',()=>{
+ assert.ok(TASKS.has('page_rewrite'));
+ assert.equal(pageRewrite('DRAFT TEXT: Delivery is Rs. 300; advance is Rs. 500.','Rs. 500 advance, Rs. 300 delivery.'),'Delivery is Rs. 300; advance is Rs. 500.');
+ for(const value of ['Delivery is Rs. 350; advance is Rs. 500.','<b>Rs. 300 delivery, Rs. 500 advance.</b>','ڈیلیوری 300 اور ایڈوانس 500'])
+  assert.throws(()=>pageRewrite(value,'Rs. 500 advance, Rs. 300 delivery.'),error=>error instanceof Response&&error.status===422);
+});
 async function fixture(){
  const db=new PGlite({extensions:{vector,pgcrypto}});
  try{

@@ -8,7 +8,7 @@ import {
 } from './_lib/auth.js';
 import { runTextAI, aiAvailable } from '../_lib/ai.js';
 
-import {TASKS as ALLOWED_TASKS,SENSITIVE_TASKS as SENSITIVE_INSIGHT_TASKS,draftContext,structuredDraft} from './_lib/ai-contract.js';
+import {TASKS as ALLOWED_TASKS,SENSITIVE_TASKS as SENSITIVE_INSIGHT_TASKS,draftContext,structuredDraft,pageRewrite} from './_lib/ai-contract.js';
 import {publicCatalogue,publicSettings} from '../_lib/catalogue-search.js';
 import {parseRange} from './analytics/_lib/helpers.js';
 
@@ -23,6 +23,7 @@ const BLOCKLIST = [
 ];
 
 const TASK_PROMPTS = {
+  page_rewrite: 'Rewrite only the supplied public text concisely. Keep its original language and script: English stays English; Roman Urdu stays in Latin letters. Preserve all facts, numbers and policy. Do not translate into Urdu or Devanagari script. Return only replacement prose with no DRAFT label, quotations or Markdown.',
   brand_description: 'Draft a concise brand description using supplied public products only. Do not invent brand history, origin or certifications.',
   brand_seo: 'Return ONLY JSON with seo_title (max 60 chars) and seo_description (max 155 chars).',
   brand_featured: 'Return ONLY JSON with featured_ids: up to 8 numeric IDs selected only from the supplied brand catalogue sample.',
@@ -52,9 +53,10 @@ const SYSTEM_GUARDRAILS = [
   'You cannot publish, change prices, verify payments, refund/cancel orders, delete products, deploy, or change roles/security.',
   'Never claim an action happened. Say what the admin can review/do instead.',
   'Never invent ingredients, allergens, stock quantities, bestseller/sales claims, discounts, customer data, or delivery promises.',
+  'Never describe branded products as ChaskaBox exclusive, official partnerships, manufacturer-authorized, certified or endorsed unless the supplied server facts explicitly confirm it.',
   'Use only the factual context supplied by the server/admin. If a fact is missing, say it is not confirmed.',
   'Do not output or request passwords, OTPs, service-role keys, API keys, bank/card credentials, or private customer information.',
-  'Prefer concise Roman Urdu + simple English that an owner can act on quickly.',
+  'Follow the task language and format exactly. Roman Urdu uses Latin letters. When no language is specified, prefer concise Roman Urdu + simple English.',
 ].join('\n');
 
 async function serverContextForTask(context, task, client) {
@@ -99,6 +101,7 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
 
   if(Object.keys(body).some(k=>!['task','context'].includes(k)))httpError('Send task and public context only',422,'invalid_context');
   const client = draftContext(body.context);
+  if(task==='page_rewrite'&&!client.text)httpError('Select existing public page text to rewrite',422,'invalid_context');
   const clientContext = JSON.stringify(client);
   const combined = `${task}\n${clientContext}`.slice(0, 5200);
   if (BLOCKLIST.some((re) => re.test(combined))) {
@@ -117,9 +120,10 @@ export const onRequestPost = withAdmin(['owner', 'manager', 'content'], async (c
       system: `${SYSTEM_GUARDRAILS}\n\nTask: ${TASK_PROMPTS[task]}`,
       user: userText || `Perform task: ${task}`,
       maxTokens: task.endsWith('_summary') ? 420 : 600,
-      temperature: task.endsWith('_summary') ? 0.15 : 0.45,
+      temperature: task.endsWith('_summary')||task==='page_rewrite' ? 0.15 : 0.45,
       actorId:user.id,
     });
+    if(task==='page_rewrite')result.text=pageRewrite(result.text,client.text);
     await audit(context,{actorId:user.id,actorRole:role,action:'ai.draft_generated',entityType:'ai',entityId:'n/a',after:{task,draft_chars:result.text.length,model:result.model}});
     const structured=structuredDraft(task,result.text,(serverContext?.sample||[]).map(p=>p.id));
     return json({task,draft:result.text,structured,model:result.model,cached:result.cached,budget:result.budget,source:serverContext?'trusted_server_context':'public_admin_context',warnings:['DRAFT ONLY: review factual claims before saving.']});

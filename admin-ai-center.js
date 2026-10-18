@@ -17,7 +17,7 @@ export async function mountAIStatus(view,{api,toast,canManage=false}){
  const select=view.querySelector('#aiContextProduct');
  if(select&&!select.dataset.loaded){
   try{let products=[],pages=1;for(let page=1;page<=Math.min(pages,10);page++){const d=await api('/api/admin/products?per_page=100&page='+page);products.push(...(d.products||[]));pages=d.total_pages||1;}
-   select.replaceChildren(new Option('Choose a saved product for product tasks',''));for(const p of products)select.add(new Option('#'+p.id+' · '+p.name,p.id));select.dataset.loaded='true';
+   select.replaceChildren(new Option('Choose a saved product for product tasks',''));for(const p of new Map(products.map(p=>[p.id,p])).values())select.add(new Option('#'+p.id+' · '+p.name,p.id));select.dataset.loaded='true';
   }catch(e){toast('AI product context could not load: '+e.message);}
  }
  await refresh();
