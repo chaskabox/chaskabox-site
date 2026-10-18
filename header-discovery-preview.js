@@ -34,7 +34,7 @@ render();
 // Extend arrow/enter support to brands, categories and products (not products only).
 const input=document.getElementById('headerSearch'),suggestions=document.getElementById('headerSearchSuggestions');
 if(input&&suggestions){
-input.setAttribute('aria-controls',suggestions.id);input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-expanded','false');
+input.setAttribute('role','combobox');input.setAttribute('aria-controls',suggestions.id);input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-expanded','false');
 let selected=-1;
 const options=()=>Array.from(suggestions.querySelectorAll('a[href]'));
 input.addEventListener('input',()=>{selected=-1;input.removeAttribute('aria-activedescendant');input.setAttribute('aria-expanded',String(!suggestions.hidden))});
@@ -58,7 +58,7 @@ const row=document.createElement('div');row.className='cbx-mobile-row';form.befo
 const cat=document.createElement('button');cat.type='button';cat.className='cbx-mobile-cat';cat.textContent='☷ Categories';cat.addEventListener('click',()=>{if(typeof toggleMnav==='function')toggleMnav(true)});row.prepend(cat);
 const field=form.querySelector('input[name="q"]'),box=document.createElement('div');box.className='cbx-mobile-results';box.id='cbxMobileResults';box.setAttribute('role','listbox');box.hidden=true;form.append(box);
 if(field){
-field.setAttribute('aria-controls',box.id);field.setAttribute('aria-autocomplete','list');field.setAttribute('aria-expanded','false');
+field.setAttribute('role','combobox');field.setAttribute('aria-controls',box.id);field.setAttribute('aria-autocomplete','list');field.setAttribute('aria-expanded','false');
 let selected=-1;const opts=()=>Array.from(box.querySelectorAll('a[href]'));
 const hide=()=>{box.hidden=true;field.setAttribute('aria-expanded','false');field.removeAttribute('aria-activedescendant');selected=-1};
 const render=()=>{
