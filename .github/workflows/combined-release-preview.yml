@@ -1,7 +1,5 @@
 name: Combined storefront SEO performance preview
 on:
-  push:
-    branches: ['release/combined-perf-storefront-seo-20261019']
   pull_request:
     branches: [main]
 permissions:
@@ -27,7 +25,9 @@ jobs:
           set -euo pipefail
           curl --location --fail --silent --show-error --retry 5 --retry-delay 3 --output /dev/null "$PHASE1_PREVIEW_URL/"
           curl --location --fail --silent --show-error --output /dev/null "$PHASE1_PREVIEW_URL/category-art/approved-category-sprite-hq-20261018.webp"
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' "$PHASE1_PREVIEW_URL/checkout.html")" = "200"
+          checkout_status="$(curl --location --silent --show-error --retry 3 --retry-delay 2 --output /dev/null --write-out '%{http_code}' "$PHASE1_PREVIEW_URL/checkout.html")"
+          printf 'Preview checkout GET status: %s\n' "$checkout_status"
+          test "$checkout_status" = "200"
       - name: Run Phase 1 storefront behavior on combined candidate
         run: node tools/phase1-preview-smoke.mjs
       - name: Run Phase 2 SEO behavior on combined candidate
