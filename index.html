@@ -17,12 +17,11 @@
 {"@context":"https://schema.org","@type":"Store","name":"ChaskaBox","description":"Pakistani snacks online store","url":"https://chaskabox.online/","telephone":"+92-332-0005381","address":{"@type":"PostalAddress","addressLocality":"Muzaffargarh","addressCountry":"PK"},"paymentAccepted":"Cash on Delivery, JazzCash, Bank Transfer"}
 </script>
 
-<!-- Prioritize the real homepage hero image (a CSS background otherwise discovered late). -->
-<link rel="preload" as="image" href="/images/hero-approved-brand-polish-20261017.webp" fetchpriority="high" data-home-preload>
 <link rel="stylesheet" href="/styles.css?v=20261017-approvedbrand">
 <link rel="stylesheet" href="/storefront-ux-refresh.css?v=20261017-p2">
 <link rel="stylesheet" href="/home-hero-carousel.css?v=20261017-p2">
 <link rel="stylesheet" href="/final-homepage.css?v=20261017-polish">
+<link rel="stylesheet" href="/hero-editorial-20261018.css?v=1">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 </head>
 <body class="reference-storefront">
@@ -86,17 +85,18 @@
 <main id="main">
 <!-- Serve the homepage hero and sections in the initial HTML to avoid late layout shifts. -->
 <div id="view-home">
-  <section class="hero">
+  <section class="hero hero-editorial" aria-label="Discover ChaskaBox snacks">
     <div class="herowrap">
       <div class="herotxt">
         <span class="kick"><span class="dot"></span> Pakistan ka snack box, dil se</span>
-        <div class="hero-eyebrow">PAKISTANI SNACKS • SOURCED AFTER ORDER</div>
+        <div class="hero-eyebrow">ORIGINAL PAKISTANI SNACKS <span aria-hidden="true">✦</span> CURATED WITH CARE</div>
         <h1>Bachpan Ka Zaiqa, <span class="hl">Ab Ghar Baithe.</span></h1>
-        <p>Pakistani favourites, sourced after your order. Delivered across Pakistan.</p>
+        <p>Woh bachpan wali favourites, ab ek hi jagah. Original branded snacks, order ke baad carefully sourced aur Pakistan bhar mein delivered.</p>
         <div class="hero-actions">
-          <a class="cta" href="/shop/">Shop All Snacks <span>›</span></a>
-          <a class="cta ghost" href="/bundles/">Explore Chaska Boxes</a>
+          <a class="cta" href="/shop/">Shop All Snacks <span aria-hidden="true">↗</span></a>
+          <a class="cta ghost" href="/bundles/">Explore Chaska Boxes <span aria-hidden="true">→</span></a>
         </div>
+        <p class="hero-microcopy"><span aria-hidden="true">✦</span> Sealed branded packs <span aria-hidden="true">·</span> Sourced after order <span aria-hidden="true">·</span> 4–7 day estimated delivery</p>
         <div class="hero-search">
           <label class="sr-only" for="homeSearch">Search snacks</label>
           <div class="hero-searchbox"><span aria-hidden="true">🔎</span><input id="homeSearch" autocomplete="off" placeholder="Search Slanty, Cocomo, chocolates..." oninput="renderHomeSearchSuggestions(this.value)" onkeydown="homeSearchKey(event)"><button type="button" onclick="submitHomeSearch()">Search</button></div>
@@ -104,9 +104,17 @@
         </div>
 
       </div>
-      <div class="heroimg"><div class="herocollage" id="heroCollage"><img src="/images/p5.webp" alt="Mayfair | Delight Chocolate Cream Croissant" width="150" height="150" decoding="async" fetchpriority="high" class="hc1"><img src="/images/p54.webp" alt="Giggly | Butter Fudge Butter Milk Toffee" width="150" height="150" decoding="async" loading="lazy" class="hc2"><img src="/images/p182.webp" alt="Winner | Patti Fry Masala" width="150" height="150" decoding="async" loading="lazy" class="hc3"></div></div>
+      <div class="heroimg">
+        <div class="hero-showcase">
+          <div class="hero-orbit" aria-hidden="true"></div>
+          <div class="hero-orbit hero-orbit-small" aria-hidden="true"></div>
+          <div class="hero-product-tag" aria-hidden="true"><span>THE SNACKS YOU <b>GREW UP WITH</b></span><span class="hero-product-star">✦</span></div>
+          <div class="herocollage" id="heroCollage"><img src="/images/p5.webp" alt="Mayfair Delight chocolate cream croissant pack" width="150" height="150" decoding="async" fetchpriority="high" class="hc1"><img src="/images/p54.webp" alt="Giggly butter fudge toffee pack" width="150" height="150" decoding="async" loading="lazy" class="hc2"><img src="/images/p182.webp" alt="Winner Patti Fry masala snack pack" width="150" height="150" decoding="async" loading="lazy" class="hc3"></div>
+          <div class="hero-seal" aria-hidden="true"><span>100%</span><small>CHASKA</small></div>
+        </div>
+      </div>
     </div>
-    <span class="hero-art-note">Snack inspiration · see listed packs below</span>
+    <span class="hero-art-note">Illustrative snack selection · browse exact listed packs</span>
     <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
       <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
       <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
