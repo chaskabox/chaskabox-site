@@ -18,8 +18,12 @@ export function previewRead(path,{method='GET',query=''}={}){
  else if(path==='/brands')data=fixtureBrands;
  else if(path==='/bundle_items'||path==='/public_site_settings')return [];
  else throw Error('Preview fixture path not allowed');
- const id=q.get('id'),slug=q.get('slug'),visibility=q.get('visibility'),shown=q.get('is_visible'),bundle=q.get('is_bundle');
+ const id=q.get('id'),slug=q.get('slug'),visibility=q.get('visibility'),shown=q.get('is_visible'),bundle=q.get('is_bundle'),brandId=q.get('brand_id');
  if(id?.startsWith('eq.'))data=data.filter(p=>Number(p.id)===Number(id.slice(3)));
+ if(path==='/products'&&brandId?.startsWith('eq.')){
+   const brand=fixtureBrands.find(b=>b.id===Number(brandId.slice(3)));
+   data=brand?data.filter(p=>String(p.brand||'').trim().toLowerCase()===brand.normalized_name):[];
+ }
  if(slug?.startsWith('eq.'))data=data.filter(p=>p.slug===slug.slice(3));
  if(visibility==='eq.visible')data=data.filter(p=>p.visibility==='visible');
  if(shown==='eq.true')data=data.filter(p=>p.is_visible===true);
