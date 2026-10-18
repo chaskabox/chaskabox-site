@@ -18,6 +18,14 @@ Known 2026-10-16 observations from the owner:
 - After preflight, identify whether the working WhatsApp service is the earlier PM2 gateway or Docker WAHA, determine which process (if any) is paired, and secure private session backups **before** recovery. If the PM2 service is the current working sender, never replace or restart it simply to activate a new WAHA container.
 - **No VM restart, image pull, WhatsApp sending, Cloudflare tunnel change or Worker setting change was performed in this recheck.**
 
+## 2026-10-18 latest owner verification: WAHA already running — do NOT reinstall
+- Actual `docker ps -a` shows **container `waha` up 2 days**, using native `devlikeapro/waha:arm` and mapping only **127.0.0.1:3001 → 3000**. The local `/health` returns **HTTP 401**, proving an authenticated endpoint responds, **not** that a WhatsApp session is WORKING.
+- Earlier preflight showed `none` due to a defective grep rule: it parsed `waha Up 2 days` but did not accept the whitespace after the container name. That detection bug and a regression test were corrected in this branch.
+- Backup directory **exists**, but its contents, recoverability, and timestamps **have not been verified**. The session directory contains **586 files**. Protect the existing bind mount and never share auth files, QR, tokens, or environment values.
+- **Do not execute `deploy-local-oci.sh`, start another WAHA container, pull over the active image or run the original AMD64 Compose file.** The host already has a live native ARM WAHA container; deployment preconditions are no longer valid.
+- The named Cloudflare tunnel **chaskabox-waha** continues to report **DOWN, zero connectors** even though PM2 `cf-tunnel` is online. Inspect the PM2 process/tunnel identity without printing its token before any tunnel change.
+- Remaining gates: authenticated, read-only `GET /api/sessions?all=true` via localhost (report status/name only); confirm private backup files and their integrity; safely reconnect the named tunnel while preserving existing PM2 services; approved canary test; no customer outbox replay.
+
 ## Safety boundaries
 
 Do **not** use `docker system prune`, `docker compose down -v`, `docker volume rm`, session deletion, blind `docker pull && docker compose up`, or publish port 3000 to `0.0.0.0`. Do **not** commit `.env`, `.sessions`, QR images, media, private keys, backups, or API credentials to GitHub. WAHA is an unofficial integration: do not broadcast, bulk replay stale outbox jobs, or bypass WhatsApp consent/rate limits.
