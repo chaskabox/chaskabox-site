@@ -87,9 +87,13 @@ test('dedicated FAQ uses current commerce switches without stale free-delivery o
 
 test('dedicated FAQ renders the published Homepage Builder items contract',async()=>{
  const original=globalThis.fetch;
- globalThis.fetch=async()=>Response.json({theme:{},settings:{},sections:[{section_key:'faq',heading:'Owner FAQ heading',config:{items:[{q:'Owner question & details?',a:'Owner reviewed answer <plain text>.'}]}}]});
+ let items=[{q:'Owner question & details?',a:'Owner reviewed answer <plain text>.'}];
+ globalThis.fetch=async()=>Response.json({theme:{},settings:{},sections:[{section_key:'faq',heading:'Owner FAQ heading',config:{items}}]});
  try{
   const result=await faqPage({request:new Request('https://chaskabox.online/faq/'),env:{SUPABASE_URL:'https://fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture'},next:async()=>new Response('<html><head></head><body><main>Old shell</main></body></html>')});
   const html=await result.text();assert.equal(result.status,200);assert.match(html,/Owner question &amp; details\?/);assert.match(html,/Owner reviewed answer &lt;plain text&gt;/);assert.match(html,/Owner FAQ heading/);assert.doesNotMatch(html,/How does ChaskaBox source my order\?/);
+  items=[];
+  const empty=await faqPage({request:new Request('https://chaskabox.online/faq/'),env:{SUPABASE_URL:'https://fixture.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture'},next:async()=>new Response('<html><head></head><body><main>Old shell</main></body></html>')});
+  assert.doesNotMatch(await empty.text(),/<details>/,'An intentionally empty FAQ list must stay empty');
  }finally{globalThis.fetch=original;}
 });
