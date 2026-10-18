@@ -177,3 +177,10 @@
    bottom:72px!important;padding-inline:12px!important;font-size:12px!important
  }
 }
+
+/* After moving category browsing beneath the hero, mobile search is full-width. */
+@media(max-width:760px){
+ .reference-storefront .cbx-mobile-row .cbx-mobile-results{
+   left:0!important;right:0!important;min-width:100%!important;width:100%!important
+ }
+}
