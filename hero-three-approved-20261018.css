@@ -177,3 +177,12 @@
   .reference-storefront #view-home .hero-approved-three .herotxt h1{font-size:28px!important}
   .reference-storefront #view-home .hero-approved-three>.hero-scene{height:168px!important}
 }
+
+/* Hero 3 has an owner-approved 1411×554 original image, unlike 1600×550 slides.
+   Preserve its natural framing and let the shared trust strip cover its baked-in footer,
+   rather than clipping the shopping buttons or zooming the products. */
+@media(min-width:761px){
+  .reference-storefront #view-home .hero-approved-three[data-hero-slide="3"]>.herowrap{
+    aspect-ratio:1411/490!important;
+  }
+}
