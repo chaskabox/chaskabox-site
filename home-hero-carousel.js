@@ -23,23 +23,23 @@
       '<button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>';
     root.querySelector('.herotrust')?.before(controls);
   }
-  if(!title||!desc||!eyebrow||!kick||!primary||!secondary||!controls)return;
+  if(!title||!desc||!eyebrow||!primary||!secondary||!controls)return;
   const defaults=[
     {label:'Bachpan Ka Zaiqa',kick:'Pakistan ka snack box, dil se',
-     eyebrow:'PAKISTANI SNACKS · SOURCED AFTER ORDER',
-     heading:'Bachpan Ka Zaiqa, ',highlight:'Ab Ghar Baithe.',
-     description:'Pakistani favourites, sourced after your order. Delivered across Pakistan.',
-     primary:'Shop Now',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
-    {label:'Curated Chaska Boxes',kick:'Har mood ka Chaska Box',
-     eyebrow:'CURATED SNACK BOXES · GIFTING & SHARING',
-     heading:'Har Box Mein ',highlight:'Bachpan Ki Yaadein.',
-     description:'Apne favourite snacks aur Chaska Boxes discover karein. Original sealed packs, carefully sourced after your order.',
-     primary:'Explore Chaska Boxes',href:'/bundles/',secondary:'Shop All Snacks',secondHref:'/shop/'},
-    {label:'Snack Picks',kick:'Snacks jo dil khush kar dein',
-     eyebrow:'CHASKA PICKS · SNACKS & TREATS',
-     heading:'Apni Cravings Ka ',highlight:'Chaska Chuno!',
-     description:'Chatpatay, meethay aur crunchy Pakistani favourites ek jagah. Available snacks aur deals explore karein.',
-     primary:'Shop Snacks',href:'/shop/',secondary:'Browse Chaska Boxes',secondHref:'/bundles/'}
+     eyebrow:'ORIGINAL PAKISTANI SNACKS',
+     heading:'Bachpan Ka Zaiqa, ',highlight:'Ab Ghar Baithe!',
+     description:'Woh bachpan ki pasandeeda candies, nimco, chips aur meethay snacks — ab phir se discover karein. Har bite ke saath purani yaadon ka maza, ChaskaBox ke saath!',
+     primary:'Shop All Snacks',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
+    {label:'Gift Nahi, Ek Pyari Si Yaad',kick:'A little box of happiness',
+     eyebrow:'A LITTLE BOX OF HAPPINESS',
+     heading:'Sirf Gift Nahi, ',highlight:'Ek Pyari Si Yaad!',
+     description:'Kuch tohfay sirf diye nahi jaate, yaad bhi rakhe jaate hain. Apno ko unke favourite snacks ka surprise dein, ChaskaBox ke saath.',
+     primary:'Explore Gift Boxes',href:'/bundles/',secondary:'Shop All Snacks',secondHref:'/shop/'},
+    {label:'Favourite Snacks',kick:'Original Pakistani snacks',
+     eyebrow:'ORIGINAL PAKISTANI SNACKS',
+     heading:'Pakistan Ke Favourite Snacks, ',highlight:'Ab Ghar Baithe!',
+     description:'Chips, chocolates, nimco, candies aur bachpan ke favourites — original branded snacks, carefully sourced after your order aur Pakistan bhar mein delivered.',
+     primary:'Shop All Snacks',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'}
   ];
   const safeLink=s=>{
     if(typeof s!=='string'||/[\\"'<>\s]/.test(s))return false;
@@ -55,7 +55,7 @@
   function show(index){
     current=(index+slides.length)%slides.length;
     const s=slides[current];
-    kick.lastChild.textContent=' '+s.kick;
+    if(kick)kick.lastChild.textContent=' '+s.kick;
     eyebrow.textContent=s.eyebrow;
     title.replaceChildren(document.createTextNode(s.heading));
     const high=document.createElement('span');high.className='hl';high.textContent=s.highlight;title.append(high);
@@ -64,6 +64,19 @@
     else primary.textContent=s.primary+' ›';
     primary.href=s.href;
     secondary.textContent=s.secondary;secondary.href=s.secondHref;
+    // These three artworks are the owner's approved reference banners, not
+    // interchangeable backgrounds. Keep original framing; CSS adapts mobile crop.
+    const artworks=[
+      ['/images/chaskabox-approved-hero-01-20261018.avif',1600,550,'ChaskaBox nostalgic snack-box banner (illustrative artwork)'],
+      ['/images/chaskabox-approved-hero-02-20261018.avif',1600,550,'ChaskaBox gifting banner (illustrative artwork)'],
+      ['/images/chaskabox-approved-hero-03-20261018.avif',1411,554,'ChaskaBox favourite snacks banner, original approved crop']
+    ];
+    const art=root.querySelector('.hero-scene');
+    const selected=artworks[current];
+    if(art&&selected){
+      if(art.getAttribute('src')!==selected[0])art.setAttribute('src',selected[0]);
+      art.width=selected[1];art.height=selected[2];art.alt=selected[3];
+    }
     const collage=root.querySelector('#heroCollage');
     const authenticImages=window.CHASKABOX_HERO_MARKUP?.[current];
     if(collage&&authenticImages&&collage.dataset.heroMarkupKey!==String(current)){

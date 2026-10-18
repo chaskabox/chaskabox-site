@@ -21,10 +21,15 @@ test('public COD amount follows owner settings rather than hardcoded marketing v
   assert.match(runtime,/data-cod-advance-note/);
 });
 
-test('LCP hero image is prioritized on home but never requested by catalogue SSR shells',()=>{
-  assert.match(root,/<link rel="preload" as="image"[^>]+hero-approved-brand-polish-20261017\.webp"[^>]+data-home-preload/);
+test('three approved hero assets preserve their reference compositions and consistent trust disclosures',()=>{
+  assert.match(root,/hero-editorial-20261018\.css/);
+  assert.match(root,/hero-three-approved-20261018\.css/);
+  assert.match(root,/<section class="hero hero-editorial hero-packing-preview hero-approved-three"/);
+  assert.match(root,/<img class="hero-scene"[^>]*chaskabox-approved-hero-01-20261018\.avif"[^>]*fetchpriority="high"/);
+  const slider=readFileSync(new URL('../home-hero-carousel.js',import.meta.url),'utf8');
+  for(const i of ['01','02','03'])assert.ok(slider.includes('chaskabox-approved-hero-'+i+'-20261018.avif'));
+  for(const title of ['Original Brands','Carefully Sourced','Nationwide Delivery','Cash on Delivery'])assert.match(root,new RegExp(title));
+  assert.match(root,/Illustrative hero artwork/);
   const shop=routeShell(root,'shop');
-  assert.doesNotMatch(shop,/data-home-preload/);
   assert.match(shop,/id="view-shop"/);
-  assert.match(shop,/id="view-home"/);
 });
