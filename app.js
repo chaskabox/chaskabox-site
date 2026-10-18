@@ -1393,7 +1393,7 @@ function renderDrawer(){
   const sub=cartSubtotal();
   const threshold=prepaidThreshold();
   const rem=Math.max(0,threshold-sub), pct=threshold<=0?100:Math.min(100,Math.round(sub/threshold*100));
-  $('#dfoot').innerHTML=`<div class="drow total"><span>Subtotal</span><span>${fmt(sub)}</span></div><div class="drawer-progress"${threshold===null?' hidden':''}><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div><small>${rem?fmt(rem)+' more for FREE prepaid delivery':'🎉 FREE prepaid delivery unlocked'}</small></div><p class="cart-note">${esc(deliveryFeeCopy())}</p>${codAdvanceNote(sub+settingNum('cod_delivery_fee_pkr',300))}<div class="drawer-actions"><a class="drawer-viewcart" href="/cart/" onclick="closeDrawer()">View Bag</a><a class="checkoutbtn" href="/checkout.html">Checkout →</a></div>`;
+  $('#dfoot').innerHTML=`<div class="drow total"><span>Subtotal</span><span>${fmt(sub)}</span></div><div class="drawer-progress"${threshold===null?' hidden':''}><div class="progress-track"><span class="${pct>=100?'is-full':''}" data-progress="${pct}"></span></div><small>${rem?fmt(rem)+' more for FREE prepaid delivery':'🎉 FREE prepaid delivery unlocked'}</small></div><p class="cart-note">${esc(deliveryFeeCopy())}</p>${ids.length?codAdvanceNote(sub+settingNum('cod_delivery_fee_pkr',300)):''}<div class="drawer-actions"><a class="drawer-viewcart" href="/cart/" onclick="closeDrawer()">View Bag</a><a class="checkoutbtn" href="/checkout.html">Checkout →</a></div>`;
   animateProgressIn($('#dfoot'),'drawer',pct);
 }
 function chQty(id,d){setCartPageQty(id,Number(CART[id]||0)+d);}
