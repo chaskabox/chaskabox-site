@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {productPageTitle} from '../functions/api/_lib/seo.js';
 import {catalogueCard} from '../functions/api/_lib/catalogue-page.js';
+import {previewCatalogueAllowed,previewRead,previewManifest} from '../functions/api/_lib/preview-catalogue-fixtures.js';
+import {sbRequest,rpc} from '../functions/api/_lib/db.js';
 
 const src=(path)=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const topPops={id:233,name:'ChaskaBox | Top Pops Chicken (Red) — Pack of 10',pack:'Pack of 10',category:'Snacks & Nimco',price:750,old_price:800,stock_state:'sourced_after_order'};
@@ -59,4 +61,25 @@ test('server product breadcrumbs are driven by real category; not placeholders',
  assert.match(handler,/pdCrumbCat/);
  assert.match(handler,/pdCrumbName/);
  assert.match(handler,/old_price/);
+});
+
+test('isolated preview mode is opt-in AND refuses production credentials',async()=>{
+ const env={CHASKABOX_PREVIEW_CATALOGUE:'read-only'};
+ assert.equal(previewCatalogueAllowed(env),true);
+ assert.equal(previewCatalogueAllowed({...env,SUPABASE_URL:'https://example.supabase.co'}),false);
+ assert.equal(previewCatalogueAllowed({...env,SUPABASE_SERVICE_ROLE_KEY:'prod-key'}),false);
+ assert.equal(previewCatalogueAllowed({}),false);
+ const product=await sbRequest(env,'/products',{query:'?select=*&id=eq.233&visibility=eq.visible&limit=1'});
+ assert.equal(product.length,1);
+ assert.equal(product[0].price,750);
+ assert.equal(product[0].old_price,800);
+ assert.equal(previewRead('/products',{query:'?id=eq.269'}).length,0,'Hidden product is excluded from isolated mock');
+ assert.throws(()=>previewRead('/orders',{}),/not allowed/);
+ assert.throws(()=>previewRead('/public_products',{method:'POST'}),/refuse writes/);
+ await assert.rejects(sbRequest(env,'/products',{method:'POST'}),/refuse writes/);
+ await assert.rejects(sbRequest(env,'/orders',{query:'?select=*'}),/not allowed/);
+ await assert.rejects(rpc(env,'place_order',{}),/not allowed/);
+ const manifest=await rpc(env,'storefront_manifest',{});
+ assert.ok(manifest.categories.length>0);
+ assert.ok((await sbRequest(env,'/brands',{query:'?is_visible=eq.true'})).length>0);
 });
