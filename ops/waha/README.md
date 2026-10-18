@@ -26,6 +26,13 @@ Known 2026-10-16 observations from the owner:
 - The named Cloudflare tunnel **chaskabox-waha** continues to report **DOWN, zero connectors** even though PM2 `cf-tunnel` is online. Inspect the PM2 process/tunnel identity without printing its token before any tunnel change.
 - Remaining gates: authenticated, read-only `GET /api/sessions?all=true` via localhost (report status/name only); confirm private backup files and their integrity; safely reconnect the named tunnel while preserving existing PM2 services; approved canary test; no customer outbox replay.
 
+## 2026-10-18 authenticated status & backup check — tunnel is remaining blocker
+- Owner verified the active WAHA container has exactly **one WORKING session** through an authenticated `/api/sessions?all=true` check. Do not pair again, reset, replace, or restart it.
+- Private backup directory currently reports **4 files totaling just 1,022 bytes**. That is **not evidence of a complete backup** of the 586 files in `/home/ubuntu/waha/.sessions`. Securely archive and integrity-test the *existing* session directory in a root-only folder before changing tunnel or service state. A live tar backup is best effort; an off-VM encrypted restore-tested copy is still needed.
+- Cloudflare has a named tunnel with existing `waha.chaskabox.online` ingress to local port 3001; it is **DOWN with zero connections**. The notification Worker `WAHA_API_URL` points to this exact named hostname, so website-to-WAHA delivery is unverified/likely blocked despite the session being WORKING.
+- Diagnose what the existing long-running PM2 `cf-tunnel` instance actually runs by showing only a **redacted mode/target classification**, never full `pm2 show` environment or process command-line tokens. Do not kill it unless its responsibilities, rollback and session backup are confirmed.
+- Leave dispatch switches and customer messaging unchanged until this tunnel is connected, health/access checks pass, and an approved owner-only canary is successful. Never replay accumulated outbox messages automatically.
+
 ## Safety boundaries
 
 Do **not** use `docker system prune`, `docker compose down -v`, `docker volume rm`, session deletion, blind `docker pull && docker compose up`, or publish port 3000 to `0.0.0.0`. Do **not** commit `.env`, `.sessions`, QR images, media, private keys, backups, or API credentials to GitHub. WAHA is an unofficial integration: do not broadcast, bulk replay stale outbox jobs, or bypass WhatsApp consent/rate limits.
