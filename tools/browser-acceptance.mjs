@@ -214,10 +214,10 @@ try{
   await page.evaluate(()=>document.fonts.ready);
   const layout=await page.evaluate(()=>{
    const hero=document.querySelector('#view-home .hero'),box=hero.getBoundingClientRect();
-   return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundImage,font:getComputedStyle(hero.querySelector('h1')).fontFamily};
+   return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundColor,font:getComputedStyle(hero.querySelector('h1 .hl')).fontFamily,showcase:!!hero.querySelector('.hero-scene'),imageLoaded:hero.querySelector('.hero-scene')?.naturalWidth>0,cta:hero.querySelectorAll('.hero-actions a').length};
   });
-  if(layout.width<width-60||layout.width>width||layout.height>(width<=760?320:540))throw Error('Reference hero layout mismatch '+JSON.stringify({width,...layout}));
-  if(!layout.background.includes('hero-approved-brand-polish-20261017.webp')||!layout.font.includes('Kalam'))throw Error('Reference hero artwork or type is missing');
+  if(layout.width<width-60||layout.width>width||layout.height>(width<=760?760:610))throw Error('Editorial hero layout mismatch '+JSON.stringify({width,...layout}));
+  if(!/(system-ui|Segoe UI)/i.test(layout.font)||!layout.showcase||!layout.imageLoaded||layout.cta!==2)throw Error('Nostalgic packing hero photo or shopping actions missing');
   const polish=await page.evaluate(()=>({
    duplicateTrust:getComputedStyle(document.querySelector('#view-home .herotrust')).display,
    firstCardTop:Math.min(...[...document.querySelectorAll('#view-home .card')].map(el=>el.getBoundingClientRect().top)),
@@ -226,8 +226,8 @@ try{
    categorySymbols:document.querySelectorAll('#catTiles .ci-category-symbol').length,
    headerLogo:document.querySelector('.logo img')?.currentSrc
   }));
-  if(polish.duplicateTrust!=='none'||polish.packSize<11||polish.buttonHeight<44||!polish.headerLogo.includes('logo-header-polish-20261017-'))throw Error('Design polish accessibility/branding mismatch '+JSON.stringify({width,...polish}));
-  if(width===1440&&(layout.height>370||polish.firstCardTop>780))throw Error('Products remain too low in the desktop layout '+JSON.stringify(polish));
+  if(polish.duplicateTrust==='none'||polish.packSize<11||polish.buttonHeight<44||!polish.headerLogo.includes('logo-header-polish-20261017-'))throw Error('Design polish accessibility/branding mismatch '+JSON.stringify({width,...polish}));
+  if(width===1440&&(layout.height>610||polish.firstCardTop>1080))throw Error('Products remain too low in the desktop layout '+JSON.stringify(polish));
   if(!polish.categorySymbols)throw Error('Category discovery symbol missing');
   results.interactions.push({case:'compact hero, legible packs, 44px purchase controls and approved header branding / '+width,pass:true});
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');

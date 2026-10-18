@@ -23,6 +23,8 @@
 <link rel="stylesheet" href="/storefront-ux-refresh.css?v=20261017-p2">
 <link rel="stylesheet" href="/home-hero-carousel.css?v=20261017-p2">
 <link rel="stylesheet" href="/final-homepage.css?v=20261017-polish">
+<link rel="stylesheet" href="/hero-editorial-20261018.css?v=20261018-release">
+<link rel="stylesheet" href="/hero-three-approved-20261018.css?v=20261018-release">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
 </head>
 <body class="reference-storefront">
@@ -86,16 +88,23 @@
 <main id="main">
 <!-- Serve the homepage hero and sections in the initial HTML to avoid late layout shifts. -->
 <div id="view-home">
-  <section class="hero">
+  <section class="hero hero-editorial hero-packing-preview hero-approved-three" aria-label="Discover ChaskaBox snacks">
+    <img class="hero-scene" src="/images/chaskabox-approved-hero-01-20261018.avif" width="1600" height="550" alt="ChaskaBox nostalgic snacks banner artwork; illustrated packaging, exact products in Shop" decoding="async" fetchpriority="high">
     <div class="herowrap">
       <div class="herotxt">
-        <span class="kick"><span class="dot"></span> Pakistan ka snack box, dil se</span>
-        <div class="hero-eyebrow">PAKISTANI SNACKS • SOURCED AFTER ORDER</div>
+        <div class="hero-eyebrow"><span aria-hidden="true" class="eyebrow-spark">✦</span> ORIGINAL PAKISTANI SNACKS</div>
         <h1>Bachpan Ka Zaiqa, <span class="hl">Ab Ghar Baithe.</span></h1>
-        <p>Pakistani favourites, sourced after your order. Delivered across Pakistan.</p>
+        <p>Apni bachpan wali candies, nimco aur snacks phir se discover karein. Order ke baad carefully sourced, Pakistan bhar mein delivery.</p>
         <div class="hero-actions">
-          <a class="cta" href="/shop/">Shop All Snacks <span>›</span></a>
-          <a class="cta ghost" href="/bundles/">Explore Chaska Boxes</a>
+          <a class="cta" href="/shop/">Shop All Snacks <span aria-hidden="true">↗</span></a>
+          <a class="cta ghost" href="/bundles/">Explore Chaska Boxes <span aria-hidden="true">→</span></a>
+        </div>
+        <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
+          <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
+          <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
+          <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-pressed="false"></button>
+          <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-pressed="false"></button>
+          <button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>
         </div>
         <div class="hero-search">
           <label class="sr-only" for="homeSearch">Search snacks</label>
@@ -104,22 +113,30 @@
         </div>
 
       </div>
-      <div class="heroimg"><div class="herocollage" id="heroCollage"><img src="/images/p5.webp" alt="Mayfair | Delight Chocolate Cream Croissant" width="150" height="150" decoding="async" fetchpriority="high" class="hc1"><img src="/images/p54.webp" alt="Giggly | Butter Fudge Butter Milk Toffee" width="150" height="150" decoding="async" loading="lazy" class="hc2"><img src="/images/p182.webp" alt="Winner | Patti Fry Masala" width="150" height="150" decoding="async" loading="lazy" class="hc3"></div></div>
+      <div class="heroimg" aria-hidden="true">
+        <div class="herocollage" id="heroCollage"></div>
+      </div>
     </div>
-    <span class="hero-art-note">Snack inspiration · see listed packs below</span>
-    <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
-      <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
-      <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
-      <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-pressed="false"></button>
-      <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-pressed="false"></button>
-      <button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>
-    </div>
-    <div class="herotrust">
+    <span class="hero-art-note">Illustrative hero artwork · exact products shown in Shop</span>
+
+    <div class="herotrust" aria-label="Delivery and order information — same on all hero slides">
       <div class="htrustwrap">
-        <div><span class="hic">🛡️</span><span><b>Original Brands</b><small>Trusted Pakistani favourites</small></span></div>
-        <div><span class="hic">🛍️</span><span><b>Sourced after order</b><small>Picked after your order</small></span></div>
-        <div><span class="hic">💵</span><span><b>Cash on Delivery</b><small><span data-cod-advance-note>Rs. <span data-cod-advance-amount>500</span> advance before dispatch; </span>balance on delivery</small></span></div>
-        <div><span class="hic">🚚</span><span><b>Pakistan Wide</b><small>4–7 day delivery</small></span></div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 20 6v6c0 5-4 8-8 10-4-2-8-5-8-10V6Z"/><path d="m8.5 12 2.3 2.3 4.7-5"/></svg></span>
+          <span><b>Original Brands</b><small>Trusted Pakistani favourites</small></span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16v12H4zM3 9l2-5h14l2 5M12 4v17M4 13h16"/></svg></span>
+          <span><b>Carefully Sourced</b><small>Picked after your order</small></span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v10H3zM14 10h4l3 4v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>
+          <span><b>Nationwide Delivery</b><small>Estimated 4–7 days</small></span>
+        </div>
+        <div class="hero-trust-item hero-trust-cod">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></span>
+          <span><b>Cash on Delivery</b><small><span data-cod-advance-note>Rs. <span data-cod-advance-amount>500</span> advance before dispatch; </span>balance on delivery</small></span>
+        </div>
       </div>
     </div>
   </section>
@@ -443,7 +460,7 @@
 <script defer src="/supabase-config.js?v=20261012-perf3"></script>
 <script defer src="/photo-manifest.js?v=20261014-closeout"></script>
 <script defer src="/app.js?v=20261018-audit2"></script>
-<script defer src="/home-hero-carousel.js?v=20261018-audit1"></script>
+<script defer src="/home-hero-carousel.js?v=20261018-release"></script>
 <script defer src="/reviews-widget.js?v=20261014-final-readiness"></script>
 <script defer src="/account.js?v=20261012-perf3"></script>
 <script defer src="/analytics.js?v=1"></script>
