@@ -33,3 +33,18 @@ test('three approved hero assets preserve their reference compositions and consi
   const shop=routeShell(root,'shop');
   assert.match(shop,/id="view-shop"/);
 });
+
+test('non-home route shells keep approved hero art dormant until home is visited',()=>{
+ for(const route of ['shop','brand','product','account']){
+  const html=routeShell(root,route);
+  assert.doesNotMatch(html,/<link\b[^>]*data-home-preload/);
+  const scene=html.match(/<img\b[^>]*class="hero-scene"[^>]*>/)?.[0];
+  assert.ok(scene,'Approved hero remains available for client navigation');
+  assert.match(scene,/chaskabox-approved-hero-01-20261018\.avif/);
+  assert.match(scene,/loading="lazy"/);
+  assert.match(scene,/fetchpriority="low"/);
+ }
+ const home=routeShell(root,'home');
+ assert.match(home,/<link\b[^>]*data-home-preload/);
+ assert.match(home,/<img\b[^>]*class="hero-scene"[^>]*fetchpriority="high"/);
+});
