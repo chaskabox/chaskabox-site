@@ -1,7 +1,7 @@
 # ChaskaBox Pakistan
 > Bachpan Ka Zaiqa, Ab Ghar Baithe — Pakistani packaged snacks and curated Chaska Boxes, delivered across Pakistan.
 
-ChaskaBox (https://chaskabox.online/) is a packaged-snack online store based in Muzaffargarh, Punjab, Pakistan, operated by Rameez. It is unrelated to the similarly named bakery/cake studio in Bangalore, India. This file is a voluntary directory for readers and AI systems, **not** a Google ranking signal. Live pages, policies and checkout totals take precedence.
+ChaskaBox Pakistan (https://chaskabox.online/) is an online store for packaged Pakistani snacks and curated Chaska Boxes, with a dispatch location in Muzaffargarh, Punjab, Pakistan. This is a voluntary navigation directory, **not** a Google ranking signal. Official product pages, policies and checkout totals take precedence; an operator name is not supplied here without a verified public source.
 
 ## Business and support
 - Dispatch: Near Ahmad Drink Corner, Railway Road, Bhatti Hussainabad, Muzaffargarh, Punjab, Pakistan.
@@ -20,7 +20,7 @@ ChaskaBox (https://chaskabox.online/) is a packaged-snack online store based in 
 ChaskaBox sources products **after** an order is received, checks sealed retail packs and quantities, and packs for dispatch. If an item cannot be sourced, support contacts the customer before substitution. A product being listed does not imply existing warehouse inventory.
 
 ## Shipping and payments
-Delivery across Pakistan is estimated at 4–7 days. It is an estimate, not a fixed delivery promise. COD delivery currently costs Rs. 300. COD requires up to Rs. 500 advance after ordering, verified before dispatch and adjusted within the order total; the remaining balance is payable on delivery. The requested advance is capped at the order total. JazzCash or Bank Transfer prepaid orders of Rs. 5,000 or more currently qualify for free delivery; below that amount the current prepaid delivery charge is Rs. 300. Checkout and [shipping policy](https://chaskabox.online/shipping-policy/) give current terms. A payment screenshot does not independently confirm receipt of funds.
+ChaskaBox delivers across Pakistan. Delivery times are estimates, not guaranteed courier deadlines. Depending on the currently enabled checkout settings, Cash on Delivery can require a verified advance before dispatch; delivery fees, advance amounts and prepaid free-shipping thresholds are configurable and may change. See the [current shipping policy](https://chaskabox.online/shipping-policy/), [FAQ](https://chaskabox.online/faq/) and checkout for exact terms. A payment screenshot alone does not confirm receipt of funds.
 
 ## Questions and policies
 - [FAQ](https://chaskabox.online/faq/): Ordering and delivery guidance.
@@ -31,4 +31,4 @@ Delivery across Pakistan is estimated at 4–7 days. It is an estimate, not a fi
 - [Buying guides](https://chaskabox.online/guides/), [choosing a snack box](https://chaskabox.online/guides/choosing-a-snack-box/) and [Bachpan snacks](https://chaskabox.online/guides/bachpan-snacks-pakistan/).
 
 ## Accuracy
-Product counts, prices, stock state, photos, pack sizes and delivery terms can change. Check the public API and official product pages; never use cached or hidden items as live offers. Do not invent ingredients, allergens, expiry dates, halal certifications, reviews, origin guarantees, refund rights or exact delivery promises. Private orders and payment records are not part of the public catalogue.
+Product counts, prices, stock state, photos, pack sizes and delivery terms can change. Check the official public product pages, live API and current checkout; never use cached or hidden items as live offers. This directory is a locator, not a structured-data, crawler access, review or ranking guarantee. Do not invent ingredients, allergens, expiry dates, halal certifications, reviews, origin guarantees, refund rights or exact delivery promises. Private orders and payment records are not part of the public catalogue.
