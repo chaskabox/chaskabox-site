@@ -1724,22 +1724,10 @@ document.addEventListener('DOMContentLoaded',async()=>{
   fixMobileHeader();
   initPromo(); // Independent of the catalogue/API loading.
   loadCart();
-  const inCloudflarePreview=String(location.hostname||'').endsWith('.pages.dev');
   try{
-    if(inCloudflarePreview){
-      // Preview builds may not have production Supabase bindings. Render an authentic
-      // version-controlled product snapshot immediately rather than an empty homepage.
-      const snapshot=await fetch('/products.json',{cache:'no-cache'});
-      if(!snapshot.ok)throw new Error('Preview catalogue unavailable');
-      const rows=await snapshot.json();
-      if(!Array.isArray(rows)||!rows.every(p=>Number.isSafeInteger(Number(p.id))&&typeof p.name==='string'))throw new Error('Invalid preview catalogue');
-      PRODUCTS=rows;
-      // Preview CMS settings are best effort; public routes cannot hang behind an
-      // unavailable staging API. The real production pathway below is unchanged.
-      loadStorefrontConfig().then(()=>{if(location.pathname==='/'&&document.getElementById('catTiles')){renderHomeContent();applyHomeCms();}}).catch(()=>{});
-    }else{
-      await Promise.all([loadProducts(),loadStorefrontConfig().catch(()=>{})]);
-    }
+    // Preview and production hydrate the same server seed/public API. loadProducts
+    // already falls back to the versioned snapshot if that API is unavailable.
+    await Promise.all([loadProducts(),loadStorefrontConfig().catch(()=>{})]);
   }
   catch{const view=document.getElementById('view-home');if(view){view.hidden=false;view.style.display='block';view.innerHTML='<section class="section"><h1>Catalogue unavailable</h1><p>Please try again in a moment.</p><button class="cta" id="catalogueRetry">Retry</button></section>';document.getElementById('catalogueRetry').onclick=()=>location.reload();}return;}
   updateBadge();updateWishCount();

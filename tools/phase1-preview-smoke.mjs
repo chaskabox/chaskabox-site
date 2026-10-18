@@ -28,7 +28,17 @@ await inspect('/',390,async(page,entry)=>{
  const dots=await page.locator('#view-home .hero [data-hero-dot]').count();
  entry.approvedHeroDots=dots;
  if(dots!==3)throw Error('Three approved hero controls not found');
+ entry.categoryShortcuts=await page.locator('#catTiles > a').count();
+ if(entry.categoryShortcuts<2)throw Error('Preview CMS category visibility is incomplete');
  if(entry.visibleH1.length!==1)throw Error('Expected one visible homepage H1');
+});
+await inspect('/shop/',390,async(page,entry)=>{
+ const response=await page.request.get(base+'/api/products?fresh=1');
+ if(!response.ok())throw Error('Preview public catalogue unavailable');
+ const products=await response.json();
+ entry.apiProducts=products.length;
+ entry.hydratedCards=await page.locator('#shopGrid .card').count();
+ if(!entry.apiProducts||entry.hydratedCards!==entry.apiProducts)throw Error('Rendered catalogue differs from the preview API');
 });
 await inspect('/shop/?badge=Sale',390,async(page,entry)=>{
  entry.heading=await page.locator('#catTitle').innerText();
@@ -48,6 +58,9 @@ await inspect('/product/233/',390,async(page,entry)=>{
  entry.disabled=await page.locator('#pdetail .pdbtn').first().isDisabled();
  entry.price=await page.locator('#pdetail .pd-price').first().innerText();
  entry.breadcrumb=await page.locator('#pdCrumbCat').first().innerText();
+ entry.homePreloads=await page.locator('link[data-home-preload]').count();
+ entry.hiddenHero=await page.locator('img.hero-scene').evaluate(i=>({loading:i.loading,priority:i.getAttribute('fetchpriority'),loaded:i.naturalWidth>0}));
+ if(entry.homePreloads||entry.hiddenHero.loading!=='lazy'||entry.hiddenHero.priority!=='low'||entry.hiddenHero.loaded)throw Error('Non-home route downloaded the dormant homepage hero');
  if(!/Add to Bag/.test(entry.button)||entry.disabled)throw Error('Product Add to Bag disabled/missing');
  if(!/Save \d+%/.test(entry.price))throw Error('Missing original price / Save percentage for fixture product');
  if(/^(Category|Product)$/.test(entry.breadcrumb))throw Error('Unresolved product breadcrumb');

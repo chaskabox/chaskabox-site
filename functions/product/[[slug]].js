@@ -1,4 +1,4 @@
-import {SITE,organizationSchema} from '../api/_lib/storefront-html.js';
+import {SITE,organizationSchema,routeShell} from '../api/_lib/storefront-html.js';
 import {imageAttributes} from '../api/_lib/responsive-images.js';
 import {cataloguePhoto,photoUnderReview} from '../api/_lib/catalogue-photos.js';
 import { sbRequest } from '../api/_lib/db.js';
@@ -22,14 +22,11 @@ export async function onRequestGet(context){
   const crumbs=breadcrumbSchema(p,canonical);
   const assets=await context.env.ASSETS.fetch(new Request(new URL('/',context.request.url)));
   if(!assets.ok)throw Error('Site shell unavailable');
-  let html=await assets.text();
+  let html=routeShell(await assets.text(),'product');
   if(!html.includes('<div id="pdetail"></div>'))throw Error('Product mount unavailable');
   html=html.replace(/<title>[\s\S]*?<\/title>/i,'').replace(/<meta\b[^>]*(?:name|property)=["'](?:description|robots|og:[^"']+|twitter:[^"']+)["'][^>]*>/gi,'').replace(/<link\b[^>]*rel=["']canonical["'][^>]*>/gi,'').replace(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi,'');
   const head=`<title>${esc(title)}</title><meta name="description" content="${esc(String(description).slice(0,160))}"><meta name="robots" content="index,follow"><link rel="canonical" href="${canonical}"><meta property="og:type" content="product"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${esc(ogPhoto)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:image" content="${esc(ogPhoto)}"><script type="application/ld+json" id="store-schema">${json(organizationSchema())}</script><script type="application/ld+json" id="product-schema">${json(schema)}</script><script type="application/ld+json" id="breadcrumb-schema">${json(crumbs)}</script><script type="application/json" id="current-product">${json(seed)}</script>`;
-  // The shared site shell contains a server-rendered homepage hero. Hide it for
-  // product requests *before* JS runs so crawlers see one visible primary H1.
-  html=html.replace('<div id="view-home">','<div id="view-home" style="display:none" hidden inert aria-hidden="true">');
-  html=html.replace('</head>',head+'</head>').replace('<div id="view-product" style="display:none">','<div id="view-product">');
+  html=html.replace('</head>',head+'</head>');
   html=html.replace(/<a\b[^>]*\bid="pdCrumbCat"[^>]*>[\s\S]*?<\/a>/i,`<a id="pdCrumbCat" href="${esc(CATEGORY_PATHS[p.category]||'/shop/')}">${esc(p.category||'All Snacks')}</a>`)
     .replace(/<b\b[^>]*\bid="pdCrumbName"[^>]*>[\s\S]*?<\/b>/i,`<b id="pdCrumbName">${esc(p.name)}</b>`);
   const detail=`<div class="pdetail"><div class="pd-grid"><div class="pd-imgwrap"><div class="pd-img">${photo?`<img ${imageAttributes(photo,"(max-width:700px) calc(100vw - 32px), 520px")} alt="${esc(p.name)}" fetchpriority="high" decoding="async" width="600" height="600">`:`<div class="noimg">${photoUnderReview(p)?'Photo under review':'Photo coming soon'}</div>`}</div></div><div class="pd-info"><div class="pcat">${esc(p.category)}</div><h1>${esc(p.name)}</h1><div class="pd-price"><span class="price">Rs. ${Number(p.price).toLocaleString('en-PK')}</span>${Number(p.old_price)>Number(p.price)?`<span class="oldprice">Rs. ${Number(p.old_price).toLocaleString('en-PK')}</span><span class="pdsave">Save ${Math.round((1-Number(p.price)/Number(p.old_price))*100)}%</span>`:''}</div><div class="ppack">${esc(p.pack)}</div>${p.stock_state==='sourced_after_order'?'<p class="pd-stock-note">Sourced after order; availability is confirmed before fulfilment.</p>':''}<p class="pd-desc">${esc(p.description||'Contact ChaskaBox for ingredient or allergen details before ordering.')}</p><button class="pdbtn" type="button" disabled>Loading bag…</button><dl class="pd-facts"><div><dt>Brand</dt><dd>${esc(p.brand||"Not specified")}</dd></div><div><dt>Pack</dt><dd>${esc(p.pack)}</dd></div></dl><p>Ask about the original label for ingredients, allergens and best-before before ordering.</p><nav class="pd-policy-links" aria-label="Product and order help"><a href="/shipping-policy/">Delivery and charges</a><a href="/refund-policy/">Refund and resolution</a><a href="/track-order.html">Track your order</a></nav><p><a href="/shop/">Browse more snacks</a></p></div></div></div>`;
