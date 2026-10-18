@@ -21,10 +21,12 @@ test('public COD amount follows owner settings rather than hardcoded marketing v
   assert.match(runtime,/data-cod-advance-note/);
 });
 
-test('LCP hero image is prioritized on home but never requested by catalogue SSR shells',()=>{
-  assert.match(root,/<link rel="preload" as="image"[^>]+hero-approved-brand-polish-20261017\.webp"[^>]+data-home-preload/);
+test('responsive hero shows real snack imagery without loading the old CSS background',()=>{
+  assert.match(root,/hero-editorial-20261018\.css/);
+  assert.match(root,/<section class="hero hero-editorial"/);
+  assert.match(root,/<img src="\/images\/p5\.webp"[^>]*fetchpriority="high"/);
+  assert.doesNotMatch(root,/data-home-preload/);
   const shop=routeShell(root,'shop');
-  assert.doesNotMatch(shop,/data-home-preload/);
   assert.match(shop,/id="view-shop"/);
   assert.match(shop,/id="view-home"/);
 });
