@@ -1,0 +1,12 @@
+-- Existing public_site_settings view exposes an explicit allowlist of public
+-- commerce details. Its source, public.site_settings, already has SELECT grants
+-- and a public read RLS policy; therefore making the view security_invoker
+-- preserves storefront compatibility while ensuring RLS is not bypassed by
+-- its postgres owner.
+--
+-- Prerequisite validated against production on 2026-10-18:
+--   anon / authenticated have SELECT on source and view.
+--   source table has settings_public_read RLS SELECT policy.
+-- This intentionally does NOT revoke public site_settings grants or change
+-- payment, owner, staff, notification or agent behavior.
+ALTER VIEW public.public_site_settings SET (security_invoker = true);
