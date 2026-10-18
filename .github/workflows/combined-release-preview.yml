@@ -6,12 +6,13 @@ permissions:
   contents: read
 jobs:
   integrated-preview:
-    if: github.ref_name == 'release/combined-perf-storefront-seo-20261019' || github.head_ref == 'release/combined-perf-storefront-seo-20261019' || github.head_ref == 'fix/storefront-cache-route-assets-20261019'
+    if: github.head_ref == 'release/closeout-safe-20261019'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
-      PHASE1_PREVIEW_URL: ${{ github.head_ref == 'fix/storefront-cache-route-assets-20261019' && 'https://fix-storefront-cache-route-a.chaskabox-site.pages.dev' || 'https://release-combined-perf-storef.chaskabox-site.pages.dev' }}
-      PHASE2_PREVIEW_URL: ${{ github.head_ref == 'fix/storefront-cache-route-assets-20261019' && 'https://fix-storefront-cache-route-a.chaskabox-site.pages.dev' || 'https://release-combined-perf-storef.chaskabox-site.pages.dev' }}
+      PHASE1_PREVIEW_URL: https://release-closeout-safe-202610.chaskabox-site.pages.dev
+      PHASE2_PREVIEW_URL: https://release-closeout-safe-202610.chaskabox-site.pages.dev
+      PHASE3_PREVIEW_URL: https://release-closeout-safe-202610.chaskabox-site.pages.dev
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -32,6 +33,10 @@ jobs:
         run: node tools/phase1-preview-smoke.mjs
       - name: Run Phase 2 SEO behavior on combined candidate
         run: node tools/phase2-seo-smoke.mjs
+      - name: Verify truthful AI directory and guide content in staging
+        run: node tools/phase3-aio-preview-smoke.mjs
+      - name: Verify header/category search keyboard behavior in staging
+        run: node tools/header-discovery-smoke.mjs
       - name: Preserve preview-only evidence
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
@@ -40,4 +45,6 @@ jobs:
           path: |
             test-results/phase1-staging/
             test-results/phase2-seo/
+            test-results/phase3-aio/
+            test-results/header-discovery/
           retention-days: 7
