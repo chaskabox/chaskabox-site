@@ -47,7 +47,7 @@ test('guided checkout has accessible separate delivery, payment and review stage
  assert.doesNotMatch(html,/id="checkoutExtrasStep"/);
  assert.match(html,/id="checkoutReviewStep" hidden/);
  assert.match(html,/id="placeBtn" type="button" hidden disabled/);
- assert.match(html,/checkout\.js\?v=20261017-cod-advance-v1/);
+ assert.match(html,/checkout\.js\?v=20261018-audit1/);
  assert.match(css,/\.checkout-page \[hidden\]\{display:none!important\}/);
  assert.match(js,/function checkForm\(scope = 'all'\)/);
  assert.match(js,/await refreshQuote\(\);\s*showCheckoutStep\(3\)/);

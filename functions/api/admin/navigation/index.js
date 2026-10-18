@@ -11,7 +11,7 @@ import { cmsMutate } from '../_lib/cms-mutate.js';
 export function safeNavTarget(value){
   if(typeof value!=='string')httpError('Navigation URL must be text',400,'invalid_url');
   const s=value.trim();
-  if(!s||s.length>500||/[\u0000-\u0020\u007f]/.test(s))
+  if(!s||s.length>500||/[\u0000-\u0020\u007f"'<>\\]/.test(s))
     httpError('Navigation URL is empty, too long or contains invalid spacing',400,'invalid_url');
   if(s==='/'||(/^\/(?!\/)/.test(s)&&!s.includes('\\')))return s;
   if(/^#[a-z0-9_.-]*$/i.test(s))return s;

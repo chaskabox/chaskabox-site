@@ -43,7 +43,7 @@
         <div class="hdrop-menu" id="ddBrands" role="menu"></div>
       </div>
       <a href="/bundles/">Chaska Boxes</a>
-      <a href="/shop/" onclick="goBadge('Sale');return false">Deals</a>
+      <a href="/shop/?badge=Sale" onclick="goBadge('Sale');return false">Deals</a>
     </nav>
     <form class="header-search" role="search" onsubmit="submitHeaderSearch(event)" style="position:relative">
       <label class="sr-only" for="headerSearch">Search snacks</label>
@@ -65,8 +65,8 @@
       <span class="cb-managed-nav"><a href="/shop/">All Products</a>
       <a href="/bundles/">Chaska Boxes</a>
       <a href="/brands/">Brands</a></span>
-      <a href="/shop/" onclick="goBadge('Sale');return false">Deals</a>
-      <a href="/shop/" onclick="goBadge('');shopState.sort='new';renderShopList();return false">New Arrivals</a>
+      <a href="/shop/?badge=Sale" onclick="goBadge('Sale');return false">Deals</a>
+      <a href="/shop/?sort=new">New Arrivals</a>
       <a href="/about/">About Us</a>
       <a href="/contact/">Contact</a>
     </div>
@@ -174,8 +174,8 @@
     <div class="section-head"><div><span class="eyebrow">QUICK ANSWERS</span><h2>Before you order</h2></div></div>
     <div class="faq-grid">
       <details open><summary>Delivery kitne din mein hoti hai?</summary><p>Pakistan mein estimated delivery 4–7 days hai.</p></details>
-      <details><summary>Cash on Delivery available hai?</summary><p>Ji haan. COD available hai; current delivery charge Rs. 300 hai.</p></details>
-      <details><summary>Free delivery kaise milti hai?</summary><p>JazzCash ya Bank Transfer prepaid payment par Rs. 5,000+ orders ke liye current delivery free hai.</p></details>
+      <details><summary>Cash on Delivery available hai?</summary><p data-cod-policy-copy>Ji haan. COD available hai; up to Rs. 500 advance is verified before dispatch and adjusted within the total. Remaining balance is paid on delivery. Current delivery charge Rs. 300 hai.</p></details>
+      <details><summary>Free delivery kaise milti hai?</summary><p data-prepaid-shipping-copy>JazzCash ya Bank Transfer prepaid payment par Rs. 5,000+ orders ke liye current delivery free hai.</p></details>
       <details><summary>Products original hain?</summary><p>ChaskaBox original market brands aur clearly listed products sell karta hai.</p></details>
     </div>
   </section>
@@ -376,9 +376,9 @@
 <footer>
   <div class="fwrap">
     <div class="fbrand"><img src="/images/logo-approved-footer-20261017.png" alt="ChaskaBox" width="1624" height="776"><p>Bachpan ka zaiqa, ab ghar baithe. Pakistani snacks sourced after your order, with a personal touch.</p><p style="margin-top:10px"><a href="https://www.facebook.com/chaskabox" target="_blank" rel="noopener" style="margin-right:12px">Facebook</a><a href="https://www.instagram.com/chaskabox.mz" target="_blank" rel="noopener" style="margin-right:12px">Instagram</a><a href="https://wa.me/923320005381" target="_blank" rel="noopener">WhatsApp</a></p></div>
-    <div><h2>Shop</h2><p><a href="/shop/">All Snacks</a><br><a href="/bundles/">Chaska Boxes</a><br><a href="/shop/" onclick="goBadge('Sale');return false">Deals</a><br><a href="/track-order.html">Track Order</a></p></div>
+    <div><h2>Shop</h2><p><a href="/shop/">All Snacks</a><br><a href="/bundles/">Chaska Boxes</a><br><a href="/shop/?badge=Sale" onclick="goBadge('Sale');return false">Deals</a><br><a href="/track-order.html">Track Order</a></p></div>
     <div><h2>Help</h2><p><a href="/#faq">FAQs</a><br><a href="/about/">About</a><br><a href="/contact/">Contact</a><br><a href="/guides/">Snack and order guides</a><br><a href="/snack-boxes/">Snack occasions</a><br><a href="/shipping-policy/">Shipping</a><br><a href="/refund-policy/">Refund & Resolution</a></p></div>
-    <div><h2>Delivery & Payment</h2><p>Pakistan-wide · 4–7 days<br>COD: Rs. 300 delivery<br>Prepaid Rs. 5,000+: FREE delivery<br><a href="/privacy-policy/">Privacy</a> · <a href="/terms/">Terms</a></p></div>
+    <div><h2>Delivery & Payment</h2><p>Pakistan-wide · 4–7 days<br><span data-cod-fee-copy>COD: Rs. 300 delivery</span><br><span data-prepaid-shipping-copy>Prepaid Rs. 5,000+: FREE delivery</span><br><a href="/privacy-policy/">Privacy</a> · <a href="/terms/">Terms</a></p></div>
   </div>
   <div class="fbottom">© 2026 ChaskaBox · Made with chaska in Pakistan 🇵🇰 · <a href="/admin/" class="footer-admin">Admin</a></div>
 </footer>
@@ -420,8 +420,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=3"></script>
 <script src="/photo-manifest.js?v=20261014-closeout"></script>
-<script src="/app.js?v=20261017-polish"></script>
-<script src="/home-hero-carousel.js?v=20261017-polish"></script>
+<script src="/app.js?v=20261018-audit1"></script>
+<script src="/home-hero-carousel.js?v=20261018-audit1"></script>
 <script src="/reviews-widget.js?v=20261014-final-readiness"></script>
 <script src="/account.js?v=20261012-release?v=5"></script>
 <script src="/analytics.js?v=1"></script>
@@ -430,6 +430,6 @@
 /* Remove Netlify badge */
 (function(){function rm(){document.querySelectorAll('div[class*="netlify" i],a[href*="netlify.com"],iframe[src*="netlify"],[id*="netlify" i]').forEach(e=>e.remove());}rm();new MutationObserver(rm).observe(document.body,{childList:true,subtree:true});setInterval(rm,2000);})();
 </script>
-<script src="/site-runtime.js?v=20261017-polish" defer></script><script src="/reference-ui.js?v=20261017-polish" defer></script>
+<script src="/site-runtime.js?v=20261018-audit1" defer></script><script src="/reference-ui.js?v=20261017-polish" defer></script>
 </body>
 </html>

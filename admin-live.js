@@ -980,13 +980,31 @@
   }
   function wireHomepage(){}
   async function loadHomepage(){
-    const d=await api('/api/admin/homepage'),view=$('#view-homepage'); view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Homepage sections</h2><p>Visibility and headings save immediately; product lists and packing video publish explicitly.</p></div></div><div class="section-manager">${(d.sections||[]).map(s=>`<div data-home-key="${esc(s.section_key)}"><span class="drag" aria-hidden="true">⋮⋮</span><b>${esc(s.section_key.replaceAll('_',' '))}</b><em>${esc(s.heading||'')}</em><span class="home-position-actions"><button type="button" data-home-move="${esc(s.section_key)}" data-home-direction="-1" aria-label="Move section up">↑</button><button type="button" data-home-move="${esc(s.section_key)}" data-home-direction="1" aria-label="Move section down">↓</button></span><button class="home-toggle ${s.enabled?'on':''}" data-home-toggle="${esc(s.section_key)}">${s.enabled?'On':'Off'}</button></div>`).join('')}</div></section><section class="panel"><div class="panel-head"><div><h2>Edit selected section</h2><p>Save draft, preview, then publish.</p></div></div><label>Section<select id="homeKey">${(d.sections||[]).map(s=>`<option value="${esc(s.section_key)}">${esc(s.section_key)}</option>`).join('')}</select></label><label>Heading<input id="homeHeading"></label><label>Subheading<textarea id="homeSub" rows="4"></textarea></label><label>Featured product IDs <small>(optional, comma-separated)</small><input id="homeProductIds" placeholder="e.g. 30, 54, 179"></label><div id="homePackingField" hidden><label>Original packing video URL<input id="homePackingVideo" maxlength="500" placeholder="ChaskaBox MP4 or YouTube video link"></label><p class="safe-note">Use your original video and permission from anyone shown. Remove customer names, phone numbers and shipping labels. Leave blank to hide. Saving creates a draft; publish this section to make it public.</p></div><div class="action-row"><button class="btn secondary" id="homeSave">Save</button>${roleAllows('owner','manager')?'<button class="btn primary" id="homePublish">Publish section</button>':''}</div></section></div>`;
-    const rows=d.sections||[];function hydrate(){const x=rows.find(r=>r.section_key===$('#homeKey').value)||{};$('#homeHeading').value=x.heading||'';$('#homeSub').value=x.subheading||'';const ids=(x.draft_config?.product_ids||x.config?.product_ids||[]);$('#homeProductIds').value=Array.isArray(ids)?ids.join(', '):'';$('#homePackingField').hidden=x.section_key!=='how_it_works';$('#homePackingVideo').value=(x.draft_config??x.config??{}).packing_video_url||'';}hydrate();$('#homeKey').onchange=hydrate;
+    const {buildHomepageDraft,PRODUCT_SECTIONS}=await import('/homepage-config.js?v=20261018-audit1');
+    const d=await api('/api/admin/homepage'),view=$('#view-homepage'); view.innerHTML=`<div class="admin-grid two"><section class="panel"><div class="panel-head"><div><h2>Homepage sections</h2><p>Visibility, order and headings save immediately; content configuration uses Save draft, Preview and Publish.</p></div></div><div class="section-manager">${(d.sections||[]).map(s=>`<div data-home-key="${esc(s.section_key)}"><span class="drag" aria-hidden="true">⋮⋮</span><b>${esc(s.section_key.replaceAll('_',' '))}</b><em>${esc(s.heading||'')}</em><span class="home-position-actions"><button type="button" data-home-move="${esc(s.section_key)}" data-home-direction="-1" ${s.section_key==='announcement_bar'?'disabled':''} aria-label="Move section up">↑</button><button type="button" data-home-move="${esc(s.section_key)}" data-home-direction="1" ${s.section_key==='announcement_bar'?'disabled':''} aria-label="Move section down">↓</button></span><button class="home-toggle ${s.enabled?'on':''}" data-home-toggle="${esc(s.section_key)}">${s.enabled?'On':'Off'}</button></div>`).join('')}</div></section><section class="panel"><div class="panel-head"><div><h2>Edit selected section</h2><p>Save draft, preview, then publish.</p></div></div><label>Section<select id="homeKey">${(d.sections||[]).map(s=>`<option value="${esc(s.section_key)}">${esc(s.section_key)}</option>`).join('')}</select></label><div id="homeCopyFields"><label>Heading<input id="homeHeading" maxlength="500"></label><label>Subheading<textarea id="homeSub" rows="4" maxlength="500"></textarea></label></div><div id="homeProductsField"><label><input type="checkbox" id="homeAutoProducts"> Use automatic product picks</label><label>Featured product IDs <small>(comma-separated; turn automatic off and leave blank for no products)</small><input id="homeProductIds" placeholder="e.g. 30, 54, 179"></label></div><div id="homeHeroFields" hidden><label>First banner button text<input id="homeButtonText" maxlength="160"></label><label>First banner button link<input id="homeButtonUrl" maxlength="500" placeholder="/shop/"></label><label>Banner overrides (JSON, optional)<textarea id="homeSlides" rows="8" maxlength="12000" placeholder='[ {"heading":"Your headline", "href":"/shop/"} ]'></textarea></label><p class="safe-note">Override up to three banners. Omitted fields and banners retain the standard copy. Supported fields: label, kick, eyebrow, heading, highlight, description, primary, href, secondary, secondHref. No HTML.</p></div><div id="homeFaqField" hidden><label>FAQ questions and answers (JSON, optional)<textarea id="homeFaq" rows="8" maxlength="16000" placeholder='[ {"q":"Your question?", "a":"Your answer."} ]'></textarea></label><p class="safe-note">Leave blank for standard answers, or enter [] for no questions. Up to 10 questions; plain text only.</p></div><div id="homePackingField" hidden><label>Original packing video URL<input id="homePackingVideo" maxlength="500" placeholder="ChaskaBox MP4 or YouTube video link"></label><p class="safe-note">Use your original video and permission from anyone shown. Remove customer names, phone numbers and shipping labels. Leave blank to hide. Saving creates a draft; publish this section to make it public.</p></div><div class="action-row"><button class="btn secondary" id="homeSave">Save</button>${roleAllows('owner','manager')?'<button class="btn primary" id="homePublish">Publish section</button>':''}</div></section></div>`;
+    const rows=d.sections||[];
+    function hydrate(){
+      const x=rows.find(r=>r.section_key===$('#homeKey').value)||{},cfg=x.draft_config??x.config??{};
+      $('#homeHeading').value=x.heading??'';$('#homeSub').value=x.subheading??'';
+      $('#homeCopyFields').hidden=['announcement_bar','trust_bar','promotions','categories'].includes(x.section_key);
+      $('#homeProductsField').hidden=!PRODUCT_SECTIONS.has(x.section_key);
+      $('#homeProductIds').value=Array.isArray(cfg.product_ids)?cfg.product_ids.join(', '):'';
+      $('#homeAutoProducts').checked=!Array.isArray(cfg.product_ids);
+      $('#homeProductIds').disabled=$('#homeAutoProducts').checked;
+      $('#homeHeroFields').hidden=x.section_key!=='hero';
+      $('#homeButtonText').value=cfg.button_text||'';$('#homeButtonUrl').value=cfg.button_url||'';
+      $('#homeSlides').value=cfg.slides?JSON.stringify(cfg.slides,null,2):'';
+      $('#homeFaqField').hidden=x.section_key!=='faq';$('#homeFaq').value=Array.isArray(cfg.items)?JSON.stringify(cfg.items,null,2):'';
+      $('#homePackingField').hidden=x.section_key!=='how_it_works';$('#homePackingVideo').value=cfg.packing_video_url||'';
+    }
+    hydrate();$('#homeKey').onchange=hydrate;
+    $('#homeAutoProducts').onchange=()=>{$('#homeProductIds').disabled=$('#homeAutoProducts').checked;};
     $$('[data-home-move]',view).forEach(button=>button.onclick=async()=>{
-      const index=rows.findIndex(row=>row.section_key===button.dataset.homeMove);
+      const movable=rows.filter(row=>row.section_key!=='announcement_bar');
+      const index=movable.findIndex(row=>row.section_key===button.dataset.homeMove);
       const next=index+Number(button.dataset.homeDirection);
-      if(index<0||next<0||next>=rows.length)return;
-      const a=rows[index],b=rows[next],pa=Number(a.position),pb=Number(b.position);
+      if(index<0||next<0||next>=movable.length)return;
+      const a=movable[index],b=movable[next],pa=Number(a.position),pb=Number(b.position);
       if(!Number.isInteger(pa)||!Number.isInteger(pb)||pa===pb){toast('Section positions need review before reordering.');return;}
       button.disabled=true;
       try{
@@ -997,7 +1015,20 @@
       }catch(error){toast('Reorder failed: '+error.message);button.disabled=false;}
     });
     $$('[data-home-toggle]',view).forEach(b=>b.onclick=async()=>{const row=rows.find(r=>r.section_key===b.dataset.homeToggle);try{await api('/api/admin/homepage',{method:'PATCH',body:{sections:[{section_key:row.section_key,enabled:!row.enabled}]}});toast('Homepage visibility saved');loadHomepage()}catch(e){toast(e.message)}});
-    $('#homeSave').onclick=async()=>{try{const ids=$('#homeProductIds').value.split(',').map(x=>Number(x.trim())).filter(x=>Number.isInteger(x)&&x>0);const current=rows.find(r=>r.section_key===$('#homeKey').value)||{};const draft={...(current.draft_config||current.config||{}),product_ids:ids};if(current.section_key==='how_it_works')draft.packing_video_url=$('#homePackingVideo').value.trim();await api('/api/admin/homepage',{method:'PATCH',body:{sections:[{section_key:$('#homeKey').value,heading:$('#homeHeading').value.trim(),subheading:$('#homeSub').value.trim(),draft_config:draft}]}});toast('Homepage draft saved; preview and publish this section when ready');await loadHomepage()}catch(e){toast(e.message)}};
+    $('#homeSave').onclick=async()=>{try{
+      const key=$('#homeKey').value,current=rows.find(r=>r.section_key===key)||{};
+      const draft=buildHomepageDraft(key,current.draft_config??current.config??{}, {
+        automaticProducts:$('#homeAutoProducts').checked,productIds:$('#homeProductIds').value,
+        buttonText:$('#homeButtonText').value,buttonUrl:$('#homeButtonUrl').value,slides:$('#homeSlides').value,
+        faq:$('#homeFaq').value,packingVideo:$('#homePackingVideo').value
+      });
+      const section={section_key:key,draft_config:draft};
+      // Do not turn untouched null headings into empty public headings.
+      if($('#homeHeading').value.trim()!==(current.heading??''))section.heading=$('#homeHeading').value.trim();
+      if($('#homeSub').value.trim()!==(current.subheading??''))section.subheading=$('#homeSub').value.trim();
+      await api('/api/admin/homepage',{method:'PATCH',body:{sections:[section]}});
+      toast('Homepage draft saved; preview and publish this section when ready');await loadHomepage();
+    }catch(e){toast(e.message)}};
     if($('#homePublish'))$('#homePublish').onclick=async()=>{try{await api('/api/admin/homepage/publish',{method:'POST',body:{keys:[$('#homeKey').value]}});toast('Homepage section published');loadHomepage()}catch(e){toast(e.message)}};
     const preview=document.createElement('button');preview.className='btn secondary';preview.textContent='Preview saved drafts';view.append(preview);
     preview.onclick=()=>{view.querySelector('[data-home-preview]')?.remove();const frame=document.createElement('iframe');frame.dataset.homePreview='';frame.title='Homepage draft preview';frame.style.cssText='width:100%;height:650px;border:1px solid #ddd;margin-top:12px';frame.src='/?cms_preview=1';frame.onload=()=>frame.contentWindow.postMessage({type:'CHASKABOX_HOME_PREVIEW',sections:d.sections.map(s=>({...s,config:s.draft_config??s.config}))},location.origin);view.append(frame);};

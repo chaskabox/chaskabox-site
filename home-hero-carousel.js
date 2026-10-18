@@ -41,7 +41,11 @@
      description:'Chatpatay, meethay aur crunchy Pakistani favourites ek jagah. Available snacks aur deals explore karein.',
      primary:'Shop Snacks',href:'/shop/',secondary:'Browse Chaska Boxes',secondHref:'/bundles/'}
   ];
-  const safeLink=s=>typeof s==='string'&&(/^(?:\/(?!\/)|https:\/\/)[^"'<>\s]*$/.test(s));
+  const safeLink=s=>{
+    if(typeof s!=='string'||/[\\"'<>\s]/.test(s))return false;
+    if(/^\/(?!\/)/.test(s))return true;
+    try{const u=new URL(s);return u.protocol==='https:'&&!!u.hostname&&!u.username&&!u.password;}catch{return false;}
+  };
   const field=(value,fallback,max=180)=>typeof value==='string'&&value.trim()?value.trim().slice(0,max):fallback;
   let slides=defaults.map(s=>({...s}));
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');

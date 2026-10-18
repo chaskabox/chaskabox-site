@@ -202,7 +202,7 @@ function updateCodAdvanceDisplay(total=null,quotedAdvance=null){
   if($('#s_cod_advance'))$('#s_cod_advance').textContent=fmt(required);
   if($('#s_cod_balance'))$('#s_cod_balance').textContent=fmt(totalValue-required);
   const hint=$('#codAdvancePayHint');
-  if(hint)hint.textContent=visible?fmt(required)+' advance after ordering, verified before dispatch · rest COD':'Pay remaining amount on delivery';
+  if(hint)hint.textContent=COD_ADVANCE_ENABLED?fmt(visible?required:Math.min(Math.max(0,cartSubtotal()+DELIVERY_FEE),COD_ADVANCE_AMOUNT))+' advance after ordering, verified before dispatch · rest COD':'Pay on delivery';
   const note=$('#codAdvanceExplainer');
   if(note)note.style.display=visible?'':'none';
 }
