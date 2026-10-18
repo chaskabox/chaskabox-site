@@ -60,6 +60,13 @@ test('COD option still discloses advance while another payment method is selecte
  vm.createContext(ctx);vm.runInContext(source.slice(a,b),ctx);ctx.updateCodAdvanceDisplay();
  assert.match(elements['#codAdvancePayHint'].textContent,/Rs\. 500 advance/);assert.equal(elements['#codAdvanceSummary'].style.display,'none');
 });
+test('an empty drawer does not quote a COD advance for a nonexistent order',()=>{
+ const source=read('app.js'),a=source.indexOf('function renderDrawer(){'),b=source.indexOf('\nfunction chQty(',a),elements={};let disclosures=0;
+ const ctx={CART:{},PRODUCTS:[],MAX_CART_QTY:99,$:s=>elements[s]??={},cartSubtotal:()=>0,prepaidThreshold:()=>5000,fmt:n=>'Rs. '+n,esc:s=>s,settingNum:(k,d)=>d,deliveryFeeCopy:()=>'',animateProgressIn:()=>{},codAdvanceNote:()=>{disclosures++;return '<p>advance</p>';}};
+ vm.createContext(ctx);vm.runInContext(source.slice(a,b),ctx);ctx.renderDrawer();
+ assert.equal(disclosures,0);assert.doesNotMatch(elements['#dfoot'].innerHTML,/>advance</);
+ ctx.CART={233:1};ctx.PRODUCTS=[{id:233,name:'Fixture',price:750}];ctx.cartSubtotal=()=>750;ctx.renderDrawer();assert.equal(disclosures,1);
+});
 test('server-rendered deals and new arrivals match URL filters without exposing other products',()=>{
  const rows=[{id:1,name:'A',price:100,old_price:100},{id:2,name:'B',price:100,old_price:150},{id:3,name:'C',price:90,old_price:null}];
  assert.deepEqual(filterCatalogueRows(rows,new URLSearchParams('badge=Sale')).map(p=>p.id),[2]);
