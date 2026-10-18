@@ -214,10 +214,10 @@ try{
   await page.evaluate(()=>document.fonts.ready);
   const layout=await page.evaluate(()=>{
    const hero=document.querySelector('#view-home .hero'),box=hero.getBoundingClientRect();
-   return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundImage,font:getComputedStyle(hero.querySelector('h1 .hl')).fontFamily,showcase:!!hero.querySelector('.hero-showcase'),images:hero.querySelectorAll('.herocollage img').length,cta:hero.querySelectorAll('.hero-actions a').length};
+   return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundColor,font:getComputedStyle(hero.querySelector('h1 .hl')).fontFamily,showcase:!!hero.querySelector('.hero-scene'),imageLoaded:hero.querySelector('.hero-scene')?.naturalWidth>0,cta:hero.querySelectorAll('.hero-actions a').length};
   });
   if(layout.width<width-60||layout.width>width||layout.height>(width<=760?760:610))throw Error('Editorial hero layout mismatch '+JSON.stringify({width,...layout}));
-  if(!layout.background.includes('gradient')||!/(system-ui|Segoe UI)/i.test(layout.font)||!layout.showcase||layout.images<3||layout.cta!==2)throw Error('Editorial hero visual or shopping actions missing');
+  if(!/(system-ui|Segoe UI)/i.test(layout.font)||!layout.showcase||!layout.imageLoaded||layout.cta!==2)throw Error('Nostalgic packing hero photo or shopping actions missing');
   const polish=await page.evaluate(()=>({
    duplicateTrust:getComputedStyle(document.querySelector('#view-home .herotrust')).display,
    firstCardTop:Math.min(...[...document.querySelectorAll('#view-home .card')].map(el=>el.getBoundingClientRect().top)),
