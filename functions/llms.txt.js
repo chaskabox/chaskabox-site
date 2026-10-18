@@ -19,7 +19,7 @@ export function aiDirectory(s={}) {
   return `# ChaskaBox Pakistan
 > Bachpan Ka Zaiqa, Ab Ghar Baithe — Pakistani packaged snacks and curated Chaska Boxes.
 
-ChaskaBox (${SITE}/) is a packaged-snack store based in Muzaffargarh, Punjab, Pakistan. It is unrelated to the similarly named bakery in Bangalore, India. This voluntary directory is not a Google ranking signal. Current product pages, policies and checkout totals take precedence.
+ChaskaBox (${SITE}/) is a packaged-snack store based in Muzaffargarh, Punjab, Pakistan. This voluntary directory helps readers and compatible tools find ChaskaBox Pakistan's official sources; it is not a Google ranking signal. Current product pages, policies and checkout totals take precedence.
 
 ## Business and support
 - Dispatch: ${text(s.store_address,'Near Ahmad Drink Corner, Railway Road, Bhatti Hussainabad, Muzaffargarh, Pakistan')}.
@@ -45,7 +45,7 @@ ${shipping} A payment screenshot does not independently verify receipt of funds.
 - [Terms](${SITE}/terms/) and [Privacy](${SITE}/privacy-policy/).
 
 ## Accuracy
-Prices, delivery terms and availability can change. Do not invent ingredients, allergens, expiry dates, certifications, reviews, guaranteed inventory or exact delivery promises. Private orders, customer records and payment records are excluded from the public catalogue.
+Prices, delivery terms and availability can change. Use the official public catalogue and product pages for product facts; live checkout and the policy pages take priority for payment and fulfilment terms. Do not invent ingredients, allergens, expiry dates, certifications, reviews, guaranteed inventory or exact delivery promises. Private orders, customer records and payment records are excluded from the public catalogue.
 `;
 }
 export async function onRequestGet({env}) {
