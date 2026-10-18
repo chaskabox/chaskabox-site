@@ -15,7 +15,7 @@ if ! sudo docker info >/dev/null 2>&1; then echo "ERROR: Docker daemon unavailab
 echo "Docker boot policy: $(systemctl is-enabled docker 2>/dev/null || true)"
 echo "Docker service: $(systemctl is-active docker 2>/dev/null || true)"
 echo "WAHA containers (names/status only):"
-sudo docker ps -a --format '{{.Names}} {{.Status}}' | grep -Ei '(^|[/_-])waha([/_-]|$)' || echo "  none"
+sudo docker ps -a --format '{{.Names}} {{.Status}}' | grep -Ei '^([[:alnum:]_.-]*[-_])?waha([_-][[:alnum:]_.-]+)?[[:space:]]' || echo "  none"
 echo "WAHA images already downloaded:"
 sudo docker images --format '{{.Repository}}:{{.Tag}} {{.ID}}' | grep '^devlikeapro/waha:' || echo "  none"
 
