@@ -177,3 +177,11 @@
    bottom:72px!important;padding-inline:12px!important;font-size:12px!important
  }
 }
+
+/* cbx-closeout-category-visibility: the inherited homepage CSS intentionally hid
+   .discover .section-head, so the new accessible category trigger had no layout.
+   Reveal the existing heading/menu without modifying navigation links or hero art. */
+#view-home .discover .section-head { display:flex!important; }
+@media(max-width:760px){
+  #view-home .discover .section-head .cbx-cat-holder { display:block!important; }
+}
