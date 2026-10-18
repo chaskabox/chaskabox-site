@@ -237,7 +237,7 @@ try{
   }));
   if(polish.duplicateTrust==='none'||polish.packSize<11||polish.buttonHeight<44||!polish.headerLogo.includes('logo-header-polish-20261017-'))throw Error('Design polish accessibility/branding mismatch '+JSON.stringify({width,...polish}));
   if(width===1440&&(layout.height>610||polish.firstCardTop>1080))throw Error('Products remain too low in the desktop layout '+JSON.stringify(polish));
-  if(!polish.categoryVisuals||!polish.categoryBackground.includes('approved-category-sprite-20261018.webp'))throw Error('Approved category photography missing');
+  if(!polish.categoryVisuals||!polish.categoryBackground.includes('approved-category-sprite-hq-20261018.webp'))throw Error('Approved category photography missing');
   results.interactions.push({case:'compact hero, legible packs, 44px purchase controls and approved header branding / '+width,pass:true});
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');
   if(width>760&&!await page.locator('.header-search').isVisible())throw Error('Desktop search missing');

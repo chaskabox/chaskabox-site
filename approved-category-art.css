@@ -1,5 +1,5 @@
-/* Approved category photography sprite; scoped to homepage only. */
+/* High-resolution approved category photography, 9 × 192px frames, scoped to homepage only. */
 #catTiles .ci.ci-approved-art { width:108px; height:108px; background:transparent!important; box-shadow:none; overflow:hidden; border-radius:50%; }
 #catTiles .ci.ci-approved-art::after { display:none; }
-#catTiles .cb-category-art { display:block; width:100%; height:100%; background-image:url('/category-art/approved-category-sprite-20261018.webp'); background-size:900% 100%; background-position:var(--category-art-position,0%) center; background-repeat:no-repeat; }
+#catTiles .cb-category-art { display:block; width:100%; height:100%; background-image:url('/category-art/approved-category-sprite-hq-20261018.webp'); background-size:900% 100%; background-position:var(--category-art-position,0%) center; background-repeat:no-repeat; }
 @media (max-width:760px) { #catTiles .ci.ci-approved-art { width:94px; height:94px; } }
