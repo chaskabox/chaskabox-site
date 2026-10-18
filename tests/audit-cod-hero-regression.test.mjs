@@ -21,4 +21,15 @@ test('public COD amount follows owner settings rather than hardcoded marketing v
   assert.match(runtime,/data-cod-advance-note/);
 });
 
-test('three approved hero assets preserve their reference compositions and consistent trust disclosures',()=>{\n  assert.match(root,/hero-editorial-20261018\\.css/);\n  assert.match(root,/hero-three-approved-20261018\\.css/);\n  assert.match(root,/<section class=\"hero hero-editorial hero-packing-preview hero-approved-three\"/);\n  assert.match(root,/<img class=\"hero-scene\"[^>]*chaskabox-approved-hero-01-20261018\\.avif\"[^>]*fetchpriority=\"high\"/);\n  const slider=readFileSync(new URL('../home-hero-carousel.js',import.meta.url),'utf8');\n  for(const i of ['01','02','03'])assert.match(slider,new RegExp('chaskabox-approved-hero-'+i+'-20261018\\\\.avif'));\n  for(const title of ['Original Brands','Carefully Sourced','Nationwide Delivery','Cash on Delivery'])assert.match(root,new RegExp(title));\n  assert.match(root,/Illustrative hero artwork/);\n  const shop=routeShell(root,'shop');\n  assert.match(shop,/id=\"view-shop\"/);\n});
+test('three approved hero assets preserve their reference compositions and consistent trust disclosures',()=>{
+  assert.match(root,/hero-editorial-20261018\.css/);
+  assert.match(root,/hero-three-approved-20261018\.css/);
+  assert.match(root,/<section class="hero hero-editorial hero-packing-preview hero-approved-three"/);
+  assert.match(root,/<img class="hero-scene"[^>]*chaskabox-approved-hero-01-20261018\.avif"[^>]*fetchpriority="high"/);
+  const slider=readFileSync(new URL('../home-hero-carousel.js',import.meta.url),'utf8');
+  for(const i of ['01','02','03'])assert.ok(slider.includes('chaskabox-approved-hero-'+i+'-20261018.avif'));
+  for(const title of ['Original Brands','Carefully Sourced','Nationwide Delivery','Cash on Delivery'])assert.match(root,new RegExp(title));
+  assert.match(root,/Illustrative hero artwork/);
+  const shop=routeShell(root,'shop');
+  assert.match(shop,/id="view-shop"/);
+});
