@@ -127,6 +127,13 @@
     document.querySelectorAll('[data-dynamic-delivery]').forEach(el=>el.textContent=money(cod));
     document.querySelectorAll('[data-dynamic-threshold]').forEach(el=>el.textContent=money(threshold));
     document.querySelectorAll('[data-delivery-estimate]').forEach(el=>el.textContent=estimate);
+    // COD advance is part of the order total, verified before dispatch.
+    // Keep public disclosures in sync with owner settings; hide them if disabled.
+    const amount=Number(s.cod_advance_amount_pkr);
+    const safeAmount=Number.isSafeInteger(amount)&&amount>=1&&amount<=100000?amount:500;
+    const advanceEnabled=s.cod_enabled!==false&&s.cod_advance_enabled!==false;
+    document.querySelectorAll('[data-cod-advance-amount]').forEach(el=>el.textContent=safeAmount.toLocaleString('en-PK'));
+    document.querySelectorAll('[data-cod-advance-note]').forEach(el=>{el.hidden=!advanceEnabled;});
   }
   async function run(){
     try{
