@@ -42,6 +42,7 @@ if(mainHeader&&managedNav&&whatsapp){
   whatsapp.classList.add('cbx-header-whatsapp');
   whatsapp.setAttribute('aria-label','Order via WhatsApp');
   mainHeader.append(managedNav,whatsapp);
+  document.body.classList.add("cbx-header-ready");
 }
 // The old stylesheet hid all floating-help text on mobile. Keep a readable
 // accessible text label; do not alter AI answers, chat handlers or notifications.
@@ -57,6 +58,7 @@ if(aiTitle)aiTitle.textContent='✦ Chaska AI';
 // Extend arrow/enter support to brands, categories and products (not products only).
 const input=document.getElementById('headerSearch'),suggestions=document.getElementById('headerSearchSuggestions');
 if(input&&suggestions){
+if(/^Search for your favourite snacks/i.test(input.placeholder))input.placeholder='Search snacks, brands or Chaska Boxes…';
 input.setAttribute('role','combobox');input.setAttribute('aria-controls',suggestions.id);input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-expanded','false');
 let selected=-1;
 const options=()=>Array.from(suggestions.querySelectorAll('a[href]'));
