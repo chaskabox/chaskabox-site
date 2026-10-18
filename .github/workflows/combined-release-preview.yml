@@ -1,0 +1,43 @@
+name: Combined storefront SEO performance preview
+on:
+  push:
+    branches: ['release/combined-perf-storefront-seo-20261019']
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  integrated-preview:
+    if: github.ref_name == 'release/combined-perf-storefront-seo-20261019' || github.head_ref == 'release/combined-perf-storefront-seo-20261019'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PHASE1_PREVIEW_URL: https://release-combined-perf-storef.chaskabox-site.pages.dev
+      PHASE2_PREVIEW_URL: https://release-combined-perf-storef.chaskabox-site.pages.dev
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Verify preview URL and approved HQ category sprite
+        run: |
+          set -euo pipefail
+          curl --location --fail --silent --show-error --retry 5 --retry-delay 3 --output /dev/null "$PHASE1_PREVIEW_URL/"
+          curl --location --fail --silent --show-error --output /dev/null "$PHASE1_PREVIEW_URL/category-art/approved-category-sprite-hq-20261018.webp"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' "$PHASE1_PREVIEW_URL/checkout.html")" = "200"
+      - name: Run Phase 1 storefront behavior on combined candidate
+        run: node tools/phase1-preview-smoke.mjs
+      - name: Run Phase 2 SEO behavior on combined candidate
+        run: node tools/phase2-seo-smoke.mjs
+      - name: Preserve preview-only evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: combined-preview-browser-evidence
+          path: |
+            test-results/phase1-staging/
+            test-results/phase2-seo/
+          retention-days: 7
