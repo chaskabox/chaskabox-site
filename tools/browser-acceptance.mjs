@@ -217,7 +217,7 @@ try{
    return {width:box.width,height:box.height,background:getComputedStyle(hero).backgroundImage,font:getComputedStyle(hero.querySelector('h1 .hl')).fontFamily,showcase:!!hero.querySelector('.hero-showcase'),images:hero.querySelectorAll('.herocollage img').length,cta:hero.querySelectorAll('.hero-actions a').length};
   });
   if(layout.width<width-60||layout.width>width||layout.height>(width<=760?760:610))throw Error('Editorial hero layout mismatch '+JSON.stringify({width,...layout}));
-  if(!layout.background.includes('gradient')||!layout.font.includes('Kalam')||!layout.showcase||layout.images<3||layout.cta!==2)throw Error('Editorial hero visual or shopping actions missing');
+  if(!layout.background.includes('gradient')||!/(system-ui|Segoe UI)/i.test(layout.font)||!layout.showcase||layout.images<3||layout.cta!==2)throw Error('Editorial hero visual or shopping actions missing');
   const polish=await page.evaluate(()=>({
    duplicateTrust:getComputedStyle(document.querySelector('#view-home .herotrust')).display,
    firstCardTop:Math.min(...[...document.querySelectorAll('#view-home .card')].map(el=>el.getBoundingClientRect().top)),
