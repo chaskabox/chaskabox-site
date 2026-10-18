@@ -35,6 +35,6 @@ export function previewRead(path,{method='GET',query=''}={}){
 }
 export function previewManifest(name){
  if(name!=='storefront_manifest')throw Error('Preview fixture RPC not allowed');
- return {theme:{},categories:fixtureCategories};
+ return {theme:{},categories:fixtureCategories.map(c=>({...c,is_visible:true,show_on_homepage:true}))};
 }
 export const previewCatalogueCount=fixtures.length;

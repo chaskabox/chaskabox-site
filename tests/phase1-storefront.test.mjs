@@ -81,5 +81,6 @@ test('isolated preview mode is opt-in AND refuses production credentials',async(
  await assert.rejects(rpc(env,'place_order',{}),/not allowed/);
  const manifest=await rpc(env,'storefront_manifest',{});
  assert.ok(manifest.categories.length>0);
+ assert.ok(manifest.categories.every(c=>c.is_visible===true&&c.show_on_homepage===true),'Preview categories follow the public CMS visibility contract');
  assert.ok((await sbRequest(env,'/brands',{query:'?is_visible=eq.true'})).length>0);
 });
