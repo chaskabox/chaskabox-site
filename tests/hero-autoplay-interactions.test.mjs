@@ -1,0 +1,68 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import vm from 'node:vm';
+
+test('home hero advances every 5 seconds, with controls and accessibility pauses',()=>{
+  const code=readFileSync(new URL('../home-hero-carousel.js',import.meta.url),'utf8');
+  const events={}; const rootEvents={}; const docEvents={}; const media={matches:false,addEventListener(_name,fn){this.onChange=fn;}};
+  let hover=false,scheduled=null,sequence=0;
+  const title={replaceChildren(){},append(){}};
+  const dots=Array.from({length:3},()=>({setAttribute(){}}));
+  const controls={
+    querySelectorAll(){return dots;},
+    addEventListener(name,fn){events[name]=fn;},
+    contains(){return true;}
+  };
+  const art={src:'',getAttribute(){return this.src;},setAttribute(_key,value){this.src=value;}};
+  const elements={
+    '.herotxt h1':title,
+    '.herotxt > p':{textContent:''},
+    '.hero-eyebrow':{textContent:''},
+    '.kick':null,
+    '.hero-actions .cta':{firstChild:{nodeType:3,textContent:''},href:''},
+    '.hero-actions .cta.ghost':{textContent:'',href:''},
+    '.hero-slider-controls':controls,
+    '.hero-scene':art,
+    '#heroCollage':null
+  };
+  const root={
+    dataset:{},hidden:false,
+    querySelector(selector){return elements[selector]??null;},
+    getClientRects(){return [1];},
+    matches(){return hover;},
+    contains(element){return Boolean(element?.isHeroChild);},
+    addEventListener(name,fn){rootEvents[name]=fn;}
+  };
+  const doc={
+    hidden:false,activeElement:null,
+    querySelector(){return root;},
+    createTextNode(text){return {text};},
+    createElement(){return {className:'',textContent:''};},
+    addEventListener(name,fn){docEvents[name]=fn;}
+  };
+  const sandbox={
+    document:doc,
+    window:{matchMedia(){return media;},addEventListener(){}},
+    setInterval(fn,delay){scheduled={fn,delay,id:++sequence};return sequence;},
+    clearInterval(id){if(scheduled?.id===id)scheduled=null;}
+  };
+  vm.runInNewContext(code,sandbox,{filename:'home-hero-carousel.js'});
+  assert.equal(root.dataset.heroSlide,'1');
+  assert.equal(scheduled?.delay,5000);
+  scheduled.fn();assert.equal(root.dataset.heroSlide,'2');
+  scheduled.fn();assert.equal(root.dataset.heroSlide,'3');
+  scheduled.fn();assert.equal(root.dataset.heroSlide,'1');
+  hover=true;rootEvents.mouseenter();assert.equal(scheduled,null,'hover pauses');
+  hover=false;rootEvents.mouseleave();assert.equal(scheduled?.delay,5000,'mouseleave resumes');
+  doc.activeElement={isHeroChild:true};rootEvents.focusin();assert.equal(scheduled,null,'focus pauses');
+  doc.activeElement=null;rootEvents.focusout({relatedTarget:null});assert.equal(scheduled?.delay,5000,'blur resumes');
+  media.matches=true;media.onChange();assert.equal(scheduled,null,'reduced motion pauses');
+  media.matches=false;media.onChange();assert.equal(scheduled?.delay,5000,'normal motion resumes');
+  doc.hidden=true;docEvents.visibilitychange();assert.equal(scheduled,null,'hidden tab pauses');
+  doc.hidden=false;docEvents.visibilitychange();assert.equal(scheduled?.delay,5000,'visible tab resumes');
+  hover=true;rootEvents.mouseenter();
+  events.click({target:{closest(){return {dataset:{heroDirection:'next'}};}}});
+  assert.equal(root.dataset.heroSlide,'2','manual next works while paused');
+  assert.equal(scheduled,null,'manual navigation while hovered remains paused');
+});
