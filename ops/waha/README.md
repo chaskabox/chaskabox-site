@@ -10,6 +10,14 @@ Known 2026-10-16 observations from the owner:
 - PM2 processes `wa-server` (on 127.0.0.1:3000) and `cf-tunnel` are online; `127.0.0.1:3001` was free. Do not stop or modify those services without inspecting their full role. The existing WAHA session bind directory exists but is empty.
 - Cloudflare Worker has WAHA credentials but only `owner_email` is enabled. The gateway points to an ephemeral trycloudflare tunnel; no persistent named tunnel was found. WhatsApp delivery remains disabled.
 
+## 2026-10-18 recheck — existing Cloudflare resources (read-only)
+- **Named tunnel exists**: `chaskabox-waha`, Cloudflare status **down**, **zero connected connectors**. This supersedes the 2026-10-16 observation above that no named tunnel existed.
+- Its existing Cloudflare-managed ingress is `waha.chaskabox.online` → HTTP localhost port **3001**, with an origin request access configuration. Do **not** create a duplicate tunnel or rotate an existing connector token without a verified backup.
+- `chaskabox-notification-outbox` Worker exists. Its dispatch toggle is enabled and the configured channel list includes owner email and owner/customer WhatsApp. Owner-canary and webhook setup/verification toggles are currently off. **These settings do not prove WhatsApp messages are being delivered.** Leave them unchanged while recovering the VM to avoid accidental or duplicate sends.
+- **Remaining hard blocker:** This ChatGPT connection has Cloudflare and GitHub management access, **not Oracle VM SSH**. Cloudflare API cannot start a `cloudflared` connector or Docker container inside the Oracle instance. Run read-only preflight via an authenticated SSH session before any production changes. Do not paste API tokens, Compose resolved JSON, WAHA QR codes, session files, or private credentials into chats.
+- After preflight, identify whether the working WhatsApp service is the earlier PM2 gateway or Docker WAHA, determine which process (if any) is paired, and secure private session backups **before** recovery. If the PM2 service is the current working sender, never replace or restart it simply to activate a new WAHA container.
+- **No VM restart, image pull, WhatsApp sending, Cloudflare tunnel change or Worker setting change was performed in this recheck.**
+
 ## Safety boundaries
 
 Do **not** use `docker system prune`, `docker compose down -v`, `docker volume rm`, session deletion, blind `docker pull && docker compose up`, or publish port 3000 to `0.0.0.0`. Do **not** commit `.env`, `.sessions`, QR images, media, private keys, backups, or API credentials to GitHub. WAHA is an unofficial integration: do not broadcast, bulk replay stale outbox jobs, or bypass WhatsApp consent/rate limits.
