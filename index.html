@@ -88,15 +88,20 @@
   <section class="hero hero-editorial" aria-label="Discover ChaskaBox snacks">
     <div class="herowrap">
       <div class="herotxt">
-        <span class="kick"><span class="dot"></span> Pakistan ka snack box, dil se</span>
-        <div class="hero-eyebrow">ORIGINAL PAKISTANI SNACKS <span aria-hidden="true">✦</span> CURATED WITH CARE</div>
+        <div class="hero-eyebrow"><span aria-hidden="true" class="eyebrow-spark">✦</span> PAKISTAN'S FAVOURITE SNACKS</div>
         <h1>Bachpan Ka Zaiqa, <span class="hl">Ab Ghar Baithe.</span></h1>
-        <p>Woh bachpan wali favourites, ab ek hi jagah. Original branded snacks, order ke baad carefully sourced aur Pakistan bhar mein delivered.</p>
+        <p>Woh bachpan wali favourites, ab ek hi jagah. Original snacks, carefully sourced after your order and delivered across Pakistan.</p>
         <div class="hero-actions">
           <a class="cta" href="/shop/">Shop All Snacks <span aria-hidden="true">↗</span></a>
           <a class="cta ghost" href="/bundles/">Explore Chaska Boxes <span aria-hidden="true">→</span></a>
         </div>
-        <p class="hero-microcopy"><span aria-hidden="true">✦</span> Sealed branded packs <span aria-hidden="true">·</span> Sourced after order <span aria-hidden="true">·</span> 4–7 day estimated delivery</p>
+        <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
+          <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
+          <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
+          <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-pressed="false"></button>
+          <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-pressed="false"></button>
+          <button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>
+        </div>
         <div class="hero-search">
           <label class="sr-only" for="homeSearch">Search snacks</label>
           <div class="hero-searchbox"><span aria-hidden="true">🔎</span><input id="homeSearch" autocomplete="off" placeholder="Search Slanty, Cocomo, chocolates..." oninput="renderHomeSearchSuggestions(this.value)" onkeydown="homeSearchKey(event)"><button type="button" onclick="submitHomeSearch()">Search</button></div>
@@ -106,28 +111,28 @@
       </div>
       <div class="heroimg">
         <div class="hero-showcase">
-          <div class="hero-orbit" aria-hidden="true"></div>
-          <div class="hero-orbit hero-orbit-small" aria-hidden="true"></div>
-          <div class="hero-product-tag" aria-hidden="true"><span>THE SNACKS YOU <b>GREW UP WITH</b></span><span class="hero-product-star">✦</span></div>
+          <div class="hero-showcase-title">SNACKS WORTH REDISCOVERING <span aria-hidden="true">✦</span></div>
           <div class="herocollage" id="heroCollage"><img src="/images/p5.webp" alt="Mayfair Delight chocolate cream croissant pack" width="150" height="150" decoding="async" fetchpriority="high" class="hc1"><img src="/images/p54.webp" alt="Giggly butter fudge toffee pack" width="150" height="150" decoding="async" loading="lazy" class="hc2"><img src="/images/p182.webp" alt="Winner Patti Fry masala snack pack" width="150" height="150" decoding="async" loading="lazy" class="hc3"></div>
-          <div class="hero-seal" aria-hidden="true"><span>100%</span><small>CHASKA</small></div>
+
         </div>
       </div>
     </div>
     <span class="hero-art-note">Illustrative snack selection · browse exact listed packs</span>
-    <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
-      <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
-      <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
-      <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-pressed="false"></button>
-      <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-pressed="false"></button>
-      <button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>
-    </div>
+
     <div class="herotrust">
       <div class="htrustwrap">
-        <div><span class="hic">🛡️</span><span><b>Original Brands</b><small>Trusted Pakistani favourites</small></span></div>
-        <div><span class="hic">🛍️</span><span><b>Sourced after order</b><small>Picked after your order</small></span></div>
-        <div><span class="hic">💵</span><span><b>Cash on Delivery</b><small><span data-cod-advance-note>Rs. <span data-cod-advance-amount>500</span> advance before dispatch; </span>balance on delivery</small></span></div>
-        <div><span class="hic">🚚</span><span><b>Pakistan Wide</b><small>4–7 day delivery</small></span></div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 20 6v6c0 5-4 8-8 10-4-2-8-5-8-10V6Z"/><path d="m8.5 12 2.3 2.3 4.7-5"/></svg></span>
+          <span><b>Original brands</b><small>Sealed, carefully sourced packs</small></span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v10H3zM14 10h4l3 4v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>
+          <span><b>Pakistan-wide delivery</b><small>Estimated 4–7 days</small></span>
+        </div>
+        <div class="hero-trust-item hero-trust-cod">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></span>
+          <span><b>Cash on Delivery</b><small><span data-cod-advance-note>Rs. <span data-cod-advance-amount>500</span> advance before dispatch; </span>balance on delivery</small></span>
+        </div>
       </div>
     </div>
   </section>
