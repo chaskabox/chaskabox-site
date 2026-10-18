@@ -26,19 +26,19 @@
   if(!title||!desc||!eyebrow||!kick||!primary||!secondary||!controls)return;
   const defaults=[
     {label:'Bachpan Ka Zaiqa',kick:'Pakistan ka snack box, dil se',
-     eyebrow:'PAKISTANI SNACKS · SOURCED AFTER ORDER',
+     eyebrow:'ORIGINAL PAKISTANI SNACKS · CURATED WITH CARE',
      heading:'Bachpan Ka Zaiqa, ',highlight:'Ab Ghar Baithe.',
-     description:'Pakistani favourites, sourced after your order. Delivered across Pakistan.',
-     primary:'Shop Now',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
+     description:'Woh bachpan wali favourites, ab ek jagah. Sealed branded packs, order ke baad carefully sourced.',
+     primary:'Shop All Snacks',href:'/shop/',secondary:'Explore Chaska Boxes',secondHref:'/bundles/'},
     {label:'Curated Chaska Boxes',kick:'Har mood ka Chaska Box',
-     eyebrow:'CURATED SNACK BOXES · GIFTING & SHARING',
+     eyebrow:'CURATED CHASKA BOXES · GIFTING & SHARING',
      heading:'Har Box Mein ',highlight:'Bachpan Ki Yaadein.',
-     description:'Apne favourite snacks aur Chaska Boxes discover karein. Original sealed packs, carefully sourced after your order.',
+     description:'Apne favourite childhood snacks ka box explore karein. Original branded packs, gifting aur sharing ke liye.',
      primary:'Explore Chaska Boxes',href:'/bundles/',secondary:'Shop All Snacks',secondHref:'/shop/'},
     {label:'Snack Picks',kick:'Snacks jo dil khush kar dein',
-     eyebrow:'CHASKA PICKS · SNACKS & TREATS',
+     eyebrow:'CHATPATA, MEETHA, CRUNCHY · PICK YOUR CHASKA',
      heading:'Apni Cravings Ka ',highlight:'Chaska Chuno!',
-     description:'Chatpatay, meethay aur crunchy Pakistani favourites ek jagah. Available snacks aur deals explore karein.',
+     description:'Chatpatay, meethay aur crunchy favourites ek hi jagah. Apna next Chaska discover karein.'
      primary:'Shop Snacks',href:'/shop/',secondary:'Browse Chaska Boxes',secondHref:'/bundles/'}
   ];
   const safeLink=s=>typeof s==='string'&&(/^(?:\/(?!\/)|https:\/\/)[^"'<>\s]*$/.test(s));
