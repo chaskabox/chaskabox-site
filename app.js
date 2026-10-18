@@ -294,6 +294,9 @@ function renderShopCategoryRail(){
     const key=String(product.category||'').trim();
     if(key)totals.set(key,(totals.get(key)||0)+1);
   }
+  // Bundles route uses the bundle flag, which includes Top Pops bundles in other categories.
+  const bundleCount=products.filter(p=>p.bundle).length;
+  if(bundleCount)totals.set('Bundles',bundleCount);
   const configured=Array.isArray(STORE_CONFIG?.categories)?STORE_CONFIG.categories
     .map(c=>String(c.name||'').trim()).filter(Boolean):CAT_ORDER.filter(x=>x!=='Bundles');
   const categories=[...new Set([...configured,...totals.keys()])].filter(c=>totals.has(c));
@@ -378,7 +381,7 @@ function toggleBrand(el){
 }
 function filteredShop(){
   let list=publicProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
-  if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>category?category.product_ids.includes(Number(p.id)):(cat==='Bundles'?p.bundle:p.category===cat));}
+  if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>cat==='Bundles'?p.bundle:(category?category.product_ids.includes(Number(p.id)):p.category===cat));}
   if(badge)list=list.filter(p=>badge==='Sale'?p.oldPrice>p.price:p.badge===badge);
   if(q){const n=q.toLowerCase().trim();list=list.filter(p=>[p.name,p.pack,p.category,getBrand(p),p.desc].filter(Boolean).join(' ').toLowerCase().includes(n));}
   if(brands.length)list=list.filter(p=>brands.includes(getBrand(p)));
