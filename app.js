@@ -582,8 +582,13 @@ function bundleContentsHTML(p){
  const items=p.bundleContents.map(i=>'<li>'+Number(i.quantity)+' × <a href="'+productHref(i.product_id)+'">'+esc(i.name)+'</a> — '+esc(i.pack)+'</li>').join('');
  return '<section class="bundle-contents"><h2>Included packs</h2><ul>'+items+'</ul><p>'+((Number(p.retailValue)>0)?'Current individual pack total: '+fmt(p.retailValue)+'. ':'')+((Number(p.bundleSavings)>0)?'Save '+fmt(p.bundleSavings)+' against these current packs.':'')+'</p></section>';
 }
+function productPageTitle(p){
+ const name=String(p.name||''),pack=String(p.pack||'').trim();
+ const raw=String(p.seoTitle||name+(pack&&!name.toLowerCase().includes(pack.toLowerCase())?' — '+pack:'')+' | ChaskaBox').trim();
+ return raw.replace(/(Pack of\s+(\d+))(?:\s*[—-]\s*Pack of\s+\2)+/gi,'$1').replace(/(?:\s*\|\s*ChaskaBox){2,}$/i,' | ChaskaBox').replace(/^(ChaskaBox\s*\|.+?)\s*\|\s*ChaskaBox$/i,'$1');
+}
 function setProductMeta(p){
- const pack=String(p.pack||''),title=p.seoTitle||p.name+(pack&&!String(p.name).toLowerCase().includes(pack.toLowerCase())?' — '+pack:'')+' | ChaskaBox';
+ const title=productPageTitle(p);
  const description=p.seoDescription||p.desc||'Compare the listed pack and order details at ChaskaBox Pakistan.';
  setPageMeta(title,productHref(p.id),false,description);setMetaTag('property','og:type','product');
  const photo=hasPhoto(p)?new URL(assetUrl(p.img),'https://chaskabox.online').href:'https://chaskabox.online/images/logo-approved-20261017.png';
