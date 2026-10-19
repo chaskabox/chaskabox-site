@@ -174,13 +174,13 @@
    inline labels, generous targets, and consistent badge anchor points. */
 @media (min-width: 761px) {
   body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) {
-    flex: 0 0 81px !important;
-    width: 81px !important;
-    min-width: 81px !important;
-    max-width: 81px !important;
+    flex: 0 0 74px !important;
+    width: 74px !important;
+    min-width: 74px !important;
+    max-width: 74px !important;
     height: 48px !important;
     min-height: 48px !important;
-    gap: 5px !important;
+    gap: 4px !important;
     padding: 0 3px !important;
     border-radius: 11px !important;
     position: relative !important;
@@ -188,12 +188,12 @@
     overflow: visible !important;
   }
   body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) svg {
-    width: 27px !important;
-    height: 27px !important;
-    stroke-width: 2.15 !important;
+    width: 21px !important;
+    height: 21px !important;
+    stroke-width: 1.85 !important;
     stroke-linecap: round !important;
     stroke-linejoin: round !important;
-    flex: 0 0 27px !important;
+    flex: 0 0 21px !important;
   }
   body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn)::after {
     font-size: 10.8px !important;
