@@ -318,6 +318,40 @@ try{
     (width>760&&(searchWA.searchWidth<150||searchWA.searchWidth>(width>=1200?265:240)||Math.abs(searchWA.searchButton-36)>2)))
     throw Error('Search and floating WhatsApp visual/functionality regression '+JSON.stringify({width,...searchWA}));
   results.interactions.push({case:'balanced search and bottom-left WhatsApp CTA with live order link / '+width,pass:true});
+  const pairedFABs=await page.evaluate(()=>{
+    const whatsapp=document.querySelector('body > a.cbx-whatsapp-float');
+    const ai=document.querySelector('#helpFab');
+    const w=whatsapp?.getBoundingClientRect(),a=ai?.getBoundingClientRect();
+    return {iconOnly:!!whatsapp?.querySelector('svg')&&getComputedStyle(whatsapp.querySelector('.cbx-wa-caption')).display==='none',
+      waWidth:w?.width||0,waRight:w?.right,aiLeft:a?.left,
+      centerOffset:Math.abs((w?.top||0)+(w?.height||0)/2-(a?.top||0)-(a?.height||0)/2)};
+  });
+  if(!pairedFABs.iconOnly||pairedFABs.waWidth>47||pairedFABs.waWidth<40||
+     pairedFABs.waRight>pairedFABs.aiLeft-5||pairedFABs.centerOffset>4)
+     throw Error('WhatsApp icon must sit immediately beside Chaska AI '+JSON.stringify({width,...pairedFABs}));
+  if(width>=1200){
+    // The browser fixture has only one admin nav link. Add the real Brands route
+    // to test delegated clicks, without altering the site's production nav setup.
+    await page.evaluate(()=>{
+      const nav=document.querySelector('header .cbx-header-links .cb-managed-nav');
+      if(nav&&!nav.querySelector('a[href="/brands/"]')){
+        const link=document.createElement('a');link.href='/brands/';link.textContent='Brands';nav.append(link);
+      }
+    });
+    await page.waitForFunction(()=>document.querySelector('header a.cbx-brands-trigger')?.getAttribute('aria-controls')==='cbxBrandsDropdown');
+    const brandTrigger=page.locator('header a.cbx-brands-trigger');
+    await brandTrigger.click();
+    const dropdown=page.locator('#cbxBrandsDropdown');
+    await dropdown.locator('.cbx-brands-links a[href^="/brand/"]').first().waitFor({state:'visible'});
+    if(await brandTrigger.getAttribute('aria-expanded')!=='true')throw Error('Brands dropdown aria-expanded not set');
+    if(!await dropdown.getByRole('link',{name:/View all brands/i}).isVisible())throw Error('All Brands link missing');
+    await page.keyboard.press('Escape');
+    if(await dropdown.isVisible()||await brandTrigger.getAttribute('aria-expanded')!=='false')throw Error('Brands dropdown did not close with Escape');
+    await brandTrigger.click();
+    await page.mouse.click(30,180);
+    if(await dropdown.isVisible())throw Error('Brands dropdown did not close on outside click');
+    results.interactions.push({case:'Brands dropdown renders real brand links and closes by keyboard/outside click / '+width,pass:true});
+  }
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
   if(width===390){
    const wish=page.locator('#view-home .card .wishbtn').first();
