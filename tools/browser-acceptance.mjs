@@ -576,13 +576,15 @@ try{
  await page.evaluate(()=>{window.qaPasswordFailure=true;});await page.locator('#recoveryConfirm').fill('Synthetic-Password-1');await page.locator('#saveRecovery').click();await page.waitForFunction(()=>document.getElementById('recoveryStatus')?.textContent.includes('Synthetic password'));
  results.interactions.push({case:'password validation and outage',pass:noInvalidUpdate&&await page.locator('#recoveryPass').inputValue()==='Synthetic-Password-1'&&!await page.locator('#saveRecovery').isDisabled()});await context.clearCookies();
  await page.goto(base+'/shop/?q=chocolate&brand=Mayfair');await page.reload();await page.waitForFunction(()=>document.querySelector('#fq')?.value==='chocolate');results.interactions.push({case:'search query survives refresh',pass:true});
- // Media-query change events arrive asynchronously. Confirm the initial mode,
- // then wait for the real change handler rather than sampling the previous frame.
+ // Phase 4 makes shopping content visible before scrolling in every motion mode.
+ // Keep checking the runtime preference change without expecting hidden reveals.
  await page.emulateMedia({reducedMotion:'no-preference'});await page.goto(base+'/');
- await page.waitForFunction(()=>document.documentElement.classList.contains('motion-reveals'),null,{timeout:5000});
+ await page.waitForFunction(()=>document.querySelectorAll('.reveal').length>0&&!document.documentElement.classList.contains('motion-reveals')&&[...document.querySelectorAll('.reveal')].every(e=>getComputedStyle(e).opacity==='1'),null,{timeout:5000});
  await page.emulateMedia({reducedMotion:'reduce'});
  await page.waitForFunction(()=>!document.documentElement.classList.contains('motion-reveals')&&[...document.querySelectorAll('.reveal')].every(e=>getComputedStyle(e).opacity==='1'),null,{timeout:5000});
- results.interactions.push({case:'runtime reduced motion reveals content',pass:true});
+ await page.emulateMedia({reducedMotion:'no-preference'});
+ await page.waitForFunction(()=>!document.documentElement.classList.contains('motion-reveals')&&[...document.querySelectorAll('.reveal')].every(e=>getComputedStyle(e).opacity==='1'),null,{timeout:5000});
+ results.interactions.push({case:'shopping content stays visible before scrolling and across runtime motion changes',pass:true});
  await page.getByRole('link',{name:'Find your snack moment',exact:false}).click();await page.waitForURL('**/snack-boxes/');
  results.interactions.push({case:'home occasion link uses the actual content page',pass:(await page.locator('main').innerText()).includes('Movie night')});
  await page.goto(base+'/');await page.getByRole('link',{name:'Snack and order guides',exact:true}).first().click();await page.waitForURL('**/guides/');
