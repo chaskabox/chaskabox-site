@@ -169,3 +169,70 @@
 }
 /* Mobile retains its existing hamburger + search row: no inadvertent changes to
    small touch screens or their focus/keyboard behavior. */
+
+/* Equal prominence for Account, Wishlist and Cart: same optical dimensions,
+   inline labels, generous targets, and consistent badge anchor points. */
+@media (min-width: 761px) {
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) {
+    flex: 0 0 81px !important;
+    width: 81px !important;
+    min-width: 81px !important;
+    max-width: 81px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    gap: 5px !important;
+    padding: 0 3px !important;
+    border-radius: 11px !important;
+    position: relative !important;
+    color: #092f58 !important;
+    overflow: visible !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) svg {
+    width: 27px !important;
+    height: 27px !important;
+    stroke-width: 2.15 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    flex: 0 0 27px !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn)::after {
+    font-size: 10.8px !important;
+    line-height: 1.15 !important;
+    font-weight: 800 !important;
+    letter-spacing: -.1px !important;
+    white-space: nowrap !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn):hover {
+    background: #f0f5fa !important;
+    color: #c63a06 !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn):focus-visible {
+    outline: 2px solid #e35b16 !important;
+    outline-offset: 2px !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) :is(.cartcount,.wishcount) {
+    position: absolute !important;
+    top: -4px !important;
+    right: 1px !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    padding: 0 4px !important;
+    border-radius: 999px !important;
+    border: 2px solid #fff !important;
+    background: #d5430b !important;
+    color: white !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+@media (min-width: 761px) and (max-width: 900px) {
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) {
+    flex-basis: 46px !important;
+    width: 46px !important;
+    min-width: 46px !important;
+    max-width: 46px !important;
+  }
+}
