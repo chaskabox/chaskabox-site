@@ -8,6 +8,7 @@
 <title>ChaskaBox Admin Console</title>
 <link rel="stylesheet" href="/admin.css?v=20261016-admin-v4-shell1">
  <link rel="stylesheet" href="/admin-agent-workbench.css?v=20261015-agent-workbench1">
+<link rel="stylesheet" href="/admin-seo-center.css?v=20261019-phase5">
 <style>.agent-m05-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:12px;margin:14px 0}.agent-m05-grid .panel h3{margin:0 0 8px;color:var(--navy);font-size:15px}.agent-m05-grid .panel p{overflow-wrap:anywhere;font-size:12px}.agent-m05-grid .panel button{margin:6px}</style>
 </head>
 <body>
@@ -86,6 +87,7 @@ setTimeout(function(){
         <summary><span>Storefront & media</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
         <div class="admin-nav-group-links">
           <button class="admin-nav-btn" data-view="pages"><span>✎</span> Pages &amp; Text</button>
+<button class="admin-nav-btn" data-view="seo"><span>⌕</span> SEO Center</button>
           <button class="admin-nav-btn" data-view="homepage"><span>⌂</span> Homepage Builder</button>
           <button class="admin-nav-btn" data-view="navigation"><span>🧭</span> Navigation</button>
           <button class="admin-nav-btn" data-view="theme"><span>🎨</span> Theme Studio</button>
@@ -506,7 +508,8 @@ setTimeout(function(){
         <div id="agentsM05Signals" class="agent-m05-grid"></div>
         <div class="panel"><h2>Marketing proposals (review only)</h2><form id="agentsM05Propose" class="toolbar"><label>Public product ID <input id="agentsM05ProductId" type="number" min="1" step="1" required></label><label>Channel <select id="agentsM05Channel"><option value="social">Social</option><option value="email">Email draft</option><option value="whatsapp">WhatsApp draft</option></select></label><button class="btn primary" type="submit">Create review draft</button></form><p class="safe-note">Approving a draft does NOT send, publish, or create a marketing campaign.</p><div id="agentsM05Drafts" class="agent-m05-grid"></div></div>
       </section>
-      <section class="admin-view" id="view-pages" data-title="Pages &amp; Text" data-subtitle="Public page copy and SEO with drafts, review and version history."><section class="panel"><h2>Pages &amp; Text</h2><p role="status">Loading protected page controls…</p></section></section>
+      <section class="admin-view" id="view-seo" data-title="SEO Center" data-subtitle="Public product SEO audit and audited edit workflows."><section class="panel"><h2>SEO Center</h2><p>Review live public catalogue metadata. Save and publish through the permission-controlled existing editors.</p><div id="seoCenterHost" role="region" aria-label="SEO audit"><p role="status">Open panel to load authenticated product SEO.</p></div></section></section>
+<section class="admin-view" id="view-pages" data-title="Pages &amp; Text" data-subtitle="Public page copy and SEO with drafts, review and version history."><section class="panel"><h2>Pages &amp; Text</h2><p role="status">Loading protected page controls…</p></section></section>
       <section class="admin-view" id="view-assistant" data-title="Admin Copilot" data-subtitle="AI-assisted catalogue and merchandising work — always reviewed by you before saving.">
         <div class="admin-grid two copilot-grid">
           <section class="panel">

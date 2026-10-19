@@ -185,3 +185,12 @@
 @media(max-width:760px){
   #view-home .discover .section-head .cbx-cat-holder { display:block!important; }
 }
+
+
+/* 2026-10-19: branded Bag icon matches existing nav scale. */
+.reference-storefront header .cb-bag-icon-v2{display:block;width:21px!important;height:21px!important;flex:none;overflow:visible}
+.reference-storefront header .hbtn.solid{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.reference-storefront header .hbtn.solid .cartcount{min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;position:absolute;top:0!important;right:0!important;border:2px solid #fff;border-radius:999px;background:#b93400!important;color:#fff!important;font-size:10px;font-weight:800;line-height:1}
+.reference-storefront header .hbtn.solid:focus-visible{outline:3px solid #d68818;outline-offset:2px}
+/* Product geometry and immediate-content rules live in the shared storefront
+   bundle (storefront-video-finish-20261019.css), avoiding competing overrides. */

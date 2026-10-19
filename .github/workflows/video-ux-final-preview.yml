@@ -1,0 +1,40 @@
+name: ChaskaBox remaining video UX release preview
+on:
+  push:
+    branches: ['release/video-ux-remainder-20261019']
+permissions:
+  contents: read
+jobs:
+  storefront-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Recheck responsive header, brands and WhatsApp/AI clearance on exact preview assets
+        env:
+          HERO_PREVIEW_URL: https://release-video-ux-remainder-2.chaskabox-site.pages.dev
+        run: node tools/navigation-phase2-preview.mjs
+      - name: Recheck three original approved hero scenes and keyboard motion
+        env:
+          HERO_PREVIEW_URL: https://release-video-ux-remainder-2.chaskabox-site.pages.dev
+        run: node tools/hero-phase1-preview.mjs
+      - name: Check Cart icon and product cards on staging
+        env:
+          HERO_PREVIEW_URL: https://release-video-ux-remainder-2.chaskabox-site.pages.dev
+        run: node tools/video-ux-final-preview.mjs
+      - name: Preserve screenshots and geometry evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: chaskabox-video-ux-final
+          path: |
+            test-results/hero-phase1/
+            test-results/navigation-phase2/
+            test-results/video-ux-final/
+          retention-days: 7

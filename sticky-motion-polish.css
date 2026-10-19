@@ -37,35 +37,26 @@ html { scroll-padding-top: 96px; }
   body.reference-storefront > header { box-shadow: 0 2px 8px rgba(9, 41, 75, .07) !important; }
   body.reference-storefront > header.scrolled { box-shadow: 0 5px 16px rgba(9, 41, 75, .13) !important; }
 }
-/* Product hover and scroll-reveal: short, quiet, transform/opacity-only motion. */
-body.reference-storefront .reveal {
-  transition: opacity 200ms ease-out, transform 200ms ease-out !important;
-}
-body.reference-storefront.motion-reveals .reveal:not(.in),
+/* Buying information remains visible before scroll, without JavaScript and
+   after a motion-preference change. Hover is a small pointer-only affordance. */
+body.reference-storefront .reveal,
 html.motion-reveals body.reference-storefront .reveal:not(.in) {
-  transform: translate3d(0, 6px, 0);
+  opacity:1!important;transform:none!important;transition:none!important;
 }
 body.reference-storefront .card {
-  transition: transform 180ms cubic-bezier(.2,.65,.2,1), box-shadow 180ms ease !important;
+  transform:none!important;
+  transition:box-shadow 160ms ease-out!important;
 }
-@media (hover: hover) and (pointer: fine) {
-  body.reference-storefront a.cat {
-    transition: transform 170ms ease-out !important;
-  }
-  body.reference-storefront a.cat:hover { transform: translateY(-2px) !important; }
-  body.reference-storefront a.cat:hover .ci { transform: translateY(-1px) scale(1.02) !important; }
-  body.reference-storefront .card:not(.motion-tilt):hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 10px 26px rgba(15, 49, 83, .12) !important;
-  }
+body.reference-storefront .card::after {display:none!important}
+@media (hover:hover) and (pointer:fine) {
+  body.reference-storefront a.cat {transition:transform 150ms ease-out!important}
+  body.reference-storefront a.cat:hover {transform:translateY(-2px)!important}
+  body.reference-storefront a.cat:hover .ci {transform:none!important}
+  body.reference-storefront .card:hover {box-shadow:0 8px 20px rgba(15,49,83,.12)!important}
 }
-/* Touch users should not get sticky/bouncy hover transformations after tapping. */
-@media (hover: none), (pointer: coarse) {
+@media (hover:none), (pointer:coarse) {
   body.reference-storefront a.cat:hover,
-  body.reference-storefront a.cat:hover .ci,
-  body.reference-storefront .card:not(.motion-tilt):hover {
-    transform: none !important;
-  }
+  body.reference-storefront a.cat:hover .ci {transform:none!important}
 }
 /* The visual dot is drawn by ::before. Never scale the button itself: doing so
    also shrinks the approved 44px click target after the hero bundle loads. */

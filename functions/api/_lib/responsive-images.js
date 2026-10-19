@@ -6,3 +6,9 @@ export function imageAttributes(src,sizes='(max-width:700px) calc(50vw - 36px), 
  if(!sources)return 'src="'+esc(src)+'"';
  return 'src="'+esc(sources[0].src)+'" srcset="'+sources.map(v=>esc(v.src)+' '+v.width+'w').join(', ')+'" sizes="'+esc(sizes)+'"';
 }
+
+// Match the actual responsive <img> request: preload href/srcset/sizes must be
+// identical to the selected image, or the browser may download artwork twice.
+export function imagePreloadAttributes(src,sizes='(max-width:700px) calc(50vw - 36px), 260px'){
+ return imageAttributes(src,sizes).replace(/^src=/,'href=').replace(/ srcset=/g,' imagesrcset=').replace(/ sizes=/,' imagesizes=');
+}

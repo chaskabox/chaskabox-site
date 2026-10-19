@@ -9,7 +9,11 @@ const runtime=readFileSync(new URL('../site-runtime.js',import.meta.url),'utf8')
 test('mandatory COD advance is disclosed on all primary shopping explanations',()=>{
   assert.doesNotMatch(root,/Pay when it arrives/);
   assert.match(root,/Cash on Delivery available hai\?/);
-  assert.ok((root.match(/data-cod-advance-note/g)||[]).length>=4);
+  const hero=root.slice(root.indexOf('<section class="hero '),root.indexOf('<section class="section discover'));
+  const faq=root.slice(root.indexOf('id="faq"'),root.indexOf('</main>'));
+  const footer=root.slice(root.indexOf('<footer'));
+  for(const [name,region] of [['hero',hero],['FAQ',faq],['footer',footer]])
+    assert.match(region,/data-cod-advance-note/,name+' keeps the mandatory advance disclosure');
   assert.match(root,/advance order ke baad aur dispatch se pehle verify hota hai/);
   assert.match(root,/Yeh order total mein adjust hota hai/);
 });

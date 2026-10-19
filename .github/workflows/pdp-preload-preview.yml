@@ -1,0 +1,63 @@
+name: PDP responsive preload staging evidence
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  pdp-preload:
+    if: github.head_ref == 'perf/pdp-critical-photo-preload-20261019'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      PDP_PREVIEW_URL: https://perf-pdp-critical-photo-prel.chaskabox-site.pages.dev
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Check SSR product preload against real preview HTML
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const url=process.env.PDP_PREVIEW_URL+'/product/39/';
+          const res=await fetch(url);
+          assert.equal(res.status,200,'PDP preview must serve 200');
+          const html=await res.text();
+          const head=html.match(/<head>([\s\S]*?)<\/head>/i)?.[1]||'';
+          const link=head.match(/<link\b[^>]*rel="preload"\s+as="image"[^>]*>/i)?.[0];
+          assert.ok(link,'critical product image preload missing');
+          const img=html.match(/<div class="pd-img">\s*(<img[^>]*>)/i)?.[1];
+          assert.ok(img,'visible product image missing in SSR');
+          function attr(tag,name){return tag.match(new RegExp('(?:^|\\s)'+name+'="([^"]*)"'))?.[1]||null}
+          assert.equal(attr(link,'imagesrcset'),attr(img,'srcset'),'preload and image source candidates differ');
+          assert.equal(attr(link,'imagesizes'),attr(img,'sizes'),'responsive widths differ');
+          assert.equal(attr(link,'href'),attr(img,'src'),'fallback image URLs differ');
+          assert.equal(attr(img,'fetchpriority'),'high');
+          assert.doesNotMatch(head,/chaskabox-approved-hero-01-20261018\.avif/,'PDP must not preload homepage hero');
+          console.log('PDP_PRELOAD_ALIGNED',JSON.stringify({url,image:attr(img,'src'),hasSrcset:!!attr(img,'srcset'),hasHomeHeroPreload:false}));
+          NODE
+      - name: Lab compare production and preview PDP only
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          mkdir -p perf-results
+          export CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "playwright-core";console.log(chromium.executablePath())')"
+          npx --yes lighthouse@12.8.2 https://chaskabox.online/product/39/ --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance --output=json --output-path=perf-results/pdp-live.json --quiet
+          npx --yes lighthouse@12.8.2 "$PDP_PREVIEW_URL/product/39/" --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance --output=json --output-path=perf-results/pdp-preview.json --quiet
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            for(const target of ["live","preview"]){
+              const d=JSON.parse(readFileSync("perf-results/pdp-"+target+".json","utf8"));
+              const a=d.audits;
+              console.log("PDP_LAB_"+target,JSON.stringify({performance:Math.round(d.categories.performance.score*100),LCP:Math.round(a["largest-contentful-paint"].numericValue),FCP:Math.round(a["first-contentful-paint"].numericValue),CLS:a["cumulative-layout-shift"].numericValue,TBT:Math.round(a["total-blocking-time"].numericValue)}));
+            }
+          '
+      - if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: pdp-preload-preview-lab
+          path: perf-results/
+          retention-days: 7

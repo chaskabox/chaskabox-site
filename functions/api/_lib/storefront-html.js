@@ -8,6 +8,11 @@ export function replaceMount(html,id,content){
  throw Error('Unclosed route mount');
 }
 export function routeShell(html,active){
+ // Browser resolves early media DNS/TLS only on Shop; this is the public
+ // existing image-storage origin, not a new dependency or credentials.
+ if(active==='shop' && !html.includes('rel="preconnect" href="https://jtvswuvnasqqzrjysgfd.supabase.co"')){
+  html=html.replace('</head>','<link rel="preconnect" href="https://jtvswuvnasqqzrjysgfd.supabase.co" crossorigin>\n</head>');
+ }
  // Non-home catalogue pages must not download the homepage-only hero image.
  if(active!=='home'){
   html=html.replace(/<link\b[^>]*\bdata-home-preload\b[^>]*>/gi,'');

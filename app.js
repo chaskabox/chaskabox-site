@@ -47,15 +47,6 @@ function deliveryRange(){
 function productHref(id){return '/product/'+encodeURIComponent(id)+'/';}
 
 /* ---------- cards ---------- */
-function bundleFanHTML(p){
-  if(!p?.bundle || !p?.desc || matchMedia('(max-width:760px), (hover:none), (prefers-reduced-motion:reduce)').matches) return '';
-  const m=String(p.desc).match(/Bundle pack with:\s*(.+?)(?:\.\s|$)/i);
-  if(!m) return '';
-  const wanted=m[1].split(',').map(s=>s.trim()).filter(Boolean);
-  const picks=wanted.map(name=>PRODUCTS.find(x=>String(x.name||'').trim().toLowerCase()===name.toLowerCase())).filter(x=>x&&x.img).slice(0,3);
-  if(picks.length<2) return '';
-  return `<span class="bundle-fan" aria-hidden="true">${picks.map((x,i)=>`<img ${photoAttributes(x.img,"80px")} alt="" loading="lazy" width="80" height="80" class="bf${i+1}">`).join('')}</span>`;
-}
 function cardHTML(p,priority){
   const src=hasPhoto(p)?assetUrl(p.img):'';
   const loading=priority==='high'?'loading="eager" fetchpriority="high"':priority==='eager'?'loading="eager"':'loading="lazy"';
@@ -65,14 +56,13 @@ function cardHTML(p,priority){
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="savepill">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
   const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BOX':''}</div>`:'';
   const href=productHref(p.id);
-  const fan=bundleFanHTML(p);
   const unavailable=p.stockState==='unavailable';
   return `<article class="card${p.bundle?' bundle-card':''}">${badge}${typeof wishBtnHTML==='function'?wishBtnHTML(p):''}
-    <a class="pimg" href="${href}">${fan}${img}</a>
+    <a class="pimg" href="${href}">${img}</a>
     <div class="pbody">
       ${catlabel}
       <a class="pname" href="${href}" title="${esc(p.name)}">${esc(p.name)}</a>
-      <div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}
+      <div class="packmeta"><div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}</div>
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
       <button class="addcart" ${unavailable?'disabled':''} aria-label="${unavailable?'Currently unavailable':'Add to Bag '+fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">${unavailable?'Currently unavailable':'Add to Bag'}</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
@@ -474,9 +464,6 @@ function renderShopResults(){
   else {clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML='<div class="empty shop-no-results"><strong>No matching snacks yet</strong><p>Try a different brand, category or price range.</p><button type="button" class="shop-empty-reset" onclick="clearAllFilters()">Clear filters &amp; search</button><a href="/shop/">Browse all snacks</a></div>';}
   renderFilterChips();updateApplyBtn();
   const ms=$('#mSort'); if(ms)ms.value=shopState.sort;
-  if(typeof revealObs!=='undefined'&&revealObs){
-    [...document.querySelectorAll('#shopGrid .card')].forEach(c=>c.classList.add('in'));
-  }
   observeReveals();
 }
 
@@ -1537,32 +1524,14 @@ async function askAIFree(){
   }finally{inp.disabled=false;inp.focus();body.scrollTop=body.scrollHeight;}
 }
 
-/* ---------- accessible header promo rotation ---------- */
-function promoItems(){return ['Original sealed packs',`🚚 ${fallbackDeliveryEstimate()} nationwide delivery`,'💰 COD + prepaid options','🎁 Chaska Boxes for easy gifting'];}
-let promoIdx=0,promoTimer=null,promoSource='';
+/* ---------- static, owner-editable announcement ---------- */
 function initPromo(){
   const banner=document.querySelector('.promo');
   const desktop=banner?.querySelector('.promo-desktop'),mobile=document.getElementById('promoMsg');
   if(!banner||!desktop||!mobile)return;
-  const spans=[desktop,mobile];
   function setText(raw){
-    const text=String(raw||'').trim();
-    if(text===promoSource&&promoTimer!==null)return;
-    promoSource=text;promoIdx=0;
-    let messages=text?text.split(/\s*[·•|]\s*/).map(s=>s.trim()).filter(Boolean):promoItems();
-    if(!messages.length)messages=promoItems();
-    messages=messages.slice(0,6);
-    spans.forEach(el=>{el.classList.remove('fading');el.textContent=messages[0];});
-    if(promoTimer!==null){clearInterval(promoTimer);promoTimer=null;}
-    if(messages.length<2)return;
-    promoTimer=setInterval(()=>{
-      if(banner.hidden||document.hidden||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
-      spans.forEach(el=>el.classList.add('fading'));
-      setTimeout(()=>{
-        promoIdx=(promoIdx+1)%messages.length;
-        spans.forEach(el=>{el.textContent=messages[promoIdx];el.classList.remove('fading');});
-      },240);
-    },4200);
+    const message=String(raw||'').trim()||'Original sealed packs';
+    [desktop,mobile].forEach(el=>{el.classList.remove('fading');el.textContent=message;});
   }
   window.ChaskaPromo={setText};
   setText(STORE_CONFIG?.theme?.announcement_text||STORE_CONFIG?.settings?.promo_text||'');
@@ -1589,32 +1558,18 @@ async function renderPackingVideo(){
   }catch{if(seq===packingVideoRender){box.innerHTML='';if(wrap)wrap.hidden=true;}}
 }
 
-/* ---------- animations: scroll reveals, hero tilt ---------- */
-let revealObs=null;
-function initReveals(){
-  if(reducedMotion()||typeof IntersectionObserver==='undefined'){
-    document.documentElement.classList.remove('motion-reveals');
-    document.querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));return;
-  }
-  if(revealObs)return;
-  revealObs=new IntersectionObserver(entries=>{
-    entries.forEach(en=>{
-      if(en.isIntersecting){
-        en.target.classList.add('in');
-        setTimeout(()=>{en.target.style.transitionDelay='';},300);
-        revealObs.unobserve(en.target);
-      }
-    });
-  },{threshold:.08,rootMargin:'0px 0px -30px 0px'});
-  document.documentElement.classList.add('motion-reveals');
-}
+/* ---------- immediately visible shopping content ---------- */
 function observeReveals(scope){
-  if(!revealObs||reducedMotion()){(scope||document).querySelectorAll('.reveal').forEach(el=>el.classList.add('in'));return;}
-  (scope||document).querySelectorAll('.reveal:not(.in)').forEach(el=>revealObs.observe(el));
+  (scope||document).querySelectorAll('.reveal').forEach(el=>{
+    el.classList.add('in');el.style.transitionDelay='';
+  });
+}
+function initReveals(){
+  document.documentElement.classList.remove('motion-reveals');
+  observeReveals();
 }
 motionPreference.addEventListener?.('change',()=>{
   if(reducedMotion()){
-    revealObs?.disconnect();revealObs=null;
     document.documentElement.classList.remove('motion-reveals');
     document.querySelectorAll('.reveal').forEach(el=>{el.classList.add('in');el.style.transitionDelay='';});
     const collage=document.getElementById('heroCollage');if(collage)collage.style.transform='';
@@ -1630,54 +1585,8 @@ document.addEventListener('error',event=>{
   const wrap=img.closest('.pimg,.pd-img,.pickimg');if(!wrap)return;
   const placeholder=document.createElement('div');placeholder.className='noimg';placeholder.textContent='Photo coming soon';wrap.replaceChildren(placeholder);
 },true);
-function initTilt(){
-  if(!matchMedia('(pointer:fine)').matches) return;
-  const hero=$('.hero'), col=$('#heroCollage');
-  if(!hero||!col) return;
-  let frame=0,last=null;
-  hero.addEventListener('mousemove',e=>{
-    if(reducedMotion()||document.hidden)return;
-    last={x:e.clientX,y:e.clientY};
-    if(frame) return;
-    frame=requestAnimationFrame(()=>{
-      frame=0; if(!last||reducedMotion()||document.hidden)return;
-      const r=hero.getBoundingClientRect();
-      const x=(last.x-r.left)/r.width-.5, y=(last.y-r.top)/r.height-.5;
-      col.style.transform=`rotateY(${(x*3.2).toFixed(2)}deg) rotateX(${(-y*2.6).toFixed(2)}deg)`;
-    });
-  },{passive:true});
-  hero.addEventListener('mouseleave',()=>{last=null;if(frame){cancelAnimationFrame(frame);frame=0;}col.style.transform='';});
-}
-function initCardTilt(){
-  if(!matchMedia('(hover:hover) and (pointer:fine)').matches) return;
-  let frame=0,pending=null;
-  document.addEventListener('pointermove',e=>{
-    if(reducedMotion()||document.hidden)return;
-    const card=e.target.closest?.('.card'); if(!card) return;
-    if(card.classList.contains('reveal')&&!card.classList.contains('in')) return;
-    pending={card,x:e.clientX,y:e.clientY};
-    if(frame) return;
-    frame=requestAnimationFrame(()=>{
-      frame=0; if(!pending||reducedMotion()||document.hidden)return;
-      const {card,x,y}=pending; pending=null;
-      if(!document.body.contains(card)) return;
-      card.classList.add('motion-tilt');
-      const r=card.getBoundingClientRect();
-      const px=Math.max(0,Math.min(1,(x-r.left)/r.width));
-      const py=Math.max(0,Math.min(1,(y-r.top)/r.height));
-      card.style.setProperty('--tilt-y',((px-.5)*5).toFixed(2)+'deg');
-      card.style.setProperty('--tilt-x',((.5-py)*4).toFixed(2)+'deg');
-      card.style.setProperty('--shine-x',(px*100).toFixed(1)+'%');
-      card.style.setProperty('--shine-y',(py*100).toFixed(1)+'%');
-    });
-  },{passive:true});
-  document.addEventListener('pointerout',e=>{
-    const card=e.target.closest?.('.card'); if(!card) return;
-    if(e.relatedTarget&&card.contains(e.relatedTarget)) return;
-    card.style.setProperty('--tilt-x','0deg');
-    card.style.setProperty('--tilt-y','0deg');
-  });
-}
+
+
 
 /* ---------- mobile header fix ---------- */
 function fixMobileHeader(){
@@ -1732,7 +1641,7 @@ document.addEventListener('DOMContentLoaded',async()=>{
   catch{const view=document.getElementById('view-home');if(view){view.hidden=false;view.style.display='block';view.innerHTML='<section class="section"><h1>Catalogue unavailable</h1><p>Please try again in a moment.</p><button class="cta" id="catalogueRetry">Retry</button></section>';document.getElementById('catalogueRetry').onclick=()=>location.reload();}return;}
   updateBadge();updateWishCount();
   checkAbandonedCart();
-  initReveals(); initTilt(); initCardTilt(); renderPackingVideo();
+  initReveals(); renderPackingVideo();
   renderHeaderDropdowns();
   /* premium header: deeper shadow once scrolled */
   (function(){const h=document.querySelector('header');if(!h)return;
