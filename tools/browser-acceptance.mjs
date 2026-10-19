@@ -254,6 +254,18 @@ try{
      !headerV3.whatsappInHeader||!headerV3.aiLabel?.includes('Chaska AI')||
      headerV3.aiLabelSize<11||headerV3.aiButtonWidth<106||
      (width>760&&!headerV3.navVisible))throw Error('Compact header/category/AI regression '+JSON.stringify({width,...headerV3}));
+  const bagBranding=await page.evaluate(()=>{
+    const icon=document.querySelector('header .cb-bag-icon-v2');
+    const action=icon?.closest('button,a');
+    const box=icon?.getBoundingClientRect();
+    return {icon:!!icon,iconWidth:box?.width||0,iconHeight:box?.height||0,
+      accessible:action?.getAttribute('aria-label'),badge:!!action?.querySelector('.cartcount'),
+      action:action?.getAttribute('onclick')||action?.getAttribute('href')};
+  });
+  if(!bagBranding.icon||bagBranding.iconWidth<28||bagBranding.iconHeight<28||
+    bagBranding.accessible!=='Open shopping bag'||!bagBranding.badge||
+    bagBranding.action!=='openDrawer()')throw Error('Shopping bag branding/accessibility regression '+JSON.stringify({width,...bagBranding}));
+  results.interactions.push({case:'branded shopping bag icon remains clear and keeps original accessible cart action / '+width,pass:true});
   results.interactions.push({case:'category menu below hero, compact CMS navigation + WhatsApp in header, visible Chaska AI / '+width,pass:true});
   results.interactions.push({case:'compact hero, legible packs, 44px purchase controls and approved header branding / '+width,pass:true});
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');
