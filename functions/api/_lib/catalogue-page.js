@@ -47,7 +47,9 @@ export async function renderCataloguePage(context,kind,slug=''){
   if(rows.length>0){
    const nav=catalogueDiscoveryNav(all,kind==='category'?slug:'');
    const intro=copy.intro?'<p style="line-height:1.7;margin:0 0 10px">'+esc(copy.intro)+'</p>':'';
-   html=replaceMount(html,'collectionSeoSupplement','<section aria-label="Shopping and category information" style="max-width:1040px;margin:18px auto 30px;padding:0 18px">'+intro+nav+'</section>');
+   const supplementary='<section aria-label="Shopping and category information" style="max-width:1040px;margin:18px auto 30px;padding:0 18px">'+intro+nav+'</section>';
+   if(html.includes('id="collectionSeoSupplement"'))html=replaceMount(html,'collectionSeoSupplement',supplementary);
+   else if(html.includes('id="categorySeoIntro"'))html=html.replace(/(<p\b[^>]*\bid="categorySeoIntro"[^>]*>[\s\S]*?<\/p>)/i,'$1'+supplementary);
   }
   html=withSeo(html,{title:copy.title,description:copy.description,path,noindex:rows.length===0,schemas:[organizationSchema(),collectionSchema(rows,copy.name,path)],seed:'<script type="application/json" id="current-catalogue">'+safeJson(all.map(browserProduct))+'</script>'+(manifest?'<script type="application/json" id="current-storefront-config">'+safeJson(manifest)+'</script>':'')});
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
