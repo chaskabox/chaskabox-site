@@ -114,6 +114,7 @@
     boxes:['owner','manager','content'],
     homepage:['owner','manager','content'],
     pages:['owner','manager','content'],
+    seo:['owner','manager','content'],
     navigation:['owner','manager','content'],
     theme:['owner','manager'],
     customers:['owner','manager'],
@@ -165,6 +166,17 @@
       if(name==='customers' && roleAllows('owner','manager')) await loadCustomers();
       if(name==='reviews' && roleAllows('owner','manager','content')) await loadReviews();
       if(name==='pages') await (await import('./admin-pages.js?v=20261018-content2')).mountPageEditor($('#view-pages'),{api,toast,canPublish:roleAllows('owner','manager')});
+      if(name==='seo') await (await import('./admin-seo-center.js?v=20261019-phase5')).mountSeoCenter($('#seoCenterHost'),{
+        api,toast,canPublish:roleAllows('owner','manager'),
+        openProduct:async id=>{
+          if(!canOpenAdminView('products'))throw Error('Product editor denied');
+          await loadProducts(1);
+          if(!products.some(p=>Number(p.id)===Number(id)))throw Error('Product not on editor page');
+          document.querySelector('.admin-nav-btn[data-view="products"]')?.click();
+          openLiveProduct(id);
+        },
+        openPages:()=>document.querySelector('.admin-nav-btn[data-view="pages"]')?.click()
+      });
       if(name==='homepage' && roleAllows('owner','manager','content')) await loadHomepage();
       if(name==='media' && roleAllows('owner','manager','content')) await loadMedia();
       if(name==='settings' && roleAllows('owner')) await loadSettings();

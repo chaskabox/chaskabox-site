@@ -40,7 +40,10 @@ export function productPageTitle(p) {
     .replace(/^(ChaskaBox\s*\|.+?)\s*\|\s*ChaskaBox$/i,'$1');
 }
 export function productSchema(p, canonical, photo) {
-  const n = Number(p.price);
+  // Never publish a zero-rupee Offer when price data is missing or blank.
+  // This is schema-only; existing catalog prices and checkout are unchanged.
+  const hasExplicitPrice = p.price !== null && p.price !== undefined && String(p.price).trim() !== '';
+  const n = hasExplicitPrice ? Number(p.price) : NaN;
   const offer = {
     '@type': 'Offer',
     url: canonical,
