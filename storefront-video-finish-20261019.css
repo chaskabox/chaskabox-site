@@ -26,7 +26,7 @@ body.reference-storefront .card .packmeta {min-width:0;align-self:start}
 body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .ppack {
   font-size:12px;line-height:18px;min-height:18px;color:#52647b;
 }
-body.reference-storefront .card .bundle-photo-note {display:block;font-size:11px;line-height:15px;color:#52647b}
+body.reference-storefront .card .bundle-photo-note {display:block;margin:0;font-size:11px;line-height:15px;color:#52647b}
 body.reference-storefront .card .prow {margin:0;padding:0;align-items:center}
 body.reference-storefront .card .pricewrap {column-gap:6px;row-gap:0;line-height:20px}
 body.reference-storefront .card .addcart {margin:0;width:100%;min-width:0;height:44px;padding:7px 6px;line-height:16px}

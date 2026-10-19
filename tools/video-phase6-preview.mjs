@@ -11,7 +11,7 @@ const sources=['app.js','storefront-bundle.css','sticky-motion-polish.css'];
 const expected=Object.fromEntries(await Promise.all(sources.map(async p=>[p,hash(await readFile(p))])));
 let ready=false;
 for(let attempt=0;attempt<30;attempt++){
- try{if((await Promise.all(sources.map(async p=>{const r=await fetch(base+'/'+p+'?v=20261019-ui36');return r.ok&&hash(await r.text())===expected[p];}))).every(Boolean)){ready=true;break;}}catch{}
+ try{if((await Promise.all(sources.map(async p=>{const r=await fetch(base+'/'+p+'?v=20261019-ui37');return r.ok&&hash(await r.text())===expected[p];}))).every(Boolean)){ready=true;break;}}catch{}
  await new Promise(resolve=>setTimeout(resolve,5000));
 }
 if(!ready)throw Error('Staging does not serve this commit’s exact UI sources');
