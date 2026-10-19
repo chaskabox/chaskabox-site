@@ -13,6 +13,8 @@ one coordinated release after the requested phase reviews.
   near 11px on common laptops. Visible desktop navigation now uses 13px with
   restrained color feedback and no position change. The existing compact menu
   remains available below 1200px; normal 21px account-action icons are retained.
+  Mobile Account and Cart glyphs also use 21px, with a 44px cart tap target;
+  the previous mobile bag glyph was visibly smaller than the account action.
 - The fixed Brands disclosure is appended to body to escape nav clipping.
   Its keyboard order now connects to the trigger and subsequent header link:
   Tab enters, Shift+Tab returns, the last link exits to the next header action,

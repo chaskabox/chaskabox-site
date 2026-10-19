@@ -7,7 +7,7 @@ if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(base))throw Error(
 const out='test-results/navigation-phase2';
 await mkdir(out,{recursive:true});
 const versions={
- 'header-one-line.css':'20261019-line6',
+ 'header-one-line.css':'20261019-line7',
  'sticky-motion-polish.css':'20261019-sticky3',
  'brands-header-dropdown.css':'20261019-brand3',
  'brands-header-dropdown.js':'20261019-brand7',
@@ -62,7 +62,7 @@ try{
      navUnclipped:nav.scrollWidth<=nav.clientWidth+3,
      navClientWidth:nav.clientWidth,navScrollWidth:nav.scrollWidth,
      navFonts:[...nav.querySelectorAll('a')].map(a=>parseFloat(getComputedStyle(a).fontSize)),
-     icons:actions.filter(Boolean).map(el=>{const r=el.querySelector('svg').getBoundingClientRect();return {w:r.width,h:r.height};}),
+     icons:actions.filter(el=>el&&el.getClientRects().length).map(el=>{const r=el.querySelector('svg').getBoundingClientRect();return {w:r.width,h:r.height};}),
      controls:[...document.querySelectorAll('#view-home .hero-slider-controls button')].map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height};})};
    });
    if(header.overflow||!header.noOverlap||Math.max(...header.centers)-Math.min(...header.centers)>12)
@@ -71,7 +71,7 @@ try{
     throw Error('Desktop navigation is clipped or too small '+JSON.stringify({width,...header}));
    if(header.controls.length!==6||header.controls.some(b=>b.w<43.5||b.h<43.5))
     throw Error('Merged header CSS shrinks hero controls '+JSON.stringify({width,...header}));
-   if(width>760&&header.icons.some(b=>Math.abs(b.w-21)>1||Math.abs(b.h-21)>1))
+   if(header.icons.length<2||header.icons.some(b=>Math.abs(b.w-21)>1||Math.abs(b.h-21)>1))
     throw Error('Header action icons no longer share normal dimensions');
    await page.evaluate(()=>scrollTo({top:350,behavior:'instant'}));
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
