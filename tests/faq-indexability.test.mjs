@@ -23,7 +23,7 @@ test('public pages expose FAQ through regular crawlable help links',()=>{
   assert.equal((html.match(/<a href="\/faq\/">Frequently Asked Questions<\/a>/g)||[]).length,1,page);
  }
  const home=read('index.html');
- assert.ok(home.indexOf('href="/faq/"')>home.indexOf('<footer'),'FAQ belongs to the real DOM footer');
+ assert.ok(home.slice(home.indexOf('<footer')).includes('href="/faq/"'),'FAQ link belongs to the real DOM footer even when the homepage also links contextually');
  const guides=read('guides/index.html');
  assert.match(guides,/Questions about ordering, advance payments or delivery\? <a href="\/faq\/">Read our frequently asked questions<\/a>/);
 });
