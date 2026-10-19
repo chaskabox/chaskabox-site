@@ -1,6 +1,7 @@
 import {chromium} from 'playwright-core';
 import {mkdir,writeFile} from 'node:fs/promises';
-const base='https://improve-ranking-phase2-conte.chaskabox-site.pages.dev';
+const base=(process.env.RANKING_PREVIEW_URL||'https://improve-ranking-phase2-conte.chaskabox-site.pages.dev').replace(/\/$/,'');
+if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(base))throw Error('Only Cloudflare Pages branch preview supported');
 const out='test-results/ranking-phase2';await mkdir(out,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const checks=[];
