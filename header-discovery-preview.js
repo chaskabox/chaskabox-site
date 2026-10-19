@@ -21,13 +21,34 @@ holder.innerHTML='<button type="button" class="cbx-cat-trigger" aria-expanded="f
 nav.insertBefore(holder,nav.lastElementChild);
 const btn=holder.querySelector('button'),panel=holder.querySelector('section'),grid=holder.querySelector('.cbx-cat-grid');
 const render=()=>{const counts=new Set(catalog().map(p=>p.category));const available=counts.size?entries.filter(e=>counts.has(e[0])):entries;grid.innerHTML=(available.length?available:entries).map(e=>'<a href="'+e[1]+'" class="cbx-cat-card"><span class="cbx-cat-photo" style="--cbx-pos:'+e[2]+'" aria-hidden="true"></span><span class="cbx-cat-name">'+esc(e[0])+'<small>Explore products →</small></span></a>').join('')};
-const set=open=>{if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open)};
+const positionPanel=()=>{
+ if(panel.hidden)return;
+ panel.style.transform='none';
+ const viewportWidth=document.documentElement.clientWidth||innerWidth;
+ panel.style.maxWidth=Math.max(0,viewportWidth-24)+'px';
+ const trigger=btn.getBoundingClientRect(),head=document.querySelector('body > header')?.getBoundingClientRect();
+ const top=Math.max(8,head?.bottom||0);
+ if(trigger.bottom<top||trigger.top>innerHeight){set(false);return;}
+ holder.classList.remove('cbx-cat-opens-up');
+ const down=panel.getBoundingClientRect(),anchor=panel.offsetParent?.getBoundingClientRect();
+ const below=innerHeight-down.top-12,above=(anchor?.top??trigger.top)-top-21;
+ const up=below<240&&above>below;
+ holder.classList.toggle('cbx-cat-opens-up',up);
+ const bounds=panel.getBoundingClientRect();
+ const available=up?bounds.bottom-top-12:innerHeight-bounds.top-12;
+ panel.style.setProperty('--cbx-category-space',Math.max(44,Math.min(600,Math.floor(available)))+'px');
+ const left=Math.max(12,Math.min(bounds.left,viewportWidth-bounds.width-12));
+ panel.style.transform='translateX('+(left-bounds.left)+'px)';
+};
+const set=open=>{clearTimeout(openTimer);clearTimeout(closeTimer);if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open);if(open)positionPanel()};
 let openTimer,closeTimer;btn.addEventListener('click',()=>set(panel.hidden));
 holder.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(closeTimer);openTimer=setTimeout(()=>set(true),220)});
-holder.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;clearTimeout(openTimer);closeTimer=setTimeout(()=>set(false),220)});
+holder.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;clearTimeout(openTimer);if(!holder.contains(document.activeElement))closeTimer=setTimeout(()=>set(false),220)});
 holder.addEventListener('focusout',e=>{if(!holder.contains(e.relatedTarget))set(false)});
 document.addEventListener('pointerdown',e=>{if(!holder.contains(e.target))set(false)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){set(false);btn.focus()}});
+window.addEventListener('resize',positionPanel,{passive:true});
+window.addEventListener('scroll',positionPanel,{passive:true});
 render();
 }
 // Move the REAL admin-managed navigation into the header: subsequent CMS updates
@@ -43,6 +64,16 @@ if(mainHeader&&managedNav&&whatsapp){
   whatsapp.setAttribute('aria-label','Order via WhatsApp');
   mainHeader.append(managedNav,whatsapp);
   document.body.classList.add("cbx-header-ready");
+}
+// About/Contact use a native details menu instead of the shopping drawer.
+const staticMenu=mainHeader?.querySelector('.cb-static-menu');
+if(staticMenu){
+ const summary=staticMenu.querySelector('summary');
+ const sync=()=>summary?.setAttribute('aria-expanded',String(staticMenu.open));
+ staticMenu.addEventListener('toggle',sync);sync();
+ staticMenu.addEventListener('keydown',e=>{if(e.key==='Escape'&&staticMenu.open){e.preventDefault();staticMenu.open=false;summary?.focus()}});
+ staticMenu.addEventListener('focusout',e=>{if(!staticMenu.contains(e.relatedTarget))staticMenu.open=false});
+ document.addEventListener('pointerdown',e=>{if(!staticMenu.contains(e.target))staticMenu.open=false});
 }
 // The old stylesheet hid all floating-help text on mobile. Keep a readable
 // accessible text label; do not alter AI answers, chat handlers or notifications.
