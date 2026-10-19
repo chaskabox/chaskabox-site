@@ -1,0 +1,29 @@
+name: Ranking Phase 6 coordinated release staging
+on:
+  push:
+    branches: ['release/ranking-phases3to6-20261019']
+permissions:
+  contents: read
+jobs:
+  staging-read-only:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Validate real Cloudflare branch preview
+        env:
+          RANKING_PREVIEW_URL: https://release-ranking-phases3to6-2.chaskabox-site.pages.dev
+        run: node tools/ranking-phase6-preview-smoke.mjs
+      - name: Save evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ranking-phase6-staging
+          path: test-results/ranking-phase6/
+          retention-days: 7
