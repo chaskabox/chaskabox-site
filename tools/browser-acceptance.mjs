@@ -295,6 +295,29 @@ try{
       throw Error('Single-row aligned header/icons regression '+JSON.stringify(alignment));
     results.interactions.push({case:'single-row wide header, equal normal-size Account/Wishlist/Cart icons / '+width,pass:true});
   }
+  const searchWA=await page.evaluate(()=>{
+    const wa=document.querySelector('body > a.cbx-whatsapp-float');
+    const waRect=wa?.getBoundingClientRect(),waStyle=wa?getComputedStyle(wa):null;
+    const input=document.querySelector(innerWidth>760?'#headerSearch':'#cbMobileSearch');
+    const search=document.querySelector('header .header-search');
+    const button=search?.querySelector('button[type="submit"]');
+    const buttonRect=button?.getBoundingClientRect();
+    const searchRect=search?.getBoundingClientRect();
+    return {waExists:!!wa,waLabel:wa?.textContent?.trim(),waHref:wa?.getAttribute('href'),
+      waFixed:waStyle?.position==='fixed',waLeft:waRect?.left??-100,
+      waRight:waRect?.right??-100,waBottom:innerHeight-(waRect?.bottom??innerHeight),
+      insideHeader:!!document.querySelector('header a.cbx-header-whatsapp'),
+      searchPlaceholder:input?.placeholder,searchWidth:searchRect?.width,
+      searchButton:buttonRect?.width,focusable:!!input};
+  });
+  if(!searchWA.waExists||searchWA.waLabel!=='WhatsApp'||!searchWA.waFixed||
+    searchWA.insideHeader||searchWA.waLeft<0||searchWA.waRight>width+2||
+    searchWA.waBottom<(width<=760?54:8)||!searchWA.focusable||
+    !searchWA.waHref?.startsWith('https://wa.me/')||
+    !searchWA.searchPlaceholder?.includes('Search snacks')||
+    (width>760&&(searchWA.searchWidth<150||Math.abs(searchWA.searchButton-40)>3)))
+    throw Error('Search and floating WhatsApp visual/functionality regression '+JSON.stringify({width,...searchWA}));
+  results.interactions.push({case:'balanced search and bottom-left WhatsApp CTA with live order link / '+width,pass:true});
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
   if(width===390){
    const wish=page.locator('#view-home .card .wishbtn').first();
