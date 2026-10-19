@@ -185,3 +185,23 @@
 @media(max-width:760px){
   #view-home .discover .section-head .cbx-cat-holder { display:block!important; }
 }
+
+
+/* 2026-10-19: branded Bag icon matches existing nav scale. */
+.reference-storefront header .cb-bag-icon-v2{display:block;width:27px!important;height:27px!important;flex:none;overflow:visible}
+.reference-storefront header .hbtn.solid{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.reference-storefront header .hbtn.solid .cartcount{min-width:18px;height:18px;padding:0 4px;align-items:center;justify-content:center;position:absolute;top:0!important;right:0!important;border:2px solid #fff;border-radius:999px;background:#d34709!important;color:#fff!important;font-size:10px;font-weight:800;line-height:1}
+.reference-storefront header .hbtn.solid:focus-visible{outline:3px solid #d68818;outline-offset:2px}
+/* Product comparison: stable photo/name/pack/price/button alignment in Home/Shop. */
+.reference-storefront :is(#view-home,#view-shop,#view-product) :is(.grid,.hscroll)>.card{display:flex;flex-direction:column;min-width:0;height:100%}
+.reference-storefront :is(#view-home,#view-shop,#view-product) :is(.grid,.hscroll)>.card .pimg{display:flex;align-items:center;justify-content:center;aspect-ratio:5/4;min-height:0;overflow:hidden}
+.reference-storefront :is(#view-home,#view-shop,#view-product) :is(.grid,.hscroll)>.card .pimg img{max-height:94%;max-width:94%;width:auto;height:auto;object-fit:contain}
+.reference-storefront :is(#view-home,#view-shop,#view-product) :is(.grid,.hscroll)>.card .pbody{display:flex;flex-direction:column;flex:1;min-width:0}
+.reference-storefront :is(#view-home,#view-shop,#view-product) :is(.grid,.hscroll)>.card .pname{min-height:2.8em;max-height:2.8em;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.reference-storefront :is(#view-home,#view-shop,#view-product) :is(.grid,.hscroll)>.card .ppack{min-height:1.5em;line-height:1.5}
+.reference-storefront :is(#view-home,#view-shop,#view-product) :is(.grid,.hscroll)>.card .prow{margin-top:auto;flex:0 0 auto}
+.reference-storefront :is(#view-home,#view-shop,#view-product) :is(.grid,.hscroll)>.card .addcart{margin-top:8px;min-height:44px;flex:0 0 auto}
+/* Products and category links are buying-critical: never wait for scroll-reveal intersection. */
+.reference-storefront.motion-reveals :is(#view-home,#view-shop) :is(.grid,.hscroll) .card.reveal:not(.in),.reference-storefront.motion-reveals #view-home .discover.reveal:not(.in){opacity:1!important;transform:none!important}
+@media(max-width:600px){.reference-storefront #view-home .shelfbody{padding-block:8px 10px}.reference-storefront #view-home .shelfw{padding-block:8px}}
+@media(prefers-reduced-motion:reduce){.reference-storefront :is(#view-home,#view-shop,#view-product) .card,.reference-storefront :is(#view-home,#view-shop,#view-product) .card :is(.addcart,.pimg img){animation:none!important;transition:none!important;transform:none!important}}
