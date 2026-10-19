@@ -23,7 +23,7 @@
   all.textContent='View all brands →';
   popup.append(all);
   function brandLink(){
-    return [...document.querySelectorAll('header .cbx-header-links a[href]')]
+    return [...document.querySelectorAll('header .cbx-header-links a[href], .cb-subnav-links a[href]')]
       .find(a=>{try{return new URL(a.href,location.href).pathname.replace(/\/+$/,'/')==='/brands/';}catch{return false;}});
   }
   function decorate(){
@@ -111,7 +111,7 @@
     document.body.append(popup);
     decorate();
     document.addEventListener('click',e=>{
-      const a=e.target.closest?.('header .cbx-header-links a');
+      const a=e.target.closest?.('header .cbx-header-links a, .cb-subnav-links a');
       if(a && a===brandLink()){
         e.preventDefault();
         if(trigger===a&&!popup.hidden)close();
@@ -128,7 +128,7 @@
     });
     window.addEventListener('resize',()=>{position();alignWhatsapp();},{passive:true});
     window.addEventListener('scroll',position,{passive:true});
-    const nav=document.querySelector('header .cbx-header-links');
+    const nav=document.querySelector('header .cbx-header-links, .cb-subnav-links');
     if(nav)new MutationObserver(decorate).observe(nav,{childList:true,subtree:true});
     alignWhatsapp();
     requestAnimationFrame(alignWhatsapp);
