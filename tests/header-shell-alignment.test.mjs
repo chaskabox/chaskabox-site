@@ -11,8 +11,8 @@ test('header shell and approved hero/category use identical 1380px desktop max w
  assert.match(css,/max-width:\s*var\(--cb-width,\s*1380px\)\s*!important/);
  assert.doesNotMatch(css,/max-width:\s*1840px/);
  assert.match(page,/--cb-width:\s*1380px/);
- assert.match(page,/#view-home>\.hero[^{}]*max-width:\s*var\(--cb-width\)/);
- assert.match(page,/#view-home>\.discover[^{}]*max-width:\s*var\(--cb-width\)/);
+ assert.match(page,/#view-home>\.hero\{[^}]*max-width:\s*var\(--cb-width\)/);
+ assert.match(page,/#view-home>\.discover\{[^}]*max-width:\s*var\(--cb-width\)/);
 });
 test('all public storefront entry templates bust the shared header CSS cache',()=>{
  for(const path of entryPages){
