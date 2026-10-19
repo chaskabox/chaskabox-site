@@ -27,14 +27,14 @@ test('sticky header remains below modal overlay and motion effects respect prefe
 test('desktop navigation uses wide margins, one row, and equal-size account actions',()=>{
  const css=read('header-one-line.css');
  for(const path of pages){
-   assert.match(read(path),/header-one-line\.css\?v=20261019-line2/,path);
+   assert.match(read(path),/header-one-line\.css\?v=20261019-line3/,path);
  }
  assert.match(css,/width: calc\(100% - clamp\(32px, 8\.5vw, 208px\)\)/);
  assert.match(css,/flex-wrap: nowrap !important/);
  assert.match(css,/flex-direction: row !important/);
  assert.match(css,/Equal prominence for Account, Wishlist and Cart/);
- assert.match(css,/width: 27px !important/);
- assert.match(css,/stroke-width: 2\.15 !important/);
- assert.match(css,/flex: 0 0 81px !important/);
+ assert.match(css,/width: 21px !important/);
+ assert.match(css,/stroke-width: 1\.85 !important/);
+ assert.match(css,/flex: 0 0 74px !important/);
  assert.match(css,/position: static !important/);
 });
