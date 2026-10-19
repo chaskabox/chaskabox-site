@@ -241,6 +241,25 @@ try{
   results.interactions.push({case:'compact hero, legible packs, 44px purchase controls and approved header branding / '+width,pass:true});
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');
   if(width>760&&!await page.locator('.header-search').isVisible())throw Error('Desktop search missing');
+  // Sticky header must stay pinned at viewport top after the announcement scrolls out.
+  // Check at every supported breakpoint; this catches CSS overrides and stacked headers.
+  const sticky=await page.evaluate(()=>{
+    const el=document.querySelector('body.reference-storefront > header');
+    const initialTop=el?.getBoundingClientRect().top??-999;
+    const available=document.documentElement.scrollHeight-window.innerHeight;
+    window.scrollTo(0,Math.min(680,Math.max(0,available)));
+    const rect=el.getBoundingClientRect();
+    const computed=getComputedStyle(el);
+    const promo=document.querySelector('body.reference-storefront > .promo');
+    return {initialTop,scroll:window.scrollY,top:rect.top,height:rect.height,
+      position:computed.position,overlayIndex:Number(computed.zIndex),
+      promoTop:promo?.getBoundingClientRect().top};
+  });
+  if(sticky.scroll<120||sticky.position!=='sticky'||Math.abs(sticky.top)>2||
+    sticky.height<=0||sticky.overlayIndex>=90||sticky.promoTop>=0)
+    throw Error('Sticky header overlay/scroll regression '+JSON.stringify({width,...sticky}));
+  await page.evaluate(()=>window.scrollTo(0,0));
+  results.interactions.push({case:'sticky header remains visible without covering cart overlay at '+width+'px',pass:true});
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
   if(width===390){
    const wish=page.locator('#view-home .card .wishbtn').first();
