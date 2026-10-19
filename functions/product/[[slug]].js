@@ -1,5 +1,5 @@
 import {SITE,organizationSchema,routeShell} from '../api/_lib/storefront-html.js';
-import {imageAttributes} from '../api/_lib/responsive-images.js';
+import {imageAttributes,imagePreloadAttributes} from '../api/_lib/responsive-images.js';
 import {cataloguePhoto,photoUnderReview} from '../api/_lib/catalogue-photos.js';
 import { sbRequest } from '../api/_lib/db.js';
 import { LOCAL_PHOTOS } from '../api/_lib/local-photos.js';
@@ -25,7 +25,8 @@ export async function onRequestGet(context){
   let html=routeShell(await assets.text(),'product');
   if(!html.includes('<div id="pdetail"></div>'))throw Error('Product mount unavailable');
   html=html.replace(/<title>[\s\S]*?<\/title>/i,'').replace(/<meta\b[^>]*(?:name|property)=["'](?:description|robots|og:[^"']+|twitter:[^"']+)["'][^>]*>/gi,'').replace(/<link\b[^>]*rel=["']canonical["'][^>]*>/gi,'').replace(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>[\s\S]*?<\/script>/gi,'');
-  const head=`<title>${esc(title)}</title><meta name="description" content="${esc(String(description).slice(0,160))}"><meta name="robots" content="index,follow"><link rel="canonical" href="${canonical}"><meta property="og:type" content="product"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${esc(ogPhoto)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:image" content="${esc(ogPhoto)}"><script type="application/ld+json" id="store-schema">${json(organizationSchema())}</script><script type="application/ld+json" id="product-schema">${json(schema)}</script><script type="application/ld+json" id="breadcrumb-schema">${json(crumbs)}</script><script type="application/json" id="current-product">${json(seed)}</script>`;
+  const criticalPhotoPreload=photo?`<link rel="preload" as="image" ${imagePreloadAttributes(photo,"(max-width:700px) calc(100vw - 32px), 520px")} fetchpriority="high">`:'';
+  const head=`${criticalPhotoPreload}<title>${esc(title)}</title><meta name="description" content="${esc(String(description).slice(0,160))}"><meta name="robots" content="index,follow"><link rel="canonical" href="${canonical}"><meta property="og:type" content="product"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(description)}"><meta property="og:url" content="${canonical}"><meta property="og:image" content="${esc(ogPhoto)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:image" content="${esc(ogPhoto)}"><script type="application/ld+json" id="store-schema">${json(organizationSchema())}</script><script type="application/ld+json" id="product-schema">${json(schema)}</script><script type="application/ld+json" id="breadcrumb-schema">${json(crumbs)}</script><script type="application/json" id="current-product">${json(seed)}</script>`;
   html=html.replace('</head>',head+'</head>');
   html=html.replace(/<a\b[^>]*\bid="pdCrumbCat"[^>]*>[\s\S]*?<\/a>/i,`<a id="pdCrumbCat" href="${esc(CATEGORY_PATHS[p.category]||'/shop/')}">${esc(p.category||'All Snacks')}</a>`)
     .replace(/<b\b[^>]*\bid="pdCrumbName"[^>]*>[\s\S]*?<\/b>/i,`<b id="pdCrumbName">${esc(p.name)}</b>`);
