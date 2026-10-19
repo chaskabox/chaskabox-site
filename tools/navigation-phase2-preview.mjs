@@ -8,7 +8,8 @@ const out='test-results/navigation-phase2';
 await mkdir(out,{recursive:true});
 const versions={
  'header-one-line.css':'20261019-line7',
- 'sticky-motion-polish.css':'20261019-sticky3',
+ 'header-discovery-preview.css':'20261019-header4',
+ 'sticky-motion-polish.css':'20261019-sticky4',
  'brands-header-dropdown.css':'20261019-brand3',
  'brands-header-dropdown.js':'20261019-brand7',
  'header-discovery-preview.js':'20261019-header7'

@@ -1,0 +1,135 @@
+/* Video audit Phases 3–5: predictable catalogue geometry and a shorter homepage. */
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pimg {
+  position:relative;display:grid;place-items:center;isolation:isolate;
+  width:100%;height:auto;min-height:0;aspect-ratio:1;flex:0 0 auto;
+  padding:0;overflow:hidden;background:#f8fafc;
+}
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pimg>img {
+  position:absolute;inset:12px;width:calc(100% - 24px);height:calc(100% - 24px);
+  max-width:none;max-height:none;object-fit:contain;object-position:center;
+  transform:none!important;transition:none!important;
+}
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pimg .noimg {
+  padding:24px 14px;font-size:14px;text-align:center;max-width:100%;
+}
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pbody {
+  display:grid;grid-template-columns:minmax(0,1fr);
+  grid-template-rows:2.8em 34px 40px 44px;align-content:start;
+  font-size:14px;gap:6px;padding:10px 12px 12px;flex:1;
+}
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pname {
+  font-size:inherit;line-height:1.4;min-height:0;height:2.8em;
+  -webkit-line-clamp:2;overflow-wrap:anywhere;
+}
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pcat {display:none}
+body.reference-storefront .card .packmeta {min-width:0;align-self:start}
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .ppack {
+  font-size:12px;line-height:18px;min-height:18px;color:#52647b;
+}
+body.reference-storefront .card .bundle-photo-note {display:block;margin:0;font-size:11px;line-height:15px;color:#52647b}
+body.reference-storefront .card .prow {margin:0;padding:0;align-items:center}
+body.reference-storefront .card .pricewrap {column-gap:6px;row-gap:0;line-height:20px}
+body.reference-storefront .card .addcart {margin:0;width:100%;min-width:0;height:44px;padding:7px 6px;line-height:16px}
+body.reference-storefront .card .addcart-label {white-space:normal}
+#view-home .hscroll {padding:2px 2px 10px;scroll-padding-inline:2px;gap:12px}
+#view-home .hscroll .card {flex:0 0 calc((100% - 48px)/5)!important}
+#view-home .shelfnav {gap:8px}
+#view-home .shelfband .viewall {font-size:13px;min-height:44px;display:inline-flex;align-items:center;padding:8px 12px}
+#view-home .sarrow {width:44px;height:44px;min-width:44px;border-radius:10px;font-size:18px}
+#view-home .shelfbody {padding-bottom:10px}
+#view-home .cat b {font-size:13px;line-height:18px;min-height:36px;display:flex;align-items:flex-start;justify-content:center;white-space:normal}
+.cb-offer-link {min-height:44px;font-size:12px}
+.cb-offer small {font-size:13px}
+/* One policy strip stays with the hero. This independently managed section is
+   a useful order-guide shortcut instead of a second copy of those promises. */
+#view-home>.cb-trust-rail {
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  padding:4px 14px;margin:0 auto 10px;gap:4px 16px;background:#f5f8fc;
+  border:1px solid #e7edf5;font-size:13px;line-height:1.5;
+}
+.cb-trust-rail .cb-order-guide-copy {display:flex;align-items:center;gap:8px;color:#304b6a}
+.cb-trust-rail .cb-icon {width:20px;height:20px;flex:none;color:#113b65}
+.cb-trust-rail>a {display:inline-flex;align-items:center;min-height:44px;font-weight:750;color:#123d73;text-decoration:underline;text-underline-offset:3px}
+#view-home>.box-spotlight {margin:10px auto 18px}
+#view-home .box-spotlight-inner {padding:24px;gap:24px;grid-template-columns:minmax(0,1.3fr) minmax(240px,.7fr)}
+#view-home .box-spotlight h2 {font-size:28px;line-height:1.2;margin:4px 0 8px}
+#view-home .box-spotlight p {font-size:14px;line-height:1.5;margin-bottom:12px}
+#view-home .box-spotlight .guide-links {font-size:13px;margin:8px 0 0;line-height:1.7}
+#view-home .box-spotlight .guide-links a {display:inline-flex;align-items:center;min-height:32px;text-decoration:underline;text-underline-offset:3px}
+#view-home .box-points {gap:8px}
+#view-home .box-points>span {display:flex;align-items:center;gap:8px;padding:12px;font-size:13px;border-radius:12px}
+#view-home .box-points .cb-icon {width:20px;height:20px}
+/* The four-step explanation and the existing real-catalogue pick share a
+   compact layout. Published packing videos retain their existing own region. */
+#view-home>.fresh {margin-top:8px;padding:28px 20px}
+#view-home .freshwrap {max-width:1180px;display:grid;grid-template-columns:minmax(0,1fr) 310px;gap:20px 28px;align-items:center}
+#view-home .freshhead {text-align:left;margin:0}
+#view-home .freshpill {padding:5px 10px;margin-bottom:10px;border-radius:8px;background:#fff0d5;color:#8a360b;box-shadow:none;letter-spacing:1px;font-size:11px}
+#view-home .freshhead h2 {font-size:28px;line-height:1.25;margin-bottom:8px}
+#view-home .freshhead h2 em {background:none;-webkit-text-fill-color:currentColor;color:#a93712}
+#view-home .freshdesc {font-size:14px;line-height:1.55;max-width:680px;margin:0}
+#view-home .freshcols {display:contents}
+#view-home .freshlist {grid-column:1/-1;grid-row:2;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+#view-home .freshlist li {padding:14px;gap:10px;border-radius:12px;box-shadow:none;transform:none;transition:none;min-width:0}
+#view-home .freshlist .ficon {width:28px;height:28px;border-radius:8px;box-shadow:none;font-size:14px;background:#113b65}
+#view-home .freshlist .ftxt {gap:5px;min-width:0}
+#view-home .freshlist .ftxt b {font-size:13px;line-height:1.4}
+#view-home .freshlist .ftxt span {font-size:12px;line-height:1.45}
+#view-home .freshpick {grid-column:2;grid-row:1;position:static;padding:12px;border-radius:12px;box-shadow:none}
+#view-home .pickbadge {display:none}
+#view-home .pickcard {gap:12px;align-items:center}
+#view-home .pickimg {width:72px;height:72px;flex:0 0 72px}
+#view-home .pickinfo {gap:3px;min-width:0}
+#view-home .picktag {display:none}
+#view-home .pickinfo b {font-size:12px;line-height:1.4}
+#view-home .pickprice {font-size:15px}
+#view-home .pickinfo .alink {font-size:12px;color:#963610}
+#view-home>.why-section {padding-top:28px;padding-bottom:28px}
+#view-home .why-section .section-head {margin-bottom:18px}
+#view-home .why-section h2 {font-size:28px;line-height:1.25}
+#view-home .why-section .section-head p {font-size:14px;line-height:1.5}
+#view-home .why-grid {grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+#view-home .why-grid article {padding:18px;border-radius:12px;box-shadow:none}
+#view-home .why-grid article>span {font-size:0;margin-bottom:8px;color:#113b65}
+#view-home .why-grid .cb-icon {width:24px;height:24px}
+#view-home .why-grid h3 {font-size:15px}
+#view-home .why-grid p {font-size:13px;line-height:1.5}
+body.reference-storefront .fwrap p,body.reference-storefront .fwrap li,body.reference-storefront .fwrap a {font-size:14px}
+@media(min-width:1600px){#view-home .hscroll .card {flex-basis:calc((100% - 60px)/6)!important}}
+@media(min-width:761px) and (max-width:1100px){#view-home .hscroll .card {flex-basis:calc((100% - 36px)/4)!important}}
+@media(max-width:1000px){
+  #view-home .freshwrap {grid-template-columns:minmax(0,1fr) 270px;gap:18px}
+  #view-home .freshlist {grid-template-columns:repeat(2,minmax(0,1fr))}
+  #view-home .box-spotlight-inner {grid-template-columns:minmax(0,1fr)}
+  #view-home .box-points {grid-template-columns:repeat(4,minmax(0,1fr))}
+  #view-home .box-points>span {align-items:flex-start}
+}
+@media(max-width:760px){
+  body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pbody {font-size:13px;padding:9px;gap:5px}
+  body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .ppack {font-size:12px}
+  body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .price {font-size:16px}
+  #view-home .hscroll {gap:10px;padding-right:18px}
+  #view-home .hscroll .card {flex-basis:calc((100% - 10px)/2)!important}
+  #view-home .shelfband .viewall {font-size:12px;padding-inline:8px}
+  #view-home .cat {flex-basis:88px;min-width:88px;width:88px}
+  #view-home .cat b {max-width:88px;font-size:12px;line-height:16px;min-height:32px}
+  #view-home>.cb-trust-rail {padding:6px 12px;font-size:12px;gap:0}
+  #view-home .box-spotlight-inner {padding:20px 16px;gap:16px}
+  #view-home .box-spotlight h2,#view-home .freshhead h2,#view-home .why-section h2 {font-size:24px}
+  #view-home .box-points {grid-template-columns:repeat(2,minmax(0,1fr))}
+  #view-home .box-points>span {padding:10px;font-size:12px}
+  #view-home>.fresh {padding:24px 14px}
+  #view-home .freshwrap {grid-template-columns:minmax(0,1fr);gap:18px}
+  #view-home .freshlist {grid-row:auto;grid-column:auto}
+  #view-home .freshpick {grid-column:auto;grid-row:auto}
+  #view-home>.why-section {padding-block:24px}
+  #view-home .why-grid {grid-template-columns:minmax(0,1fr);gap:10px}
+  #view-home .why-grid article {display:grid;grid-template-columns:28px minmax(0,1fr);gap:4px 10px;padding:14px}
+  #view-home .why-grid article>span {grid-row:1/3;margin:0}
+  #view-home .why-grid p {grid-column:2}
+  .cb-offer small {font-size:12px}
+  .cb-offer-link {min-height:44px;font-size:12px}
+}
+@media(max-width:560px){#view-home .freshlist {grid-template-columns:minmax(0,1fr)}}
+
+@media(min-width:761px){body.reference-storefront #view-home .card .pbody {grid-template-rows:2.8em 34px 32px 44px}}

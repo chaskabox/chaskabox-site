@@ -13,8 +13,8 @@ const expectedCSS=hash(await readFile('storefront-bundle.css'));
 let ready=false;
 for(let attempt=0;attempt<24;attempt++){
  try{const [script,css]=await Promise.all([
-   fetch(base+'/home-hero-carousel.js?v=20261019-hero1'),
-   fetch(base+'/storefront-bundle.css?v=20261019-hero1')
+   fetch(base+'/home-hero-carousel.js?v=20261019-hero2'),
+   fetch(base+'/storefront-bundle.css?v=20261019-ui38')
   ]);
   if(script.ok&&css.ok&&hash(await script.text())===expected&&hash(await css.text())===expectedCSS){ready=true;break;}
  }catch{}

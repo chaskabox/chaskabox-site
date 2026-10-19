@@ -8,7 +8,7 @@ const hash=s=>createHash('sha256').update(s).digest('hex');
 const css=await readFile('header-discovery-preview.css','utf8'),expected=hash(css);
 let ready=false;
 for(let i=0;i<20;i++){
- try{const r=await fetch(base+'/header-discovery-preview.css?v=20261019-header3',{cache:'no-store'});if(r.ok&&hash(await r.text())===expected){ready=true;break}}catch{}
+ try{const r=await fetch(base+'/header-discovery-preview.css?v=20261019-header4',{cache:'no-store'});if(r.ok&&hash(await r.text())===expected){ready=true;break}}catch{}
  await new Promise(r=>setTimeout(r,5000));
 }
 if(!ready)throw Error('Preview is not exact candidate stylesheet');
@@ -35,8 +35,8 @@ for(const [path,width] of [['/',320],['/',390],['/',1440],['/shop/',390],['/bran
    entry.cards=await page.locator(sel).count();
    if(entry.cards<1)throw Error('Product cards not visible');
    const p=page.locator(sel).first();
-   entry.cardStyle=await p.evaluate(el=>{const name=el.querySelector('.pname'),body=el.querySelector('.pbody'),photo=el.querySelector('.pimg');return {column:getComputedStyle(el).flexDirection,body:getComputedStyle(body).flexDirection,name:name?getComputedStyle(name).maxHeight:'none',photo:photo?getComputedStyle(photo).aspectRatio:'none'}});
-   if(entry.cardStyle.column!=='column'||entry.cardStyle.body!=='column')throw Error('Product card layout not aligned');
+   entry.cardStyle=await p.evaluate(el=>{const name=el.querySelector('.pname'),body=el.querySelector('.pbody'),photo=el.querySelector('.pimg');return {column:getComputedStyle(el).flexDirection,body:getComputedStyle(body).display,name:name?getComputedStyle(name).maxHeight:'none',photo:photo?getComputedStyle(photo).aspectRatio:'none'}});
+   if(entry.cardStyle.column!=='column'||!['grid','flex'].includes(entry.cardStyle.body))throw Error('Product card layout not aligned');
   }
   if(path==='/')entry.hero=await page.locator('#view-home [data-hero-dot]').count();
   if(path==='/'&&entry.hero!==3)throw Error('Original three hero slides missing');

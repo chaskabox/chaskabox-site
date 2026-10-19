@@ -35,7 +35,7 @@ test('bag delivery progress follows saved thresholds including free delivery fro
 });
 test('reveal content remains visible without an observer and when motion preference changes',()=>{
  const fallback=browser();fallback.run('initReveals();observeReveals();');assert.ok(fallback.node('reveal').classList.contains('in'));assert.equal(fallback.node('html').classList.contains('motion-reveals'),false);
- const b=browser({observer:true});b.run('initReveals();');assert.equal(b.node('html').classList.contains('motion-reveals'),true);b.node('heroCollage').style.transform='rotateX(2deg)';b.media.matches=true;b.media.changed();assert.ok(b.ctx.disconnected);assert.ok(b.node('reveal').classList.contains('in'));assert.equal(b.node('heroCollage').style.transform,'');
+ const b=browser({observer:true});b.run('initReveals();');assert.equal(b.node('html').classList.contains('motion-reveals'),false);assert.ok(b.node('reveal').classList.contains('in'));b.node('heroCollage').style.transform='rotateX(2deg)';b.media.matches=true;b.media.changed();assert.ok(b.node('reveal').classList.contains('in'));assert.equal(b.node('heroCollage').style.transform,'');
  b.media.matches=false;b.media.changed();assert.ok(b.node('reveal').classList.contains('in'));
 });
 test('SPA navigation preserves query filters and document/modified clicks stay native',()=>{
@@ -100,7 +100,7 @@ test('CMS settings preserve the header announcement spans and respect reduced mo
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(css,/\.promo\[hidden\]\{display:none!important\}/);
 });
-test('rotating owner-set promo text shows on desktop/mobile and stops while hidden',()=>{
+test('owner-set announcement stays static and preserves all text on desktop/mobile',()=>{
  const b=browser();
  let tick=null;b.ctx.setInterval=fn=>{tick=fn;return 1;};
  b.ctx.clearInterval=()=>{};
@@ -109,11 +109,12 @@ test('rotating owner-set promo text shows on desktop/mobile and stops while hidd
  b.ctx.document.querySelector=s=>s==='.promo'?b.node('promo'):oldQuery(s);
  b.node('promo').querySelector=s=>s==='.promo-desktop'?b.node('promoDesktop'):null;
  b.run("STORE_CONFIG={theme:{},settings:{promo_text:'Original sealed packs · Pakistan-wide delivery · COD + prepaid'}};initPromo();");
+ const full='Original sealed packs · Pakistan-wide delivery · COD + prepaid';
+ assert.equal(b.node('promoDesktop').textContent,full);
+ assert.equal(b.node('promoMsg').textContent,full);
+ assert.equal(tick,null);
+ b.ctx.ChaskaPromo.setText('Owner update | full text retained');
+ assert.equal(b.node('promoMsg').textContent,'Owner update | full text retained');
+ b.ctx.ChaskaPromo.setText('');
  assert.equal(b.node('promoDesktop').textContent,'Original sealed packs');
- assert.equal(b.node('promoMsg').textContent,'Original sealed packs');
- assert.equal(typeof tick,'function');
- tick();assert.equal(b.node('promoDesktop').textContent,'Pakistan-wide delivery');
- assert.equal(b.node('promoMsg').textContent,'Pakistan-wide delivery');
- b.node('promo').hidden=true;tick();assert.equal(b.node('promoDesktop').textContent,'Pakistan-wide delivery');
- b.node('promo').hidden=false;b.media.matches=true;tick();assert.equal(b.node('promoDesktop').textContent,'Pakistan-wide delivery');
 });

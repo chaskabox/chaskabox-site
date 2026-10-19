@@ -7,7 +7,7 @@ test('Same branded bag SVG appears once per storefront route with original actio
  for(const file of pages){const s=read(file);assert.equal((s.match(/cb-bag-icon-v2/g)||[]).length,1,file);assert.match(s,/aria-label="Open shopping bag"/);assert.match(s,/class="cartcount"/);assert.match(s,/(onclick="openDrawer\(\)"|href="\/cart\/")/);}
 });
 test('Product polish preserves fixed image/name/button geometry and reduced motion',()=>{
- const s=read('header-discovery-preview.css');
- for(const needle of ['.pimg img','.pname','.ppack','.prow','.addcart','prefers-reduced-motion:reduce','.card.reveal:not(.in)'])assert.ok(s.includes(needle),needle);
+ const s=read('storefront-video-finish-20261019.css')+read('sticky-motion-polish.css');
+ for(const needle of ['.pimg>img','.pname','.ppack','.prow','.addcart','prefers-reduced-motion: reduce','.reveal:not(.in)'])assert.ok(s.includes(needle),needle);
  assert.match(read('index.html'),/hero-slider-controls/);
 });

@@ -1,4 +1,4 @@
-name: Storefront Phases 1–2 branch preview
+name: Storefront video audit Phases 1–6 preview
 on:
   push:
     branches: ['improve/video-hero-phase1']
@@ -7,7 +7,7 @@ permissions:
 jobs:
   hero-preview:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
@@ -24,12 +24,48 @@ jobs:
         env:
           HERO_PREVIEW_URL: https://improve-video-hero-phase1.chaskabox-site.pages.dev
         run: node tools/hero-phase1-preview.mjs
+      - name: Verify aligned cards, immediate content and compact sections
+        env:
+          HERO_PREVIEW_URL: https://improve-video-hero-phase1.chaskabox-site.pages.dev
+        run: node tools/video-phase6-preview.mjs
       - name: Save branch-preview measurements and screenshots
         if: always()
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: storefront-phases1-2-preview
+          name: storefront-video-phases1-6-preview
           path: |
             test-results/hero-phase1/
             test-results/navigation-phase2/
+            test-results/video-phase6/
+          retention-days: 7
+  candidate-mobile-lab:
+    needs: hero-preview
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Measure two mobile samples per candidate route
+        env:
+          CANDIDATE_URL: https://improve-video-hero-phase1.chaskabox-site.pages.dev
+        run: |
+          set -euo pipefail
+          mkdir -p test-results/video-phase6-lab
+          export CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "playwright-core";console.log(chromium.executablePath())')"
+          for sample in 1 2; do
+            npx --yes lighthouse@12.8.2 "$CANDIDATE_URL/" --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance --output=json --output-path="test-results/video-phase6-lab/home-$sample.json" --quiet
+            npx --yes lighthouse@12.8.2 "$CANDIDATE_URL/shop/" --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance --output=json --output-path="test-results/video-phase6-lab/shop-$sample.json" --quiet
+          done
+          node tools/performance-audit-summary.mjs test-results/video-phase6-lab/*.json
+      - name: Save reproducible candidate lab evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: storefront-video-phase6-mobile-lab
+          path: test-results/video-phase6-lab/
           retention-days: 7

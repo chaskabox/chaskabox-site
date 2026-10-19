@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
-test('home hero advances every 5 seconds, with controls and accessibility pauses',()=>{
+for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation keeps controls, timer and accessibility pauses':'home hero advances every 5 seconds, with controls and accessibility pauses',()=>{
   const code=readFileSync(new URL('../home-hero-carousel.js',import.meta.url),'utf8');
   const events={}; const rootEvents={}; const docEvents={}; const windowEvents={};
   const media={matches:false,addEventListener(_name,fn){this.onChange=fn;}};
@@ -42,9 +42,10 @@ test('home hero advances every 5 seconds, with controls and accessibility pauses
     contains(element){return Boolean(element?.isHeroChild);},
     addEventListener(name,fn){rootEvents[name]=fn;}
   };
+  let mounted=!lazy;
   const doc={
     hidden:false,activeElement:null,
-    querySelector(){return root;},
+    querySelector(){return mounted?root:null;},
     createTextNode(text){return {text};},
     createElement(){return {className:'',textContent:''};},
     addEventListener(name,fn){docEvents[name]=fn;}
@@ -56,6 +57,10 @@ test('home hero advances every 5 seconds, with controls and accessibility pauses
     clearInterval(id){if(scheduled?.id===id)scheduled=null;}
   };
   vm.runInNewContext(code,sandbox,{filename:'home-hero-carousel.js'});
+  if(lazy){
+    assert.equal(scheduled,null,'an inactive Home template starts no timer');
+    mounted=true;docEvents['chaskabox:home-mounted']();
+  }
   assert.equal(root.dataset.heroSlide,'1');
   assert.equal(scheduled?.delay,5000);
   assert.equal(label.textContent,'Pause');
@@ -95,4 +100,8 @@ test('home hero advances every 5 seconds, with controls and accessibility pauses
   media.matches=false;media.onChange();
   assert.equal(autoplay.disabled,false);
   assert.equal(scheduled,null,'leaving reduced motion preserves a user pause');
+  const selected=root.dataset.heroSlide;
+  docEvents['chaskabox:home-mounted']();
+  assert.equal(root.dataset.heroSlide,selected,'repeated initialization preserves the selected slide');
+  assert.equal(scheduled,null,'repeated initialization preserves the deliberate pause');
 });

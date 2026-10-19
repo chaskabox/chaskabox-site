@@ -9,7 +9,7 @@ const pages=['index.html','shop/index.html','bundles/index.html','brands/index.h
 test('all 14 public HTML entries use the same sticky header stylesheet',()=>{
  for(const path of pages){
   const html=read(path);
-  assert.match(html,/sticky-motion-polish\.css\?v=20261019-sticky3/,path);
+  assert.match(html,/sticky-motion-polish\.css\?v=20261019-sticky4/,path);
   assert.match(html,/<header(?:\s|>)/,path);
  }
 });

@@ -16,7 +16,7 @@
 {"@context":"https://schema.org","@type":"Store","name":"ChaskaBox","description":"Pakistani snacks online store","url":"https://chaskabox.online/","telephone":"+92-332-0005381","address":{"@type":"PostalAddress","addressLocality":"Muzaffargarh","addressCountry":"PK"},"paymentAccepted":"Cash on Delivery, JazzCash, Bank Transfer"}
 </script>
 
-<link rel="stylesheet" href="/storefront-bundle.css?v=20261019-hero1">
+<link rel="stylesheet" href="/storefront-bundle.css?v=20261019-ui38">
 
 
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -24,8 +24,8 @@
 <script type="application/ld+json" id="category-breadcrumb-schema">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://chaskabox.online/"},{"@type":"ListItem","position":2,"name":"Imli & Ice Lollies","item":"https://chaskabox.online/category/imli-and-ice-lollies/"}]}</script>
 
 <script src="/page-copy-runtime.js?v=20261018-cms1" defer></script>
-<link rel="stylesheet" href="/header-discovery-preview.css?v=20261019-header3">
-<link rel="stylesheet" href="/sticky-motion-polish.css?v=20261019-sticky3">
+<link rel="stylesheet" href="/header-discovery-preview.css?v=20261019-header4">
+<link rel="stylesheet" href="/sticky-motion-polish.css?v=20261019-sticky4">
 <link rel="stylesheet" href="/header-one-line.css?v=20261019-line7">
 <link rel="stylesheet" href="/search-whatsapp-float.css?v=20261019-wa2">
 <link rel="stylesheet" href="/brands-header-dropdown.css?v=20261019-brand3">
@@ -92,17 +92,26 @@
 <main id="main">
 <div id="view-home"></div>
 <template id="tpl-home">
-  <section class="hero">
+  <section class="hero hero-editorial hero-packing-preview hero-approved-three" aria-label="Discover ChaskaBox snacks">
+    <img class="hero-scene" src="/images/chaskabox-approved-hero-01-20261018.avif" width="1600" height="550" alt="ChaskaBox nostalgic snacks banner artwork; illustrated packaging, exact products in Shop" decoding="async" fetchpriority="high">
     <div class="herowrap">
       <div class="herotxt">
-        <span class="kick"><span class="dot"></span> <cb-copy data-cb-copy="t_2ace88be" style="display:contents">Pakistan ka snack box, dil se</cb-copy></span>
-        <div class="hero-eyebrow"><cb-copy data-cb-copy="t_5363c8ff" style="display:contents">PAKISTANI SNACKS • SOURCED AFTER ORDER</cb-copy></div>
-        <h1><cb-copy data-cb-copy="t_d17dfa20" style="display:contents">Bachpan Ka Zaiqa,</cb-copy> <span class="hl"><cb-copy data-cb-copy="t_0cc8d599" style="display:contents">Ab Ghar Baithe.</cb-copy></span></h1>
-        <p><cb-copy data-cb-copy="t_98e811d3" style="display:contents">Pakistani favourites, sourced after your order. Delivered across Pakistan.</cb-copy></p>
+        <div class="hero-eyebrow"><span aria-hidden="true" class="eyebrow-spark">✦</span> ORIGINAL PAKISTANI SNACKS</div>
+        <h1>Bachpan Ka Zaiqa, <span class="hl">Ab Ghar Baithe.</span></h1>
+        <p>Apni bachpan wali candies, nimco aur snacks phir se discover karein. Order ke baad carefully sourced, Pakistan bhar mein delivery.</p>
         <div class="hero-actions">
-          <a class="cta" href="/shop/"><cb-copy data-cb-copy="t_849c8bc9" style="display:contents">Shop All Snacks</cb-copy> <span>›</span></a>
-          <a class="cta ghost" href="/bundles/"><cb-copy data-cb-copy="t_e499b416" style="display:contents">Explore Chaska Boxes</cb-copy></a>
+          <a class="cta" href="/shop/">Shop All Snacks <span aria-hidden="true">↗</span></a>
+          <a class="cta ghost" href="/bundles/">Explore Chaska Boxes <span aria-hidden="true">→</span></a>
         </div>
+        <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
+          <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
+          <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
+          <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-pressed="false"></button>
+          <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-pressed="false"></button>
+          <button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>
+          <button type="button" data-hero-autoplay aria-label="Pause automatic banner rotation"><span data-hero-autoplay-icon aria-hidden="true">Ⅱ</span><span data-hero-autoplay-label>Pause</span></button>
+        </div>
+
         <div class="hero-search">
           <label class="sr-only" for="homeSearch"><cb-copy data-cb-copy="t_09d12c34" style="display:contents">Search snacks</cb-copy></label>
           <div class="hero-searchbox"><span aria-hidden="true">🔎</span><input id="homeSearch" autocomplete="off" placeholder="Search Slanty, Cocomo, chocolates..." oninput="renderHomeSearchSuggestions(this.value)" onkeydown="homeSearchKey(event)" data-cb-placeholder="t_bc8b0f1f"><button type="button" onclick="submitHomeSearch()"><cb-copy data-cb-copy="t_c646a2c9" style="display:contents">Search</cb-copy></button></div>
@@ -110,14 +119,31 @@
         </div>
 
       </div>
-      <div class="heroimg"><div class="herocollage" id="heroCollage"></div></div>
+      <div class="heroimg" aria-hidden="true">
+        <div class="herocollage" id="heroCollage"></div>
+      </div>
     </div>
-    <div class="herotrust">
+
+    <span class="hero-art-note"><cb-copy data-cb-copy="t_86e70455" style="display:contents">Illustrative hero artwork · exact products shown in Shop</cb-copy></span>
+
+    <div class="herotrust" aria-label="Delivery and order information — same on all hero slides">
       <div class="htrustwrap">
-        <div><span class="hic">🛡️</span><span><b><cb-copy data-cb-copy="t_42850488" style="display:contents">Original Brands</cb-copy></b><small><cb-copy data-cb-copy="t_8c4ee7da" style="display:contents">Trusted Pakistani favourites</cb-copy></small></span></div>
-        <div><span class="hic">🛍️</span><span><b><cb-copy data-cb-copy="t_524c9f7a" style="display:contents">Sourced after order</cb-copy></b><small><cb-copy data-cb-copy="t_58cee9c2" style="display:contents">Picked after your order</cb-copy></small></span></div>
-        <div><span class="hic">💵</span><span><b><cb-copy data-cb-copy="t_0d900ddd" style="display:contents">Cash on Delivery</cb-copy></b><small><cb-copy data-cb-copy="t_e10bc08c" style="display:contents">Pay when it arrives</cb-copy></small></span></div>
-        <div><span class="hic">🚚</span><span><b><cb-copy data-cb-copy="t_340e6851" style="display:contents">Pakistan Wide</cb-copy></b><small><cb-copy data-cb-copy="t_6ad6b989" style="display:contents">4–7 day delivery</cb-copy></small></span></div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 20 6v6c0 5-4 8-8 10-4-2-8-5-8-10V6Z"/><path d="m8.5 12 2.3 2.3 4.7-5"/></svg></span>
+          <span><b><cb-copy data-cb-copy="t_42850488" style="display:contents">Original Brands</cb-copy></b><small><cb-copy data-cb-copy="t_8c4ee7da" style="display:contents">Trusted Pakistani favourites</cb-copy></small></span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16v12H4zM3 9l2-5h14l2 5M12 4v17M4 13h16"/></svg></span>
+          <span><b><cb-copy data-cb-copy="t_4ccc4efb" style="display:contents">Carefully Sourced</cb-copy></b><small><cb-copy data-cb-copy="t_58cee9c2" style="display:contents">Picked after your order</cb-copy></small></span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v10H3zM14 10h4l3 4v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>
+          <span><b><cb-copy data-cb-copy="t_f4e0db67" style="display:contents">Nationwide Delivery</cb-copy></b><small>Estimated 4–7 days</small></span>
+        </div>
+        <div class="hero-trust-item hero-trust-cod">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></span>
+          <span><b><cb-copy data-cb-copy="t_0d900ddd" style="display:contents">Cash on Delivery</cb-copy></b><small><span data-cod-advance-note>Rs. <span data-cod-advance-amount>500</span> advance before dispatch; </span>balance on delivery</small></span>
+        </div>
       </div>
     </div>
   </section>
@@ -127,12 +153,28 @@
     <div class="cats" id="catTiles"></div>
   </section>
 
+  <section class="cb-trust-rail" aria-label="Order guide">
+    <span class="cb-order-guide-copy"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 7 9-4 9 4-9 5Zm0 0v10l9 4 9-4V7M12 12v9M7 5l10 5"/></svg><cb-copy data-cb-copy="t_1f45d2e6" style="display:contents">A personal snack run, from your bag to your door.</cb-copy></span>
+    <a href="/guides/how-chaskabox-orders-work/"><cb-copy data-cb-copy="t_9fe037cb" style="display:contents">How ordering works →</cb-copy></a>
+  </section>
+
   <div id="shelves"></div>
+  <div class="cb-offers">
+    <a class="cb-offer cb-offer-box" href="/bundles/"><img class="cb-offer-art" data-src="/images/hero-approved-brand-polish-20261017.webp" alt="" loading="lazy" fetchpriority="low" decoding="async" width="1983" height="793">
+      <noscript><img class="cb-offer-art" src="/images/hero-approved-brand-polish-20261017.webp" alt="" loading="lazy" decoding="async" width="1983" height="793"></noscript>
+      <div><b><cb-copy data-cb-copy="t_428f1be5" style="display:contents">Curated Chaska Boxes</cb-copy></b><small><cb-copy data-cb-copy="t_44b97136" style="display:contents">Snacks for gifting, movie nights and memorable moments.</cb-copy></small><span class="cb-offer-link"><cb-copy data-cb-copy="t_dee431d3" style="display:contents">Explore Boxes →</cb-copy></span></div>
+      <span class="cb-offer-media" id="cbBoxMedia" aria-hidden="true"><img src="/images/optimized-p253-320.webp" srcset="/images/optimized-p253-320.webp 320w, /images/optimized-p253-600.webp 600w" sizes="150px" alt="" loading="lazy" width="150" height="150" decoding="async"><img src="/images/optimized-p254-320.webp" srcset="/images/optimized-p254-320.webp 320w, /images/optimized-p254-600.webp 600w" sizes="150px" alt="" loading="lazy" width="150" height="150" decoding="async"></span>
+    </a>
+    <a class="cb-offer cb-offer-deals" href="/shop/?badge=Sale" onclick="goBadge('Sale');return false">
+      <div><b><cb-copy data-cb-copy="t_1694c8fd" style="display:contents">Special Snack Deals</cb-copy></b><small><cb-copy data-cb-copy="t_9bed9cf9" style="display:contents">Explore current offers on real ChaskaBox products.</cb-copy></small><span class="cb-offer-link"><cb-copy data-cb-copy="t_135629c9" style="display:contents">Shop Current Deals →</cb-copy></span></div>
+      <span class="cb-offer-media" id="cbDealsMedia" aria-hidden="true"><img src="/images/optimized-p233-320.webp" srcset="/images/optimized-p233-320.webp 320w, /images/optimized-p233-490.webp 490w" sizes="150px" alt="" loading="lazy" width="150" height="150" decoding="async"><img src="/images/optimized-p235-320.webp" srcset="/images/optimized-p235-320.webp 320w, /images/optimized-p235-499.webp 499w" sizes="150px" alt="" loading="lazy" width="150" height="150" decoding="async"></span>
+    </a>
+  </div>
 
   <section class="box-spotlight reveal">
     <div class="box-spotlight-inner">
       <div><span class="eyebrow light"><cb-copy data-cb-copy="t_8394cf84" style="display:contents">CURATED FOR EVERY MOOD</cb-copy></span><h2><cb-copy data-cb-copy="t_90ed8c67" style="display:contents">Chaska Boxes</cb-copy></h2><p><cb-copy data-cb-copy="t_a86e8e55" style="display:contents">Bachpan cravings, movie night ya office break — listed retail packs choose karo, phir apni bag ko apne hisaab se adjust karo.</cb-copy></p><a class="cta" href="/snack-boxes/"><cb-copy data-cb-copy="t_47b0c975" style="display:contents">Find your snack moment</cb-copy> <span>›</span></a><p class="guide-links"><a href="/bundles/"><cb-copy data-cb-copy="t_4e7d5cee" style="display:contents">Compare mixed boxes</cb-copy></a> · <a href="/guides/"><cb-copy data-cb-copy="t_b28e1709" style="display:contents">Snack and order guides</cb-copy></a></p></div>
-      <div class="box-points"><span><cb-copy data-cb-copy="t_4a7e6e8c" style="display:contents">🎁 Gift-ready</cb-copy></span><span><cb-copy data-cb-copy="t_ba64ecb9" style="display:contents">🌶️ Mood-based picks</cb-copy></span><span><cb-copy data-cb-copy="t_d13880f5" style="display:contents">📦 Easy bundle shopping</cb-copy></span><span><cb-copy data-cb-copy="t_2f68c4fc" style="display:contents">💛 Packed with a personal touch</cb-copy></span></div>
+      <div class="box-points"><span><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 7 9-4 9 4-9 5Zm0 0v10l9 4 9-4V7M12 12v9M7 5l10 5"/></svg><cb-copy data-cb-copy="t_0a18e4c5" style="display:contents">Gift-ready</cb-copy></span><span><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6Zm-4 9 3 3 5-6"/></svg><cb-copy data-cb-copy="t_5e2d8b0e" style="display:contents">Mood-based picks</cb-copy></span><span><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 7 9-4 9 4-9 5Zm0 0v10l9 4 9-4V7M12 12v9M7 5l10 5"/></svg><cb-copy data-cb-copy="t_d2c83acb" style="display:contents">Easy bundle shopping</cb-copy></span><span><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11a8 8 0 0 1-8 8H7l-4 3V7a5 5 0 0 1 5-5h5a8 8 0 0 1 8 9Z"/><path d="M7 8h10M7 12h7"/></svg><cb-copy data-cb-copy="t_5c7116be" style="display:contents">Personal touch</cb-copy></span></div>
     </div>
   </section>
 
@@ -164,14 +206,11 @@
   </section>
 
   <section class="section why-section reveal">
-    <div class="section-head centered"><div><span class="eyebrow"><cb-copy data-cb-copy="t_a2571032" style="display:contents">WHY CHASKABOX?</cb-copy></span><h2><cb-copy data-cb-copy="t_8f0d29f9" style="display:contents">Simple shopping. Real trust.</cb-copy></h2><p style="max-width:600px;margin:10px auto 0;color:var(--muted)"><cb-copy data-cb-copy="t_515af262" style="display:contents">Bachpan ke woh zaiqe — ab ghar baithe. Hum market se fresh chun kar laate hain, taake aapko mile wahi asli chaska jo aap yaad karte hain.</cb-copy></p></div></div>
+    <div class="section-head centered"><div><span class="eyebrow"><cb-copy data-cb-copy="t_a2571032" style="display:contents">WHY CHASKABOX?</cb-copy></span><h2><cb-copy data-cb-copy="t_8f0d29f9" style="display:contents">Simple shopping. Real trust.</cb-copy></h2><p style="max-width:600px;margin:10px auto 0;color:var(--muted)"><cb-copy data-cb-copy="t_515af262" style="display:contents">Clear pack details, useful bundles and a real person to help.</cb-copy></p></div></div>
     <div class="why-grid">
-      <article><span>🛡️</span><h3><cb-copy data-cb-copy="t_78a43cda" style="display:contents">Original products</cb-copy></h3><p><cb-copy data-cb-copy="t_e5fdc5e7" style="display:contents">Known market brands, clearly listed pack sizes and pricing.</cb-copy></p></article>
-      <article><span>🌿</span><h3><cb-copy data-cb-copy="t_36d3b9e8" style="display:contents">Sourced fresh</cb-copy></h3><p><cb-copy data-cb-copy="t_8af4cec9" style="display:contents">Hum stock nahi rakhte — aapke order par market se fresh pick karte hain.</cb-copy></p></article>
-      <article><span>🚚</span><h3><cb-copy data-cb-copy="t_dcb23a26" style="display:contents">Clear delivery</cb-copy></h3><p><cb-copy data-cb-copy="t_a316f25b" style="display:contents">4–7 day nationwide delivery with COD, JazzCash and Bank Transfer options.</cb-copy></p></article>
-      <article><span>📦</span><h3><cb-copy data-cb-copy="t_430032de" style="display:contents">Easy bundles</cb-copy></h3><p><cb-copy data-cb-copy="t_73960b21" style="display:contents">Chaska Boxes make gifting and snack stocking faster.</cb-copy></p></article>
-      <article><span>💬</span><h3><cb-copy data-cb-copy="t_e7d6367d" style="display:contents">Human support</cb-copy></h3><p><cb-copy data-cb-copy="t_bb6cd3b5" style="display:contents">Need help? WhatsApp ChaskaBox directly for order support.</cb-copy></p></article>
-      <article><span>🇵🇰</span><h3><cb-copy data-cb-copy="t_3a583ecb" style="display:contents">Nostalgic picks</cb-copy></h3><p><cb-copy data-cb-copy="t_bd041f50" style="display:contents">Wohi snacks jo bachpan ki yaadein taaza kar dein — carefully curated.</cb-copy></p></article>
+      <article><span aria-hidden="true"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m12 2 9 4v6c0 5-9 10-9 10S3 17 3 12V6Zm-4 9 3 3 5-6"/></svg></span><h3><cb-copy data-cb-copy="t_78a43cda" style="display:contents">Original products</cb-copy></h3><p><cb-copy data-cb-copy="t_e5fdc5e7" style="display:contents">Known market brands, clearly listed pack sizes and pricing.</cb-copy></p></article>
+      <article><span aria-hidden="true"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m3 7 9-4 9 4-9 5Zm0 0v10l9 4 9-4V7M12 12v9M7 5l10 5"/></svg></span><h3><cb-copy data-cb-copy="t_430032de" style="display:contents">Easy bundles</cb-copy></h3><p><cb-copy data-cb-copy="t_73960b21" style="display:contents">Chaska Boxes make gifting and snack stocking faster.</cb-copy></p></article>
+      <article><span aria-hidden="true"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21 11a8 8 0 0 1-8 8H7l-4 3V7a5 5 0 0 1 5-5h5a8 8 0 0 1 8 9Z"/><path d="M7 8h10M7 12h7"/></svg></span><h3><cb-copy data-cb-copy="t_e7d6367d" style="display:contents">Human support</cb-copy></h3><p><cb-copy data-cb-copy="t_bb6cd3b5" style="display:contents">Need help? WhatsApp ChaskaBox directly for order support.</cb-copy></p></article>
     </div>
   </section>
 
@@ -179,12 +218,11 @@
     <div class="section-head"><div><span class="eyebrow"><cb-copy data-cb-copy="t_154205cf" style="display:contents">QUICK ANSWERS</cb-copy></span><h2><cb-copy data-cb-copy="t_051bc5e1" style="display:contents">Before you order</cb-copy></h2></div></div>
     <div class="faq-grid">
       <details open><summary><cb-copy data-cb-copy="t_0ad7f201" style="display:contents">Delivery kitne din mein hoti hai?</cb-copy></summary><p><cb-copy data-cb-copy="t_22ee75f8" style="display:contents">Pakistan mein estimated delivery 4–7 days hai.</cb-copy></p></details>
-      <details><summary><cb-copy data-cb-copy="t_cf494ba9" style="display:contents">Cash on Delivery available hai?</cb-copy></summary><p data-cod-policy-copy>Ji haan. COD available hai; up to Rs. 500 advance is verified before dispatch and adjusted within the total. Remaining balance is paid on delivery. Current delivery charge Rs. 300 hai.</p></details>
+      <details><summary><cb-copy data-cb-copy="t_cf494ba9" style="display:contents">Cash on Delivery available hai?</cb-copy></summary><p data-cod-policy-copy>Ji haan. COD available hai; <span data-cod-advance-note>Rs. <span data-cod-advance-amount>500</span> advance order ke baad aur dispatch se pehle verify hota hai. Yeh order total mein adjust hota hai. </span>Current delivery charge Rs. 300 hai.</p></details>
       <details><summary><cb-copy data-cb-copy="t_58742832" style="display:contents">Free delivery kaise milti hai?</cb-copy></summary><p data-prepaid-shipping-copy>JazzCash ya Bank Transfer prepaid payment par Rs. 5,000+ orders ke liye current delivery free hai.</p></details>
       <details><summary><cb-copy data-cb-copy="t_3ecfd6d1" style="display:contents">Products original hain?</cb-copy></summary><p><cb-copy data-cb-copy="t_e2007c7e" style="display:contents">ChaskaBox original market brands aur clearly listed products sell karta hai.</cb-copy></p></details>
     </div>
   </section>
-</div>
 
 </template>
 <div id="view-shop">
@@ -205,111 +243,111 @@
     <aside class="filters" id="shopSidebar"></aside>
     <div class="shopmain">
       <div class="toolbar" id="shopFilters"></div>
-      <div class="grid" id="shopGrid"><article class="card"><div class="pbody"><a class="pname" href="/product/5/">Mayfair | Delight Chocolate Cream Croissant</a><div class="ppack">Pack of 6</div><p class="price">Rs. 499</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/8/">Mayfair | Special Choco Delight Biscuit</a><div class="ppack">Pack of 12</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/9/">Mayfair | Special Chocolate Biscuit</a><div class="ppack">Pack of 12</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/10/">Mayfair | Cremo Chocolate</a><div class="ppack">Pack of 24</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/11/">Mayfair | Wow Chocolate</a><div class="ppack">Pack of 24</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/12/">Mayfair | Hearts Puff Pastry</a><div class="ppack">Pack of 24</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/13/">Mayfair | Cremo Strawberry Sandwich Biscuit</a><div class="ppack">Pack of 24</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/16/">Ap | Love Letter Pillow Wafer Chocolate</a><div class="ppack">Pack of 24</div><p class="price">Rs. 396</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/18/">Ap | Love Letter Double Stick Chocolate</a><div class="ppack">Pack of 24</div><p class="price">Rs. 396</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/27/">Hilal | Cupkake Double Chocolate With Sprinkles</a><div class="ppack">Pack of 12</div><p class="price">Rs. 655</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/28/">Hilal | Cupkake Chocolate</a><div class="ppack">Pack of 12</div><p class="price">Rs. 655</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/29/">Hilal | Cupkake Birthday</a><div class="ppack">Pack of 12</div><p class="price">Rs. 655</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/30/">Hilal | Creamfillz Vanilla Cake</a><div class="ppack">Pack of 10</div><p class="price">Rs. 545</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/31/">Hilal | Bake Time Plain</a><div class="ppack">Pack of 6</div><p class="price">Rs. 545</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/32/">Hilal | Bake Time Chocolate</a><div class="ppack">Pack of 6</div><p class="price">Rs. 545</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/33/">Hilal | Kake Strawberry</a><div class="ppack">Pack of 24</div><p class="price">Rs. 435</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/34/">Hilal | Panda Kake Strawberry</a><div class="ppack">Pack of 8</div><p class="price">Rs. 435</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/35/">Hilal | Cupkake Double Chocolate</a><div class="ppack">Pack of 12</div><p class="price">Rs. 435</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/36/">Giggly | Swiss Roll Strawberry</a><div class="ppack">Pack of 12</div><p class="price">Rs. 410</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/37/">Giggly | Jam Roll Mango</a><div class="ppack">Pack of 12</div><p class="price">Rs. 410</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/38/">Jojo | Mini Beans</a><div class="ppack">Pack of 4 (Rs. 75)</div><p class="price">Rs. 300</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/39/">Candyland | Bubble Your Name</a><div class="ppack">Pack of 100</div><p class="price">Rs. 650</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/42/">Hilal | Ding Dong Crystal Bubble Gum</a><div class="ppack">Pack of 50</div><p class="price">Rs. 450</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/43/">Hilal | Ding Dong Big Bubble</a><div class="ppack">Pack of 50</div><p class="price">Rs. 450</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/46/">Hilal | Ding Dong Original Bubble Gum</a><div class="ppack">Pack of 50</div><p class="price">Rs. 450</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/48/">Candyland | Yums Sour</a><div class="ppack">Pack of 24</div><p class="price">Rs. 396</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/49/">Candyland | Yums Fruity</a><div class="ppack">Pack of 24</div><p class="price">Rs. 396</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/54/">Giggly | Butter Fudge Butter Milk Toffee</a><div class="ppack">Pack of 120</div><p class="price">Rs. 1,050</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/55/">Mayfair | Eclairs Pouch</a><div class="ppack">Pack of 90</div><p class="price">Rs. 750</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/57/">Candyland | Now Chocolate Paste</a><div class="ppack">Pack of 50</div><p class="price">Rs. 650</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/60/">Giggly | Silk Milky Chocolate</a><div class="ppack">Pack of 15</div><p class="price">Rs. 550</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/62/">Hilal | Pan Pasand Gold Jar</a><div class="ppack">Pack of 50</div><p class="price">Rs. 450</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/63/">Giggly | Miltof Caramel Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 450</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/64/">Giggly | Big Amrood Chaska Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 450</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/66/">Mayfair | Milko Toffee Caramel with Milky Filling</a><div class="ppack">Pack of 90</div><p class="price">Rs. 450</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/68/">Giggly | Big Cola Candy Jar</a><div class="ppack">Pack of 50</div><p class="price">Rs. 430</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/69/">Candyland | Fanty Gold Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/70/">Candyland | Butter Scotch Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/71/">Mayfair | Fruit Gala Blue Berry Chew</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/72/">Mayfair | Fruit Gala Strawberry Chew</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/73/">Mayfair | Fruit Gala Black Currant Chew</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/74/">Mayfair | Creamers Strawberry Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/75/">Mayfair | Frooto Peach XL Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/76/">Mayfair | Frooto Orange XL Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/77/">Mayfair | Frooto Mango XL Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/78/">Candyland | Kairi Masala Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/79/">Candyland | Kulfa Candy</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/80/">Candyland | Amrood Masala Candy Jar</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/82/">Candyland | Khoya Candy Jar</a><div class="ppack">Pack of 50</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/83/">Giggly | More Caramel Filled Chocolate</a><div class="ppack">Pack of 40</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/85/">Giggly | Chunks Peanut Caramel Chocolate Bar</a><div class="ppack">Pack of 4</div><p class="price">Rs. 360</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/86/">Giggly | Opus Cubes Caramel Filled Chocolate</a><div class="ppack">Pack of 4</div><p class="price">Rs. 360</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/91/">Giggly | Tropic Chocolate Coconut</a><div class="ppack">Pack of 18</div><p class="price">Rs. 320</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/92/">Hilal | Khopra Candy</a><div class="ppack">Pack of 70</div><p class="price">Rs. 315</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/93/">Hilal | Churran Chatni Candy</a><div class="ppack">Pack of 70</div><p class="price">Rs. 315</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/101/">Giggly | Butter Scotch</a><div class="ppack">Pack of 30</div><p class="price">Rs. 260</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/102/">Giggly | Bloon Chocolate Caramel Toffee</a><div class="ppack">Pack of 20</div><p class="price">Rs. 250</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/103/">Taste Factory | Smart Beans Chocolate Beans Pouch</a><div class="ppack">Pack of 1</div><p class="price">Rs. 250</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/105/">Giggly | Filo Chocolate Filled Candy</a><div class="ppack">Pack of 30</div><p class="price">Rs. 250</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/106/">Lazer | ChocO Kulfi Chocolate</a><div class="ppack">Pack of 24</div><p class="price">Rs. 240</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/109/">Giggly | Bitz Chocolate Filled</a><div class="ppack">Pack of 30</div><p class="price">Rs. 200</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/110/">Hilal | Khopra Candy Pouch</a><div class="ppack">Pack of 35</div><p class="price">Rs. 160</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/111/">Hilal | Pan Pasand Candy Pouch</a><div class="ppack">Pack of 35</div><p class="price">Rs. 160</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/112/">Hilal | Hajmola Candy Pouch</a><div class="ppack">Pack of 35</div><p class="price">Rs. 160</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/113/">Lazer | Badami Candy</a><div class="ppack">Pack of 30</div><p class="price">Rs. 150</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/120/">Paxy | Nut Chocolate Full Cream Bar</a><div class="ppack">Pack of 1</div><p class="price">Rs. 130</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/147/">Ap | Jhat Pat Chatni Balls</a><div class="ppack">Pack of 48</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/156/">Giggly | Big Twisto Mango Jelly</a><div class="ppack">Pack of 60</div><p class="price">Rs. 520</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/157/">Giggly | Big Twisto Lychee Jelly</a><div class="ppack">Pack of 60</div><p class="price">Rs. 520</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/160/">Giggly | Pom Poms Chocolate Coated Marshmallow</a><div class="ppack">Pack of 24</div><p class="price">Rs. 410</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/161/">Mayfair | Wobbly Amrood Jelly</a><div class="ppack">Pack of 24</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/162/">Mayfair | Wobbly Strawberry Jelly</a><div class="ppack">Pack of 24</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/163/">Mayfair | Wobbly Peach Jelly</a><div class="ppack">Pack of 24</div><p class="price">Rs. 399</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/165/">Candyland | Chili Mili Jelly</a><div class="ppack">Pack of 24</div><p class="price">Rs. 396</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/166/">Candyland | Burger Jelly</a><div class="ppack">Pack of 24</div><p class="price">Rs. 396</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/167/">Giggly | Fluffy Chocolate Filled Mango Marshmallow</a><div class="ppack">Pack of 20</div><p class="price">Rs. 350</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/168/">Giggly | Juzt Jelly</a><div class="ppack">Pack of 18</div><p class="price">Rs. 320</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/169/">Giggly | Very Berry Jelly</a><div class="ppack">Pack of 18</div><p class="price">Rs. 320</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/170/">Giggly | Pizzo Jelly</a><div class="ppack">Pack of 18</div><p class="price">Rs. 320</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/171/">Giggly | Tutty Fruity Soft &amp; Juicy Jelly</a><div class="ppack">Pack of 18</div><p class="price">Rs. 320</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/172/">Giggly | Michlee Chili &amp; Juicy Jelly</a><div class="ppack">Pack of 18</div><p class="price">Rs. 320</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/173/">Giggly | Abc Jelly</a><div class="ppack">Pack of 18</div><p class="price">Rs. 320</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/174/">Candyland | Junior Puff Rainbow</a><div class="ppack">Pack of 18</div><p class="price">Rs. 299</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/175/">Candyland | Junior Puff Party</a><div class="ppack">Pack of 18</div><p class="price">Rs. 299</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/178/">Hilal | Ding Dong Jelly Share Pack</a><div class="ppack">Pack of 1</div><p class="price">Rs. 90</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/182/">Winner | Patti Fry Masala</a><div class="ppack">Pack of 12</div><p class="price">Rs. 199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/183/">Winner | Daal Shaal</a><div class="ppack">Pack of 12</div><p class="price">Rs. 199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/186/">Nsf | Chatpat Jumbo</a><div class="ppack">Pack of 12</div><p class="price">Rs. 199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/189/">Shahi | Pop Star Cheese</a><div class="ppack">Pack of 12</div><p class="price">Rs. 199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/192/">Zee Snacks | Dip N Dip</a><div class="ppack">Pack of 12</div><p class="price">Rs. 199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/194/">Winner | Patti Fry Salsa 11gms</a><div class="ppack">Pack of 12</div><p class="price">Rs. 199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/195/">Winner | Tikit Murgh Masala</a><div class="ppack">Pack of 12</div><p class="price">Rs. 210</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/198/">Shahi | Pop Star Chatpata Chicken</a><div class="ppack">Pack of 12</div><p class="price">Rs. 199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/210/">S.N Foods | Chicken Qorma</a><div class="ppack">Pack of 12</div><p class="price">Rs. 199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/233/">ChaskaBox | Top Pops Chicken (Red) — Pack of 10</a><div class="ppack">Pack of 10</div><p class="price">Rs. 750</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/235/">ChaskaBox | Top Pops Spicy (Blue) — Pack of 10</a><div class="ppack">Pack of 10</div><p class="price">Rs. 750</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/238/">FM | Miilee Desi Chewra 200gms</a><div class="ppack">Pack of 1</div><p class="price">Rs. 250</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/247/">ChaskaBox | Top Pops Mix (Blue &amp; Red) — Pack of 30</a><div class="ppack">Pack of 30</div><p class="price">Rs. 2,150</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/253/">ChaskaBox | Top Pops Chicken (Red) — Pack of 48 Bundle</a><div class="ppack">Pack of 48</div><p class="price">Rs. 3,150</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/254/">ChaskaBox | Top Pops Spicy (Blue) — Pack of 48 Bundle</a><div class="ppack">Pack of 48</div><p class="price">Rs. 3,150</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/255/">ChaskaBox | Top Pops Mix (Blue &amp; Red) — Pack of 48 Bundle</a><div class="ppack">Pack of 48</div><p class="price">Rs. 3,150</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/267/">ChaskaBox Sweet Bundle</a><div class="ppack">Bundle Pack</div><p class="price">Rs. 2,199</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/270/">ChaskaBox Kids Bundle</a><div class="ppack">Bundle Pack</div><p class="price">Rs. 1,299</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/271/">ChaskaBox Biscuit &amp; Cake Bundle</a><div class="ppack">Bundle Pack</div><p class="price">Rs. 1,395</p></div></article>
-<article class="card"><div class="pbody"><a class="pname" href="/product/272/">ChaskaBox Mega Mix</a><div class="ppack">Bundle Pack</div><p class="price">Rs. 1,939</p></div></article>
+      <div class="grid" id="shopGrid"><article class="card"><div class="pbody"><a class="pname" href="/product/5/">Mayfair | Delight Chocolate Cream Croissant</a><div class="packmeta"><div class="ppack">Pack of 6</div></div><p class="price">Rs. 499</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/8/">Mayfair | Special Choco Delight Biscuit</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/9/">Mayfair | Special Chocolate Biscuit</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/10/">Mayfair | Cremo Chocolate</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/11/">Mayfair | Wow Chocolate</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/12/">Mayfair | Hearts Puff Pastry</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/13/">Mayfair | Cremo Strawberry Sandwich Biscuit</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/16/">Ap | Love Letter Pillow Wafer Chocolate</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 396</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/18/">Ap | Love Letter Double Stick Chocolate</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 396</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/27/">Hilal | Cupkake Double Chocolate With Sprinkles</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 655</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/28/">Hilal | Cupkake Chocolate</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 655</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/29/">Hilal | Cupkake Birthday</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 655</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/30/">Hilal | Creamfillz Vanilla Cake</a><div class="packmeta"><div class="ppack">Pack of 10</div></div><p class="price">Rs. 545</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/31/">Hilal | Bake Time Plain</a><div class="packmeta"><div class="ppack">Pack of 6</div></div><p class="price">Rs. 545</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/32/">Hilal | Bake Time Chocolate</a><div class="packmeta"><div class="ppack">Pack of 6</div></div><p class="price">Rs. 545</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/33/">Hilal | Kake Strawberry</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 435</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/34/">Hilal | Panda Kake Strawberry</a><div class="packmeta"><div class="ppack">Pack of 8</div></div><p class="price">Rs. 435</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/35/">Hilal | Cupkake Double Chocolate</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 435</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/36/">Giggly | Swiss Roll Strawberry</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 410</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/37/">Giggly | Jam Roll Mango</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 410</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/38/">Jojo | Mini Beans</a><div class="packmeta"><div class="ppack">Pack of 4 (Rs. 75)</div></div><p class="price">Rs. 300</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/39/">Candyland | Bubble Your Name</a><div class="packmeta"><div class="ppack">Pack of 100</div></div><p class="price">Rs. 650</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/42/">Hilal | Ding Dong Crystal Bubble Gum</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 450</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/43/">Hilal | Ding Dong Big Bubble</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 450</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/46/">Hilal | Ding Dong Original Bubble Gum</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 450</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/48/">Candyland | Yums Sour</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 396</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/49/">Candyland | Yums Fruity</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 396</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/54/">Giggly | Butter Fudge Butter Milk Toffee</a><div class="packmeta"><div class="ppack">Pack of 120</div></div><p class="price">Rs. 1,050</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/55/">Mayfair | Eclairs Pouch</a><div class="packmeta"><div class="ppack">Pack of 90</div></div><p class="price">Rs. 750</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/57/">Candyland | Now Chocolate Paste</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 650</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/60/">Giggly | Silk Milky Chocolate</a><div class="packmeta"><div class="ppack">Pack of 15</div></div><p class="price">Rs. 550</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/62/">Hilal | Pan Pasand Gold Jar</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 450</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/63/">Giggly | Miltof Caramel Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 450</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/64/">Giggly | Big Amrood Chaska Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 450</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/66/">Mayfair | Milko Toffee Caramel with Milky Filling</a><div class="packmeta"><div class="ppack">Pack of 90</div></div><p class="price">Rs. 450</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/68/">Giggly | Big Cola Candy Jar</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 430</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/69/">Candyland | Fanty Gold Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/70/">Candyland | Butter Scotch Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/71/">Mayfair | Fruit Gala Blue Berry Chew</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/72/">Mayfair | Fruit Gala Strawberry Chew</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/73/">Mayfair | Fruit Gala Black Currant Chew</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/74/">Mayfair | Creamers Strawberry Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/75/">Mayfair | Frooto Peach XL Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/76/">Mayfair | Frooto Orange XL Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/77/">Mayfair | Frooto Mango XL Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/78/">Candyland | Kairi Masala Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/79/">Candyland | Kulfa Candy</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/80/">Candyland | Amrood Masala Candy Jar</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/82/">Candyland | Khoya Candy Jar</a><div class="packmeta"><div class="ppack">Pack of 50</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/83/">Giggly | More Caramel Filled Chocolate</a><div class="packmeta"><div class="ppack">Pack of 40</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/85/">Giggly | Chunks Peanut Caramel Chocolate Bar</a><div class="packmeta"><div class="ppack">Pack of 4</div></div><p class="price">Rs. 360</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/86/">Giggly | Opus Cubes Caramel Filled Chocolate</a><div class="packmeta"><div class="ppack">Pack of 4</div></div><p class="price">Rs. 360</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/91/">Giggly | Tropic Chocolate Coconut</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 320</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/92/">Hilal | Khopra Candy</a><div class="packmeta"><div class="ppack">Pack of 70</div></div><p class="price">Rs. 315</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/93/">Hilal | Churran Chatni Candy</a><div class="packmeta"><div class="ppack">Pack of 70</div></div><p class="price">Rs. 315</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/101/">Giggly | Butter Scotch</a><div class="packmeta"><div class="ppack">Pack of 30</div></div><p class="price">Rs. 260</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/102/">Giggly | Bloon Chocolate Caramel Toffee</a><div class="packmeta"><div class="ppack">Pack of 20</div></div><p class="price">Rs. 250</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/103/">Taste Factory | Smart Beans Chocolate Beans Pouch</a><div class="packmeta"><div class="ppack">Pack of 1</div></div><p class="price">Rs. 250</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/105/">Giggly | Filo Chocolate Filled Candy</a><div class="packmeta"><div class="ppack">Pack of 30</div></div><p class="price">Rs. 250</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/106/">Lazer | ChocO Kulfi Chocolate</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 240</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/109/">Giggly | Bitz Chocolate Filled</a><div class="packmeta"><div class="ppack">Pack of 30</div></div><p class="price">Rs. 200</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/110/">Hilal | Khopra Candy Pouch</a><div class="packmeta"><div class="ppack">Pack of 35</div></div><p class="price">Rs. 160</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/111/">Hilal | Pan Pasand Candy Pouch</a><div class="packmeta"><div class="ppack">Pack of 35</div></div><p class="price">Rs. 160</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/112/">Hilal | Hajmola Candy Pouch</a><div class="packmeta"><div class="ppack">Pack of 35</div></div><p class="price">Rs. 160</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/113/">Lazer | Badami Candy</a><div class="packmeta"><div class="ppack">Pack of 30</div></div><p class="price">Rs. 150</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/120/">Paxy | Nut Chocolate Full Cream Bar</a><div class="packmeta"><div class="ppack">Pack of 1</div></div><p class="price">Rs. 130</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/147/">Ap | Jhat Pat Chatni Balls</a><div class="packmeta"><div class="ppack">Pack of 48</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/156/">Giggly | Big Twisto Mango Jelly</a><div class="packmeta"><div class="ppack">Pack of 60</div></div><p class="price">Rs. 520</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/157/">Giggly | Big Twisto Lychee Jelly</a><div class="packmeta"><div class="ppack">Pack of 60</div></div><p class="price">Rs. 520</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/160/">Giggly | Pom Poms Chocolate Coated Marshmallow</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 410</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/161/">Mayfair | Wobbly Amrood Jelly</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/162/">Mayfair | Wobbly Strawberry Jelly</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/163/">Mayfair | Wobbly Peach Jelly</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 399</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/165/">Candyland | Chili Mili Jelly</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 396</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/166/">Candyland | Burger Jelly</a><div class="packmeta"><div class="ppack">Pack of 24</div></div><p class="price">Rs. 396</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/167/">Giggly | Fluffy Chocolate Filled Mango Marshmallow</a><div class="packmeta"><div class="ppack">Pack of 20</div></div><p class="price">Rs. 350</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/168/">Giggly | Juzt Jelly</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 320</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/169/">Giggly | Very Berry Jelly</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 320</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/170/">Giggly | Pizzo Jelly</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 320</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/171/">Giggly | Tutty Fruity Soft &amp; Juicy Jelly</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 320</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/172/">Giggly | Michlee Chili &amp; Juicy Jelly</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 320</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/173/">Giggly | Abc Jelly</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 320</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/174/">Candyland | Junior Puff Rainbow</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 299</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/175/">Candyland | Junior Puff Party</a><div class="packmeta"><div class="ppack">Pack of 18</div></div><p class="price">Rs. 299</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/178/">Hilal | Ding Dong Jelly Share Pack</a><div class="packmeta"><div class="ppack">Pack of 1</div></div><p class="price">Rs. 90</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/182/">Winner | Patti Fry Masala</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/183/">Winner | Daal Shaal</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/186/">Nsf | Chatpat Jumbo</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/189/">Shahi | Pop Star Cheese</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/192/">Zee Snacks | Dip N Dip</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/194/">Winner | Patti Fry Salsa 11gms</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/195/">Winner | Tikit Murgh Masala</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 210</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/198/">Shahi | Pop Star Chatpata Chicken</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/210/">S.N Foods | Chicken Qorma</a><div class="packmeta"><div class="ppack">Pack of 12</div></div><p class="price">Rs. 199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/233/">ChaskaBox | Top Pops Chicken (Red) — Pack of 10</a><div class="packmeta"><div class="ppack">Pack of 10</div></div><p class="price">Rs. 750</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/235/">ChaskaBox | Top Pops Spicy (Blue) — Pack of 10</a><div class="packmeta"><div class="ppack">Pack of 10</div></div><p class="price">Rs. 750</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/238/">FM | Miilee Desi Chewra 200gms</a><div class="packmeta"><div class="ppack">Pack of 1</div></div><p class="price">Rs. 250</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/247/">ChaskaBox | Top Pops Mix (Blue &amp; Red) — Pack of 30</a><div class="packmeta"><div class="ppack">Pack of 30</div></div><p class="price">Rs. 2,150</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/253/">ChaskaBox | Top Pops Chicken (Red) — Pack of 48 Bundle</a><div class="packmeta"><div class="ppack">Pack of 48</div></div><p class="price">Rs. 3,150</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/254/">ChaskaBox | Top Pops Spicy (Blue) — Pack of 48 Bundle</a><div class="packmeta"><div class="ppack">Pack of 48</div></div><p class="price">Rs. 3,150</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/255/">ChaskaBox | Top Pops Mix (Blue &amp; Red) — Pack of 48 Bundle</a><div class="packmeta"><div class="ppack">Pack of 48</div></div><p class="price">Rs. 3,150</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/267/">ChaskaBox Sweet Bundle</a><div class="packmeta"><div class="ppack">Bundle Pack</div></div><p class="price">Rs. 2,199</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/270/">ChaskaBox Kids Bundle</a><div class="packmeta"><div class="ppack">Bundle Pack</div></div><p class="price">Rs. 1,299</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/271/">ChaskaBox Biscuit &amp; Cake Bundle</a><div class="packmeta"><div class="ppack">Bundle Pack</div></div><p class="price">Rs. 1,395</p></div></article>
+<article class="card"><div class="pbody"><a class="pname" href="/product/272/">ChaskaBox Mega Mix</a><div class="packmeta"><div class="ppack">Bundle Pack</div></div><p class="price">Rs. 1,939</p></div></article>
 </div>
     </div>
   </div>
@@ -382,7 +420,7 @@
   <div class="fwrap">
     <div class="fbrand"><img src="/images/logo-approved-footer-20261017.png" alt="ChaskaBox" width="1624" height="776"><p><cb-copy data-cb-copy="t_9d401705" style="display:contents">Bachpan ka zaiqa, ab ghar baithe. Pakistani snacks sourced after your order, with a personal touch.</cb-copy></p><p style="margin-top:10px"><a href="https://www.facebook.com/chaskabox" target="_blank" rel="noopener" style="margin-right:12px"><cb-copy data-cb-copy="t_ac37c251" style="display:contents">Facebook</cb-copy></a><a href="https://www.instagram.com/chaskabox.mz" target="_blank" rel="noopener" style="margin-right:12px"><cb-copy data-cb-copy="t_0f95701b" style="display:contents">Instagram</cb-copy></a><a href="https://wa.me/923320005381" target="_blank" rel="noopener"><cb-copy data-cb-copy="t_b1332787" style="display:contents">WhatsApp</cb-copy></a></p></div>
     <div><h2><cb-copy data-cb-copy="t_28742cc9" style="display:contents">Shop</cb-copy></h2><p><a href="/shop/"><cb-copy data-cb-copy="t_b4a10ac7" style="display:contents">All Snacks</cb-copy></a><br><a href="/bundles/"><cb-copy data-cb-copy="t_90ed8c67" style="display:contents">Chaska Boxes</cb-copy></a><br><a href="/shop/?badge=Sale" onclick="goBadge('Sale');return false"><cb-copy data-cb-copy="t_86b2b254" style="display:contents">Deals</cb-copy></a><br><a href="/track-order.html"><cb-copy data-cb-copy="t_5ea7e0ec" style="display:contents">Track Order</cb-copy></a></p></div>
-    <div><h2><cb-copy data-cb-copy="t_b89df01a" style="display:contents">Help</cb-copy></h2><p><a href="/#faq"><cb-copy data-cb-copy="t_2d7f6d58" style="display:contents">FAQs</cb-copy></a><br><a href="/about/"><cb-copy data-cb-copy="t_58e096de" style="display:contents">About</cb-copy></a><br><a href="/contact/"><cb-copy data-cb-copy="t_73ac94c3" style="display:contents">Contact</cb-copy></a><br><a href="/faq/">Frequently Asked Questions</a><br><a href="/guides/"><cb-copy data-cb-copy="t_b28e1709" style="display:contents">Snack and order guides</cb-copy></a><br><a href="/snack-boxes/"><cb-copy data-cb-copy="t_7dccc52d" style="display:contents">Snack occasions</cb-copy></a><br><a href="/shipping-policy/"><cb-copy data-cb-copy="t_dbfa1de3" style="display:contents">Shipping</cb-copy></a><br><a href="/refund-policy/"><cb-copy data-cb-copy="t_7900117f" style="display:contents">Refund </cb-copy>&<cb-copy data-cb-copy="t_aee818af" style="display:contents"> Resolution</cb-copy></a></p></div>
+    <div><h2><cb-copy data-cb-copy="t_b89df01a" style="display:contents">Help</cb-copy></h2><p><a href="/#faq"><cb-copy data-cb-copy="t_7dde9bef" style="display:contents">Quick answers</cb-copy></a><br><a href="/about/"><cb-copy data-cb-copy="t_58e096de" style="display:contents">About</cb-copy></a><br><a href="/contact/"><cb-copy data-cb-copy="t_73ac94c3" style="display:contents">Contact</cb-copy></a><br><a href="/faq/">Frequently Asked Questions</a><br><a href="/guides/"><cb-copy data-cb-copy="t_b28e1709" style="display:contents">Snack and order guides</cb-copy></a><br><a href="/snack-boxes/"><cb-copy data-cb-copy="t_7dccc52d" style="display:contents">Snack occasions</cb-copy></a><br><a href="/shipping-policy/"><cb-copy data-cb-copy="t_dbfa1de3" style="display:contents">Shipping</cb-copy></a><br><a href="/refund-policy/"><cb-copy data-cb-copy="t_7900117f" style="display:contents">Refund </cb-copy>&<cb-copy data-cb-copy="t_aee818af" style="display:contents"> Resolution</cb-copy></a></p></div>
     <div><h2><cb-copy data-cb-copy="t_48f38d75" style="display:contents">Delivery </cb-copy>&<cb-copy data-cb-copy="t_20f64111" style="display:contents"> Payment</cb-copy></h2><p>Pakistan-wide · 4–7 days<br><span data-cod-fee-copy>COD: Rs. 300 delivery</span><br><span data-prepaid-shipping-copy>Prepaid Rs. 5,000+: FREE delivery</span><br><a href="/privacy-policy/"><cb-copy data-cb-copy="t_ebfa87e7" style="display:contents">Privacy</cb-copy></a> · <a href="/terms/"><cb-copy data-cb-copy="t_9435adcc" style="display:contents">Terms</cb-copy></a></p></div>
   </div>
   <div class="fbottom">© 2026 ChaskaBox · Made with chaska in Pakistan 🇵🇰</div>
@@ -425,8 +463,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/supabase-config.js?v=3"></script>
 <script src="/photo-manifest.js?v=20261014-closeout"></script>
-<script src="/app.js?v=20261019-storefront2"></script>
-<script src="/home-hero-carousel.js?v=20261019-hero1"></script>
+<script src="/app.js?v=20261019-ui38"></script>
+<script src="/home-hero-carousel.js?v=20261019-hero2"></script>
 <script src="/reviews-widget.js?v=20261014-final-readiness"></script>
 <script src="/account.js?v=20261012-release?v=5"></script>
 <script src="/analytics.js?v=1"></script>
