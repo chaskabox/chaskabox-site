@@ -5,11 +5,19 @@ import vm from 'node:vm';
 
 test('home hero advances every 5 seconds, with controls and accessibility pauses',()=>{
   const code=readFileSync(new URL('../home-hero-carousel.js',import.meta.url),'utf8');
-  const events={}; const rootEvents={}; const docEvents={}; const media={matches:false,addEventListener(_name,fn){this.onChange=fn;}};
+  const events={}; const rootEvents={}; const docEvents={}; const windowEvents={};
+  const media={matches:false,addEventListener(_name,fn){this.onChange=fn;}};
   let hover=false,scheduled=null,sequence=0;
   const title={replaceChildren(){},append(){}};
   const dots=Array.from({length:3},()=>({setAttribute(){}}));
+  const label={textContent:''},icon={textContent:''};
+  const autoplay={
+    dataset:{},disabled:false,attributes:{},
+    setAttribute(name,value){this.attributes[name]=value;},
+    querySelector(selector){return selector.includes('label')?label:icon;}
+  };
   const controls={
+    querySelector(){return autoplay;},
     querySelectorAll(){return dots;},
     addEventListener(name,fn){events[name]=fn;},
     contains(){return true;}
@@ -43,13 +51,14 @@ test('home hero advances every 5 seconds, with controls and accessibility pauses
   };
   const sandbox={
     document:doc,
-    window:{matchMedia(){return media;},addEventListener(){}},
+    window:{matchMedia(){return media;},addEventListener(name,fn){windowEvents[name]=fn;}},
     setInterval(fn,delay){scheduled={fn,delay,id:++sequence};return sequence;},
     clearInterval(id){if(scheduled?.id===id)scheduled=null;}
   };
   vm.runInNewContext(code,sandbox,{filename:'home-hero-carousel.js'});
   assert.equal(root.dataset.heroSlide,'1');
   assert.equal(scheduled?.delay,5000);
+  assert.equal(label.textContent,'Pause');
   scheduled.fn();assert.equal(root.dataset.heroSlide,'2');
   scheduled.fn();assert.equal(root.dataset.heroSlide,'3');
   scheduled.fn();assert.equal(root.dataset.heroSlide,'1');
@@ -65,4 +74,25 @@ test('home hero advances every 5 seconds, with controls and accessibility pauses
   events.click({target:{closest(){return {dataset:{heroDirection:'next'}};}}});
   assert.equal(root.dataset.heroSlide,'2','manual next works while paused');
   assert.equal(scheduled,null,'manual navigation while hovered remains paused');
+  assert.equal(label.textContent,'Play','manual selection offers explicit resumption');
+  hover=false;rootEvents.mouseleave();
+  assert.equal(scheduled,null,'manual selection remains paused after mouseleave');
+  doc.activeElement=null;rootEvents.focusout({relatedTarget:null});
+  assert.equal(scheduled,null,'manual selection remains paused after blur');
+  doc.hidden=true;docEvents.visibilitychange();
+  doc.hidden=false;docEvents.visibilitychange();
+  assert.equal(scheduled,null,'tab revisit preserves the deliberate pause');
+  windowEvents['chaskabox:home-config']({detail:{heading:'CMS heading'}});
+  assert.equal(scheduled,null,'CMS updates do not erase the deliberate pause');
+  events.click({target:{closest(){return autoplay;}}});
+  assert.equal(scheduled?.delay,5000,'Play explicitly resumes the five-second timer');
+  assert.equal(label.textContent,'Pause');
+  events.click({target:{closest(){return autoplay;}}});
+  assert.equal(scheduled,null,'Pause stops the timer');
+  media.matches=true;media.onChange();
+  assert.equal(autoplay.disabled,true,'reduced motion disables autoplay control');
+  assert.equal(label.textContent,'Paused');
+  media.matches=false;media.onChange();
+  assert.equal(autoplay.disabled,false);
+  assert.equal(scheduled,null,'leaving reduced motion preserves a user pause');
 });

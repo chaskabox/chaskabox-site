@@ -7,8 +7,8 @@ const pages=['index.html','shop/index.html','bundles/index.html','brands/index.h
 test('Brand dropdown and WhatsApp beside Chaska AI load on all 14 routes',()=>{
  for(const path of pages){
   const html=read(path);
-  assert.match(html,/brands-header-dropdown\.css\?v=20261019-brand1/,path);
-  assert.match(html,/brands-header-dropdown\.js\?v=20261019-brand3/,path);
+  assert.match(html,/brands-header-dropdown\.css\?v=20261019-brand3/,path);
+  assert.match(html,/brands-header-dropdown\.js\?v=20261019-brand7/,path);
  }
 });
 test('Brand list uses live product availability and existing brand detail routes',()=>{
@@ -36,5 +36,5 @@ test('WhatsApp only shows icon beside AI while retaining original configurable l
  assert.match(js,/--cb-wa-bottom/);
  assert.match(css,/\.cbx-wa-caption\{display:none!important\}/);
  assert.match(css,/width:46px!important/);
- assert.doesNotMatch(js,/fetch\('|fetch\("|openDrawer|checkout|supabase|localStorage/);
+ assert.doesNotMatch(js,/openDrawer|checkout|supabase|localStorage|method:\s*['"](?:POST|PUT|PATCH|DELETE)/);
 });

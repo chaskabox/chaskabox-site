@@ -20,8 +20,11 @@
     controls.setAttribute('aria-label','Choose homepage banner');
     controls.innerHTML='<button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>'+
       [0,1,2].map(i=>'<button type="button" data-hero-dot="'+i+'" aria-label="Show hero '+(i+1)+'" aria-pressed="'+(i===0)+'"></button>').join('')+
-      '<button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>';
-    root.querySelector('.herotrust')?.before(controls);
+      '<button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>'+
+      '<button type="button" data-hero-autoplay aria-label="Pause automatic banner rotation"><span data-hero-autoplay-icon aria-hidden="true">Ⅱ</span><span data-hero-autoplay-label>Pause</span></button>';
+    const copy=root.querySelector('.herotxt');
+    if(copy)copy.append(controls);
+    else root.querySelector('.herotrust')?.before(controls);
   }
   if(!title||!desc||!eyebrow||!primary||!secondary||!controls)return;
   // Approved slider copy (2026-10-18). Art files must be separately approved and attached.
@@ -48,11 +51,24 @@
   let slides=defaults.map(s=>({...s}));
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');
   const dots=Array.from(controls.querySelectorAll('[data-hero-dot]'));
+  const autoplay=controls.querySelector('[data-hero-autoplay]');
   // Five-second rotation within the owner's requested 4–6 second window.
   // Respect reduced motion, hidden tabs, hover and keyboard focus.
   const AUTO_ADVANCE_MS=5000;
-  let current=0,timer=null;
+  let current=0,timer=null,userPaused=false;
   const stop=()=>{if(timer!==null){clearInterval(timer);timer=null;}};
+  function updatePlayback(){
+    if(!autoplay)return;
+    const reduced=media.matches;
+    const paused=reduced||userPaused;
+    const label=reduced?'Automatic rotation disabled by reduced motion':
+      paused?'Play automatic banner rotation':'Pause automatic banner rotation';
+    autoplay.disabled=reduced;
+    autoplay.setAttribute('aria-label',label);
+    autoplay.setAttribute('title',label);
+    autoplay.querySelector('[data-hero-autoplay-label]').textContent=reduced?'Paused':paused?'Play':'Pause';
+    autoplay.querySelector('[data-hero-autoplay-icon]').textContent=paused?'▶':'Ⅱ';
+  }
   function show(index){
     current=(index+slides.length)%slides.length;
     const s=slides[current];
@@ -92,7 +108,8 @@
   }
   function start(){
     stop();
-    if(media.matches||document.hidden||root.hidden||!root.getClientRects().length||slides.length<2)return;
+    updatePlayback();
+    if(userPaused||media.matches||document.hidden||root.hidden||!root.getClientRects().length||slides.length<2)return;
     if(root.matches(':hover')||root.contains(document.activeElement))return;
     timer=setInterval(()=>{
       if(media.matches||document.hidden||root.hidden||!root.getClientRects().length){
@@ -105,10 +122,15 @@
   controls.addEventListener('click',event=>{
     const btn=event.target.closest('button');
     if(!btn||!controls.contains(btn))return;
+    if(btn===autoplay){userPaused=!userPaused;start();return;}
+    // A manual selection is deliberate. Keep it until the user chooses Play,
+    // including after hover/focus changes, route revisits and CMS refreshes.
+    userPaused=true;
+    stop();
     if(btn.dataset.heroDot!==undefined)show(Number(btn.dataset.heroDot));
     if(btn.dataset.heroDirection==='next')show(current+1);
     if(btn.dataset.heroDirection==='previous')show(current-1);
-    start();
+    updatePlayback();
   });
   root.addEventListener('mouseenter',stop);
   root.addEventListener('mouseleave',start);

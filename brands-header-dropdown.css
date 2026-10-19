@@ -21,9 +21,17 @@ body.reference-storefront .cbx-brands-links a:hover,
 body.reference-storefront .cbx-brands-links a:focus-visible,
 body.reference-storefront .cbx-brands-all:hover,
 body.reference-storefront .cbx-brands-all:focus-visible{background:#edf4fb;outline:none;color:#c63c08}
+body.reference-storefront .cbx-brands-links a:focus-visible,
+body.reference-storefront .cbx-brands-all:focus-visible{outline:2px solid #c4440b;outline-offset:-2px}
 body.reference-storefront .cbx-brands-links small{font-size:11px;font-weight:700;color:#758aa0}
 body.reference-storefront .cbx-brands-status{font-size:12px;padding:12px;color:#667c91}
 body.reference-storefront .cbx-brands-all{border-top:1px solid #ebf0f6;margin-top:6px;color:#bd410c;font-weight:800}
+#view-home .discover .section-head .cbx-cat-panel{
+ max-height:var(--cbx-category-space,54vh)!important;box-sizing:border-box!important;
+}
+#view-home .discover .section-head .cbx-cat-holder.cbx-cat-opens-up .cbx-cat-panel{
+ top:auto!important;bottom:calc(100% + 9px)!important;
+}
 /* Brands has an understated visual cue, without moving nav items on interaction. */
 @media(min-width:1200px){
  body.reference-storefront header .cbx-brands-trigger::after{
@@ -53,4 +61,40 @@ body.reference-storefront > a.cbx-whatsapp-float .cbx-wa-caption{display:none!im
 }
 @media(prefers-reduced-motion:reduce){
  body.reference-storefront .cbx-brands-popover{animation:none!important}
+}
+/* A stationary support pair stays below overlays and clears shopping controls.
+   Keep geometry while hidden so its position never oscillates during scrolling. */
+body.reference-storefront button#helpFab.aifab{
+ right:max(14px,env(safe-area-inset-right))!important;
+ bottom:calc(20px + env(safe-area-inset-bottom,0px))!important;
+ z-index:79!important;transform:none!important;animation:none!important;
+ transition:background-color 140ms ease-out,box-shadow 140ms ease-out!important;
+}
+body.reference-storefront button#helpFab.aifab::after{content:none!important}
+body.reference-storefront #aimodal{
+ right:max(14px,env(safe-area-inset-right));
+ bottom:calc(78px + env(safe-area-inset-bottom,0px));
+ max-height:min(60vh,calc(100dvh - 180px));z-index:86;
+}
+body.reference-storefront #aimodal .aihead .mclose{
+ display:grid;place-items:center;min-width:44px;min-height:44px;
+}
+body.reference-storefront.cbx-support-obscures-content :is(button#helpFab,a.cbx-whatsapp-float),
+body.reference-storefront:has(#mnav.open,#drawer.open,#pmodal.open,#acctmodal.open,#filterSheet.open,#imgLightbox.open,.cb-static-menu[open]) :is(button#helpFab,a.cbx-whatsapp-float,#aimodal),
+body.reference-storefront:has(#aimodal.open) > a.cbx-whatsapp-float{
+ visibility:hidden!important;pointer-events:none!important;
+}
+@media(max-width:760px){
+ body.reference-storefront button#helpFab.aifab{
+  right:max(12px,env(safe-area-inset-right))!important;
+  bottom:calc(72px + env(safe-area-inset-bottom,0px))!important;
+ }
+ body.reference-storefront #aimodal{
+  right:max(12px,env(safe-area-inset-right));
+  bottom:calc(128px + env(safe-area-inset-bottom,0px));
+  max-height:min(60vh,calc(100dvh - 220px));
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body.reference-storefront button#helpFab.aifab{transition:none!important}
 }

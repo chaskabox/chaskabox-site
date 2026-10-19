@@ -9,7 +9,7 @@ const pages=['index.html','shop/index.html','bundles/index.html','brands/index.h
 test('all 14 public HTML entries use the same sticky header stylesheet',()=>{
  for(const path of pages){
   const html=read(path);
-  assert.match(html,/sticky-motion-polish\.css\?v=20261019-sticky1/,path);
+  assert.match(html,/sticky-motion-polish\.css\?v=20261019-sticky3/,path);
   assert.match(html,/<header(?:\s|>)/,path);
  }
 });
@@ -27,7 +27,7 @@ test('sticky header remains below modal overlay and motion effects respect prefe
 test('desktop navigation uses wide margins, one row, and equal-size account actions',()=>{
  const css=read('header-one-line.css');
  for(const path of pages){
-   assert.match(read(path),/header-one-line\.css\?v=20261019-line3/,path);
+   assert.match(read(path),/header-one-line\.css\?v=20261019-line7/,path);
  }
  assert.match(css,/width: calc\(100% - clamp\(32px, 8\.5vw, 208px\)\)/);
  assert.match(css,/flex-wrap: nowrap !important/);

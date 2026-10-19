@@ -48,8 +48,10 @@
     flex: 0 0 auto !important;
     min-height: 43px !important;
     padding: 6px clamp(3px, .36vw, 7px) !important;
-    font-size: clamp(10.5px, .83vw, 13px) !important;
+    font-size: 13px !important;
     line-height: 1.2 !important;
+    transform: none !important;
+    transition: color 140ms ease-out, background-color 140ms ease-out !important;
   }
   body.reference-storefront > header .hwrap .header-search {
     order: 2 !important;
@@ -123,16 +125,23 @@
     border-radius: 10px !important;
   }
 }
+/* Keep the full readable navigation at the narrow desktop breakpoint. */
+@media (min-width:1200px) and (max-width:1279px) {
+  body.reference-storefront > header .hwrap .cbx-header-links { gap:1px!important; }
+  body.reference-storefront > header .hwrap .cbx-header-links a { padding-inline:3px!important; }
+}
 /* Preserve one row on narrow laptops: navigation goes into the existing accessible
    menu instead of wrapping or clipping product search / cart. */
 @media (min-width: 761px) and (max-width: 1199px) {
-  body.reference-storefront > header .hwrap > .mnav-btn {
+  body.reference-storefront > header .hwrap > .mnav-btn,
+  body.reference-storefront > header .hwrap > .cb-static-menu {
     display: inline-flex !important;
     order: 0 !important;
     flex: 0 0 42px !important;
     min-width: 42px !important;
     height: 44px !important;
   }
+  body.reference-storefront > header .hwrap > .cb-static-menu summary { width:42px; }
   body.reference-storefront > header .hwrap .logo {
     order: 1 !important;
     flex-basis: clamp(118px, 14vw, 165px) !important;
@@ -169,6 +178,21 @@
 }
 /* Mobile retains its existing hamburger + search row: no inadvertent changes to
    small touch screens or their focus/keyboard behavior. */
+body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) svg {
+  width:21px!important;height:21px!important;flex:0 0 21px!important;
+}
+@media (max-width:760px) {
+  body.reference-storefront > header .hwrap > .hbtn {
+    display:inline-flex!important;align-items:center!important;justify-content:center!important;
+    width:44px!important;min-width:44px!important;height:44px!important;min-height:44px!important;
+    padding:0!important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  body.reference-storefront > header .hwrap .cbx-header-links a {
+    transition: none !important;
+  }
+}
 
 /* Equal prominence for Account, Wishlist and Cart: same optical dimensions,
    inline labels, generous targets, and consistent badge anchor points. */
