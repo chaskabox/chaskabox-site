@@ -24,9 +24,9 @@ for(const [path,width] of [['/',320],['/',390],['/',1440],['/shop/',390],['/bran
   if(r?.status()!==200)throw Error('Unexpected HTTP '+r?.status());
   await page.waitForTimeout(1400);
   entry.bagCount=await page.locator('header .cb-bag-icon-v2').count();
-  if(entry.bagCount!==1)throw Error('Missing unique approved 27px branded Cart/Bag icon');
+  if(entry.bagCount!==1)throw Error('Missing unique approved branded Cart/Bag icon');
   entry.bagWidth=await page.locator('header .cb-bag-icon-v2').evaluate(el=>Math.round(el.getBoundingClientRect().width));
-  if(entry.bagWidth!==27)throw Error('Bag icon too large/small: '+entry.bagWidth);
+  if(entry.bagWidth!==21)throw Error('Bag icon too large/small: '+entry.bagWidth);
   entry.canonical=await page.locator('link[rel=canonical]').first().getAttribute('href');
   entry.overflow=await page.evaluate(()=>Math.ceil(document.documentElement.scrollWidth-document.documentElement.clientWidth));
   if(entry.overflow>2)throw Error('Horizontal overflow '+entry.overflow);
