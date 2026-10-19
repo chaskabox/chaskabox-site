@@ -1,0 +1,87 @@
+/* ChaskaBox sticky-header + motion polish — 2026-10-19.
+   One compositor-friendly layer, no transforms or resize on the sticky header. */
+body.reference-storefront > header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 85 !important; /* Under cart overlay 90, drawers 95 and mobile nav 200. */
+  isolation: isolate;
+  background: #fff !important;
+  border-bottom: 1px solid rgba(14, 50, 86, .10) !important;
+  box-shadow: 0 2px 10px rgba(9, 41, 75, .045) !important;
+  transition: box-shadow 180ms ease, border-color 180ms ease !important;
+}
+body.reference-storefront > header.scrolled {
+  border-bottom-color: rgba(14, 50, 86, .16) !important;
+  box-shadow: 0 7px 22px rgba(9, 41, 75, .13) !important;
+}
+/* The announcement sits in document flow and scrolls away, freeing space. */
+body.reference-storefront > .promo {
+  position: relative !important;
+  top: auto !important;
+}
+body.reference-storefront > .promo:not([hidden]) + header {
+  top: 0 !important;
+}
+/* Anchors and keyboard-focus targets must remain below the sticky header. */
+html { scroll-padding-top: 96px; }
+@media (min-width: 761px) and (max-width: 1360px) {
+  html { scroll-padding-top: 126px; }
+}
+@media (max-width: 760px) {
+  html { scroll-padding-top: 78px; }
+  body.reference-storefront > header { box-shadow: 0 2px 8px rgba(9, 41, 75, .07) !important; }
+  body.reference-storefront > header.scrolled { box-shadow: 0 5px 16px rgba(9, 41, 75, .13) !important; }
+}
+/* Product hover and scroll-reveal: short, quiet, transform/opacity-only motion. */
+body.reference-storefront .reveal {
+  transition: opacity 200ms ease-out, transform 200ms ease-out !important;
+}
+body.reference-storefront.motion-reveals .reveal:not(.in),
+html.motion-reveals body.reference-storefront .reveal:not(.in) {
+  transform: translate3d(0, 6px, 0);
+}
+body.reference-storefront .card {
+  transition: transform 180ms cubic-bezier(.2,.65,.2,1), box-shadow 180ms ease !important;
+}
+@media (hover: hover) and (pointer: fine) {
+  body.reference-storefront a.cat {
+    transition: transform 170ms ease-out !important;
+  }
+  body.reference-storefront a.cat:hover { transform: translateY(-2px) !important; }
+  body.reference-storefront a.cat:hover .ci { transform: translateY(-1px) scale(1.02) !important; }
+  body.reference-storefront .card:not(.motion-tilt):hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 10px 26px rgba(15, 49, 83, .12) !important;
+  }
+}
+/* Touch users should not get sticky/bouncy hover transformations after tapping. */
+@media (hover: none), (pointer: coarse) {
+  body.reference-storefront a.cat:hover,
+  body.reference-storefront a.cat:hover .ci,
+  body.reference-storefront .card:not(.motion-tilt):hover {
+    transform: none !important;
+  }
+}
+/* The visual dot is drawn by ::before. Never scale the button itself: doing so
+   also shrinks the approved 44px click target after the hero bundle loads. */
+body.reference-storefront #view-home .hero-slider-controls button[data-hero-dot] {
+  width: 44px !important;
+  min-width: 44px !important;
+  transform: none !important;
+  transition: background-color 140ms ease-out !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  body.reference-storefront > header,
+  body.reference-storefront .reveal,
+  body.reference-storefront .card,
+  body.reference-storefront a.cat,
+  body.reference-storefront a.cat .ci,
+  body.reference-storefront #view-home .hero-slider-controls button[data-hero-dot] {
+    transition: none !important;
+    animation: none !important;
+  }
+  html.motion-reveals body.reference-storefront .reveal:not(.in) {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

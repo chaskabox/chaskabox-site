@@ -21,13 +21,29 @@ holder.innerHTML='<button type="button" class="cbx-cat-trigger" aria-expanded="f
 nav.insertBefore(holder,nav.lastElementChild);
 const btn=holder.querySelector('button'),panel=holder.querySelector('section'),grid=holder.querySelector('.cbx-cat-grid');
 const render=()=>{const counts=new Set(catalog().map(p=>p.category));const available=counts.size?entries.filter(e=>counts.has(e[0])):entries;grid.innerHTML=(available.length?available:entries).map(e=>'<a href="'+e[1]+'" class="cbx-cat-card"><span class="cbx-cat-photo" style="--cbx-pos:'+e[2]+'" aria-hidden="true"></span><span class="cbx-cat-name">'+esc(e[0])+'<small>Explore products →</small></span></a>').join('')};
-const set=open=>{if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open)};
+const positionPanel=()=>{
+ if(panel.hidden)return;
+ const trigger=btn.getBoundingClientRect(),head=document.querySelector('body > header')?.getBoundingClientRect();
+ const top=Math.max(8,head?.bottom||0);
+ if(trigger.bottom<top||trigger.top>innerHeight){set(false);return;}
+ holder.classList.remove('cbx-cat-opens-up');
+ const down=panel.getBoundingClientRect(),anchor=panel.offsetParent?.getBoundingClientRect();
+ const below=innerHeight-down.top-12,above=(anchor?.top??trigger.top)-top-21;
+ const up=below<240&&above>below;
+ holder.classList.toggle('cbx-cat-opens-up',up);
+ const bounds=panel.getBoundingClientRect();
+ const available=up?bounds.bottom-top-12:innerHeight-bounds.top-12;
+ panel.style.setProperty('--cbx-category-space',Math.max(44,Math.min(600,Math.floor(available)))+'px');
+};
+const set=open=>{if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open);if(open)positionPanel()};
 let openTimer,closeTimer;btn.addEventListener('click',()=>set(panel.hidden));
 holder.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(closeTimer);openTimer=setTimeout(()=>set(true),220)});
 holder.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;clearTimeout(openTimer);closeTimer=setTimeout(()=>set(false),220)});
 holder.addEventListener('focusout',e=>{if(!holder.contains(e.relatedTarget))set(false)});
 document.addEventListener('pointerdown',e=>{if(!holder.contains(e.target))set(false)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){set(false);btn.focus()}});
+window.addEventListener('resize',positionPanel,{passive:true});
+window.addEventListener('scroll',positionPanel,{passive:true});
 render();
 }
 // Move the REAL admin-managed navigation into the header: subsequent CMS updates

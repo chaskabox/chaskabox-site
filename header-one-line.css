@@ -1,0 +1,245 @@
+/* ChaskaBox single-line desktop header — align to owner-marked wide margins. 
+   Loaded after all previous header styles on every public entry page. */
+@media (min-width: 761px) {
+  body.reference-storefront > header .hwrap {
+    width: calc(100% - clamp(32px, 8.5vw, 208px)) !important;
+    max-width: 1840px !important;
+    margin-inline: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    gap: clamp(4px, .65vw, 12px) !important;
+    min-height: 76px !important;
+    padding: 8px 0 !important;
+  }
+  body.reference-storefront > header .hwrap > * { min-width: 0; }
+  body.reference-storefront > header .hwrap .logo {
+    order: 0 !important;
+    flex: 0 0 clamp(146px, 10.5vw, 205px) !important;
+    max-width: 205px !important;
+    margin: 0 !important;
+  }
+  body.reference-storefront > header .hwrap .logo-img {
+    width: 100% !important;
+    height: 59px !important;
+    object-fit: contain !important;
+  }
+  body.reference-storefront > header .hwrap .cbx-header-links {
+    order: 1 !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: clamp(0px, .26vw, 6px) !important;
+    white-space: nowrap !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    scrollbar-width: none !important;
+  }
+  body.reference-storefront > header .hwrap .cbx-header-links a {
+    flex: 0 0 auto !important;
+    min-height: 43px !important;
+    padding: 6px clamp(3px, .36vw, 7px) !important;
+    font-size: 13px !important;
+    line-height: 1.2 !important;
+    transform: none !important;
+    transition: color 140ms ease-out, background-color 140ms ease-out !important;
+  }
+  body.reference-storefront > header .hwrap .header-search {
+    order: 2 !important;
+    flex: 0 1 clamp(182px, 19vw, 355px) !important;
+    width: clamp(182px, 19vw, 355px) !important;
+    min-width: 170px !important;
+    max-width: 355px !important;
+    height: 47px !important;
+    margin: 0 !important;
+    border-radius: 13px !important;
+  }
+  body.reference-storefront > header .header-search input {
+    min-width: 0 !important;
+    font-size: 12px !important;
+    padding-inline: 11px !important;
+  }
+  body.reference-storefront > header .header-search button {
+    flex: 0 0 43px !important;
+    min-width: 43px !important;
+    margin: 2px !important;
+  }
+  body.reference-storefront > header .hwrap > .account-btn { order: 3 !important; }
+  body.reference-storefront > header .hwrap > a[aria-label="My wishlist"] { order: 4 !important; }
+  body.reference-storefront > header .hwrap > .hbtn { order: 5 !important; }
+  body.reference-storefront > header .hwrap > .cbx-header-whatsapp { order: 6 !important; }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) {
+    display: inline-flex !important;
+    flex: 0 0 auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    height: 45px !important;
+    min-height: 45px !important;
+    margin: 0 !important;
+    padding: 0 3px !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) svg {
+    flex: 0 0 auto !important;
+    width: 22px !important;
+    height: 22px !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn)::after {
+    display: inline-block !important;
+    position: static !important;
+    inset: auto !important;
+    flex: 0 0 auto !important;
+    margin: 0 !important;
+    transform: none !important;
+    font-size: 11px !important;
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+    color: #0b315a !important;
+  }
+  body.reference-storefront > header .hwrap > .hbtn .cartcount {
+    right: -4px !important;
+    top: -5px !important;
+  }
+  body.reference-storefront > header .hwrap > .cbx-header-whatsapp {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+    height: 45px !important;
+    min-height: 45px !important;
+    padding: 0 clamp(9px, .75vw, 15px) !important;
+    font-size: clamp(10px, .75vw, 13px) !important;
+    border-radius: 10px !important;
+  }
+}
+/* Preserve one row on narrow laptops: navigation goes into the existing accessible
+   menu instead of wrapping or clipping product search / cart. */
+@media (min-width: 761px) and (max-width: 1199px) {
+  body.reference-storefront > header .hwrap > .mnav-btn {
+    display: inline-flex !important;
+    order: 0 !important;
+    flex: 0 0 42px !important;
+    min-width: 42px !important;
+    height: 44px !important;
+  }
+  body.reference-storefront > header .hwrap .logo {
+    order: 1 !important;
+    flex-basis: clamp(118px, 14vw, 165px) !important;
+  }
+  body.reference-storefront > header .hwrap .cbx-header-links { display: none !important; }
+  body.reference-storefront > header .hwrap .header-search {
+    order: 2 !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    max-width: none !important;
+    min-width: 110px !important;
+  }
+  body.reference-storefront > header .hwrap .cbx-header-whatsapp {
+    padding-inline: 8px !important;
+  }
+}
+/* Very narrow tablet: icons remain in one line, text can be read from their labels
+   in the menu and their accessible names instead of causing horizontal overflow. */
+@media (min-width: 761px) and (max-width: 900px) {
+  body.reference-storefront > header .hwrap {
+    width: calc(100% - 32px) !important;
+    gap: 5px !important;
+  }
+  body.reference-storefront > header .hwrap .logo {
+    flex-basis: 125px !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn)::after {
+    display: none !important;
+  }
+  body.reference-storefront > header .hwrap > .cbx-header-whatsapp {
+    font-size: 10px !important;
+    padding-inline: 6px !important;
+  }
+}
+/* Mobile retains its existing hamburger + search row: no inadvertent changes to
+   small touch screens or their focus/keyboard behavior. */
+@media (prefers-reduced-motion: reduce) {
+  body.reference-storefront > header .hwrap .cbx-header-links a {
+    transition: none !important;
+  }
+}
+
+/* Equal prominence for Account, Wishlist and Cart: same optical dimensions,
+   inline labels, generous targets, and consistent badge anchor points. */
+@media (min-width: 761px) {
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) {
+    flex: 0 0 74px !important;
+    width: 74px !important;
+    min-width: 74px !important;
+    max-width: 74px !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    gap: 4px !important;
+    padding: 0 3px !important;
+    border-radius: 11px !important;
+    position: relative !important;
+    color: #092f58 !important;
+    overflow: visible !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) svg {
+    width: 21px !important;
+    height: 21px !important;
+    stroke-width: 1.85 !important;
+    stroke-linecap: round !important;
+    stroke-linejoin: round !important;
+    flex: 0 0 21px !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn)::after {
+    font-size: 10.8px !important;
+    line-height: 1.15 !important;
+    font-weight: 800 !important;
+    letter-spacing: -.1px !important;
+    white-space: nowrap !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn):hover {
+    background: #f0f5fa !important;
+    color: #c63a06 !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn):focus-visible {
+    outline: 2px solid #e35b16 !important;
+    outline-offset: 2px !important;
+  }
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) :is(.cartcount,.wishcount) {
+    position: absolute !important;
+    top: -4px !important;
+    right: 1px !important;
+    min-width: 17px !important;
+    height: 17px !important;
+    padding: 0 4px !important;
+    border-radius: 999px !important;
+    border: 2px solid #fff !important;
+    background: #d5430b !important;
+    color: white !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+@media (min-width: 761px) and (max-width: 900px) {
+  body.reference-storefront > header .hwrap > :is(.account-btn,a[aria-label="My wishlist"],.hbtn) {
+    flex-basis: 46px !important;
+    width: 46px !important;
+    min-width: 46px !important;
+    max-width: 46px !important;
+  }
+}
