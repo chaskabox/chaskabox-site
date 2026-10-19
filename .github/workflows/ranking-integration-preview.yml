@@ -1,0 +1,33 @@
+name: Ranking Phases 1 and 2 integrated with approved header
+on:
+  push:
+    branches: ['integrate/ranking-phases12-header-20261019']
+permissions:
+  contents: read
+jobs:
+  verified-integrated-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Homepage, SSR categories, empty collections and mobile overflow
+        env:
+          PHASE2_RANKING_PREVIEW_URL: https://integrate-ranking-phases12-h.chaskabox-site.pages.dev
+        run: node tools/ranking-phase2-preview-smoke.mjs
+      - name: Verify home and shop SEO search intent from approved phase one
+        env:
+          RANKING_PREVIEW_URL: https://integrate-ranking-phases12-h.chaskabox-site.pages.dev
+        run: node tools/ranking-phase1-preview-smoke.mjs
+      - name: Preserve integrated browser evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ranking-phases12-approved-header-preview
+          path: test-results/ranking-*/
+          retention-days: 7
