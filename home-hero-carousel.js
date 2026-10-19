@@ -3,8 +3,10 @@
  */
 (() => {
   'use strict';
+  const initialized=new WeakSet();
+  function initializeHero(){
   const root=document.querySelector('#view-home .hero');
-  if(!root)return;
+  if(!root||initialized.has(root))return;
   const title=root.querySelector('.herotxt h1');
   const desc=root.querySelector('.herotxt > p');
   const eyebrow=root.querySelector('.hero-eyebrow');
@@ -27,6 +29,7 @@
     else root.querySelector('.herotrust')?.before(controls);
   }
   if(!title||!desc||!eyebrow||!primary||!secondary||!controls)return;
+  initialized.add(root);
   // Approved slider copy (2026-10-18). Art files must be separately approved and attached.
   // Shared trust/delivery strip is outside this carousel and NEVER changes with slide.
   const defaults=[
@@ -165,4 +168,7 @@
   root.addEventListener('hero-reveal',start);
   window.addEventListener('chaskabox:hero-imagery-ready',()=>{const node=root.querySelector('#heroCollage');if(node)delete node.dataset.heroMarkupKey;show(current);});
   show(0);start();
+  }
+  document.addEventListener('chaskabox:home-mounted',initializeHero);
+  initializeHero();
 })();

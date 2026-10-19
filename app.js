@@ -752,6 +752,7 @@ function renderHomeRoute(){
   const tpl=document.getElementById('tpl-home');
   if(vh && tpl && !vh.innerHTML.trim()){
     vh.appendChild(tpl.content.cloneNode(true));
+    if(typeof window.CustomEvent==='function')document.dispatchEvent(new window.CustomEvent('chaskabox:home-mounted'));
   }
   showView('home');
   renderHomeContent();

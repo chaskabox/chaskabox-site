@@ -8,7 +8,7 @@ test('all storefront entry routes load the same versioned UX application and car
     const html=readFileSync(new URL(path,root),'utf8');
     assert.match(html,/\/storefront-bundle\.css\?v=20261019-ui36/,path);
     assert.match(html,/\/app\.js\?v=20261019-ui36/,path);
-    assert.match(html,/\/home-hero-carousel\.js\?v=20261019-hero1/,path);
+    assert.match(html,/\/home-hero-carousel\.js\?v=20261019-hero2/,path);
     assert.doesNotMatch(html,/\/(?:styles\.css|app\.js)\?v=20261012-release\?v=/,path);
   }
 });

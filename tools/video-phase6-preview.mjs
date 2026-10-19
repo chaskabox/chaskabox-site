@@ -116,6 +116,10 @@ try{
     await page.locator('#view-home .cb-offers .cb-offer').count()!==2||await page.locator('#view-home [data-hero-dot]').count()!==3||
     !categoryBackground.includes('approved-category-sprite-hq-20261018.webp'))
     throw Error('Returning Home from a static entry restores old duplicate sections');
+   await page.locator('#view-home [data-hero-dot="2"]').click();
+   if(await page.locator('#view-home .hero').getAttribute('data-hero-slide')!=='3'||
+    !((await page.locator('#view-home .hero-scene').getAttribute('src'))||'').includes('hero-03-'))
+    throw Error('Hero controls were not initialized after the Home template mounted');
    results.push({case:'Home reached from Brands retains the compact shared sections',width:390,pass:true});
   }catch(e){results.push({case:'Static-entry Home navigation',pass:false,error:String(e)});}
   finally{await context.close();}
