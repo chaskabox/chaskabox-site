@@ -56,6 +56,9 @@ test('SSR category shell really contains its visible introduction mount, retaine
  assert.match(file('functions/api/_lib/catalogue-page.js'),/catalogueNavigation\(all,manifest,path\)/);
  assert.match(file('functions/api/_lib/catalogue-page.js'),/esc\(copy.intro\)/);
  assert.match(home,/<a href="\/guides\/choosing-a-snack-box\/">Choosing a snack pack<\/a>/);
+ assert.match(home,/<section aria-labelledby="homeShopDiscovery" style="order:50;width:calc\(100% - 32px\);/);
+ assert.match(file('app.js'),/const hasPublicProducts=publicProducts\(\)\.some/);
+ assert.match(file('app.js'),/categoryPath\(catName\),!hasPublicProducts/);
 });
 
 test('SEO copy matches across server, client, CMS defaults and static fallbacks',()=>{
