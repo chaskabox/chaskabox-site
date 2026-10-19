@@ -260,6 +260,41 @@ try{
     throw Error('Sticky header overlay/scroll regression '+JSON.stringify({width,...sticky}));
   await page.evaluate(()=>window.scrollTo(0,0));
   results.interactions.push({case:'sticky header remains visible without covering cart overlay at '+width+'px',pass:true});
+  if(width>760){
+    const alignment=await page.evaluate(()=>{
+      const header=document.querySelector('header'),wrap=header?.querySelector('.hwrap');
+      const nodes=[wrap?.querySelector('.logo'),wrap?.querySelector('.cbx-header-links'),
+        wrap?.querySelector('.header-search'),wrap?.querySelector('.account-btn'),
+        wrap?.querySelector('a[aria-label="My wishlist"]'),wrap?.querySelector('.hbtn'),
+        wrap?.querySelector('.cbx-header-whatsapp')];
+      const visible=nodes.filter(x=>x&&getComputedStyle(x).display!=='none');
+      const rects=visible.map(x=>x.getBoundingClientRect());
+      const centers=rects.map(r=>r.top+r.height/2);
+      const controls=[wrap?.querySelector('.account-btn'),wrap?.querySelector('a[aria-label="My wishlist"]'),wrap?.querySelector('.hbtn')];
+      const icons=controls.map(el=>el?.querySelector('svg')?.getBoundingClientRect());
+      const labels=controls.map(el=>el?getComputedStyle(el,'::after').position:null);
+      const first=rects[0],last=rects.at(-1),bounds=wrap.getBoundingClientRect();
+      const nav=nodes[1],menu=wrap.querySelector('.mnav-btn');
+      return {width:innerWidth,centerSpread:Math.max(...centers)-Math.min(...centers),
+        noBodyOverflow:document.documentElement.scrollWidth<=innerWidth+2,
+        left:bounds.left,right:innerWidth-bounds.right,
+        iconWidths:icons.map(i=>i?.width),iconHeights:icons.map(i=>i?.height),
+        labelPositions:labels,navVisible:getComputedStyle(nav).display!=='none',
+        navUnclipped:nav.scrollWidth<=nav.clientWidth+3,
+        menuVisible:getComputedStyle(menu).display!=='none',
+        noOverlap:rects.every((r,i)=>!i||rects[i-1].right<=r.left+2),
+        buttons:controls.map(x=>x.getBoundingClientRect().height)};
+    });
+    if(alignment.centerSpread>12||!alignment.noBodyOverflow||!alignment.noOverlap||
+      Math.abs(alignment.left-alignment.right)>5||
+      alignment.iconWidths.some(x=>Math.abs(x-27)>2)||
+      alignment.iconHeights.some(x=>Math.abs(x-27)>2)||
+      alignment.buttons.some(x=>x<44)||
+      (width>=1200&&(!alignment.navVisible||!alignment.navUnclipped))||
+      (width<1200&&!alignment.menuVisible))
+      throw Error('Single-row aligned header/icons regression '+JSON.stringify(alignment));
+    results.interactions.push({case:'single-row wide header, equal prominent Account/Wishlist/Cart icons / '+width,pass:true});
+  }
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
   if(width===390){
    const wish=page.locator('#view-home .card .wishbtn').first();
