@@ -23,12 +23,12 @@ test('crawlable nav uses named category paths and no fabricated product claims',
  assert.doesNotMatch(html,/InStock|guaranteed|best seller/i);
  assert.equal(catalogueDiscoveryNav([]),'');
 });
-test('homepage factual SEO guide lives below approved hero and links to real routes',()=>{
+test('homepage approved hero and existing category-discovery navigation remain intact',()=>{
  const s=readFileSync(new URL('../index.html',import.meta.url),'utf8');
- const guide=s.indexOf('id="pakistani-snacks-guide"');
- assert.ok(guide>s.indexOf('hero-approved-three'));
- assert.equal((s.match(/data-hero-dot="\d+"/g)||[]).length,3);
- for(const link of ['/shop/','/category/biscuits-and-wafers/','/category/chocolates-and-candies/','/category/snacks-and-nimco/','/bundles/','/guides/choosing-a-snack-box/'])assert.ok(s.includes('href="'+link+'"'),link);
+ assert.equal((s.match(/data-hero-dot="\\d+"/g)||[]).length,3);
+ assert.match(s,/id="catTiles"/);
+ for(const link of ['/shop/','/category/biscuits-and-wafers/','/category/chocolates-and-candies/','/category/snacks-and-nimco/','/bundles/'])assert.ok(s.includes('href="'+link+'"'),link);
+ assert.doesNotMatch(s,/pakistani-snacks-guide/);
 });
 test('SSR collection injects links without injecting on empty collections',()=>{
  const s=readFileSync(new URL('../functions/api/_lib/catalogue-page.js',import.meta.url),'utf8');
