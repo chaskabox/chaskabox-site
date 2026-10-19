@@ -35,10 +35,10 @@ const positionPanel=()=>{
  const available=up?bounds.bottom-top-12:innerHeight-bounds.top-12;
  panel.style.setProperty('--cbx-category-space',Math.max(44,Math.min(600,Math.floor(available)))+'px');
 };
-const set=open=>{if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open);if(open)positionPanel()};
+const set=open=>{clearTimeout(openTimer);clearTimeout(closeTimer);if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open);if(open)positionPanel()};
 let openTimer,closeTimer;btn.addEventListener('click',()=>set(panel.hidden));
 holder.addEventListener('pointerenter',e=>{if(e.pointerType!=='mouse')return;clearTimeout(closeTimer);openTimer=setTimeout(()=>set(true),220)});
-holder.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;clearTimeout(openTimer);closeTimer=setTimeout(()=>set(false),220)});
+holder.addEventListener('pointerleave',e=>{if(e.pointerType!=='mouse')return;clearTimeout(openTimer);if(!holder.contains(document.activeElement))closeTimer=setTimeout(()=>set(false),220)});
 holder.addEventListener('focusout',e=>{if(!holder.contains(e.relatedTarget))set(false)});
 document.addEventListener('pointerdown',e=>{if(!holder.contains(e.target))set(false)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!panel.hidden){set(false);btn.focus()}});

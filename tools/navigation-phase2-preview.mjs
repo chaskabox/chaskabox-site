@@ -45,6 +45,8 @@ try{
    if(response?.status()!==200)throw Error('Homepage did not return 200');
    await page.evaluate(()=>document.fonts.ready);
    await page.waitForFunction(()=>document.body.classList.contains('cbx-header-ready')&&document.querySelector('body > .cbx-whatsapp-float'));
+   await page.locator('#view-home .addcart').first().waitFor({state:'attached'});
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    const header=await page.evaluate(()=>{
     const wrap=document.querySelector('header .hwrap'),nav=wrap.querySelector('.cbx-header-links');
     const nodes=[...wrap.children].filter(el=>el.getClientRects().length&&getComputedStyle(el).display!=='none');
@@ -69,8 +71,9 @@ try{
    if(width>760&&header.icons.some(b=>Math.abs(b.w-21)>1||Math.abs(b.h-21)>1))
     throw Error('Header action icons no longer share normal dimensions');
    await page.evaluate(()=>scrollTo({top:350,behavior:'instant'}));
+   await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    const sticky=await page.locator('body > header').evaluate(el=>{const b=el.getBoundingClientRect();return {y:b.top,h:b.height};});
-   if(Math.abs(sticky.y)>2||Math.abs(sticky.h-header.height)>1)throw Error('Header changes height or leaves the viewport during scroll');
+   if(Math.abs(sticky.y)>2||Math.abs(sticky.h-header.height)>1)throw Error('Header changes height or leaves the viewport during scroll '+JSON.stringify({width,before:header.height,scrollY:await page.evaluate(()=>scrollY),...sticky}));
    await page.evaluate(()=>scrollTo({top:0,behavior:'instant'}));
    results.push({case:'Readable, unclipped single-line header, stable sticky position and 44px hero controls',width,height,pass:true,header});
    const pair=await page.evaluate(()=>{
@@ -154,8 +157,7 @@ try{
    let restored=false;
    for(const offset of [130,210,300,390]){
     await page.evaluate(y=>scrollTo({top:y,behavior:'instant'}),desired+offset);
-    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-    if(await page.locator('#helpFab').isVisible()){restored=true;break;}
+    try{await page.waitForFunction(()=>getComputedStyle(document.getElementById('helpFab')).visibility==='visible',{},{timeout:600});restored=true;break;}catch{}
    }
    if(!restored)throw Error('Support controls do not reappear after leaving the shopping actions');
    await page.locator('#helpFab').click();
@@ -167,6 +169,9 @@ try{
    await page.keyboard.press('Escape');
    await page.waitForFunction(()=>!document.querySelector('#aimodal.open')&&document.activeElement?.id==='helpFab');
    results.push({case:'Help pair clears Add to Bag, restores, and opens/closes AI without sending a message',width,pass:true,pair,ai});
+  }catch(error){
+   await page.screenshot({path:out+'/phase2-failure-'+width+'.png',fullPage:false}).catch(()=>{});
+   throw error;
   }finally{await context.close();}
  }
  // The navigation/support layer must not reintroduce motion under this preference.
