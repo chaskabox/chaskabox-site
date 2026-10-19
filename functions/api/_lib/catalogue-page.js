@@ -5,6 +5,7 @@ import {storefrontConfig} from './storefront-config.js';
 import {productImage} from './seo.js';
 import {LOCAL_PHOTOS} from './local-photos.js';
 import {SEO_CATEGORIES} from './catalogue-content.js';
+import {catalogueDiscoveryNav} from './catalogue-discovery.js';
 import {SITE,esc,safeJson,replaceMount,routeShell,withSeo,organizationSchema,catalogueUnavailable} from './storefront-html.js';
 export function browserProduct(p){return {id:Number(p.id),slug:p.slug||'',name:p.name,brand:p.brand||'',price:Number(p.price),oldPrice:p.old_price==null?null:Number(p.old_price),category:p.category||'',pack:p.pack||'',desc:p.description||'',badge:p.badge||'',img:p.image_url||null,photoNote:p.image_warning||'',bundle:!!p.is_bundle,stockState:p.stock_state||'sourced_after_order',seoTitle:p.seo_title||'',seoDescription:p.seo_description||'',bundleContents:p.bundle_contents||[],retailValue:p.bundle_retail_value??null,bundleSavings:p.bundle_savings??null,bundleNote:p.bundle_warning||''};}
 const moneyFormatter=new Intl.NumberFormat('en-PK',{maximumFractionDigits:2});
@@ -40,6 +41,16 @@ export async function renderCataloguePage(context,kind,slug=''){
   html=replaceMount(html,'shopGrid',rows.map((p,i)=>catalogueCard(p).replace('loading="lazy"',i===0?'loading="eager" fetchpriority="high"':i===1?'loading="eager"':'loading="lazy"')).join('')||'<p>No public products in this collection yet. <a href="/shop/">Browse all snacks</a>.</p>');
   html=html.replace(/(<h1\b[^>]*id="catTitle"[^>]*>)[\s\S]*?<\/h1>/i,'$1'+esc(copy.name)+'</h1>').replace(/(<[^>]+id="catCount"[^>]*>)[\s\S]*?<\//i,'$1'+rows.length+' '+(rows.length===1?'product':'products')+'</');
   html=html.replace(/(<[^>]+id="categorySeoIntro"[^>]*>)[\s\S]*?<\//i,'$1'+esc(copy.intro)+'</');
+  // The source storefront shell lacks the static catalogue intro element. Put factual
+  // SSR copy below the initial product grid to protect desktop above-the-fold layout.
+  // Empty collections remain noindex and do not advertise unsupported categories.
+  if(rows.length>0){
+   const nav=catalogueDiscoveryNav(all,kind==='category'?slug:'');
+   const intro=copy.intro?'<p style="line-height:1.7;margin:0 0 10px">'+esc(copy.intro)+'</p>':'';
+   const supplementary='<section aria-label="Shopping and category information" style="max-width:1040px;margin:18px auto 30px;padding:0 18px">'+intro+nav+'</section>';
+   if(html.includes('id="collectionSeoSupplement"'))html=replaceMount(html,'collectionSeoSupplement',supplementary);
+   else if(html.includes('id="categorySeoIntro"'))html=html.replace(/(<p\b[^>]*\bid="categorySeoIntro"[^>]*>[\s\S]*?<\/p>)/i,'$1'+supplementary);
+  }
   html=withSeo(html,{title:copy.title,description:copy.description,path,noindex:rows.length===0,schemas:[organizationSchema(),collectionSchema(rows,copy.name,path)],seed:'<script type="application/json" id="current-catalogue">'+safeJson(all.map(browserProduct))+'</script>'+(manifest?'<script type="application/json" id="current-storefront-config">'+safeJson(manifest)+'</script>':'')});
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
  }catch(error){console.error('[catalogue-page]',error?.code||'unavailable');return catalogueUnavailable();}
