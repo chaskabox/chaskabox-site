@@ -287,13 +287,13 @@ try{
     });
     if(alignment.centerSpread>12||!alignment.noBodyOverflow||!alignment.noOverlap||
       Math.abs(alignment.left-alignment.right)>5||
-      alignment.iconWidths.some(x=>Math.abs(x-27)>2)||
-      alignment.iconHeights.some(x=>Math.abs(x-27)>2)||
+      alignment.iconWidths.some(x=>Math.abs(x-21)>1)||
+      alignment.iconHeights.some(x=>Math.abs(x-21)>1)||
       alignment.buttons.some(x=>x<44)||
       (width>=1200&&(!alignment.navVisible||!alignment.navUnclipped))||
       (width<1200&&!alignment.menuVisible))
       throw Error('Single-row aligned header/icons regression '+JSON.stringify(alignment));
-    results.interactions.push({case:'single-row wide header, equal prominent Account/Wishlist/Cart icons / '+width,pass:true});
+    results.interactions.push({case:'single-row wide header, equal normal-size Account/Wishlist/Cart icons / '+width,pass:true});
   }
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
   if(width===390){
