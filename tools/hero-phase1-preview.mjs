@@ -33,6 +33,12 @@ try{
    for(let index=0;index<3;index++){
     await dots.nth(index).click();
     await hero.locator('.hero-scene').evaluate(async img=>{await img.decode();});
+    // Measure settled layout, not the independent category reveal transition
+    // that may begin when the homepage first intersects its observer margin.
+    await page.locator('.discover').evaluate(async section=>{
+     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+     await Promise.all(section.getAnimations().map(animation=>animation.finished.catch(()=>{})));
+    });
     const geometry=await hero.evaluate(root=>{
      const rect=e=>{const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height,bottom:r.bottom,right:r.right};};
      const controls=root.querySelector('.hero-slider-controls');
