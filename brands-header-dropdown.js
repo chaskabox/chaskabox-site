@@ -116,7 +116,7 @@
     const fab=document.getElementById('helpFab');
     const wa=document.querySelector('body > a.cbx-whatsapp-float');
     if(!fab||!wa)return;
-    let frame=0,rescan=true;
+    let frame=0,rescan=true,revealTimer=null,lastMovement=0;
     const near=new Set();
     const selector='main a[href]:not(.pimg):not(.cat),main button,main input,main select,main textarea,main .price,main .herotrust,main .cb-trust-rail,footer a[href]';
     const observer=typeof IntersectionObserver==='function'?new IntersectionObserver(entries=>{
@@ -124,7 +124,8 @@
       schedule();
     }):null;
     function schedule(refresh=false){
-      if(refresh===true)rescan=true;
+      if(refresh===true){rescan=true;lastMovement=performance.now();}
+      if(refresh?.type==='scroll'||refresh?.type==='resize')lastMovement=performance.now();
       if(frame)return;
       frame=requestAnimationFrame(()=>{
         frame=0;
@@ -142,7 +143,13 @@
           const r=el.getBoundingClientRect();
           return r.width>0&&r.height>0&&boxes.some(b=>r.left<b.right+4&&r.right>b.left-4&&r.top<b.bottom+4&&r.bottom>b.top-4);
         });
-        document.body.classList.toggle('cbx-support-obscures-content',obscures);
+        clearTimeout(revealTimer);
+        // Let intersection updates settle before revealing again. During a
+        // scroll, a newly visible price/action can arrive one observer frame late.
+        const remaining=180-(performance.now()-lastMovement);
+        if(!obscures&&!retain&&remaining>0&&document.body.classList.contains('cbx-support-obscures-content')){
+          revealTimer=setTimeout(()=>schedule(),remaining);
+        }else document.body.classList.toggle('cbx-support-obscures-content',obscures);
       });
     }
     window.addEventListener('scroll',schedule,{passive:true});

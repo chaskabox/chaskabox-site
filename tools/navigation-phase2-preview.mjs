@@ -8,10 +8,10 @@ const out='test-results/navigation-phase2';
 await mkdir(out,{recursive:true});
 const versions={
  'header-one-line.css':'20261019-line4',
- 'sticky-motion-polish.css':'20261019-sticky2',
+ 'sticky-motion-polish.css':'20261019-sticky3',
  'brands-header-dropdown.css':'20261019-brand2',
- 'brands-header-dropdown.js':'20261019-brand4',
- 'header-discovery-preview.js':'20261019-header4'
+ 'brands-header-dropdown.js':'20261019-brand5',
+ 'header-discovery-preview.js':'20261019-header5'
 };
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const expected=Object.fromEntries(await Promise.all(Object.keys(versions).map(async p=>[p,digest(await readFile(p))])));
@@ -158,7 +158,11 @@ try{
    let restored=false;
    for(const offset of [130,210,300,390]){
     await page.evaluate(y=>scrollTo({top:y,behavior:'instant'}),desired+offset);
-    try{await page.waitForFunction(()=>getComputedStyle(document.getElementById('helpFab')).visibility==='visible',{},{timeout:600});restored=true;break;}catch{}
+    try{
+     await page.waitForFunction(()=>getComputedStyle(document.getElementById('helpFab')).visibility==='visible',{},{timeout:600});
+     await page.waitForTimeout(220);
+     if(await page.locator('#helpFab').isVisible()){restored=true;break;}
+    }catch{}
    }
    if(!restored)throw Error('Support controls do not reappear after leaving the shopping actions');
    await page.locator('#helpFab').click();
