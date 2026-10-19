@@ -1,0 +1,29 @@
+name: FAQ indexing crawlability preview
+on:
+  push:
+    branches: ['fix/faq-indexing-discovery-20261019']
+permissions:
+  contents: read
+jobs:
+  faq-browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Verify SSR FAQ canonical, content and crawlable crosslinks
+        env:
+          FAQ_PREVIEW_URL: https://fix-faq-indexing-discovery-2.chaskabox-site.pages.dev
+        run: node tools/faq-indexing-smoke.mjs
+      - name: Archive FAQ browser evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: faq-indexing-preview
+          path: test-results/faq-indexing/
+          retention-days: 7
