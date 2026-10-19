@@ -1,0 +1,35 @@
+name: Responsive storefront gutter alignment
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  layout-preview:
+    if: github.head_ref == 'fix/consistent-storefront-gutters-20261019'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    env:
+      ALIGNMENT_PREVIEW_URL: https://fix-consistent-storefront-gu.chaskabox-site.pages.dev
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Confirm matching preview is available
+        run: |
+          set -euo pipefail
+          curl --location --fail --silent --show-error --retry 8 --retry-delay 4 --output /dev/null "$ALIGNMENT_PREVIEW_URL/"
+          curl --location --fail --silent --show-error --output /dev/null "$ALIGNMENT_PREVIEW_URL/header-one-line.css?v=20261019-line8"
+      - name: Read-only responsive layout/browser check
+        run: node tools/header-alignment-preview-smoke.mjs
+      - name: Preserve mobile/desktop visual evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: header-gutter-layout-evidence
+          path: test-results/header-alignment/
+          retention-days: 7

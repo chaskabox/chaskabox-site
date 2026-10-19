@@ -24,12 +24,14 @@ test('sticky header remains below modal overlay and motion effects respect prefe
  assert.doesNotMatch(css,/@keyframes|setInterval|backdrop-filter/);
 });
 
-test('desktop navigation uses wide margins, one row, and equal-size account actions',()=>{
+test('desktop navigation uses shared 1380px storefront gutters, one row, and equal-size account actions',()=>{
  const css=read('header-one-line.css');
  for(const path of pages){
-   assert.match(read(path),/header-one-line\.css\?v=20261019-line7/,path);
+   assert.match(read(path),/header-one-line\.css\?v=20261019-line8/,path);
  }
- assert.match(css,/width: calc\(100% - clamp\(32px, 8\.5vw, 208px\)\)/);
+ assert.match(css,/width: calc\(100% - 24px\) !important/);
+ assert.match(css,/max-width: var\(--cb-width, 1380px\) !important/);
+ assert.doesNotMatch(css,/max-width: 1840px/);
  assert.match(css,/flex-wrap: nowrap !important/);
  assert.match(css,/flex-direction: row !important/);
  assert.match(css,/Equal prominence for Account, Wishlist and Cart/);
