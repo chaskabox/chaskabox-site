@@ -1,9 +1,11 @@
-/* ChaskaBox single-line desktop header — align to owner-marked wide margins. 
+/* ChaskaBox single-line desktop header — align to the approved storefront content frame. 
    Loaded after all previous header styles on every public entry page. */
 @media (min-width: 761px) {
   body.reference-storefront > header .hwrap {
-    width: calc(100% - clamp(32px, 8.5vw, 208px)) !important;
-    max-width: 1840px !important;
+    /* Match the approved 1380px hero/category frame and the 12px minimum gutter.
+       Avoid the former 1840px header width that visually overshot the hero. */
+    width: calc(100% - 24px) !important;
+    max-width: var(--cb-width, 1380px) !important;
     margin-inline: auto !important;
     display: flex !important;
     align-items: center !important;
@@ -162,7 +164,7 @@
    in the menu and their accessible names instead of causing horizontal overflow. */
 @media (min-width: 761px) and (max-width: 900px) {
   body.reference-storefront > header .hwrap {
-    width: calc(100% - 32px) !important;
+    width: calc(100% - 24px) !important;
     gap: 5px !important;
   }
   body.reference-storefront > header .hwrap .logo {
