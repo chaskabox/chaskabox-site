@@ -8,7 +8,7 @@ test('Brand dropdown and WhatsApp beside Chaska AI load on all 14 routes',()=>{
  for(const path of pages){
   const html=read(path);
   assert.match(html,/brands-header-dropdown\.css\?v=20261019-brand1/,path);
-  assert.match(html,/brands-header-dropdown\.js\?v=20261019-brand1/,path);
+  assert.match(html,/brands-header-dropdown\.js\?v=20261019-brand2/,path);
  }
 });
 test('Brand list uses live product availability and existing brand detail routes',()=>{
