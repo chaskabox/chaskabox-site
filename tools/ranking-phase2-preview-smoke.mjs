@@ -13,9 +13,9 @@ async function inspect(path,fn){
 }
 await inspect('/',async(p,x)=>{
  x.hero=await p.locator('#view-home [data-hero-dot]').count();
- x.guide=await p.locator('#pakistani-snacks-guide').count();
- x.links=await p.locator('#view-home nav[aria-label="Explore Pakistani snacks and shopping help"] a').count();
- if(x.hero!==3||x.guide!==1||x.links!==6)throw Error('Hero or public SEO section missing');
+ x.categories=await p.locator('#view-home #catTiles a[href^="/category/"]').count();
+ x.guideRemoved=await p.locator('#pakistani-snacks-guide').count()===0;
+ if(x.hero!==3||x.categories<3||!x.guideRemoved)throw Error('Approved hero or existing category discovery was changed');
 });
 await inspect('/shop/',async(p,x)=>{
  x.related=await p.locator('nav.catalogue-related a[href^="/category/"]').count();
