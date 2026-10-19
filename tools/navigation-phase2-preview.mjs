@@ -29,16 +29,17 @@ for(let attempt=0;attempt<24;attempt++){
 if(!ready)throw Error('The branch preview does not serve this commit’s navigation sources');
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
 const results=[],blockedMutations=[];
+const readOnly=context=>context.route('**/*',route=>{
+ const request=route.request();
+ if(['GET','HEAD','OPTIONS'].includes(request.method()))return route.continue();
+ blockedMutations.push({method:request.method(),path:new URL(request.url()).pathname});
+ return route.abort();
+});
 const viewports=[[320,740],[360,800],[390,844],[430,932],[768,1024],[1024,768],[1200,700],[1280,720],[1366,768],[1440,900],[1920,1080]];
 try{
  for(const [width,height] of viewports){
   const context=await browser.newContext({viewport:{width,height},reducedMotion:'no-preference',serviceWorkers:'block'});
-  await context.route('**/*',route=>{
-   const request=route.request();
-   if(['GET','HEAD','OPTIONS'].includes(request.method()))return route.continue();
-   blockedMutations.push({method:request.method(),path:new URL(request.url()).pathname});
-   return route.abort();
-  });
+  await readOnly(context);
   const page=await context.newPage();
   try{
    const response=await page.goto(base+'/',{waitUntil:'domcontentloaded'});
@@ -176,6 +177,7 @@ try{
  }
  // The navigation/support layer must not reintroduce motion under this preference.
  const context=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:'reduce'});
+ await readOnly(context);
  const page=await context.newPage();
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
