@@ -106,6 +106,17 @@ try{
   }catch(e){results.push({case:'Motion and script fallback',reduced,pass:false,error:String(e)});}
   finally{await context.close();}
  }
+ {
+  const {context,page}=await start(390,844);
+  try{
+   await page.goto(base+'/brands/',{waitUntil:'networkidle'});
+   await page.locator('header a[href="/"]').first().click();await page.waitForLoadState('networkidle');
+   if(await page.locator('#view-home .why-grid article').count()!==3||await page.locator('#view-home .cb-order-guide-copy').count()!==1)
+    throw Error('Returning Home from a static entry restores old duplicate sections');
+   results.push({case:'Home reached from Brands retains the compact shared sections',width:390,pass:true});
+  }catch(e){results.push({case:'Static-entry Home navigation',pass:false,error:String(e)});}
+  finally{await context.close();}
+ }
 }finally{await browser.close();await writeFile(out+'/results.json',JSON.stringify({base,sources:expected,results,blocked,errors},null,2));}
 console.log('VIDEO_PHASE6 '+JSON.stringify({checks:results.length,passed:results.filter(r=>r.pass).length,failed:results.filter(r=>!r.pass),pageErrors:errors,blockedMutations:blocked.length}));
 if(results.some(r=>!r.pass)||errors.length)process.exitCode=1;
