@@ -10,8 +10,8 @@ const versions={
  'header-one-line.css':'20261019-line6',
  'sticky-motion-polish.css':'20261019-sticky3',
  'brands-header-dropdown.css':'20261019-brand3',
- 'brands-header-dropdown.js':'20261019-brand6',
- 'header-discovery-preview.js':'20261019-header6'
+ 'brands-header-dropdown.js':'20261019-brand7',
+ 'header-discovery-preview.js':'20261019-header7'
 };
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const expected=Object.fromEntries(await Promise.all(Object.keys(versions).map(async p=>[p,digest(await readFile(p))])));
@@ -47,6 +47,7 @@ try{
    await page.evaluate(()=>document.fonts.ready);
    await page.waitForFunction(()=>document.body.classList.contains('cbx-header-ready')&&document.querySelector('body > .cbx-whatsapp-float'));
    await page.locator('#view-home .addcart').first().waitFor({state:'attached'});
+   await page.waitForLoadState('networkidle');
    await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
    const header=await page.evaluate(()=>{
     const wrap=document.querySelector('header .hwrap'),nav=wrap.querySelector('.cbx-header-links');
@@ -146,16 +147,21 @@ try{
    await page.locator('#view-home .addcart').first().waitFor({state:'attached'});
    const target=await page.evaluate(()=>{
     const f=document.getElementById('helpFab').getBoundingClientRect(),w=document.querySelector('body > .cbx-whatsapp-float').getBoundingClientRect();
-    return [...document.querySelectorAll('#view-home .addcart')].map((el,index)=>{const r=el.getBoundingClientRect();return {index,x:r.left,right:r.right,w:r.width,y:r.top+scrollY+r.height/2};})
+    return [...document.querySelectorAll('#view-home .addcart')].map((el,index)=>{
+      const r=el.getBoundingClientRect(),rail=el.closest('.hscroll')?.getBoundingClientRect();
+      const x=Math.max(r.left,rail?.left??0),right=Math.min(r.right,rail?.right??innerWidth);
+      return {index,x,right,w:Math.max(0,right-x),y:r.top+scrollY+r.height/2};
+     })
      .find(r=>r.w>0&&r.right>w.left&&r.x<f.right);
    });
-   if(!target)throw Error('No real shopping action available for support-clearance verification');
-   await page.evaluate(y=>{
-    const f=document.getElementById('helpFab').getBoundingClientRect();
-    const scroll=y-(f.top+f.height/2);scrollTo({top:scroll,behavior:'instant'});return scroll;
-   },target.y);
-   await page.waitForFunction(()=>document.body.classList.contains('cbx-support-obscures-content')&&getComputedStyle(document.getElementById('helpFab')).visibility==='hidden');
-   if(width===390||width===1366)await page.screenshot({path:out+'/phase2-clear-buy-button-'+width+'.png',fullPage:false});
+   if(target){
+    await page.evaluate(y=>{
+     const f=document.getElementById('helpFab').getBoundingClientRect();
+     const scroll=y-(f.top+f.height/2);scrollTo({top:scroll,behavior:'instant'});
+    },target.y);
+    await page.waitForFunction(()=>document.body.classList.contains('cbx-support-obscures-content')&&getComputedStyle(document.getElementById('helpFab')).visibility==='hidden');
+    if(width===390||width===1366)await page.screenshot({path:out+'/phase2-clear-buy-button-'+width+'.png',fullPage:false});
+   }
    // Dense card rows can correctly remain protected for several scroll offsets.
    // Restore over a real supporting-content area with no shopping controls.
    await page.locator('#view-home .why-section').evaluate(el=>{
@@ -173,7 +179,7 @@ try{
    if(width===390||width===1366)await page.screenshot({path:out+'/phase2-help-open-'+width+'.png',fullPage:false});
    await page.keyboard.press('Escape');
    await page.waitForFunction(()=>!document.querySelector('#aimodal.open')&&document.activeElement?.id==='helpFab');
-   results.push({case:'Help pair clears Add to Bag, restores, and opens/closes AI without sending a message',width,pass:true,pair,ai});
+   results.push({case:'Help pair clears Add to Bag, restores, and opens/closes AI without sending a message',width,pass:true,buyClearance:target?'yields to painted shopping action':'support is outside the painted shopping columns',pair,ai});
   }catch(error){
    await page.screenshot({path:out+'/phase2-failure-'+width+'.png',fullPage:false}).catch(()=>{});
    results.push({pass:false,width,error:String(error?.stack||error)});process.exitCode=1;

@@ -42,8 +42,9 @@
     if(!trigger||popup.hidden)return;
     const a=trigger.getBoundingClientRect();
     if(a.width<=0){close();return;}
-    const width=Math.min(310,innerWidth-24);
-    const left=Math.max(12,Math.min(a.left-16,innerWidth-width-12));
+    const viewportWidth=document.documentElement.clientWidth||innerWidth;
+    const width=Math.min(310,viewportWidth-24);
+    const left=Math.max(12,Math.min(a.left-16,viewportWidth-width-12));
     popup.style.width=width+'px';
     popup.style.left=left+'px';
     const top=Math.max(8,a.bottom+8);
@@ -125,7 +126,8 @@
     const box=fab.getBoundingClientRect();
     if(box.width<20)return;
     // Right edge of WA is 10px to the left of Chaska AI's left edge.
-    wa.style.setProperty('--cb-wa-right',Math.round(innerWidth-box.left+10)+'px');
+    const viewportWidth=document.documentElement.clientWidth||innerWidth;
+    wa.style.setProperty('--cb-wa-right',Math.round(viewportWidth-box.left+10)+'px');
     wa.style.setProperty('--cb-wa-bottom',Math.max(10,Math.round(innerHeight-box.bottom))+'px');
     wa.setAttribute('aria-label','Order via WhatsApp');
     wa.setAttribute('title','Order via WhatsApp');
@@ -157,10 +159,27 @@
         const retain=document.activeElement===fab||document.activeElement===wa||
           document.getElementById('aimodal')?.classList.contains('open');
         const boxes=controls.map(el=>el.getBoundingClientRect());
+        const clipCache=new Map();
+        const horizontalBounds=(el,r)=>{
+          let left=Math.max(0,r.left),right=Math.min(innerWidth,r.right);
+          for(let parent=el.parentElement;parent&&parent!==document.body;parent=parent.parentElement){
+            if(!clipCache.has(parent)){
+              const style=getComputedStyle(parent);
+              if(/^(auto|scroll|hidden|clip)$/.test(style.overflowX)){
+                const b=parent.getBoundingClientRect(),x=b.left+parent.clientLeft;
+                clipCache.set(parent,{left:x,right:x+parent.clientWidth});
+              }else clipCache.set(parent,null);
+            }
+            const clip=clipCache.get(parent);
+            if(clip){left=Math.max(left,clip.left);right=Math.min(right,clip.right);}
+          }
+          return {left,right};
+        };
         const obscures=!retain&&[...near].some(el=>{
           if(!el.isConnected)return false;
           const r=el.getBoundingClientRect();
-          return r.width>0&&r.height>0&&boxes.some(b=>r.left<b.right+4&&r.right>b.left-4&&r.top<b.bottom+4&&r.bottom>b.top-4);
+          const visible=horizontalBounds(el,r);
+          return visible.right>visible.left&&r.height>0&&boxes.some(b=>visible.left<b.right+4&&visible.right>b.left-4&&r.top<b.bottom+4&&r.bottom>b.top-4);
         });
         clearTimeout(revealTimer);
         // Let intersection updates settle before revealing again. During a

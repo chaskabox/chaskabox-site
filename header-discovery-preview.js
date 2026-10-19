@@ -24,6 +24,8 @@ const render=()=>{const counts=new Set(catalog().map(p=>p.category));const avail
 const positionPanel=()=>{
  if(panel.hidden)return;
  panel.style.transform='none';
+ const viewportWidth=document.documentElement.clientWidth||innerWidth;
+ panel.style.maxWidth=Math.max(0,viewportWidth-24)+'px';
  const trigger=btn.getBoundingClientRect(),head=document.querySelector('body > header')?.getBoundingClientRect();
  const top=Math.max(8,head?.bottom||0);
  if(trigger.bottom<top||trigger.top>innerHeight){set(false);return;}
@@ -35,7 +37,7 @@ const positionPanel=()=>{
  const bounds=panel.getBoundingClientRect();
  const available=up?bounds.bottom-top-12:innerHeight-bounds.top-12;
  panel.style.setProperty('--cbx-category-space',Math.max(44,Math.min(600,Math.floor(available)))+'px');
- const left=Math.max(12,Math.min(bounds.left,innerWidth-bounds.width-12));
+ const left=Math.max(12,Math.min(bounds.left,viewportWidth-bounds.width-12));
  panel.style.transform='translateX('+(left-bounds.left)+'px)';
 };
 const set=open=>{clearTimeout(openTimer);clearTimeout(closeTimer);if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open);if(open)positionPanel()};

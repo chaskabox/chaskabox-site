@@ -30,11 +30,15 @@ one coordinated release after the requested phase reviews.
   action. Their alignment tracks control size, font readiness and viewport
   changes. Safe-area spacing is preserved; the duplicate mobile chat glyph,
   entrance animation and hover scaling are removed.
+  Position calculations use the layout viewport, preserving the 10px pair gap
+  in browsers with a classic scrollbar as well as overlay scrollbars.
 - The pair temporarily yields when it would cover buying text/actions, trust
   facts or footer links, and returns in clear space. A focused support control
   stays available. Open navigation, filter and modal overlays suppress the
   background pair; the AI panel retains its own close control and focus return.
   No AI question or WhatsApp message is sent as part of this verification.
+  Clearance respects carousel clipping, so offscreen rail items cannot hide
+  support actions sitting in a clear wide-screen gutter.
 
 ## Validation
 
