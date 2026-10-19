@@ -30,7 +30,7 @@ async function cardGeometry(page,selector){return page.locator(selector).evaluat
  const rect=s=>{const e=card.querySelector(s);if(!e)return null;const r=e.getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};};
  const r=card.getBoundingClientRect(),img=card.querySelector('.pimg>img'),pack=card.querySelector('.packmeta'),name=card.querySelector('.pname');
  return {x:r.x,y:r.y,w:r.width,h:r.height,image:rect('.pimg'),title:rect('.pname'),pack:rect('.packmeta'),price:rect('.prow'),button:rect('.addcart'),
-  packOverflow:pack?pack.scrollHeight>38.5:false,titleOverflow:name?name.scrollWidth>name.clientWidth+1:false,
+  packOverflow:pack?pack.scrollHeight>parseFloat(getComputedStyle(card.querySelector('.pbody')).gridTemplateRows.split(' ')[1])+.5:false,titleOverflow:name?name.scrollWidth>name.clientWidth+1:false,
   fit:img?getComputedStyle(img).objectFit:'placeholder',transform:getComputedStyle(card).transform,
   titleText:name?.textContent,packText:card.querySelector('.ppack')?.textContent,priceText:card.querySelector('.price')?.textContent,
   href:card.querySelector('.pimg')?.getAttribute('href')};

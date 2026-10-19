@@ -14,7 +14,7 @@ body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist
 }
 body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pbody {
   display:grid;grid-template-columns:minmax(0,1fr);
-  grid-template-rows:2.8em 38px 40px 44px;align-content:start;
+  grid-template-rows:2.8em 34px 40px 44px;align-content:start;
   font-size:14px;gap:6px;padding:10px 12px 12px;flex:1;
 }
 body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pname {
@@ -131,3 +131,5 @@ body.reference-storefront .fwrap p,body.reference-storefront .fwrap li,body.refe
   .cb-offer-link {min-height:44px;font-size:12px}
 }
 @media(max-width:560px){#view-home .freshlist {grid-template-columns:minmax(0,1fr)}}
+
+@media(min-width:761px){body.reference-storefront #view-home .card .pbody {grid-template-rows:2.8em 34px 32px 44px}}

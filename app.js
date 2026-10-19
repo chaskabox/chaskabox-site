@@ -62,7 +62,7 @@ function cardHTML(p,priority){
     <div class="pbody">
       ${catlabel}
       <a class="pname" href="${href}" title="${esc(p.name)}">${esc(p.name)}</a>
-      <div class="packmeta"><div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">Check pack details and contents</small>':''}</div>
+      <div class="packmeta"><div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">View pack details</small>':''}</div>
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
       <button class="addcart" ${unavailable?'disabled':''} aria-label="${unavailable?'Currently unavailable':'Add to Bag '+fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">${unavailable?'Currently unavailable':'Add to Bag'}</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
