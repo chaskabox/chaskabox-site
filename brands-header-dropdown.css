@@ -1,0 +1,56 @@
+/* Fixed brand dropdown renders outside scroll-clipped nav. No header bounce. */
+body.reference-storefront .cbx-brands-popover{
+ position:fixed;z-index:86;display:block;box-sizing:border-box;
+ max-height:min(61vh,430px);overflow-y:auto;overscroll-behavior:contain;
+ padding:13px;background:#fff;color:#0a315a;
+ border:1px solid #d9e5f0;border-radius:14px;
+ box-shadow:0 15px 34px rgba(9,42,76,.16);
+ animation:cbx-brand-enter 140ms ease-out both;
+}
+body.reference-storefront .cbx-brands-popover[hidden]{display:none!important}
+@keyframes cbx-brand-enter{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+body.reference-storefront .cbx-brands-heading{font-size:13px;font-weight:800;margin:2px 6px 9px}
+body.reference-storefront .cbx-brands-links{display:grid;grid-template-columns:1fr;gap:1px}
+body.reference-storefront .cbx-brands-links a,
+body.reference-storefront .cbx-brands-all{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ padding:10px 12px;min-height:42px;color:#173658;font-size:13px;font-weight:650;
+ text-decoration:none;border-radius:8px;
+}
+body.reference-storefront .cbx-brands-links a:hover,
+body.reference-storefront .cbx-brands-links a:focus-visible,
+body.reference-storefront .cbx-brands-all:hover,
+body.reference-storefront .cbx-brands-all:focus-visible{background:#edf4fb;outline:none;color:#c63c08}
+body.reference-storefront .cbx-brands-links small{font-size:11px;font-weight:700;color:#758aa0}
+body.reference-storefront .cbx-brands-status{font-size:12px;padding:12px;color:#667c91}
+body.reference-storefront .cbx-brands-all{border-top:1px solid #ebf0f6;margin-top:6px;color:#bd410c;font-weight:800}
+/* Brands has an understated visual cue, without moving nav items on interaction. */
+@media(min-width:1200px){
+ body.reference-storefront header .cbx-brands-trigger::after{
+  content:'⌄';display:inline-block;position:static;margin-left:3px;
+  font-size:12px;color:#7690a8;
+ }
+ body.reference-storefront header .cbx-brands-trigger[aria-expanded=true]{background:#edf4fb!important}
+}
+/* WhatsApp icon-only, positioned relative to the Chaska AI control via JS.
+   Same original WhatsApp anchor and data-driven href. */
+body.reference-storefront > a.cbx-whatsapp-float{
+ left:auto!important;right:var(--cb-wa-right,158px)!important;
+ bottom:var(--cb-wa-bottom,20px)!important;
+ width:46px!important;min-width:46px!important;max-width:46px!important;
+ height:46px!important;min-height:46px!important;
+ border-radius:50%!important;padding:0!important;gap:0!important;
+}
+body.reference-storefront > a.cbx-whatsapp-float svg{
+ width:23px!important;height:23px!important;flex:0 0 23px!important;
+}
+body.reference-storefront > a.cbx-whatsapp-float .cbx-wa-caption{display:none!important}
+@media(max-width:760px){
+ body.reference-storefront > a.cbx-whatsapp-float{
+  width:44px!important;min-width:44px!important;max-width:44px!important;
+  height:44px!important;min-height:44px!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ body.reference-storefront .cbx-brands-popover{animation:none!important}
+}

@@ -212,7 +212,7 @@ try{
  }
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
  // Reference design acceptance: actual responsive UI, rather than a rendered mockup.
- for(const width of [320,390,768,1440]){
+ for(const width of [320,390,768,1364,1440]){
   const {context,page}=await contextFor(width);
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
@@ -241,6 +241,121 @@ try{
   results.interactions.push({case:'compact hero, legible packs, 44px purchase controls and approved header branding / '+width,pass:true});
   if(width<=760&&!await page.locator('.cb-mobile-search').isVisible())throw Error('Mobile search missing');
   if(width>760&&!await page.locator('.header-search').isVisible())throw Error('Desktop search missing');
+  // Sticky header must stay pinned at viewport top after the announcement scrolls out.
+  // Check at every supported breakpoint; this catches CSS overrides and stacked headers.
+  const sticky=await page.evaluate(()=>{
+    const el=document.querySelector('body.reference-storefront > header');
+    const initialTop=el?.getBoundingClientRect().top??-999;
+    const available=document.documentElement.scrollHeight-window.innerHeight;
+    window.scrollTo(0,Math.min(680,Math.max(0,available)));
+    const rect=el.getBoundingClientRect();
+    const computed=getComputedStyle(el);
+    const promo=document.querySelector('body.reference-storefront > .promo');
+    return {initialTop,scroll:window.scrollY,top:rect.top,height:rect.height,
+      position:computed.position,overlayIndex:Number(computed.zIndex),
+      promoTop:promo?.getBoundingClientRect().top};
+  });
+  if(sticky.scroll<120||sticky.position!=='sticky'||Math.abs(sticky.top)>2||
+    sticky.height<=0||sticky.overlayIndex>=90||sticky.promoTop>=0)
+    throw Error('Sticky header overlay/scroll regression '+JSON.stringify({width,...sticky}));
+  await page.evaluate(()=>window.scrollTo(0,0));
+  results.interactions.push({case:'sticky header remains visible without covering cart overlay at '+width+'px',pass:true});
+  if(width>760){
+    const alignment=await page.evaluate(()=>{
+      const header=document.querySelector('header'),wrap=header?.querySelector('.hwrap');
+      const nodes=[wrap?.querySelector('.logo'),wrap?.querySelector('.cbx-header-links'),
+        wrap?.querySelector('.header-search'),wrap?.querySelector('.account-btn'),
+        wrap?.querySelector('a[aria-label="My wishlist"]'),wrap?.querySelector('.hbtn'),
+        wrap?.querySelector('.cbx-header-whatsapp')];
+      const visible=nodes.filter(x=>x&&getComputedStyle(x).display!=='none');
+      const rects=visible.map(x=>x.getBoundingClientRect());
+      const centers=rects.map(r=>r.top+r.height/2);
+      const controls=[wrap?.querySelector('.account-btn'),wrap?.querySelector('a[aria-label="My wishlist"]'),wrap?.querySelector('.hbtn')];
+      const icons=controls.map(el=>el?.querySelector('svg')?.getBoundingClientRect());
+      const labels=controls.map(el=>el?getComputedStyle(el,'::after').position:null);
+      const first=rects[0],last=rects.at(-1),bounds=wrap.getBoundingClientRect();
+      const nav=nodes[1],menu=wrap.querySelector('.mnav-btn');
+      return {width:innerWidth,centerSpread:Math.max(...centers)-Math.min(...centers),
+        noBodyOverflow:document.documentElement.scrollWidth<=innerWidth+2,
+        left:bounds.left,right:innerWidth-bounds.right,
+        iconWidths:icons.map(i=>i?.width),iconHeights:icons.map(i=>i?.height),
+        labelPositions:labels,navVisible:getComputedStyle(nav).display!=='none',
+        navUnclipped:nav.scrollWidth<=nav.clientWidth+3,
+        menuVisible:getComputedStyle(menu).display!=='none',
+        noOverlap:rects.every((r,i)=>!i||rects[i-1].right<=r.left+2),
+        buttons:controls.map(x=>x.getBoundingClientRect().height)};
+    });
+    if(alignment.centerSpread>12||!alignment.noBodyOverflow||!alignment.noOverlap||
+      Math.abs(alignment.left-alignment.right)>5||
+      alignment.iconWidths.some(x=>Math.abs(x-21)>1)||
+      alignment.iconHeights.some(x=>Math.abs(x-21)>1)||
+      alignment.buttons.some(x=>x<44)||
+      (width>=1200&&(!alignment.navVisible||!alignment.navUnclipped))||
+      (width<1200&&!alignment.menuVisible))
+      throw Error('Single-row aligned header/icons regression '+JSON.stringify(alignment));
+    results.interactions.push({case:'single-row wide header, equal normal-size Account/Wishlist/Cart icons / '+width,pass:true});
+  }
+  const searchWA=await page.evaluate(()=>{
+    const wa=document.querySelector('body > a.cbx-whatsapp-float');
+    const waRect=wa?.getBoundingClientRect(),waStyle=wa?getComputedStyle(wa):null;
+    const input=document.querySelector(innerWidth>760?'#headerSearch':'#cbMobileSearch');
+    const search=document.querySelector('header .header-search');
+    const button=search?.querySelector('button[type="submit"]');
+    const buttonRect=button?.getBoundingClientRect();
+    const searchRect=search?.getBoundingClientRect();
+    return {waExists:!!wa,waLabel:wa?.textContent?.trim(),waHref:wa?.getAttribute('href'),
+      waFixed:waStyle?.position==='fixed',waLeft:waRect?.left??-100,
+      waRight:waRect?.right??-100,waBottom:innerHeight-(waRect?.bottom??innerHeight),
+      insideHeader:!!document.querySelector('header a.cbx-header-whatsapp'),
+      searchPlaceholder:input?.placeholder,searchWidth:searchRect?.width,
+      searchButton:buttonRect?.width,focusable:!!input};
+  });
+  if(!searchWA.waExists||searchWA.waLabel!=='WhatsApp'||!searchWA.waFixed||
+    searchWA.insideHeader||searchWA.waLeft<0||searchWA.waRight>width+2||
+    searchWA.waBottom<(width<=760?54:8)||!searchWA.focusable||
+    !searchWA.waHref?.startsWith('https://wa.me/')||
+    !searchWA.searchPlaceholder?.includes('Search snacks')||
+    (width>760&&(searchWA.searchWidth<150||searchWA.searchWidth>(width>=1200?265:240)||Math.abs(searchWA.searchButton-36)>2)))
+    throw Error('Search and floating WhatsApp visual/functionality regression '+JSON.stringify({width,...searchWA}));
+  results.interactions.push({case:'balanced search and bottom-left WhatsApp CTA with live order link / '+width,pass:true});
+  const pairedFABs=await page.evaluate(()=>{
+    const whatsapp=document.querySelector('body > a.cbx-whatsapp-float');
+    const ai=document.querySelector('#helpFab');
+    const w=whatsapp?.getBoundingClientRect(),a=ai?.getBoundingClientRect();
+    return {iconOnly:!!whatsapp?.querySelector('svg')&&getComputedStyle(whatsapp.querySelector('.cbx-wa-caption')).display==='none',
+      waWidth:w?.width||0,waRight:w?.right,aiLeft:a?.left,
+      centerOffset:Math.abs((w?.top||0)+(w?.height||0)/2-(a?.top||0)-(a?.height||0)/2)};
+  });
+  if(!pairedFABs.iconOnly||pairedFABs.waWidth>47||pairedFABs.waWidth<40||
+     pairedFABs.waRight>pairedFABs.aiLeft-5||pairedFABs.centerOffset>4)
+     throw Error('WhatsApp icon must sit immediately beside Chaska AI '+JSON.stringify({width,...pairedFABs}));
+  if(width>=1200){
+    // The browser fixture has only one admin nav link. Add the real Brands route
+    // to test delegated clicks, without altering the site's production nav setup.
+    await page.evaluate(()=>{
+      const nav=document.querySelector('header .cbx-header-links .cb-managed-nav');
+      if(nav&&!nav.querySelector('a[href="/brands/"]')){
+        const link=document.createElement('a');link.href='/brands/';link.textContent='Brands';nav.append(link);
+      }
+    });
+    await page.waitForFunction(()=>document.querySelector('header a.cbx-brands-trigger')?.getAttribute('aria-controls')==='cbxBrandsDropdown');
+    const brandTrigger=page.locator('header a.cbx-brands-trigger');
+    const startingURL=page.url();
+    await brandTrigger.click();
+    if(page.url()!==startingURL)throw Error('Clicking Brands navigated instead of opening dropdown: '+page.url());
+    if(!await page.locator('#view-home').isVisible())throw Error('Clicking Brands changed visible page route');
+    const dropdown=page.locator('#cbxBrandsDropdown');
+    await dropdown.locator('.cbx-brands-links a[href^="/brand/"]').first().waitFor({state:'visible'});
+    if(await brandTrigger.getAttribute('aria-expanded')!=='true')throw Error('Brands dropdown aria-expanded not set');
+    if(!await dropdown.getByRole('link',{name:/View all brands/i}).isVisible())throw Error('All Brands link missing');
+    await page.keyboard.press('Escape');
+    if(await dropdown.isVisible()||await brandTrigger.getAttribute('aria-expanded')!=='false')throw Error('Brands dropdown did not close with Escape');
+    await brandTrigger.click();
+    if(page.url()!==startingURL)throw Error('Brands reopened with unintended page navigation');
+    await page.mouse.click(30,180);
+    if(await dropdown.isVisible())throw Error('Brands dropdown did not close on outside click');
+    results.interactions.push({case:'Brands dropdown renders real brand links and closes by keyboard/outside click / '+width,pass:true});
+  }
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
   if(width===390){
    const wish=page.locator('#view-home .card .wishbtn').first();
