@@ -17,7 +17,7 @@ test('server-side product LCP preload uses existing photo, not a fallback, and k
  assert.match(src,/const criticalPhotoPreload=photo\?/);
  assert.match(src,/imagePreloadAttributes\(photo,"\(max-width:700px\) calc\(100vw - 32px\), 520px"\)/);
  assert.match(src,/\$\{criticalPhotoPreload\}<title>/);
- assert.match(src,/\$\{photo\?<img /);
+ assert.match(src,/<img \$\{imageAttributes\(photo,/);
  assert.match(src,/fetchpriority="high"/);
  assert.match(src,/photoUnderReview\(p\)\?'Photo under review'/);
 });
