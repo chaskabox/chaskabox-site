@@ -21,7 +21,8 @@ test('homepage canonical and metadata target distinct branded Pakistani-snacks i
  assert.match(client,/setPageMeta\('Pakistani Snacks Online \| ChaskaBox Pakistan','\/',false,/);
  assert.match(client,/Explore Pakistani childhood snacks, biscuits, candies, nimco and Chaska Boxes/);
  assert.match(home,/<h1>Bachpan Ka Zaiqa,/);
- assert.equal((home.match(/class="hero-scene"/g)||[]).length,3,'approved hero banner inventory unchanged');
+ assert.equal((home.match(/data-hero-dot/g)||[]).length,3,'approved carousel has three slide controls');
+ assert.equal((home.match(/class="hero-scene"/g)||[]).length,1,'carousel lazy-loads other scenes; no duplicate eager hero images');
  assert.doesNotMatch(home.slice(0,2500),/4-7 day delivery/);
 });
 
