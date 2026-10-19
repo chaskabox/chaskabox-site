@@ -20,6 +20,10 @@ test('Brand list uses live product availability and existing brand detail routes
  assert.match(js,/e\.key==='Escape'/);
  assert.match(js,/popup\.hidden=true/);
  assert.match(js,/document\.body\.append\(popup\)/);
+ assert.match(js,/document\.addEventListener\('click',[\s\S]*?,true\)/);
+ assert.match(js,/e\.preventDefault\(\)/);
+ assert.match(js,/e\.key===' '/);
+ assert.match(js,/a\.setAttribute\('role','button'\)/);
  assert.match(css,/#?cbx-brands-popover|\.cbx-brands-popover/);
  assert.match(css,/prefers-reduced-motion:reduce/);
  assert.match(css,/\.cbx-brands-popover\[hidden\]/);
