@@ -1,8 +1,8 @@
 // Read-only Cloudflare Pages FAQ discovery smoke. NEVER make orders or provider calls.
 import {chromium} from 'playwright-core';
 import {mkdir,writeFile} from 'node:fs/promises';
-const base=process.env.FAQ_PREVIEW_URL||'https://fix-faq-indexing-discovery-2.chaskabox-site.pages.dev';
-if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(base))throw Error('Pages preview only');
+const base=process.env.FAQ_PREVIEW_URL||'https://chaskabox.online';
+if(base!=='https://chaskabox.online')throw Error('Production read-only audit only');
 const output='test-results/faq-indexing';await mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});const checks=[];
 async function run(path,assertFn){
