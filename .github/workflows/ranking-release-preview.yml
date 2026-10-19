@@ -1,0 +1,33 @@
+name: Ranking approved Phases 1+2 integrated staging smoke
+on:
+  push:
+    branches: ['release/ranking-phases12-20261019']
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Real Cloudflare branch staging - Phase 1 and Phase 2
+        env:
+          RANKING_PREVIEW_URL: https://release-ranking-phases12-202.chaskabox-site.pages.dev
+        run: |
+          node tools/ranking-phase1-preview-smoke.mjs
+          node tools/ranking-phase2-preview-smoke.mjs
+      - name: Preserve browser evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: ranking-phases12-release-preview
+          path: |
+            test-results/ranking-phase1/
+            test-results/ranking-phase2/
+          retention-days: 7

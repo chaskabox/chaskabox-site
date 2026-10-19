@@ -7,7 +7,7 @@ if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(base))throw Error(
 const out='test-results/navigation-phase2';
 await mkdir(out,{recursive:true});
 const versions={
- 'header-one-line.css':'20261019-line5',
+ 'header-one-line.css':'20261019-line6',
  'sticky-motion-polish.css':'20261019-sticky3',
  'brands-header-dropdown.css':'20261019-brand3',
  'brands-header-dropdown.js':'20261019-brand6',
@@ -59,6 +59,7 @@ try{
      overflow:document.documentElement.scrollWidth>innerWidth+2,
      navVisible:!!nav.getClientRects().length,
      navUnclipped:nav.scrollWidth<=nav.clientWidth+3,
+     navClientWidth:nav.clientWidth,navScrollWidth:nav.scrollWidth,
      navFonts:[...nav.querySelectorAll('a')].map(a=>parseFloat(getComputedStyle(a).fontSize)),
      icons:actions.filter(Boolean).map(el=>{const r=el.querySelector('svg').getBoundingClientRect();return {w:r.width,h:r.height};}),
      controls:[...document.querySelectorAll('#view-home .hero-slider-controls button')].map(el=>{const r=el.getBoundingClientRect();return {w:r.width,h:r.height};})};
@@ -175,7 +176,7 @@ try{
    results.push({case:'Help pair clears Add to Bag, restores, and opens/closes AI without sending a message',width,pass:true,pair,ai});
   }catch(error){
    await page.screenshot({path:out+'/phase2-failure-'+width+'.png',fullPage:false}).catch(()=>{});
-   throw error;
+   results.push({pass:false,width,error:String(error?.stack||error)});process.exitCode=1;
   }finally{await context.close();}
  }
  // The navigation/support layer must not reintroduce motion under this preference.
@@ -199,6 +200,7 @@ try{
   const routePage=await routeContext.newPage();
   try{
    for(const path of ['/shop/','/product/5/','/faq/','/about/','/contact/']){
+    try{
     const response=await routePage.goto(base+path,{waitUntil:'domcontentloaded'});
     if(response?.status()!==200)throw Error('Navigation route failed '+path);
     await routePage.waitForFunction(()=>document.body.classList.contains('cbx-header-ready')&&document.querySelector('body > .cbx-whatsapp-float'));
@@ -230,6 +232,10 @@ try{
     }
     if(path==='/about/'||path==='/contact/')await routePage.screenshot({path:out+'/phase2-'+path.slice(1,-1)+'-'+width+'.png',fullPage:false});
     results.push({case:'Shared shopping/information header, public Brands data and safe support position',width,path,pass:true});
+    }catch(error){
+     await routePage.screenshot({path:out+'/phase2-route-failure-'+path.replace(/\W/g,'-')+'-'+width+'.png',fullPage:false}).catch(()=>{});
+     results.push({pass:false,width,path,error:String(error?.stack||error)});process.exitCode=1;
+    }
    }
   }finally{await routeContext.close();}
  }

@@ -125,6 +125,11 @@
     border-radius: 10px !important;
   }
 }
+/* Keep the full readable navigation at the narrow desktop breakpoint. */
+@media (min-width:1200px) and (max-width:1279px) {
+  body.reference-storefront > header .hwrap .cbx-header-links { gap:1px!important; }
+  body.reference-storefront > header .hwrap .cbx-header-links a { padding-inline:3px!important; }
+}
 /* Preserve one row on narrow laptops: navigation goes into the existing accessible
    menu instead of wrapping or clipping product search / cart. */
 @media (min-width: 761px) and (max-width: 1199px) {
