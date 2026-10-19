@@ -16,7 +16,9 @@ test('existing WhatsApp link is reused and search enhancements load on all store
 test('search styling stays legible, WA button floats clear of mobile dock, no payment or order changes',()=>{
  const css=read('search-whatsapp-float.css'),js=read('search-whatsapp-float.js');
  assert.match(css,/body\.reference-storefront > header \.header-search button/);
- assert.match(css,/width: 40px !important/);
+ assert.match(css,/width: 36px !important/);
+ assert.match(css,/max-width: 258px !important/);
+ assert.match(css,/height: 42px !important/);
  assert.match(css,/bottom: calc\(72px \+ env\(safe-area-inset-bottom, 0px\)\)/);
  assert.match(css,/min-height: 44px !important/);
  assert.match(css,/prefers-reduced-motion: reduce/);
