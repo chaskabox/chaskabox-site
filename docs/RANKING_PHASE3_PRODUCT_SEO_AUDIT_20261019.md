@@ -18,6 +18,7 @@ Date: 2026-10-19. **Status: Phase 3 initiated in a separate review branch. No pr
 | Custom SEO titles longer than 65 characters | 11 |
 | Custom SEO descriptions longer than 160 characters | 0 |
 | Local images under images/ | 95 |
+| Local image paths present in repository LOCAL_PHOTOS manifest | 95 / 95 |
 | HTTPS images | 10 |
 | HTTP/data/javascript image URLs | 0 |
 | Sourced after order | 105 |
@@ -32,7 +33,7 @@ Values are a point-in-time read-only snapshot, not search ranking/traffic metric
 - Explicit `og_image` field being empty is not an SEO defect when the fallback image exists and is suitable, though custom crops may improve sharing; keep original product photos intact.
 
 ## Work after this review branch
-1. Read-only sample 105 product images for HTTP 200, correct MIME, crawlability and dimensions; prioritize 10 external HTTPS sources and local fallback paths. Do not replace imagery with generated representations or change product records without separate approval.
+1. Verify live HTTP 200, MIME, Google crawlability and pixel dimensions for public product images. Local photo manifest coverage is confirmed 95/95, but that does not by itself prove successful live network delivery. Prioritize the 10 external HTTPS sources. Do not replace imagery with generated representations or change product records without separate approval.
 2. Per-product Rich Results tests for Product name/image/Offer and rendered price equality; check actual stock policy, do not add unsupported ratings, GTIN, shipping fees or return terms.
 3. Produce a short editorial QA list for 11 longer titles and 4 unbranded bundles; no mass rewrite. Require Google Search Console last-90-day export for CTR/position baseline.
 4. Review organization-level ShippingService / MerchantReturnPolicy only against approved admin settings and published policy, with human verification of accuracy before schema changes.
