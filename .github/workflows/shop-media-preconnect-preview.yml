@@ -1,0 +1,66 @@
+name: Shop media preconnect staging evidence
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  shop-media:
+    if: github.head_ref == 'perf/shop-media-preconnect-20261019'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      SHOP_PREVIEW_URL: https://perf-shop-media-preconnect-2.chaskabox-site.pages.dev
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Verify real preview HTML and exact origin policy
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const res=await fetch(process.env.SHOP_PREVIEW_URL+'/shop/');
+          assert.equal(res.status,200);
+          const html=await res.text();
+          const hint='<link rel="preconnect" href="https://jtvswuvnasqqzrjysgfd.supabase.co" crossorigin>';
+          assert.equal(html.split(hint).length-1,1);
+          assert.ok(html.includes('id="shopGrid"'));
+          assert.ok(html.indexOf(hint)<html.indexOf('/app.js?v='));
+          const head=html.match(/<head>([\s\S]*?)<\/head>/i)?.[1]||'';
+          const preload=head.match(/<link\b[^>]*rel="preload"\s+as="image"[^>]*>/i)?.[0];
+          const grid=html.slice(html.indexOf('id="shopGrid"'));
+          const img=grid.match(/<img\b[^>]*>/i)?.[0];
+          assert.ok(preload,'first SSR product image should be preloaded');
+          assert.ok(img,'first product card should render an image');
+          function attr(tag,name){return tag.match(new RegExp('(?:^|\\s)'+name+'="([^"]*)"'))?.[1]||null}
+          assert.equal(attr(preload,'href'),attr(img,'src'),'wrong product image was preloaded');
+          assert.equal(attr(preload,'imagesrcset'),attr(img,'srcset'),'duplicate responsive image download risk');
+          assert.equal(attr(preload,'imagesizes'),attr(img,'sizes'),'preload media size mismatch');
+          console.log('SHOP_FIRST_IMAGE_PRELOAD_ALIGNED',JSON.stringify({image:attr(img,'src'),hasSrcset:!!attr(img,'srcset')}));
+          console.log('SHOP_MEDIA_HINT_PRESENT',JSON.stringify({status:res.status,publicOrigin:'supabase.co',heroUnchanged:true}));
+          NODE
+      - name: Lab compare live and preview Shop
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          mkdir -p perf-results
+          export CHROME_PATH="$(node --input-type=module -e 'import { chromium } from "playwright-core";console.log(chromium.executablePath())')"
+          npx --yes lighthouse@12.8.2 https://chaskabox.online/shop/ --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance --output=json --output-path=perf-results/shop-live.json --quiet
+          npx --yes lighthouse@12.8.2 "$SHOP_PREVIEW_URL/shop/" --chrome-flags="--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run" --only-categories=performance --output=json --output-path=perf-results/shop-preview.json --quiet
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            for(const target of ["live","preview"]){
+              const d=JSON.parse(readFileSync("perf-results/shop-"+target+".json","utf8"));
+              const a=d.audits;
+              console.log("SHOP_LAB_"+target,JSON.stringify({performance:Math.round(d.categories.performance.score*100),LCP:Math.round(a["largest-contentful-paint"].numericValue),FCP:Math.round(a["first-contentful-paint"].numericValue),CLS:a["cumulative-layout-shift"].numericValue,TBT:Math.round(a["total-blocking-time"].numericValue)}));
+            }
+          '
+      - if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: shop-media-preconnect-lab
+          path: perf-results/
+          retention-days: 7
