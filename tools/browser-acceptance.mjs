@@ -212,7 +212,7 @@ try{
  }
  const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
  // Reference design acceptance: actual responsive UI, rather than a rendered mockup.
- for(const width of [320,390,768,1440]){
+ for(const width of [320,390,768,1364,1440]){
   const {context,page}=await contextFor(width);
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0);
@@ -315,7 +315,7 @@ try{
     searchWA.waBottom<(width<=760?54:8)||!searchWA.focusable||
     !searchWA.waHref?.startsWith('https://wa.me/')||
     !searchWA.searchPlaceholder?.includes('Search snacks')||
-    (width>760&&(searchWA.searchWidth<150||Math.abs(searchWA.searchButton-40)>3)))
+    (width>760&&(searchWA.searchWidth<150||searchWA.searchWidth>(width>=1200?265:240)||Math.abs(searchWA.searchButton-36)>2)))
     throw Error('Search and floating WhatsApp visual/functionality regression '+JSON.stringify({width,...searchWA}));
   results.interactions.push({case:'balanced search and bottom-left WhatsApp CTA with live order link / '+width,pass:true});
   await page.screenshot({path:path.join(output,'reference-home-'+width+'.png'),fullPage:true});
