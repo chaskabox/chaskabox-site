@@ -1,7 +1,7 @@
 name: FAQ indexing crawlability preview
 on:
   push:
-    branches: ['fix/faq-indexing-discovery-20261019']
+    branches: ['audit/faq-postdeploy-readonly-20261019']
 permissions:
   contents: read
 jobs:
@@ -18,7 +18,7 @@ jobs:
       - run: node node_modules/playwright-core/cli.js install --with-deps chromium
       - name: Verify SSR FAQ canonical, content and crawlable crosslinks
         env:
-          FAQ_PREVIEW_URL: https://fix-faq-indexing-discovery-2.chaskabox-site.pages.dev
+          FAQ_PREVIEW_URL: https://chaskabox.online
         run: node tools/faq-indexing-smoke.mjs
       - name: Archive FAQ browser evidence
         if: always()
