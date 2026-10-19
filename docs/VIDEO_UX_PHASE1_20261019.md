@@ -11,6 +11,8 @@ could not explicitly pause rotation.
   viewport uses a 352px frame; taller screens use a bounded responsive frame.
 - Approved image files are unchanged. They scale proportionally; the original
   baked-in footer remains behind the shared DOM trust row.
+- The mobile blue scene uses a product-only crop, keeping the baked-in
+  numerical brand badge and footer outside the visible image at narrow widths.
 - Controls are part of the text column from the initial homepage HTML, below
   the shopping links. No controls band is inserted after hydration. Client-side
   entry shells create the same controls in the same column.

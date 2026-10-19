@@ -140,6 +140,12 @@
   .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three>.hero-scene{
     height:166px!important;
   }
+  /* Keep the blue artwork's baked-in badge and footer outside the mobile crop.
+     A minimum rendered width leaves enough product-only height at 320px too. */
+  .reference-storefront #view-home>.hero.hero-packing-preview.hero-approved-three[data-hero-slide="3"]>.hero-scene{
+    width:max(200%,750px)!important;min-width:max(200%,750px)!important;
+    object-position:center 60%!important;
+  }
 }
 @media(max-width:390px){
   .reference-storefront #view-home .hero-approved-three .herotxt{
