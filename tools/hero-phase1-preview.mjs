@@ -9,10 +9,14 @@ const out='test-results/hero-phase1';
 await mkdir(out,{recursive:true});
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const expected=hash(await readFile('home-hero-carousel.js'));
+const expectedCSS=hash(await readFile('storefront-bundle.css'));
 let ready=false;
 for(let attempt=0;attempt<24;attempt++){
- try{const r=await fetch(base+'/home-hero-carousel.js?v=20261019-hero1');
-  if(r.ok&&hash(await r.text())===expected){ready=true;break;}
+ try{const [script,css]=await Promise.all([
+   fetch(base+'/home-hero-carousel.js?v=20261019-hero1'),
+   fetch(base+'/storefront-bundle.css?v=20261019-hero1')
+  ]);
+  if(script.ok&&css.ok&&hash(await script.text())===expected&&hash(await css.text())===expectedCSS){ready=true;break;}
  }catch{}
  await new Promise(resolve=>setTimeout(resolve,5000));
 }
@@ -115,7 +119,7 @@ try{
  results.push({pass:false,error:String(error?.stack||error)});
  process.exitCode=1;
 }finally{
- await writeFile(out+'/results.json',JSON.stringify({base,sourceHash:expected,results},null,2));
+ await writeFile(out+'/results.json',JSON.stringify({base,sourceHash:expected,cssHash:expectedCSS,results},null,2));
  await browser.close();
 }
 console.log(JSON.stringify({base,checks:results.map(({slides,...entry})=>entry)},null,2));
