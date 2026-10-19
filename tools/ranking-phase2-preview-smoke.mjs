@@ -29,6 +29,15 @@ await check('/',390,async(page,x)=>{
  if(x.hero!==3||x.discoveryLinks<6)throw Error('Home hero/discovery missing');
  if(!await page.locator('#homeShopDiscovery').isVisible())throw Error('Home guide heading absent');
 });
+await check('/',1440,async(page,x)=>{
+ x.layout=await page.evaluate(()=>{
+  const root=document.querySelector('#view-home');
+  const children=[...root.children].map(el=>({kind:(el.className||'').toString().slice(0,80),id:el.id,order:getComputedStyle(el).order,top:Math.round(el.getBoundingClientRect().top),height:Math.round(el.getBoundingClientRect().height)}));
+  return {firstCardTop:Math.min(...[...root.querySelectorAll('.card')].map(el=>el.getBoundingClientRect().top)),children};
+ });
+ x.hero=await page.locator('#view-home [data-hero-dot]').count();
+ if(x.hero!==3)throw Error('Approved desktop hero missing');
+});
 await check('/shop/',390,async(page,x)=>{
  const html=await(await page.request.get(base+'/shop/')).text();
  x.sourceHasIntro=/id="categorySeoIntro"[^>]*>Explore the ChaskaBox catalogue/.test(html);
