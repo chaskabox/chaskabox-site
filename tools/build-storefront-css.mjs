@@ -1,7 +1,7 @@
 import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {transform} from 'esbuild';
-const sources=['styles.css','storefront-ux-refresh.css','home-hero-carousel.css','final-homepage.css','hero-editorial-20261018.css','hero-three-approved-20261018.css','hero-polish-20261018.css','hero-stable-controls-20261019.css','storefront-video-finish-20261019.css'];
+const sources=['styles.css','storefront-ux-refresh.css','home-hero-carousel.css','final-homepage.css','hero-editorial-20261018.css','hero-three-approved-20261018.css','hero-polish-20261018.css','hero-stable-controls-20261019.css','approved-category-art.css','storefront-video-finish-20261019.css'];
 const parts=await Promise.all(sources.map(p=>readFile(new URL('../'+p,import.meta.url),'utf8')));
 const hash=createHash('sha256').update(parts.join('\n')).digest('hex');
 const result=await transform(parts.join('\n'),{loader:'css',minify:true,target:['chrome110','firefox115','safari16.4'],legalComments:'none'});

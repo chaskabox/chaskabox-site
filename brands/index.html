@@ -91,17 +91,26 @@
 <main id="main">
 <div id="view-home"></div>
 <template id="tpl-home">
-  <section class="hero">
+  <section class="hero hero-editorial hero-packing-preview hero-approved-three" aria-label="Discover ChaskaBox snacks">
+    <img class="hero-scene" src="/images/chaskabox-approved-hero-01-20261018.avif" width="1600" height="550" alt="ChaskaBox nostalgic snacks banner artwork; illustrated packaging, exact products in Shop" decoding="async" fetchpriority="high">
     <div class="herowrap">
       <div class="herotxt">
-        <span class="kick"><span class="dot"></span> <cb-copy data-cb-copy="t_2ace88be" style="display:contents">Pakistan ka snack box, dil se</cb-copy></span>
-        <div class="hero-eyebrow"><cb-copy data-cb-copy="t_5363c8ff" style="display:contents">PAKISTANI SNACKS • SOURCED AFTER ORDER</cb-copy></div>
-        <h1><cb-copy data-cb-copy="t_d17dfa20" style="display:contents">Bachpan Ka Zaiqa,</cb-copy> <span class="hl"><cb-copy data-cb-copy="t_0cc8d599" style="display:contents">Ab Ghar Baithe.</cb-copy></span></h1>
-        <p><cb-copy data-cb-copy="t_98e811d3" style="display:contents">Pakistani favourites, sourced after your order. Delivered across Pakistan.</cb-copy></p>
+        <div class="hero-eyebrow"><span aria-hidden="true" class="eyebrow-spark">✦</span> ORIGINAL PAKISTANI SNACKS</div>
+        <h1>Bachpan Ka Zaiqa, <span class="hl">Ab Ghar Baithe.</span></h1>
+        <p>Apni bachpan wali candies, nimco aur snacks phir se discover karein. Order ke baad carefully sourced, Pakistan bhar mein delivery.</p>
         <div class="hero-actions">
-          <a class="cta" href="/shop/"><cb-copy data-cb-copy="t_849c8bc9" style="display:contents">Shop All Snacks</cb-copy> <span>›</span></a>
-          <a class="cta ghost" href="/bundles/"><cb-copy data-cb-copy="t_e499b416" style="display:contents">Explore Chaska Boxes</cb-copy></a>
+          <a class="cta" href="/shop/">Shop All Snacks <span aria-hidden="true">↗</span></a>
+          <a class="cta ghost" href="/bundles/">Explore Chaska Boxes <span aria-hidden="true">→</span></a>
         </div>
+        <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
+          <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
+          <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
+          <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-pressed="false"></button>
+          <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-pressed="false"></button>
+          <button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>
+          <button type="button" data-hero-autoplay aria-label="Pause automatic banner rotation"><span data-hero-autoplay-icon aria-hidden="true">Ⅱ</span><span data-hero-autoplay-label>Pause</span></button>
+        </div>
+
         <div class="hero-search">
           <label class="sr-only" for="homeSearch"><cb-copy data-cb-copy="t_09d12c34" style="display:contents">Search snacks</cb-copy></label>
           <div class="hero-searchbox"><span aria-hidden="true">🔎</span><input id="homeSearch" autocomplete="off" placeholder="Search Slanty, Cocomo, chocolates..." oninput="renderHomeSearchSuggestions(this.value)" onkeydown="homeSearchKey(event)" data-cb-placeholder="t_bc8b0f1f"><button type="button" onclick="submitHomeSearch()"><cb-copy data-cb-copy="t_c646a2c9" style="display:contents">Search</cb-copy></button></div>
@@ -109,14 +118,31 @@
         </div>
 
       </div>
-      <div class="heroimg"><div class="herocollage" id="heroCollage"></div></div>
+      <div class="heroimg" aria-hidden="true">
+        <div class="herocollage" id="heroCollage"></div>
+      </div>
     </div>
-    <div class="herotrust">
+
+    <span class="hero-art-note"><cb-copy data-cb-copy="t_86e70455" style="display:contents">Illustrative hero artwork · exact products shown in Shop</cb-copy></span>
+
+    <div class="herotrust" aria-label="Delivery and order information — same on all hero slides">
       <div class="htrustwrap">
-        <div><span class="hic">🛡️</span><span><b><cb-copy data-cb-copy="t_42850488" style="display:contents">Original Brands</cb-copy></b><small><cb-copy data-cb-copy="t_8c4ee7da" style="display:contents">Trusted Pakistani favourites</cb-copy></small></span></div>
-        <div><span class="hic">🛍️</span><span><b><cb-copy data-cb-copy="t_524c9f7a" style="display:contents">Sourced after order</cb-copy></b><small><cb-copy data-cb-copy="t_58cee9c2" style="display:contents">Picked after your order</cb-copy></small></span></div>
-        <div><span class="hic">💵</span><span><b><cb-copy data-cb-copy="t_0d900ddd" style="display:contents">Cash on Delivery</cb-copy></b><small><cb-copy data-cb-copy="t_e10bc08c" style="display:contents">Pay when it arrives</cb-copy></small></span></div>
-        <div><span class="hic">🚚</span><span><b><cb-copy data-cb-copy="t_340e6851" style="display:contents">Pakistan Wide</cb-copy></b><small><cb-copy data-cb-copy="t_6ad6b989" style="display:contents">4–7 day delivery</cb-copy></small></span></div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 20 6v6c0 5-4 8-8 10-4-2-8-5-8-10V6Z"/><path d="m8.5 12 2.3 2.3 4.7-5"/></svg></span>
+          <span><b><cb-copy data-cb-copy="t_42850488" style="display:contents">Original Brands</cb-copy></b><small><cb-copy data-cb-copy="t_8c4ee7da" style="display:contents">Trusted Pakistani favourites</cb-copy></small></span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16v12H4zM3 9l2-5h14l2 5M12 4v17M4 13h16"/></svg></span>
+          <span><b><cb-copy data-cb-copy="t_4ccc4efb" style="display:contents">Carefully Sourced</cb-copy></b><small><cb-copy data-cb-copy="t_58cee9c2" style="display:contents">Picked after your order</cb-copy></small></span>
+        </div>
+        <div class="hero-trust-item">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v10H3zM14 10h4l3 4v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg></span>
+          <span><b><cb-copy data-cb-copy="t_f4e0db67" style="display:contents">Nationwide Delivery</cb-copy></b><small>Estimated 4–7 days</small></span>
+        </div>
+        <div class="hero-trust-item hero-trust-cod">
+          <span class="hero-trust-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/></svg></span>
+          <span><b><cb-copy data-cb-copy="t_0d900ddd" style="display:contents">Cash on Delivery</cb-copy></b><small><span data-cod-advance-note>Rs. <span data-cod-advance-amount>500</span> advance before dispatch; </span>balance on delivery</small></span>
+        </div>
       </div>
     </div>
   </section>
@@ -132,6 +158,17 @@
   </section>
 
   <div id="shelves"></div>
+  <div class="cb-offers">
+    <a class="cb-offer cb-offer-box" href="/bundles/"><img class="cb-offer-art" data-src="/images/hero-approved-brand-polish-20261017.webp" alt="" loading="lazy" fetchpriority="low" decoding="async" width="1983" height="793">
+      <noscript><img class="cb-offer-art" src="/images/hero-approved-brand-polish-20261017.webp" alt="" loading="lazy" decoding="async" width="1983" height="793"></noscript>
+      <div><b><cb-copy data-cb-copy="t_428f1be5" style="display:contents">Curated Chaska Boxes</cb-copy></b><small><cb-copy data-cb-copy="t_44b97136" style="display:contents">Snacks for gifting, movie nights and memorable moments.</cb-copy></small><span class="cb-offer-link"><cb-copy data-cb-copy="t_dee431d3" style="display:contents">Explore Boxes →</cb-copy></span></div>
+      <span class="cb-offer-media" id="cbBoxMedia" aria-hidden="true"><img src="/images/optimized-p253-320.webp" srcset="/images/optimized-p253-320.webp 320w, /images/optimized-p253-600.webp 600w" sizes="150px" alt="" loading="lazy" width="150" height="150" decoding="async"><img src="/images/optimized-p254-320.webp" srcset="/images/optimized-p254-320.webp 320w, /images/optimized-p254-600.webp 600w" sizes="150px" alt="" loading="lazy" width="150" height="150" decoding="async"></span>
+    </a>
+    <a class="cb-offer cb-offer-deals" href="/shop/?badge=Sale" onclick="goBadge('Sale');return false">
+      <div><b><cb-copy data-cb-copy="t_1694c8fd" style="display:contents">Special Snack Deals</cb-copy></b><small><cb-copy data-cb-copy="t_9bed9cf9" style="display:contents">Explore current offers on real ChaskaBox products.</cb-copy></small><span class="cb-offer-link"><cb-copy data-cb-copy="t_135629c9" style="display:contents">Shop Current Deals →</cb-copy></span></div>
+      <span class="cb-offer-media" id="cbDealsMedia" aria-hidden="true"><img src="/images/optimized-p233-320.webp" srcset="/images/optimized-p233-320.webp 320w, /images/optimized-p233-490.webp 490w" sizes="150px" alt="" loading="lazy" width="150" height="150" decoding="async"><img src="/images/optimized-p235-320.webp" srcset="/images/optimized-p235-320.webp 320w, /images/optimized-p235-499.webp 499w" sizes="150px" alt="" loading="lazy" width="150" height="150" decoding="async"></span>
+    </a>
+  </div>
 
   <section class="box-spotlight reveal">
     <div class="box-spotlight-inner">
@@ -180,12 +217,11 @@
     <div class="section-head"><div><span class="eyebrow"><cb-copy data-cb-copy="t_154205cf" style="display:contents">QUICK ANSWERS</cb-copy></span><h2><cb-copy data-cb-copy="t_051bc5e1" style="display:contents">Before you order</cb-copy></h2></div></div>
     <div class="faq-grid">
       <details open><summary><cb-copy data-cb-copy="t_0ad7f201" style="display:contents">Delivery kitne din mein hoti hai?</cb-copy></summary><p><cb-copy data-cb-copy="t_22ee75f8" style="display:contents">Pakistan mein estimated delivery 4–7 days hai.</cb-copy></p></details>
-      <details><summary><cb-copy data-cb-copy="t_cf494ba9" style="display:contents">Cash on Delivery available hai?</cb-copy></summary><p data-cod-policy-copy>Ji haan. COD available hai; up to Rs. 500 advance is verified before dispatch and adjusted within the total. Remaining balance is paid on delivery. Current delivery charge Rs. 300 hai.</p></details>
+      <details><summary><cb-copy data-cb-copy="t_cf494ba9" style="display:contents">Cash on Delivery available hai?</cb-copy></summary><p data-cod-policy-copy>Ji haan. COD available hai; <span data-cod-advance-note>Rs. <span data-cod-advance-amount>500</span> advance order ke baad aur dispatch se pehle verify hota hai. Yeh order total mein adjust hota hai. </span>Current delivery charge Rs. 300 hai.</p></details>
       <details><summary><cb-copy data-cb-copy="t_58742832" style="display:contents">Free delivery kaise milti hai?</cb-copy></summary><p data-prepaid-shipping-copy>JazzCash ya Bank Transfer prepaid payment par Rs. 5,000+ orders ke liye current delivery free hai.</p></details>
       <details><summary><cb-copy data-cb-copy="t_3ecfd6d1" style="display:contents">Products original hain?</cb-copy></summary><p><cb-copy data-cb-copy="t_e2007c7e" style="display:contents">ChaskaBox original market brands aur clearly listed products sell karta hai.</cb-copy></p></details>
     </div>
   </section>
-</div>
 
 </template>
 <div id="view-shop" style="display:none">
