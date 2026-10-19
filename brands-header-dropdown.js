@@ -29,6 +29,8 @@
   function decorate(){
     const a=brandLink();
     if(!a)return;
+    a.setAttribute('role','button');
+    a.setAttribute('aria-label','Browse brands');
     a.setAttribute('aria-haspopup','true');
     a.setAttribute('aria-expanded',String(!popup.hidden&&trigger===a));
     a.setAttribute('aria-controls',popup.id);
@@ -110,18 +112,25 @@
     if(!document.body.classList.contains('reference-storefront'))return;
     document.body.append(popup);
     decorate();
+    // Capture ahead of app.js's document bubble-phase SPA link router.
+    // Without capture, its /brands/ navigation fires before our preventDefault().
     document.addEventListener('click',e=>{
       const a=e.target.closest?.('header .cbx-header-links a, .cb-subnav-links a');
-      if(a && a===brandLink()){
+      if(a && a===brandLink() && e.button===0 && !e.metaKey && !e.ctrlKey && !e.shiftKey && !e.altKey){
         e.preventDefault();
         if(trigger===a&&!popup.hidden)close();
         else open(a);
         return;
       }
       if(!popup.hidden&&!popup.contains(e.target))close();
-    });
+    },true);
     document.addEventListener('keydown',e=>{
-      if(e.key==='Escape'&&!popup.hidden){e.preventDefault();close(true);}
+      // Space activates the brand dropdown as it would a native button.
+      if(e.key===' ' && e.target===brandLink()){
+        e.preventDefault();
+        const a=e.target;
+        if(trigger===a&&!popup.hidden)close();else open(a);
+      } else if(e.key==='Escape'&&!popup.hidden){e.preventDefault();close(true);}
       else if(e.key==='ArrowDown'&&e.target===trigger&&!popup.hidden){
         e.preventDefault();popup.querySelector('a')?.focus();
       }
