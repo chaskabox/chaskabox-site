@@ -11,7 +11,7 @@ const sources=['app.js','storefront-bundle.css','sticky-motion-polish.css'];
 const expected=Object.fromEntries(await Promise.all(sources.map(async p=>[p,hash(await readFile(p))])));
 let ready=false;
 for(let attempt=0;attempt<30;attempt++){
- try{if((await Promise.all(sources.map(async p=>{const r=await fetch(base+'/'+p+'?v=20261019-ui37');return r.ok&&hash(await r.text())===expected[p];}))).every(Boolean)){ready=true;break;}}catch{}
+ try{if((await Promise.all(sources.map(async p=>{const r=await fetch(base+'/'+p+'?v=20261019-ui38');return r.ok&&hash(await r.text())===expected[p];}))).every(Boolean)){ready=true;break;}}catch{}
  await new Promise(resolve=>setTimeout(resolve,5000));
 }
 if(!ready)throw Error('Staging does not serve this commit’s exact UI sources');
@@ -88,8 +88,9 @@ try{
  for(const width of [390,768,1366]){
   const {context,page}=await start(width,width===390?844:900);
   try{for(const path of ['/shop/','/bundles/','/category/snacks-and-nimco/','/brand/mayfair/']){
-   await page.goto(base+path,{waitUntil:'domcontentloaded'});await page.locator('#shopGrid .packmeta').first().waitFor();await page.waitForLoadState('networkidle');
-   const geometry=verifyCards(await cardGeometry(page,'#shopGrid .card'),width,path);
+   const grid=path.startsWith('/brand/')?'#brandProductGrid':'#shopGrid';
+   await page.goto(base+path,{waitUntil:'domcontentloaded'});await page.locator(grid+' .packmeta').first().waitFor();await page.waitForLoadState('networkidle');
+   const geometry=verifyCards(await cardGeometry(page,grid+' .card'),width,path);
    if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+2))throw Error('Page overflow '+path);
    results.push({case:'Catalogue route card geometry',width,path,pass:true,...geometry});
   }}catch(e){results.push({case:'Catalogue route acceptance',width,pass:false,error:String(e)});}

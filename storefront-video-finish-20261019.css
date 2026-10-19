@@ -1,29 +1,29 @@
 /* Video audit Phases 3–5: predictable catalogue geometry and a shorter homepage. */
-body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pimg {
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pimg {
   position:relative;display:grid;place-items:center;isolation:isolate;
   width:100%;height:auto;min-height:0;aspect-ratio:1;flex:0 0 auto;
   padding:0;overflow:hidden;background:#f8fafc;
 }
-body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pimg>img {
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pimg>img {
   position:absolute;inset:12px;width:calc(100% - 24px);height:calc(100% - 24px);
   max-width:none;max-height:none;object-fit:contain;object-position:center;
   transform:none!important;transition:none!important;
 }
-body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pimg .noimg {
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pimg .noimg {
   padding:24px 14px;font-size:14px;text-align:center;max-width:100%;
 }
-body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pbody {
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pbody {
   display:grid;grid-template-columns:minmax(0,1fr);
   grid-template-rows:2.8em 34px 40px 44px;align-content:start;
   font-size:14px;gap:6px;padding:10px 12px 12px;flex:1;
 }
-body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pname {
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pname {
   font-size:inherit;line-height:1.4;min-height:0;height:2.8em;
   -webkit-line-clamp:2;overflow-wrap:anywhere;
 }
-body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pcat {display:none}
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pcat {display:none}
 body.reference-storefront .card .packmeta {min-width:0;align-self:start}
-body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .ppack {
+body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .ppack {
   font-size:12px;line-height:18px;min-height:18px;color:#52647b;
 }
 body.reference-storefront .card .bundle-photo-note {display:block;margin:0;font-size:11px;line-height:15px;color:#52647b}
@@ -105,9 +105,9 @@ body.reference-storefront .fwrap p,body.reference-storefront .fwrap li,body.refe
   #view-home .box-points>span {align-items:flex-start}
 }
 @media(max-width:760px){
-  body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .pbody {font-size:13px;padding:9px;gap:5px}
-  body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .ppack {font-size:12px}
-  body.reference-storefront :is(#view-home,#view-shop,#view-product,#view-wishlist) .card .price {font-size:16px}
+  body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .pbody {font-size:13px;padding:9px;gap:5px}
+  body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .ppack {font-size:12px}
+  body.reference-storefront :is(#view-home,#view-shop,#view-brand,#view-product,#view-wishlist) .card .price {font-size:16px}
   #view-home .hscroll {gap:10px;padding-right:18px}
   #view-home .hscroll .card {flex-basis:calc((100% - 10px)/2)!important}
   #view-home .shelfband .viewall {font-size:12px;padding-inline:8px}
