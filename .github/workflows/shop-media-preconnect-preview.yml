@@ -29,6 +29,17 @@ jobs:
           assert.equal(html.split(hint).length-1,1);
           assert.ok(html.includes('id="shopGrid"'));
           assert.ok(html.indexOf(hint)<html.indexOf('/app.js?v='));
+          const head=html.match(/<head>([\\s\\S]*?)<\\/head>/i)?.[1]||'';
+          const preload=head.match(/<link\\b[^>]*rel="preload"\\s+as="image"[^>]*>/i)?.[0];
+          const grid=html.slice(html.indexOf('id="shopGrid"'));
+          const img=grid.match(/<img\\b[^>]*>/i)?.[0];
+          assert.ok(preload,'first SSR product image should be preloaded');
+          assert.ok(img,'first product card should render an image');
+          function attr(tag,name){return tag.match(new RegExp('(?:^|\\\\s)'+name+'="([^"]*)"'))?.[1]||null}
+          assert.equal(attr(preload,'href'),attr(img,'src'),'wrong product image was preloaded');
+          assert.equal(attr(preload,'imagesrcset'),attr(img,'srcset'),'duplicate responsive image download risk');
+          assert.equal(attr(preload,'imagesizes'),attr(img,'sizes'),'preload media size mismatch');
+          console.log('SHOP_FIRST_IMAGE_PRELOAD_ALIGNED',JSON.stringify({image:attr(img,'src'),hasSrcset:!!attr(img,'srcset')}));
           console.log('SHOP_MEDIA_HINT_PRESENT',JSON.stringify({status:res.status,publicOrigin:'supabase.co',heroUnchanged:true}));
           NODE
       - name: Lab compare live and preview Shop
