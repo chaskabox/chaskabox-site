@@ -149,22 +149,21 @@ try{
      .find(r=>r.w>0&&r.right>w.left&&r.x<f.right);
    });
    if(!target)throw Error('No real shopping action available for support-clearance verification');
-   const desired=await page.evaluate(y=>{
+   await page.evaluate(y=>{
     const f=document.getElementById('helpFab').getBoundingClientRect();
     const scroll=y-(f.top+f.height/2);scrollTo({top:scroll,behavior:'instant'});return scroll;
    },target.y);
    await page.waitForFunction(()=>document.body.classList.contains('cbx-support-obscures-content')&&getComputedStyle(document.getElementById('helpFab')).visibility==='hidden');
    if(width===390||width===1366)await page.screenshot({path:out+'/phase2-clear-buy-button-'+width+'.png',fullPage:false});
-   let restored=false;
-   for(const offset of [130,210,300,390]){
-    await page.evaluate(y=>scrollTo({top:y,behavior:'instant'}),desired+offset);
-    try{
-     await page.waitForFunction(()=>getComputedStyle(document.getElementById('helpFab')).visibility==='visible',{},{timeout:600});
-     await page.waitForTimeout(220);
-     if(await page.locator('#helpFab').isVisible()){restored=true;break;}
-    }catch{}
-   }
-   if(!restored)throw Error('Support controls do not reappear after leaving the shopping actions');
+   // Dense card rows can correctly remain protected for several scroll offsets.
+   // Restore over a real supporting-content area with no shopping controls.
+   await page.locator('#view-home .why-section').evaluate(el=>{
+    const r=el.getBoundingClientRect(),f=document.getElementById('helpFab').getBoundingClientRect();
+    scrollTo({top:scrollY+r.top+r.height/2-f.top-f.height/2,behavior:'instant'});
+   });
+   await page.waitForFunction(()=>getComputedStyle(document.getElementById('helpFab')).visibility==='visible');
+   await page.waitForTimeout(220);
+   if(!await page.locator('#helpFab').isVisible())throw Error('Support controls do not remain available in clear supporting content');
    await page.locator('#helpFab').click();
    await page.waitForFunction(()=>document.querySelector('#aimodal.open')&&document.activeElement?.id==='aiq');
    const ai=await page.locator('#aimodal').evaluate(el=>{const r=el.getBoundingClientRect();return {top:r.top,bottom:r.bottom,left:r.left,right:r.right};});
