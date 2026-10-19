@@ -1,0 +1,29 @@
+name: Hero Phase 1 branch preview
+on:
+  push:
+    branches: ['improve/video-hero-phase1']
+permissions:
+  contents: read
+jobs:
+  hero-preview:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Verify this commit on the Cloudflare branch preview
+        env:
+          HERO_PREVIEW_URL: https://improve-video-hero-phase1.chaskabox-site.pages.dev
+        run: node tools/hero-phase1-preview.mjs
+      - name: Save branch-preview measurements and screenshots
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: hero-phase1-preview
+          path: test-results/hero-phase1/
+          retention-days: 7

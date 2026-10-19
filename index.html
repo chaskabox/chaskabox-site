@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preload" as="font" href="/fonts/kalam-latin-700.woff2" type="font/woff2" crossorigin data-home-preload>
-<link rel="stylesheet" href="/storefront-bundle.css?v=20261018-perf2">
+<link rel="stylesheet" href="/storefront-bundle.css?v=20261019-hero1">
 <!-- Exact approved HQ category CSS inlined to avoid a secondary blocking request. -->
 <style id="cb-category-art-critical">
 /* High-resolution approved category photography, 9 × 192px frames, scoped to homepage only. */
@@ -105,6 +105,14 @@
           <a class="cta" href="/shop/">Shop All Snacks <span aria-hidden="true">↗</span></a>
           <a class="cta ghost" href="/bundles/">Explore Chaska Boxes <span aria-hidden="true">→</span></a>
         </div>
+        <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
+          <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
+          <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
+          <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-pressed="false"></button>
+          <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-pressed="false"></button>
+          <button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>
+          <button type="button" data-hero-autoplay aria-label="Pause automatic banner rotation"><span data-hero-autoplay-icon aria-hidden="true">Ⅱ</span><span data-hero-autoplay-label>Pause</span></button>
+        </div>
 
         <div class="hero-search">
           <label class="sr-only" for="homeSearch"><cb-copy data-cb-copy="t_09d12c34" style="display:contents">Search snacks</cb-copy></label>
@@ -117,13 +125,7 @@
         <div class="herocollage" id="heroCollage"></div>
       </div>
     </div>
-        <div class="hero-slider-controls" role="group" aria-label="Choose homepage banner">
-          <button type="button" data-hero-direction="previous" aria-label="Previous hero banner">‹</button>
-          <button type="button" data-hero-dot="0" aria-label="Show hero 1" aria-pressed="true"></button>
-          <button type="button" data-hero-dot="1" aria-label="Show hero 2" aria-pressed="false"></button>
-          <button type="button" data-hero-dot="2" aria-label="Show hero 3" aria-pressed="false"></button>
-          <button type="button" data-hero-direction="next" aria-label="Next hero banner">›</button>
-        </div>
+
     <span class="hero-art-note"><cb-copy data-cb-copy="t_86e70455" style="display:contents">Illustrative hero artwork · exact products shown in Shop</cb-copy></span>
 
     <div class="herotrust" aria-label="Delivery and order information — same on all hero slides">
@@ -490,7 +492,7 @@
 <script defer src="/supabase-config.js?v=20261012-perf3"></script>
 <script defer src="/photo-manifest.js?v=20261014-closeout"></script>
 <script defer src="/app.js?v=20261019-storefront2"></script>
-<script defer src="/home-hero-carousel.js?v=20261018-autoplay5"></script>
+<script defer src="/home-hero-carousel.js?v=20261019-hero1"></script>
 <script defer src="/reviews-widget.js?v=20261014-final-readiness"></script>
 <script defer src="/account.js?v=20261012-perf3"></script>
 <script defer src="/analytics.js?v=1"></script>
