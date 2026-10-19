@@ -4,7 +4,7 @@ import {esc} from './storefront-html.js';
 // Build links from the SAME public catalogue and CMS category assignments as SSR.
 // Never advertise an empty or hidden category based on stale static counts.
 export function publicCollectionLinks(products=[],manifest=null){
- const rows=Array.isArray(products)?products:[];
+ const rows=(Array.isArray(products)?products:[]).filter(p=>p&&(!p.visibility||p.visibility==='visible'));
  const configs=Array.isArray(manifest?.categories)?manifest.categories:[];
  const result=[];
  const used=new Set();
