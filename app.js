@@ -953,7 +953,9 @@ function renderCategoryRoute(slug){
   const standardName=CATEGORY_SLUGS[slug];const cms=(STORE_CONFIG?.categories||[]).find(c=>c.slug===slug||c.name===standardName);const catName=cms?.name||standardName;
   if(!catName){ render404('/category/'+slug+'/'); return; }
   const seo={...(SEO_CATEGORY_DATA[CATEGORY_NAMES_TO_SLUG[catName]||slug]||{}),...(cms?.seo_title?{title:cms.seo_title}:{}),...(cms?.seo_description?{description:cms.seo_description}:{}),...(cms?.description?{intro:cms.description}:{})};
-  setPageMeta(seo?.title||catName+' | ChaskaBox',categoryPath(catName),false,seo?.description||'Shop '+catName+' from ChaskaBox.');
+  const assignedIds=Array.isArray(cms?.product_ids)?new Set(cms.product_ids.map(Number)):null;
+  const hasPublicProducts=publicProducts().some(p=>assignedIds?assignedIds.has(Number(p.id)):String(p.category||'').trim()===catName);
+  setPageMeta(seo?.title||catName+' | ChaskaBox',categoryPath(catName),!hasPublicProducts,seo?.description||'Shop '+catName+' from ChaskaBox.');
   setCategorySeoCopy(seo);
   setCategoryBreadcrumb(catName,'/category/'+slug+'/');
   shopState=shopRouteFilters(catName);
