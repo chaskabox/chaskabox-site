@@ -2,11 +2,11 @@
    No change to search queries, submit handlers, WhatsApp routing or catalog. */
 @media (min-width: 761px) {
   body.reference-storefront > header .hwrap .header-search {
-    flex: 1 1 clamp(240px, 20vw, 350px) !important;
-    width: clamp(240px, 20vw, 350px) !important;
-    min-width: 195px !important;
-    max-width: 350px !important;
-    height: 46px !important;
+    flex: 0 0 clamp(224px, 18vw, 258px) !important;
+    width: clamp(224px, 18vw, 258px) !important;
+    min-width: 210px !important;
+    max-width: 258px !important;
+    height: 42px !important;
     margin: 0 !important;
     border: 1.5px solid #d5e2f0 !important;
     border-radius: 12px !important;
@@ -16,18 +16,18 @@
   }
   body.reference-storefront > header .header-search input {
     min-width: 0 !important;
-    padding: 10px 11px !important;
-    font-size: 13px !important;
+    padding: 8px 10px !important;
+    font-size: 12px !important;
     line-height: 1.2 !important;
     text-overflow: ellipsis;
     color: #113456 !important;
   }
   body.reference-storefront > header .header-search button {
-    width: 40px !important;
-    min-width: 40px !important;
-    height: 40px !important;
-    min-height: 40px !important;
-    flex: 0 0 40px !important;
+    width: 36px !important;
+    min-width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+    flex: 0 0 36px !important;
     border-radius: 9px !important;
     margin: 2px !important;
     padding: 0 !important;
@@ -36,8 +36,8 @@
     background: #cb3c08 !important;
   }
   body.reference-storefront > header .header-search button svg {
-    width: 21px !important;
-    height: 21px !important;
+    width: 19px !important;
+    height: 19px !important;
   }
 }
 body.reference-storefront > header .header-search:focus-within {
@@ -51,9 +51,10 @@ body.reference-storefront > .cbx-whatsapp-float:focus-visible {
 }
 @media (min-width: 761px) and (max-width: 1199px) {
   body.reference-storefront > header .hwrap .header-search {
-    flex: 1 1 auto !important;
-    width: auto !important;
-    max-width: none !important;
+    flex: 0 1 clamp(180px, 24vw, 230px) !important;
+    width: clamp(180px, 24vw, 230px) !important;
+    min-width: 150px !important;
+    max-width: 230px !important;
   }
 }
 body.reference-storefront > a.cbx-whatsapp-float {
