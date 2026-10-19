@@ -13,7 +13,7 @@ test('header category dropdown uses the same HQ photography as homepage',()=>{
   assert.ok(home.includes(asset),'Homepage HQ sprite reference missing');
   assert.ok(dropdown.includes(asset),'Dropdown must use identical HQ sprite');
   assert.doesNotMatch(dropdown,/approved-category-sprite-20261018\\.webp/,'Legacy low-resolution image must not be used');
-  assert.ok(index.includes('header-discovery-preview.css?v=20261019-header3'),'Bust browser caches for updated images');
+  assert.ok(index.includes('header-discovery-preview.css?v=20261019-bag1'),'Bust browser caches for updated images');
   const img=readFileSync(new URL('category-art/approved-category-sprite-hq-20261018.webp',root));
   assert.ok(img.length>30000,'Dropdown must not regress to tiny highly compressed image');
   assert.equal(img.toString('ascii',0,4),'RIFF');
