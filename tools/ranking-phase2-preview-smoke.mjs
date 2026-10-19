@@ -1,7 +1,7 @@
 // Phase 2 SEO: read-only Cloudflare Pages branch preview; no mutations or customer data.
 import {chromium} from 'playwright-core';
 import {mkdir,writeFile} from 'node:fs/promises';
-const base=(process.env.PHASE2_RANKING_PREVIEW_URL||'https://improve-ranking-phase2-discov.chaskabox-site.pages.dev').replace(/\/$/,'');
+const base=(process.env.PHASE2_RANKING_PREVIEW_URL||'https://improve-ranking-phase2-disco.chaskabox-site.pages.dev').replace(/\/$/,'');
 if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(base))throw Error('Only Cloudflare preview may be tested');
 const output='test-results/ranking-phase2';await mkdir(output,{recursive:true});
 const browser=await chromium.launch({headless:true,args:['--no-sandbox']});
