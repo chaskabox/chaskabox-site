@@ -5,6 +5,7 @@ import {storefrontConfig} from './storefront-config.js';
 import {productImage} from './seo.js';
 import {LOCAL_PHOTOS} from './local-photos.js';
 import {SEO_CATEGORIES} from './catalogue-content.js';
+import {catalogueNavigation} from './catalogue-discovery.js';
 import {SITE,esc,safeJson,replaceMount,routeShell,withSeo,organizationSchema,catalogueUnavailable} from './storefront-html.js';
 export function browserProduct(p){return {id:Number(p.id),slug:p.slug||'',name:p.name,brand:p.brand||'',price:Number(p.price),oldPrice:p.old_price==null?null:Number(p.old_price),category:p.category||'',pack:p.pack||'',desc:p.description||'',badge:p.badge||'',img:p.image_url||null,photoNote:p.image_warning||'',bundle:!!p.is_bundle,stockState:p.stock_state||'sourced_after_order',seoTitle:p.seo_title||'',seoDescription:p.seo_description||'',bundleContents:p.bundle_contents||[],retailValue:p.bundle_retail_value??null,bundleSavings:p.bundle_savings??null,bundleNote:p.bundle_warning||''};}
 const moneyFormatter=new Intl.NumberFormat('en-PK',{maximumFractionDigits:2});
@@ -37,6 +38,8 @@ export async function renderCataloguePage(context,kind,slug=''){
    rows=cms?all.filter(p=>(cms.product_ids||[]).map(Number).includes(Number(p.id))):all.filter(p=>p.category===known.name);
   }
   let html=routeShell(staticShell,'shop');
+  // Crawler-visible navigation is computed from public products, never a static/hidden list.
+  html=html.replace(/<nav class="shop-category-rail" id="shopCategoryRail"[^>]*>[\s\S]*?<\/nav>/i,catalogueNavigation(all,manifest,path));
   html=replaceMount(html,'shopGrid',rows.map((p,i)=>catalogueCard(p).replace('loading="lazy"',i===0?'loading="eager" fetchpriority="high"':i===1?'loading="eager"':'loading="lazy"')).join('')||'<p>No public products in this collection yet. <a href="/shop/">Browse all snacks</a>.</p>');
   html=html.replace(/(<h1\b[^>]*id="catTitle"[^>]*>)[\s\S]*?<\/h1>/i,'$1'+esc(copy.name)+'</h1>').replace(/(<[^>]+id="catCount"[^>]*>)[\s\S]*?<\//i,'$1'+rows.length+' '+(rows.length===1?'product':'products')+'</');
   html=html.replace(/(<[^>]+id="categorySeoIntro"[^>]*>)[\s\S]*?<\//i,'$1'+esc(copy.intro)+'</');
