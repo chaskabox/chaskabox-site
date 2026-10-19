@@ -25,7 +25,7 @@ test('crawlable nav uses named category paths and no fabricated product claims',
 });
 test('homepage approved hero and existing category-discovery navigation remain intact',()=>{
  const s=readFileSync(new URL('../index.html',import.meta.url),'utf8');
- assert.equal((s.match(/data-hero-dot="\\d+"/g)||[]).length,3);
+ assert.equal((s.match(/data-hero-dot="\d+"/g)||[]).length,3);
  assert.match(s,/id="catTiles"/);
  for(const link of ['/shop/','/category/biscuits-and-wafers/','/category/chocolates-and-candies/','/category/snacks-and-nimco/','/bundles/'])assert.ok(s.includes('href="'+link+'"'),link);
  assert.doesNotMatch(s,/pakistani-snacks-guide/);
