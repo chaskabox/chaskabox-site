@@ -340,7 +340,10 @@ try{
     });
     await page.waitForFunction(()=>document.querySelector('header a.cbx-brands-trigger')?.getAttribute('aria-controls')==='cbxBrandsDropdown');
     const brandTrigger=page.locator('header a.cbx-brands-trigger');
+    const startingURL=page.url();
     await brandTrigger.click();
+    if(page.url()!==startingURL)throw Error('Clicking Brands navigated instead of opening dropdown: '+page.url());
+    if(!await page.locator('#view-home').isVisible())throw Error('Clicking Brands changed visible page route');
     const dropdown=page.locator('#cbxBrandsDropdown');
     await dropdown.locator('.cbx-brands-links a[href^="/brand/"]').first().waitFor({state:'visible'});
     if(await brandTrigger.getAttribute('aria-expanded')!=='true')throw Error('Brands dropdown aria-expanded not set');
@@ -348,6 +351,7 @@ try{
     await page.keyboard.press('Escape');
     if(await dropdown.isVisible()||await brandTrigger.getAttribute('aria-expanded')!=='false')throw Error('Brands dropdown did not close with Escape');
     await brandTrigger.click();
+    if(page.url()!==startingURL)throw Error('Brands reopened with unintended page navigation');
     await page.mouse.click(30,180);
     if(await dropdown.isVisible())throw Error('Brands dropdown did not close on outside click');
     results.interactions.push({case:'Brands dropdown renders real brand links and closes by keyboard/outside click / '+width,pass:true});
