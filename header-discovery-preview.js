@@ -23,6 +23,7 @@ const btn=holder.querySelector('button'),panel=holder.querySelector('section'),g
 const render=()=>{const counts=new Set(catalog().map(p=>p.category));const available=counts.size?entries.filter(e=>counts.has(e[0])):entries;grid.innerHTML=(available.length?available:entries).map(e=>'<a href="'+e[1]+'" class="cbx-cat-card"><span class="cbx-cat-photo" style="--cbx-pos:'+e[2]+'" aria-hidden="true"></span><span class="cbx-cat-name">'+esc(e[0])+'<small>Explore products →</small></span></a>').join('')};
 const positionPanel=()=>{
  if(panel.hidden)return;
+ panel.style.transform='none';
  const trigger=btn.getBoundingClientRect(),head=document.querySelector('body > header')?.getBoundingClientRect();
  const top=Math.max(8,head?.bottom||0);
  if(trigger.bottom<top||trigger.top>innerHeight){set(false);return;}
@@ -34,6 +35,8 @@ const positionPanel=()=>{
  const bounds=panel.getBoundingClientRect();
  const available=up?bounds.bottom-top-12:innerHeight-bounds.top-12;
  panel.style.setProperty('--cbx-category-space',Math.max(44,Math.min(600,Math.floor(available)))+'px');
+ const left=Math.max(12,Math.min(bounds.left,innerWidth-bounds.width-12));
+ panel.style.transform='translateX('+(left-bounds.left)+'px)';
 };
 const set=open=>{clearTimeout(openTimer);clearTimeout(closeTimer);if(open)render();panel.hidden=!open;btn.setAttribute('aria-expanded',String(open));holder.classList.toggle('is-open',open);if(open)positionPanel()};
 let openTimer,closeTimer;btn.addEventListener('click',()=>set(panel.hidden));
@@ -59,6 +62,16 @@ if(mainHeader&&managedNav&&whatsapp){
   whatsapp.setAttribute('aria-label','Order via WhatsApp');
   mainHeader.append(managedNav,whatsapp);
   document.body.classList.add("cbx-header-ready");
+}
+// About/Contact use a native details menu instead of the shopping drawer.
+const staticMenu=mainHeader?.querySelector('.cb-static-menu');
+if(staticMenu){
+ const summary=staticMenu.querySelector('summary');
+ const sync=()=>summary?.setAttribute('aria-expanded',String(staticMenu.open));
+ staticMenu.addEventListener('toggle',sync);sync();
+ staticMenu.addEventListener('keydown',e=>{if(e.key==='Escape'&&staticMenu.open){e.preventDefault();staticMenu.open=false;summary?.focus()}});
+ staticMenu.addEventListener('focusout',e=>{if(!staticMenu.contains(e.relatedTarget))staticMenu.open=false});
+ document.addEventListener('pointerdown',e=>{if(!staticMenu.contains(e.target))staticMenu.open=false});
 }
 // The old stylesheet hid all floating-help text on mobile. Keep a readable
 // accessible text label; do not alter AI answers, chat handlers or notifications.

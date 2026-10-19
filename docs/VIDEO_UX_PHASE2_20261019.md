@@ -22,6 +22,10 @@ one coordinated release after the requested phase reviews.
 - Brands height is limited by the actual available viewport. All Categories
   similarly uses the space above or below its trigger, with internal scrolling
   and Escape focus return.
+- Standalone About and Contact pages now load the shared header presentation,
+  retain native menu dismissal/focus return, and read the same public brand list.
+  Their standalone WhatsApp control clears the mobile navigation when no AI
+  launcher is present. Existing contact destinations and page content are retained.
 - Support controls remain a compact WhatsApp icon beside a labelled Chaska AI
   action. Their alignment tracks control size, font readiness and viewport
   changes. Safe-area spacing is preserved; the duplicate mobile chat glyph,

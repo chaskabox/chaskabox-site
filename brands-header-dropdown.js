@@ -58,6 +58,17 @@
     trigger=null;
   }
   let currentRequest=0;
+  let publicBrands=null;
+  function loadBrands(){
+    if(typeof fetchBrands==='function')return fetchBrands();
+    // Standalone information pages do not load the shopping application.
+    // Reuse its public brand endpoint without account credentials or mutations.
+    if(!publicBrands)publicBrands=fetch('/api/brands',{credentials:'omit',headers:{Accept:'application/json'}})
+      .then(r=>{if(!r.ok)throw Error('Brand directory unavailable');return r.json();})
+      .then(data=>Array.isArray(data.brands)?data.brands:[])
+      .catch(()=>{publicBrands=null;return[];});
+    return publicBrands;
+  }
   async function open(a){
     close();
     trigger=a;
@@ -72,7 +83,7 @@
     const token=++currentRequest;
     let brands=[];
     try{
-      if(typeof fetchBrands==='function')brands=await fetchBrands();
+      brands=await loadBrands();
     }catch{brands=[];}
     if(token!==currentRequest||trigger!==a||popup.hidden)return;
     const unique=new Set();
@@ -103,7 +114,14 @@
   function alignWhatsapp(){
     const wa=document.querySelector('body > a.cbx-whatsapp-float');
     const fab=document.querySelector('#helpFab');
-    if(!wa||!fab)return;
+    if(!wa)return;
+    if(!fab){
+      const dock=document.querySelector('.cb-mobile-dock');
+      const visible=dock&&dock.getClientRects().length;
+      wa.style.setProperty('--cb-wa-right','max(12px,env(safe-area-inset-right))');
+      wa.style.setProperty('--cb-wa-bottom',(visible?innerHeight-dock.getBoundingClientRect().top+12:20)+'px');
+      return;
+    }
     const box=fab.getBoundingClientRect();
     if(box.width<20)return;
     // Right edge of WA is 10px to the left of Chaska AI's left edge.
@@ -115,7 +133,8 @@
   function watchSupportClearance(){
     const fab=document.getElementById('helpFab');
     const wa=document.querySelector('body > a.cbx-whatsapp-float');
-    if(!fab||!wa)return;
+    if(!wa)return;
+    const controls=[fab,wa].filter(Boolean);
     let frame=0,rescan=true,revealTimer=null,lastMovement=0;
     const near=new Set();
     const selector='main a[href]:not(.pimg):not(.cat),main button,main input,main select,main textarea,main .price,main .herotrust,main .cb-trust-rail,footer a[href]';
@@ -137,7 +156,7 @@
         // A focused help action must never disappear under the keyboard user.
         const retain=document.activeElement===fab||document.activeElement===wa||
           document.getElementById('aimodal')?.classList.contains('open');
-        const boxes=[fab,wa].map(el=>el.getBoundingClientRect());
+        const boxes=controls.map(el=>el.getBoundingClientRect());
         const obscures=!retain&&[...near].some(el=>{
           if(!el.isConnected)return false;
           const r=el.getBoundingClientRect();
@@ -156,7 +175,9 @@
     window.addEventListener('resize',schedule,{passive:true});
     window.visualViewport?.addEventListener('resize',schedule,{passive:true});
     document.addEventListener('focusin',schedule);
-    if(typeof ResizeObserver==='function')new ResizeObserver(schedule).observe(fab);
+    if(typeof ResizeObserver==='function'){
+      const sizes=new ResizeObserver(schedule);controls.forEach(el=>sizes.observe(el));
+    }
     const changes=new MutationObserver(()=>schedule(true));
     for(const root of document.querySelectorAll('main,footer'))changes.observe(root,{childList:true,subtree:true});
     document.fonts?.ready.then(()=>schedule());

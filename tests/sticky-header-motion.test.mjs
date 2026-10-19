@@ -27,7 +27,7 @@ test('sticky header remains below modal overlay and motion effects respect prefe
 test('desktop navigation uses wide margins, one row, and equal-size account actions',()=>{
  const css=read('header-one-line.css');
  for(const path of pages){
-   assert.match(read(path),/header-one-line\.css\?v=20261019-line4/,path);
+   assert.match(read(path),/header-one-line\.css\?v=20261019-line5/,path);
  }
  assert.match(css,/width: calc\(100% - clamp\(32px, 8\.5vw, 208px\)\)/);
  assert.match(css,/flex-wrap: nowrap !important/);

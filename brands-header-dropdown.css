@@ -80,7 +80,7 @@ body.reference-storefront #aimodal .aihead .mclose{
  display:grid;place-items:center;min-width:44px;min-height:44px;
 }
 body.reference-storefront.cbx-support-obscures-content :is(button#helpFab,a.cbx-whatsapp-float),
-body.reference-storefront:has(#mnav.open,#drawer.open,#pmodal.open,#acctmodal.open,#filterSheet.open,#imgLightbox.open) :is(button#helpFab,a.cbx-whatsapp-float,#aimodal),
+body.reference-storefront:has(#mnav.open,#drawer.open,#pmodal.open,#acctmodal.open,#filterSheet.open,#imgLightbox.open,.cb-static-menu[open]) :is(button#helpFab,a.cbx-whatsapp-float,#aimodal),
 body.reference-storefront:has(#aimodal.open) > a.cbx-whatsapp-float{
  visibility:hidden!important;pointer-events:none!important;
 }

@@ -7,11 +7,11 @@ if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(base))throw Error(
 const out='test-results/navigation-phase2';
 await mkdir(out,{recursive:true});
 const versions={
- 'header-one-line.css':'20261019-line4',
+ 'header-one-line.css':'20261019-line5',
  'sticky-motion-polish.css':'20261019-sticky3',
- 'brands-header-dropdown.css':'20261019-brand2',
- 'brands-header-dropdown.js':'20261019-brand5',
- 'header-discovery-preview.js':'20261019-header5'
+ 'brands-header-dropdown.css':'20261019-brand3',
+ 'brands-header-dropdown.js':'20261019-brand6',
+ 'header-discovery-preview.js':'20261019-header6'
 };
 const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
 const expected=Object.fromEntries(await Promise.all(Object.keys(versions).map(async p=>[p,digest(await readFile(p))])));
@@ -193,6 +193,46 @@ try{
   if(motion.popup!=='none'||motion.help!=='none'||motion.helpTransition!=='0s'||motion.navTransition!=='0s')throw Error('Reduced motion is not respected '+JSON.stringify(motion));
   results.push({case:'Navigation and help controls honor reduced motion',pass:true,motion});
  }finally{await context.close();}
+ for(const width of [390,1366]){
+  const routeContext=await browser.newContext({viewport:{width,height:900},serviceWorkers:'block'});
+  await readOnly(routeContext);
+  const routePage=await routeContext.newPage();
+  try{
+   for(const path of ['/shop/','/product/5/','/faq/','/about/','/contact/']){
+    const response=await routePage.goto(base+path,{waitUntil:'domcontentloaded'});
+    if(response?.status()!==200)throw Error('Navigation route failed '+path);
+    await routePage.waitForFunction(()=>document.body.classList.contains('cbx-header-ready')&&document.querySelector('body > .cbx-whatsapp-float'));
+    await routePage.evaluate(()=>document.fonts.ready);
+    const geometry=await routePage.evaluate(()=>{
+     const nav=document.querySelector('header .cbx-header-links'),wa=document.querySelector('body > .cbx-whatsapp-float').getBoundingClientRect();
+     const dock=document.querySelector('.cb-mobile-dock'),d=dock?.getBoundingClientRect();
+     return {overflow:document.documentElement.scrollWidth>innerWidth+2,
+      navVisible:!!nav?.getClientRects().length,navUnclipped:nav.scrollWidth<=nav.clientWidth+3,
+      fonts:[...nav.querySelectorAll('a')].map(a=>parseFloat(getComputedStyle(a).fontSize)),
+      wa:{left:wa.left,right:wa.right,bottom:wa.bottom},dockTop:d&&dock.getClientRects().length?d.top:innerHeight};
+    });
+    if(geometry.overflow||geometry.wa.left<0||geometry.wa.right>width||geometry.wa.bottom>geometry.dockTop-7||
+      width>=1200&&(!geometry.navVisible||!geometry.navUnclipped||geometry.fonts.some(n=>n<13)))
+     throw Error('Shared header/support route regression '+JSON.stringify({width,path,...geometry}));
+    if(width>=1200){
+     const trigger=routePage.locator('header .cbx-brands-trigger');
+     await trigger.click();
+     await routePage.locator('#cbxBrandsDropdown .cbx-brands-links a').first().waitFor({state:'visible'});
+     await routePage.keyboard.press('Escape');
+     if(!await trigger.evaluate(el=>el===document.activeElement))throw Error('Shared Brands focus return failed '+path);
+    }else if(path==='/about/'||path==='/contact/'){
+     const summary=routePage.locator('.cb-static-menu summary');
+     await summary.click();
+     if(!await routePage.locator('.cb-static-menu').evaluate(el=>el.open))throw Error('Information-page menu did not open');
+     if(await routePage.locator('body > .cbx-whatsapp-float').isVisible())throw Error('WhatsApp overlaps the static information menu');
+     await routePage.keyboard.press('Escape');
+     if(await routePage.locator('.cb-static-menu').evaluate(el=>el.open)||!await summary.evaluate(el=>el===document.activeElement))throw Error('Information-page menu Escape loses focus');
+    }
+    if(path==='/about/'||path==='/contact/')await routePage.screenshot({path:out+'/phase2-'+path.slice(1,-1)+'-'+width+'.png',fullPage:false});
+    results.push({case:'Shared shopping/information header, public Brands data and safe support position',width,path,pass:true});
+   }
+  }finally{await routeContext.close();}
+ }
 }catch(error){results.push({pass:false,error:String(error?.stack||error)});process.exitCode=1;}
 finally{
  await writeFile(out+'/results.json',JSON.stringify({base,sourceHashes:expected,blockedMutations,results},null,2));

@@ -128,13 +128,15 @@
 /* Preserve one row on narrow laptops: navigation goes into the existing accessible
    menu instead of wrapping or clipping product search / cart. */
 @media (min-width: 761px) and (max-width: 1199px) {
-  body.reference-storefront > header .hwrap > .mnav-btn {
+  body.reference-storefront > header .hwrap > .mnav-btn,
+  body.reference-storefront > header .hwrap > .cb-static-menu {
     display: inline-flex !important;
     order: 0 !important;
     flex: 0 0 42px !important;
     min-width: 42px !important;
     height: 44px !important;
   }
+  body.reference-storefront > header .hwrap > .cb-static-menu summary { width:42px; }
   body.reference-storefront > header .hwrap .logo {
     order: 1 !important;
     flex-basis: clamp(118px, 14vw, 165px) !important;
