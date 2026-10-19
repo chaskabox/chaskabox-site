@@ -7,23 +7,23 @@ const entryPages=["index.html","shop/index.html","brands/index.html","bundles/in
 test('header shell and approved hero/category use identical 1380px desktop max width',()=>{
  const css=read('header-one-line.css');
  const page=read('final-homepage.css');
- assert.match(css,/width:\\s*calc\\(100%\\s*-\\s*24px\\)\\s*!important/);
- assert.match(css,/max-width:\\s*var\\(--cb-width,\\s*1380px\\)\\s*!important/);
- assert.doesNotMatch(css,/max-width:\\s*1840px/);
- assert.match(page,/--cb-width:\\s*1380px/);
- assert.match(page,/#view-home>\\.hero[^{}]*max-width:\\s*var\\(--cb-width\\)/);
- assert.match(page,/#view-home>\\.discover[^{}]*max-width:\\s*var\\(--cb-width\\)/);
+ assert.match(css,/width:\s*calc\(100%\s*-\s*24px\)\s*!important/);
+ assert.match(css,/max-width:\s*var\(--cb-width,\s*1380px\)\s*!important/);
+ assert.doesNotMatch(css,/max-width:\s*1840px/);
+ assert.match(page,/--cb-width:\s*1380px/);
+ assert.match(page,/#view-home>\.hero[^{}]*max-width:\s*var\(--cb-width\)/);
+ assert.match(page,/#view-home>\.discover[^{}]*max-width:\s*var\(--cb-width\)/);
 });
 test('all public storefront entry templates bust the shared header CSS cache',()=>{
  for(const path of entryPages){
   const s=read(path);
-  assert.match(s,/header-one-line\\.css\\?v=20261019-line8/,path);
-  assert.doesNotMatch(s,/header-one-line\\.css\\?v=20261019-line7/,path);
+  assert.match(s,/header-one-line\.css\?v=20261019-line8/,path);
+  assert.doesNotMatch(s,/header-one-line\.css\?v=20261019-line7/,path);
  }
 });
 test('mobile header and banner assets remain unchanged by the gutter fix',()=>{
  const css=read('header-one-line.css');
- assert.match(css,/@media\\s*\\(max-width:\\s*760px\\)/);
+ assert.match(css,/@media\s*\(max-width:\s*760px\)/);
  const home=read('index.html');
  assert.match(home,/data-hero-dot="0"/);
  assert.match(home,/data-hero-dot="1"/);
