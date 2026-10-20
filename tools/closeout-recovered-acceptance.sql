@@ -13,8 +13,8 @@ SELECT set_config('chaskabox.qa_owner',gen_random_uuid()::text,true),
  set_config('chaskabox.qa_inactive',gen_random_uuid()::text,true),
  set_config('chaskabox.qa_page','closeout_'||replace(gen_random_uuid()::text,'-',''),true);
 CREATE TEMP TABLE closeout_counts AS SELECT
- (SELECT count(*) FROM publibaseline.products) products,
- (SELECT count(*) FROM publibaseline.orders) orders,
+ (SELECT count(*) FROM public.products) products,
+ (SELECT count(*) FROM public.orders) orders,
  (SELECT count(*) FROM public.admin_roles) roles,
  (SELECT count(*) FROM auth.users) users,
  (SELECT count(*) FROM chaskabox_content.pages) pages,
@@ -69,7 +69,7 @@ DO $verification$
 DECLARE baseline closeout_counts; n integer;
 BEGIN
  SELECT * INTO baseline FROM closeout_counts;
- IF baseline.products<>(SELECT count(*) FROM publibaseline.products) OR baseline.orders<>(SELECT count(*) FROM publibaseline.orders) OR
+ IF baseline.products<>(SELECT count(*) FROM public.products) OR baseline.orders<>(SELECT count(*) FROM public.orders) OR
  baseline.jobs<>(SELECT count(*) FROM chaskabox_agents.agent_jobs) OR baseline.events<>(SELECT count(*) FROM chaskabox_agents.agent_events) OR
  baseline.alerts<>(SELECT count(*) FROM chaskabox_agents.agent_alerts) THEN RAISE EXCEPTION 'Read-only business/agent counts changed'; END IF;
  IF baseline.audits+3<>(SELECT count(*) FROM public.audit_log) OR baseline.pages+1<>(SELECT count(*) FROM chaskabox_content.pages) OR
