@@ -855,19 +855,19 @@ try{
  // Partial-read outage must retain actual activation state and not invent healthy agent signals.
  {
   const {context,page}=await contextFor(1440,'owner');
-  let down=true, statusDown=false;
+  let down=true, statusDown=false, receiptMode='none';
   const respond=(route,payload,status=200)=>route.fulfill({status,contentType:'application/json',body:JSON.stringify(payload)});
   await context.route('**/api/admin/agents/**',route=>{
    const key=new URL(route.request().url()).pathname.split('/').at(-1);
    if(route.request().method()!=='GET')throw Error('Unexpected agent mutation during outage drill');
    if(key==='status'&&statusDown)return respond(route,{error:{message:'Synthetic status outage'}},503);
-   if(key==='status')return respond(route,{agents:['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent_key=>({agent_key,mode:'observe',enabled:false})),pending_jobs:0,pending_approvals:0});
+   if(key==='status')return respond(route,{agents:['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent_key=>({agent_key,mode:'observe',enabled:receiptMode!=='none'})),pending_jobs:0,pending_approvals:0});
    if(key==='preview')return respond(route,{agents:[{agent:'orders',state:'attention',signals:{stale_new_orders:2}}]});
    if(key==='insights'&&down)return respond(route,{error:{message:'Synthetic insight outage'}},503);
    if(key==='marketing'&&down)return respond(route,{error:{message:'Synthetic draft outage'}},503);
    if(key==='insights')return respond(route,{agents:[]});
    if(key==='marketing')return respond(route,{drafts:[]});
-   if(key==='operations')return respond(route,{error:{message:'Synthetic operations outage'}},503);
+   if(key==='operations')return receiptMode==='none'?respond(route,{error:{message:'Synthetic operations outage'}},503):respond(route,{activation:[],alerts:[],observations:['orders','inventory','security','backups','support','seo','marketing','analytics'].map(agent=>({agent,state:agent==='backups'?'unknown':'ok',checked_at:new Date(Date.now()+(receiptMode==='future'?60000:receiptMode==='stale'?-9*3600000:-60000)).toISOString()}))});
    throw Error('Unexpected agent endpoint '+key);
   });
   await page.goto(base+'/admin/');
@@ -889,6 +889,18 @@ try{
   results.interactions.push({case:'AI diagnostics recover after endpoint outage without agent activation',pass:
    !await page.locator('#agentsM05Propose button[type="submit"]').isDisabled()&&
    (await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 0')});
+  receiptMode='recent';await page.locator('#agentsM05Refresh').click();
+  await page.waitForFunction(()=>document.getElementById('agentWorkbenchSummary')?.textContent.includes('8 recent completed receipts'));
+  results.interactions.push({case:'eight real-shaped completed receipts establish execution while unknown backup health stays unknown',pass:
+   (await page.locator('#agentsM05Readiness').innerText()).includes('Enabled agents: 8')&&
+   (await page.locator('#agentsM05Signals [data-agent="backups"]').innerText()).includes('BACKUPS · unknown')&&
+   !(await page.locator('#agentWorkbenchSummary').innerText()).includes('execution not verified')});
+  for(const kind of ['future','stale']){
+   receiptMode=kind;await page.locator('#agentsM05Refresh').click();
+   await page.waitForFunction(k=>document.querySelector('#agentsM05Signals article')?.dataset.receipt===(k==='future'?'missing':'stale'),kind);
+   results.interactions.push({case:kind+' receipt never counts as recent execution',pass:
+    (await page.locator('#agentWorkbenchSummary').innerText()).includes('0 recent completed receipts')});
+  }
   await context.close();
  }
  // New brand's full CMS editor must create with all values; no prompt or real writes.

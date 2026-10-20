@@ -1,0 +1,44 @@
+[
+  {
+    "id": 5,
+    "source": "https://jtvswuvnasqqzrjysgfd.supabase.co/storage/v1/object/public/product-media/products/2026/10/bd3fec86-a881-44c3-8c85-5001756ea5eb.webp",
+    "sha256": "0b91f9804b515f4fe79596340559f0cd66866ebbb8df30cdbef46b389626e325",
+    "originalBytes": 79136,
+    "localOriginal": "images/uploaded-p5-0b91f9804b.webp",
+    "variants": [
+      {
+        "src": "/images/optimized-uploaded-p5-0b91f9804b-320.webp",
+        "width": 320,
+        "height": 304,
+        "bytes": 15434
+      },
+      {
+        "src": "/images/optimized-uploaded-p5-0b91f9804b-640.webp",
+        "width": 640,
+        "height": 608,
+        "bytes": 42482
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "source": "https://jtvswuvnasqqzrjysgfd.supabase.co/storage/v1/object/public/product-media/products/2026/10/4ae9a5f9-964b-431f-ba28-2e1cc245c41d.webp",
+    "sha256": "f1d9d9fd5cc2d07172cca84404d121bfd449efd65e9be8e4a83e8849e52e5914",
+    "originalBytes": 94030,
+    "localOriginal": "images/uploaded-p8-f1d9d9fd5c.webp",
+    "variants": [
+      {
+        "src": "/images/optimized-uploaded-p8-f1d9d9fd5c-320.webp",
+        "width": 320,
+        "height": 335,
+        "bytes": 21528
+      },
+      {
+        "src": "/images/optimized-uploaded-p8-f1d9d9fd5c-640.webp",
+        "width": 640,
+        "height": 670,
+        "bytes": 55364
+      }
+    ]
+  }
+]
