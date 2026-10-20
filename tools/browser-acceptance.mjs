@@ -142,6 +142,15 @@ async function inspect(page,route,width,role){
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ {
+  const {context,page}=await contextFor(1440,'owner');
+  await context.route('**/api/admin/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({supabase:{status:'error'},turnstile:{status:'configured'},resend:{status:'consumer_configured'},notifications:{status:'degraded'},ai:{status:'unknown'},functions:{status:'ok'}})}));
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await openAdminPanel(page,'health');await page.locator('#healthGrid').getByText('degraded',{exact:true}).waitFor();
+  const statuses=await page.locator('#healthGrid .box-badge').evaluateAll(nodes=>nodes.map(x=>({text:x.textContent.trim(),visible:!!x.getClientRects().length&&getComputedStyle(x).display!=='none'})));
+  results.interactions.push({case:'System Health keeps configured, degraded, error and unknown states visibly distinct',pass:statuses.length===6&&statuses.every(x=>x.visible)&&['error','configured','consumer configured','degraded','unknown','ok'].every(s=>statuses.some(x=>x.text===s))});
+  await context.close();
+ }
  // Capture the real SSR node before application hydration. Initial product
  // media must stay connected, while a changed product/photo must replace it.
  for(const width of [390,1440])for(const route of ['/shop/','/product/39/']){
