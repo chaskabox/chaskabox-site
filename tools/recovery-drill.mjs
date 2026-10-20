@@ -86,6 +86,25 @@ try{
  try{auth=JSON.parse(run('docker',['run','--rm','--network','container:'+container,'--env-file',path.join(root,'auth.env'),'-v',root+':/recovery:ro',nodeImage,'node','/recovery/auth-acceptance.mjs']).trim());}
  catch(error){const logs=run('docker',['logs',authContainer]);console.error(JSON.stringify({auth_startup_signals:{migration_error:/migration.*(fail|error)/i.test(logs),database_permission_denied:/permission denied/i.test(logs),database_authentication_failed:/password authentication failed/i.test(logs),missing_configuration:/required|missing/i.test(logs)},sqlstates:[...new Set(logs.match(/SQLSTATE [A-Z0-9]{5}/g)||[])]}));throw error;}
  const afterAuth=JSON.parse(db(authCountsSQL,'chaskabox_recovery'));if(afterAuth.users!==recoveredAuth.users+1||afterAuth.verified_factors!==recoveredAuth.verified_factors||afterAuth.admin_roles!==recoveredAuth.admin_roles)throw Error('Recovered Auth metadata unexpectedly changed');
+ let currentCloseout=null;
+ if(e.CURRENT_CLOSEOUT_ACCEPTANCE==='true'){
+  step='verify_current_closeout_offline_target';
+  const target=JSON.parse(run('docker',['inspect',container]))[0];
+  if(target.HostConfig.NetworkMode!=='none'||Object.keys(target.HostConfig.PortBindings||{}).length||db('select current_database();','chaskabox_recovery').trim()!=='chaskabox_recovery')throw Error('Current closeout requires the verified offline clone');
+  step='verify_current_recovered_cms_and_agents';
+  const before=JSON.parse(db(authCountsSQL,'chaskabox_recovery'));
+  const sql=await readFile(new URL('./closeout-recovered-acceptance.sql',import.meta.url),'utf8');
+  db("SET chaskabox.offline_closeout='confirmed';\n"+sql,'chaskabox_recovery');
+  const after=JSON.parse(db(authCountsSQL,'chaskabox_recovery'));
+  if(JSON.stringify(before)!==JSON.stringify(after))throw Error('Rolled-back closeout fixtures changed recovered Auth/roles');
+  currentCloseout={scope:'Actual restored production schema; synthetic staff fixtures in one rolled-back transaction; offline only',
+   sql_sha256:createHash('sha256').update(sql).digest('hex'),
+   content_draft_readback:true,manager_publish_readback:true,owner_versioned_rollback:true,
+   stale_save_denied:true,content_publish_denied:true,fulfilment_copy_mutation_denied:true,inactive_staff_denied:true,
+   service_only_rpc_and_private_table_boundaries:true,eight_observe_agent_read_rpcs:true,
+   business_and_agent_receipt_counts_preserved:true,fixture_auth_and_role_rows_rolled_back:true,
+   production_owner_mfa_or_provider_acceptance:false,no_outbound_actions:true};
+ }
  let agentPreflight=null;
  if(e.AGENT_MIGRATION_PREFLIGHT==='true'){
   step='verify_agent_preflight_isolation';
@@ -135,7 +154,7 @@ try{
    owners_agents_observe:state.activation.length,service_role_rpcs_verified:true,client_rpc_and_private_schema_denied:true,
    preserved_product_order_and_admin_counts:true,no_outbound_actions:true};
  }
- const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,agent_migration_preflight:agentPreflight,phase12_migration_preflight:phase12Preflight,live_auth_provider_acceptance_verified:false};
+ const report={archive_prefix:prefix,image_digest:imageDigest,auth_image:authImage,archive_checksum_verified:true,full_database_archive_restored:true,owners_and_grants_preserved:true,target_network:'none',production_database_modified:false,checks,recovered_auth_counts:recoveredAuth,isolated_auth_runtime:auth,media_object_recovery_verified:!!media,media,agent_migration_preflight:agentPreflight,phase12_migration_preflight:phase12Preflight,current_recovered_closeout:currentCloseout,live_auth_provider_acceptance_verified:false};
  console.log(JSON.stringify(report));if(e.GITHUB_STEP_SUMMARY)await writeFile(e.GITHUB_STEP_SUMMARY,JSON.stringify(report,null,2)+'\n',{flag:'a'});
 }catch(error){console.error('Isolated recovery did not pass: '+step+'. No database rows, SQL, credentials or archive contents are logged.');process.exitCode=1;}
 finally{for(const name of [authContainer,container])try{execFileSync('docker',['rm','-f',name],{stdio:'ignore'});}catch{}await rm(root,{recursive:true,force:true});}
