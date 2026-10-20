@@ -142,6 +142,41 @@ async function inspect(page,route,width,role){
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ // Capture the real SSR node before application hydration. Initial product
+ // media must stay connected, while a changed product/photo must replace it.
+ for(const width of [390,1440])for(const route of ['/shop/','/product/39/']){
+  const {context,page}=await contextFor(width,'guest');
+  const selector=route==='/shop/'?'#shopGrid article.card a.pimg > img':'#pdetail .pd-img > img';
+  await page.addInitScript(selector=>{
+   const capture=new MutationObserver(()=>{const img=document.querySelector(selector);if(img){window.qaInitialProductImage=img;capture.disconnect();}});
+   capture.observe(document,{childList:true,subtree:true});
+  },selector);
+  await page.goto(base+route);
+  await page.locator(route==='/shop/'?'#shopGrid .addcart':'#pdqty').waitFor();
+  results.interactions.push({case:'SSR product image identity retained through hydration '+route+' / '+width,pass:await page.evaluate(s=>window.qaInitialProductImage===document.querySelector(s)&&window.qaInitialProductImage.isConnected,selector)});
+  if(route==='/shop/'){
+   const expected=await page.locator('#shopGrid a.pimg').evaluateAll(a=>a.map(x=>x.getAttribute('href')).join(','));
+   await page.getByRole('combobox',{name:'Sort products',exact:true}).selectOption('az');
+   const actual=await page.locator('#shopGrid a.pimg').evaluateAll(a=>a.map(x=>x.getAttribute('href')).join(','));
+   results.interactions.push({case:'retained-image catalogue still reorders product identities / '+width,pass:actual!==expected});
+  }else{
+   await page.getByRole('button',{name:'Enlarge product photo',exact:true}).click();
+   await page.getByRole('dialog',{name:'Product image enlarged'}).waitFor();
+   await page.getByRole('button',{name:'Close enlarged photo',exact:true}).click();
+   results.interactions.push({case:'retained product image keeps zoom and keyboard focus / '+width,pass:await page.getByRole('button',{name:'Enlarge product photo',exact:true}).evaluate(el=>el===document.activeElement)});
+  }
+  await context.close();
+ }
+ {
+  const {context,page}=await contextFor(390,'guest');
+  await page.addInitScript(()=>{
+   const capture=new MutationObserver(()=>{const img=document.querySelector('#shopGrid article.card a.pimg > img');if(img){window.qaInitialProductImage=img;img.src='/images/p39.webp';img.removeAttribute('srcset');capture.disconnect();}});
+   capture.observe(document,{childList:true,subtree:true});
+  });
+  await page.goto(base+'/shop/');await page.locator('#shopGrid .addcart').waitFor();
+  results.interactions.push({case:'mismatched SSR photo is replaced instead of preserving obsolete artwork',pass:await page.evaluate(()=>window.qaInitialProductImage!==document.querySelector('#shopGrid article.card a.pimg > img')&&!window.qaInitialProductImage.isConnected)});
+  await context.close();
+ }
  // A generic responsive-media rule must not collapse the preview iframe to
  // the browser's 150px default. Exercise real layout and inner-page scrolling.
  for(const hostWidth of [1440,390]){
