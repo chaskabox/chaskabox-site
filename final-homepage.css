@@ -19,7 +19,7 @@ body.reference-storefront{background:white;color:#152c4d}
 .reference-storefront #acctBtn::after,.reference-storefront .hwrap>a[aria-label="My wishlist"]::after,.reference-storefront .hwrap>.hbtn::after{position:absolute;bottom:-2px;font-size:10px;line-height:16px;font-weight:600;content:'Account'}
 .reference-storefront .hwrap>a[aria-label="My wishlist"]{font-size:26px}
 .reference-storefront .hwrap>a[aria-label="My wishlist"]::after{content:'Wishlist'}
-.reference-storefront .hwrap>.hbtn::after{content:'Cart'}
+.reference-storefront .hwrap>.hbtn::after{content:'Bag'}
 .reference-storefront .cartcount{background:#c83b00!important;right:0!important;top:0!important;color:white!important;font-size:10px}
 .cb-subnav{max-width:var(--cb-width);margin:auto;background:#f6f8fc;border-radius:12px 12px 0 0;position:relative;z-index:40}
 .cb-subnav-inner{min-height:49px;padding:3px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px}
