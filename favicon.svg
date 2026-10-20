@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ChaskaBox">
+  <rect width="64" height="64" rx="14" fill="#0B315A"/>
+  <path d="M17 26.5h30l-2.4 24.2a3 3 0 0 1-3 2.8H22.4a3 3 0 0 1-3-2.8L17 26.5Z" fill="#FFFFFF"/>
+  <path d="M24 27v-6a8 8 0 0 1 16 0v6" fill="none" stroke="#FFFFFF" stroke-width="4.6" stroke-linecap="round"/>
+  <path d="m32 33.5 2.4 5.9 5.9 2.4-5.9 2.4-2.4 5.9-2.4-5.9-5.9-2.4 5.9-2.4Z" fill="#E45110"/>
+</svg>
