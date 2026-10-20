@@ -50,7 +50,8 @@ function productHref(id){return '/product/'+encodeURIComponent(id)+'/';}
 // controls. A different product/photo/layout always takes the normal render path.
 function compatibleMediaBranch(previous,next,selector){
   const a=previous?.querySelector(selector),b=next?.querySelector(selector);
-  if(!a||!b||a.src!==b.src||a.srcset!==b.srcset||a.sizes!==b.sizes||a.alt!==b.alt)return null;
+  const source=img=>{try{return new URL(img.getAttribute('src'),document.baseURI).href;}catch{return '';}};
+  if(!a||!b||!source(a)||source(a)!==source(b)||a.srcset!==b.srcset||a.sizes!==b.sizes||a.alt!==b.alt)return null;
   const branch=(root,image)=>{const out=[image];while(out[0]!==root){const parent=out[0].parentElement;if(!parent)return [];out.unshift(parent);}return out;};
   const oldPath=branch(previous,a),newPath=branch(next,b);
   if(!oldPath.length||oldPath.length!==newPath.length||oldPath.some((node,i)=>node.tagName!==newPath[i].tagName))return null;

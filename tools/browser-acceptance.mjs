@@ -162,7 +162,7 @@ try{
   },selector);
   await page.goto(base+route);
   await page.locator(route==='/shop/'?'#shopGrid .addcart':'#pdqty').first().waitFor();
-  results.interactions.push({case:'SSR product image identity retained through hydration '+route+' / '+width,pass:await page.evaluate(s=>window.qaInitialProductImage===document.querySelector(s)&&window.qaInitialProductImage.isConnected,selector)});
+  results.interactions.push({case:'SSR product image identity retained through hydration '+route+' / '+width,pass:await page.evaluate(s=>window.qaInitialProductImage===document.querySelector(s)&&window.qaInitialProductImage.isConnected,selector),evidence:await page.evaluate(s=>{const old=window.qaInitialProductImage,current=document.querySelector(s),info=n=>n?{src:n.getAttribute('src'),srcset:n.getAttribute('srcset'),sizes:n.getAttribute('sizes'),alt:n.alt,parents:[n.parentElement?.tagName,n.parentElement?.parentElement?.tagName,n.parentElement?.parentElement?.parentElement?.tagName]}:null;return {initial:info(old),current:info(current),productId:document.getElementById('pdetail')?.dataset.productId};},selector)});
   if(route==='/shop/'){
    const expected=await page.locator('#shopGrid a.pimg').evaluateAll(a=>a.map(x=>x.getAttribute('href')).join(','));
    await page.getByRole('combobox',{name:'Sort products',exact:true}).selectOption('az');
