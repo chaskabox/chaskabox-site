@@ -14,13 +14,16 @@ export async function onRequestGet(context){
  if(parts.length!==1||!/^\d+$/.test(String(parts[0]||'')))return unavailable(404,'This snack is not available right now.');
  const id=Number(parts[0]);if(!Number.isSafeInteger(id)||id<=0)return unavailable(404,'This snack is not available right now.');
  try{
-  const rows=await sbRequest(context.env,'/products',{query:`?select=*&id=eq.${id}&visibility=eq.visible&limit=1`});
+  // Independent reads share the same request lifetime; never cache product data.
+  const [rows,assets]=await Promise.all([
+   sbRequest(context.env,'/products',{query:`?select=*&id=eq.${id}&visibility=eq.visible&limit=1`}),
+   context.env.ASSETS.fetch(new Request(new URL('/',context.request.url)))
+  ]);
   const p=rows?.[0];if(!p||p.visibility!=='visible')return unavailable(404,'This snack is not available right now.');
   const canonical=`https://chaskabox.online/product/${id}/`,title=productPageTitle(p),description=p.seo_description||p.description||`Buy ${p.name} from ChaskaBox Pakistan.`,photo=image(cataloguePhoto(p)),ogPhoto=image(photoUnderReview(p)&&p.og_image===p.image_url?'':p.og_image)||photo||'https://chaskabox.online/images/logo-approved-20261017.png';
   const seed={id,name:p.name,brand:p.brand||'',price:Number(p.price),oldPrice:p.old_price,category:p.category,pack:p.pack,desc:p.description||'',badge:p.badge||'',img:cataloguePhoto(p)||null,photoNote:photoUnderReview(p)?'Photo under review':'',stockState:p.stock_state||'sourced_after_order',bundle:!!p.is_bundle,seoTitle:p.seo_title||'',seoDescription:p.seo_description||''};
   const schema=productSchema(p,canonical,photo);
   const crumbs=breadcrumbSchema(p,canonical);
-  const assets=await context.env.ASSETS.fetch(new Request(new URL('/',context.request.url)));
   if(!assets.ok)throw Error('Site shell unavailable');
   let html=routeShell(await assets.text(),'product');
   if(!html.includes('<div id="pdetail"></div>'))throw Error('Product mount unavailable');

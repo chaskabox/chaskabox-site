@@ -8,7 +8,7 @@ if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(candidate||'')||! 
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const path='storefront-bundle.css',production='https://chaskabox.online';
 const expected={production:hash(execFileSync('git',['show',baseSha+':'+path])),candidate:hash(await readFile(path))};
-const guarded=['app.js','photo-manifest.js','admin-agents.js'];
+const guarded=['app.js','photo-manifest.js','admin-agents.js','home-hero-carousel.js'];
 const assetGuards={};
 for(const file of guarded)assetGuards[file]={production:hash(execFileSync('git',['show',baseSha+':'+file])),candidate:hash(await readFile(file))};
 async function verifySources(){for(const [name,url] of [['production',production],['candidate',candidate]]){

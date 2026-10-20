@@ -22,7 +22,8 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
     addEventListener(name,fn){events[name]=fn;},
     contains(){return true;}
   };
-  const art={src:'',getAttribute(){return this.src;},setAttribute(_key,value){this.src=value;}};
+  const imageRequests=[],artEvents={};
+  const art={src:'',complete:false,naturalWidth:0,getAttribute(){return this.src;},setAttribute(_key,value){this.src=value;},addEventListener(name,fn){artEvents[name]=fn;}};
   const elements={
     '.herotxt h1':title,
     '.herotxt > p':{textContent:''},
@@ -52,7 +53,8 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
   };
   const sandbox={
     document:doc,
-    window:{matchMedia(){return media;},addEventListener(name,fn){windowEvents[name]=fn;}},
+    window:{matchMedia(){return media;},addEventListener(name,fn){windowEvents[name]=fn;},requestIdleCallback(fn){fn();}},
+    Image:class{set src(value){imageRequests.push({src:value,priority:this.fetchPriority});}},
     setInterval(fn,delay){scheduled={fn,delay,id:++sequence};return sequence;},
     clearInterval(id){if(scheduled?.id===id)scheduled=null;}
   };
@@ -62,6 +64,11 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
     mounted=true;docEvents['chaskabox:home-mounted']();
   }
   assert.equal(root.dataset.heroSlide,'1');
+  assert.equal(imageRequests.length,0,'next artwork waits for the initial scene load');
+  art.complete=true;art.naturalWidth=1600;artEvents.load();
+  assert.equal(imageRequests.length,1);
+  assert.equal(imageRequests[0].src,'/images/chaskabox-approved-hero-02-20261018.avif');
+  assert.equal(imageRequests[0].priority,'low');
   assert.equal(scheduled?.delay,5000);
   assert.equal(label.textContent,'Pause');
   scheduled.fn();assert.equal(root.dataset.heroSlide,'2');
