@@ -152,7 +152,7 @@ try{
    capture.observe(document,{childList:true,subtree:true});
   },selector);
   await page.goto(base+route);
-  await page.locator(route==='/shop/'?'#shopGrid .addcart':'#pdqty').waitFor();
+  await page.locator(route==='/shop/'?'#shopGrid .addcart':'#pdqty').first().waitFor();
   results.interactions.push({case:'SSR product image identity retained through hydration '+route+' / '+width,pass:await page.evaluate(s=>window.qaInitialProductImage===document.querySelector(s)&&window.qaInitialProductImage.isConnected,selector)});
   if(route==='/shop/'){
    const expected=await page.locator('#shopGrid a.pimg').evaluateAll(a=>a.map(x=>x.getAttribute('href')).join(','));
@@ -173,7 +173,7 @@ try{
    const capture=new MutationObserver(()=>{const img=document.querySelector('#shopGrid article.card a.pimg > img');if(img){window.qaInitialProductImage=img;img.src='/images/p39.webp';img.removeAttribute('srcset');capture.disconnect();}});
    capture.observe(document,{childList:true,subtree:true});
   });
-  await page.goto(base+'/shop/');await page.locator('#shopGrid .addcart').waitFor();
+  await page.goto(base+'/shop/');await page.locator('#shopGrid .addcart').first().waitFor();
   results.interactions.push({case:'mismatched SSR photo is replaced instead of preserving obsolete artwork',pass:await page.evaluate(()=>window.qaInitialProductImage!==document.querySelector('#shopGrid article.card a.pimg > img')&&!window.qaInitialProductImage.isConnected)});
   await context.close();
  }
