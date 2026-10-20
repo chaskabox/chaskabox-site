@@ -1,45 +1,7 @@
-# POST-LAUNCH BACKLOG — ChaskaBox V3
+# Post-launch backlog — reconciled 20 October 2026
 
-**Date:** 2026-10-07
-**Status:** Non-critical improvements deferred until after production launch.
+The original 7 October wish list is preserved at [archive/POST_LAUNCH_BACKLOG_20261007.md](archive/POST_LAUNCH_BACKLOG_20261007.md). It predates the deployed admin analytics, coupons, media, preview, page-copy controls and product zoom. Its entries are not evidence that those features are missing today.
 
-These items are SAFE to defer. They do NOT block production launch.
+Current required closeout and acceptance gaps: [PENDING_WORK_STATUS.md](PENDING_WORK_STATUS.md).
 
-## Analytics & Reporting
-- Advanced analytics dashboards (sales trends, customer behavior)
-- Custom report builder for owner
-- Export orders to Excel/CSV
-
-## Recommendations & Discovery
-- Advanced recommendation algorithm (currently basic "you may also like")
-- Personalized homepage based on browse history
-- Recently viewed products
-
-## UI Polish (Non-critical)
-- Additional animation polish beyond approved set
-- Advanced image zoom on product pages
-- Product video support
-
-## Marketing
-- Referral system
-- Loyalty points
-- Discount coupon codes (beyond current manual discounts)
-- Email marketing integration
-
-## Admin Enhancements
-- Advanced inventory alerts
-- Supplier management
-- Bulk product import via CSV
-- Advanced audit log search/filters
-
-## AI Features
-- Admin Copilot advanced suggestions (currently draft-only)
-- Customer chatbot enhancements
-
-## Mobile
-- PWA install prompt
-- Push notifications for order updates
-
----
-
-**Rule:** None of these may delay production launch. Core commerce and security are the priority.
+Referral/loyalty, personalized recommendations, supplier management, PWA/push and other older optional ideas are not promised functionality or release blockers. They require a separately defined product scope before implementation. AI operational enablement and financial/delivery acceptance must retain their own evidence and authorization.

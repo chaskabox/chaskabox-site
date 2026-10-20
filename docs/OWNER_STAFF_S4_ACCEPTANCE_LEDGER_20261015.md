@@ -1,5 +1,7 @@
 # ChaskaBox Owner & Staff Real Acceptance Ledger
-Date: 15 October 2026. Draft PR #40 only. **No live production actions are authorized by this document.**
+Historical matrix: 15 October 2026. Draft PR #40 only. **No live production actions are authorized by this document.**
+
+> Reconciliation added 20 October 2026: this is the historical S4 matrix. Later production owner Pages/AI receipts are recorded in `ADMIN_PAGES_AI_RELEASE_20261018.md`; current gaps are in `reports/PENDING_WORK_STATUS.md`. The NOT TESTED rows below describe that earlier session, not an assertion that all later work remains untested. Synthetic browser acceptance does not certify real financial or delivery events.
 
 ## Instructions
 This is the *only* remaining way to certify real owner/staff workflows. GitHub Chromium tests use synthetic fixtures and cannot prove production sessions/persisted readback. Owner must run checks from a trusted, private browser session; **never share passwords, authenticator codes, cookies, recovery phrases, service-role keys or customer PII in screenshots/issues**.

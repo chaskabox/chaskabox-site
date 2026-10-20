@@ -7,7 +7,7 @@ const pages=['index.html','shop/index.html','bundles/index.html','brands/index.h
 test('Brand dropdown and WhatsApp beside Chaska AI load on all 14 routes',()=>{
  for(const path of pages){
   const html=read(path);
-  assert.match(html,/brands-header-dropdown\.css\?v=20261019-brand3/,path);
+  assert.match(html,html.includes('storefront-bundle.css')?/storefront-bundle\.css\?v=20261020-close1/:/brands-header-dropdown\.css\?v=20261019-brand3/,path);
   assert.match(html,/brands-header-dropdown\.js\?v=20261019-brand7/,path);
  }
 });

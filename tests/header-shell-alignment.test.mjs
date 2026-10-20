@@ -17,7 +17,8 @@ test('header shell and approved hero/category use identical 1380px desktop max w
 test('all public storefront entry templates bust the shared header CSS cache',()=>{
  for(const path of entryPages){
   const s=read(path);
-  assert.match(s,/header-one-line\.css\?v=20261019-line8/,path);
+  if(s.includes('storefront-bundle.css'))assert.match(s,/storefront-bundle\.css\?v=20261020-close1/,path);
+  else assert.match(s,/header-one-line\.css\?v=20261019-line8/,path);
   assert.doesNotMatch(s,/header-one-line\.css\?v=20261019-line7/,path);
  }
 });
