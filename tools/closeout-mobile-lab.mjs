@@ -8,9 +8,13 @@ if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(candidate||'')||! 
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const path='storefront-bundle.css',production='https://chaskabox.online';
 const expected={production:hash(execFileSync('git',['show',baseSha+':'+path])),candidate:hash(await readFile(path))};
+const guarded=['photo-manifest.js','admin-agents.js'];
+const assetGuards={};
+for(const file of guarded)assetGuards[file]={production:hash(execFileSync('git',['show',baseSha+':'+file])),candidate:hash(await readFile(file))};
 async function verifySources(){for(const [name,url] of [['production',production],['candidate',candidate]]){
  const r=await fetch(url+'/'+path+'?closeout='+expected[name],{cache:'no-store',signal:AbortSignal.timeout(20000)});
  if(!r.ok||hash(Buffer.from(await r.arrayBuffer()))!==expected[name])throw Error(name+' source changed; measurements would compare different revisions');
+ for(const file of guarded){const h=assetGuards[file][name],a=await fetch(url+'/'+file+'?closeout='+h,{cache:'no-store',signal:AbortSignal.timeout(20000)});if(!a.ok||hash(Buffer.from(await a.arrayBuffer()))!==h)throw Error(name+' '+file+' source mismatch');}
 }}
 await verifySources();
 const out='test-results/closeout-mobile';await mkdir(out,{recursive:true});const summaries=[];
@@ -21,5 +25,5 @@ for(const sample of [1,2])for(const [route,name] of [['/','home'],['/shop/','sho
  const a=r.audits,summary={environment,route,sample,fetchTime:r.fetchTime,source:expected[environment],performance:Math.round(r.categories.performance.score*100),accessibility:Math.round(r.categories.accessibility.score*100),LCP:a['largest-contentful-paint'].numericValue,CLS:a['cumulative-layout-shift'].numericValue,TBT:a['total-blocking-time'].numericValue,blocking:(a['render-blocking-resources']?.details?.items||[]).map(x=>({url:x.url,wastedMs:x.wastedMs}))};
  summaries.push(summary);console.log('CLOSEOUT_LAB '+JSON.stringify(summary));
 }
-await verifySources();await writeFile(out+'/summary.json',JSON.stringify({baseSha,expected,summaries},null,2));
+await verifySources();await writeFile(out+'/summary.json',JSON.stringify({baseSha,expected,assetGuards,summaries},null,2));
 console.log('Lab measurements are not field INP or guaranteed ranking/performance results. Preview noindex is intentional.');

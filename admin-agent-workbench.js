@@ -48,7 +48,7 @@
     if(heading){
      const tag=document.createElement('span');
      tag.className='agent-workbench-tag';
-     tag.textContent=card.dataset.activation==='enabled'?'Enabled · unverified':
+     tag.textContent=card.dataset.activation==='enabled'?(card.dataset.receipt==='recent'?'Enabled · recent receipt':'Enabled · verify execution'):
       card.dataset.activation==='disabled'?'Off':'Activation unknown';
      heading.append(tag);
     }
@@ -64,7 +64,9 @@
   const enabled=all.filter(x=>x.dataset.activation==='enabled').length;
   const unknown=all.filter(x=>x.dataset.activation==='unknown').length;
   const evidence=all.filter(x=>x.dataset.evidence==='observed').length;
-  summary.textContent=`Showing ${displayed} of ${all.length} · ${disabled} disabled · ${enabled} enabled (execution not verified) · ${unknown} unknown · ${evidence} with observation evidence. No agent launched.`;
+  const recent=all.filter(x=>x.dataset.receipt==='recent').length;
+  const stale=all.filter(x=>x.dataset.receipt==='stale').length;
+  summary.textContent=`Showing ${displayed} of ${all.length} · ${disabled} disabled · ${enabled} enabled · ${recent} recent completed receipts · ${stale} stale receipts · ${unknown} activation unknown · ${evidence} with live signal evidence. No agent launched.`;
  }
  const observer=new MutationObserver(update);
  observer.observe(cards,{childList:true});
@@ -78,7 +80,8 @@
   const rows=snapshots().map(card=>({
    agent:card.dataset.agent,
    activation:card.dataset.activation,
-   observation_evidence:card.dataset.evidence
+   observation_evidence:card.dataset.evidence,
+   completed_receipt:card.dataset.receipt
   }));
   const report={generated_at:new Date().toISOString(),kind:'read_only_ui_snapshot',
    caution:'Observation is not evidence of a running autonomous agent.',

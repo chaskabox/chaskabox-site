@@ -1,5 +1,8 @@
 # Chaskabox M00–M05 Final Owner Cutover Evidence
 
+> Historical cutover plan, reconciled 20 October 2026. The disabled-agent and deployment holds below describe the earlier milestone, not current production. Current production has eight enabled **observe-only** agents with fresh completed scheduler receipts. See `PRODUCTION_CLOSEOUT_20261020.md` and the coordinated release PR for current deployment/acceptance evidence. Marketing outbound actions remain locked.
+
+
 Read-only baseline SQL: tools/ai-release-inspect.sql. Production baseline PASSED on Oct 15; staging FAILED with 4 missing tables and 2 missing product SEO columns.
 
 After verified staging migration apply, run tools/ai-release-postcheck.sql: all 8 agents must exist disabled; 7 private tables must have RLS; 8 RPC signatures must be service_role-only. Its output is not authorization for production.

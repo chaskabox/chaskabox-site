@@ -47,7 +47,7 @@
   show(message,'Loading owner-only agent diagnostics...');
   // Isolate each endpoint so a single monitoring outage cannot blank the
   // independently authorized activation evidence or masquerade as healthy.
-  const keys=['status','preview','insights','marketing'];
+  const keys=['status','preview','insights','marketing','operations'];
   const results=await Promise.allSettled(keys.map(key=>api('/api/admin/agents/'+key)));
   if(sequence!==refreshSequence)return; // Ignore a slower, stale refresh.
   output.replaceChildren();signals.replaceChildren();
@@ -58,13 +58,14 @@
    if(i===0&&!Array.isArray(item.agents))return null;
    if((i===1||i===2)&&!Array.isArray(item.agents))return null;
    if(i===3&&!Array.isArray(item.drafts))return null;
+   if(i===4&&!Array.isArray(item.observations))return null;
    return item;
   });
-  const [state,monitor,insights,marketing]=values;
-  const failing=keys.filter((key,i)=>!values[i]);
+  const [state,monitor,insights,marketing,operations]=values;
+  const failing=keys.filter((key,i)=>i<4&&!values[i]);
   const authDenied=results.some(r=>r.status==='rejected'&&(r.reason?.status===401||r.reason?.status===403));
   block(output,'Agent activation',[
-   ['Mode','Observation / no automated execution'],
+   ['Mode','Read-only monitoring; outbound actions locked'],
    ['Pending jobs',state?.pending_jobs??'Unavailable'],
    ['Pending approvals',state?.pending_approvals??'Unavailable'],
    ['Configured agents',state?.agents.length??'Unknown — status endpoint unavailable'],
@@ -73,16 +74,20 @@
   const eight=['orders','inventory','security','backups','support','seo','marketing','analytics'];
   const observations=new Map([...(monitor?.agents||[]),...(insights?.agents||[])]
    .filter(x=>x&&typeof x.agent==='string').map(x=>[x.agent,x]));
+  const receipts=new Map((operations?.observations||[])
+   .filter(x=>x&&typeof x.agent==='string').map(x=>[x.agent,x]));
   const settings=new Map((state?.agents||[])
    .filter(x=>x&&typeof (x.key??x.agent_key)==='string')
    .map(x=>[x.key??x.agent_key,x])); // M01 health returns 'key', not 'agent_key'.
   for(const agentKey of eight){
    const current=settings.get(agentKey),reading=observations.get(agentKey);
-   const status=reading?.state||reading?.status||'No observation evidence';
+   const receipt=window.chaskaAgentReceipt(receipts.get(agentKey));
+   const status=reading?.state||reading?.status||(receipt.kind==='recent'?receipt.state:'No observation evidence');
    const data=[['Activation',!state?'Unknown — status unavailable':
-       !current?'Not configured':current.enabled===true?'Enabled (scheduler not verified)':'Disabled'],
+       !current?'Not configured':current.enabled===true?'Enabled for read-only monitoring':'Disabled'],
      ['Agent mode',current?.mode||'Not reported'],
      ['Signals',status],
+     ['Completed run',receipt.label],
      ['Data basis',reading&&(status==='ok'||status==='attention')?'Read-only validated aggregate':
         agentKey==='marketing'&&marketing?'Human review workflow (no scheduled delivery)':'No validated live signal']];
    if(reading?.signals&&typeof reading.signals==='object')for(const [key,value] of Object.entries(reading.signals))
@@ -92,6 +97,7 @@
    card.dataset.agent=agentKey;
    card.dataset.activation=!state||!current?'unknown':current.enabled===true?'enabled':'disabled';
    card.dataset.evidence=reading&&(status==='ok'||status==='attention')?'observed':'missing';
+   card.dataset.receipt=receipt.kind;
   }
   const submit=propose?.querySelector('button[type=submit]');
   if(submit)submit.disabled=!state||!marketing;
@@ -99,7 +105,7 @@
   else show(drafts,'Marketing drafts unavailable. Retry diagnostics before creating or approving drafts.');
   if(failing.length)show(message,(authDenied?'Owner MFA/session needs verification. ':'Partial diagnostics; ') +
     failing.join(', ')+' unavailable. No live jobs started.');
-  else show(message,'Read-only diagnostics updated. No live jobs started.');
+  else show(message,'Read-only diagnostics updated. '+(!operations?'Saved receipts unavailable. ':'')+'No live jobs started.');
  }
  const propose=find('agentsM05Propose');
  propose?.addEventListener('submit',async e=>{
@@ -153,13 +159,8 @@
     card.append(el('h3',a.agent.toUpperCase()+' — '+(enabled?'ON':'OFF')));
     card.append(el('p',isMarketing?'Observe-only; marketing activation controls locked.':'Scheduled read-only observation: '+(enabled?'Enabled':'Disabled')));
     const observation=latest.get(a.agent);
-    const receiptTime=Date.parse(observation?.checked_at||'');
-    const receiptAge=Number.isFinite(receiptTime)?Date.now()-receiptTime:NaN;
-    const receiptFresh=Number.isFinite(receiptAge)&&receiptAge>=0&&receiptAge<=8*60*60*1000;
-    const receiptLabel=!Number.isFinite(receiptTime)?'No valid saved observation receipt':
-      !receiptFresh?'Stale saved observation — scheduler not verified':
-      'Recent saved observation (scheduler origin not verified)';
-    card.append(el('p',receiptLabel+(Number.isFinite(receiptTime)?': '+new Date(receiptTime).toLocaleString()+' · '+(observation.state||'unknown'):'')));
+    const receipt=window.chaskaAgentReceipt(observation);
+    card.append(el('p',receipt.label));
     if(isMarketing)card.append(el('p','Phase 3 HOLD: this panel does not authorize marketing activation, publishing, or delivery.'));
     if(!isMarketing&&agents.has(a.agent)){
      const button=el('button',enabled?'Disable monitoring':'Enable safe monitoring','btn secondary');button.type='button';

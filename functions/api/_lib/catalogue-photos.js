@@ -1,5 +1,7 @@
 // Exact-source aliases preserve newly edited product photos. Assets use the original uploaded pixels.
 export const OPTIMIZED_PHOTOS={
+  "https://jtvswuvnasqqzrjysgfd.supabase.co/storage/v1/object/public/product-media/products/2026/10/4ae9a5f9-964b-431f-ba28-2e1cc245c41d.webp": "images/uploaded-p8-f1d9d9fd5c.webp",
+  "https://jtvswuvnasqqzrjysgfd.supabase.co/storage/v1/object/public/product-media/products/2026/10/bd3fec86-a881-44c3-8c85-5001756ea5eb.webp": "images/uploaded-p5-0b91f9804b.webp",
   "https://jtvswuvnasqqzrjysgfd.supabase.co/storage/v1/object/public/product-media/products/2026/10/b380995f-4e4f-46d1-832a-d7d5ee1fb0bd.png": "images/uploaded-p34-abf4d3ecbf.webp",
   "https://jtvswuvnasqqzrjysgfd.supabase.co/storage/v1/object/public/product-media/products/2026/10/df9c9e5d-5429-46f4-aba0-d7ef9aa560b9.png": "images/uploaded-p39-94eb65dba4.webp",
   "https://jtvswuvnasqqzrjysgfd.supabase.co/storage/v1/object/public/product-media/products/2026/10/bcd2fa39-159d-406b-89dc-a7c25be665af.png": "images/uploaded-p42-de917329fe.webp",
