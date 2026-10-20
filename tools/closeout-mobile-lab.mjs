@@ -8,7 +8,7 @@ if(!/^https:\/\/[a-z0-9-]+\.chaskabox-site\.pages\.dev$/.test(candidate||'')||! 
 const hash=s=>createHash('sha256').update(s).digest('hex');
 const path='storefront-bundle.css',production='https://chaskabox.online';
 const expected={production:hash(execFileSync('git',['show',baseSha+':'+path])),candidate:hash(await readFile(path))};
-const guarded=['photo-manifest.js','admin-agents.js'];
+const guarded=['app.js','photo-manifest.js','admin-agents.js'];
 const assetGuards={};
 for(const file of guarded)assetGuards[file]={production:hash(execFileSync('git',['show',baseSha+':'+file])),candidate:hash(await readFile(file))};
 async function verifySources(){for(const [name,url] of [['production',production],['candidate',candidate]]){
@@ -18,7 +18,7 @@ async function verifySources(){for(const [name,url] of [['production',production
 }}
 await verifySources();
 const out='test-results/closeout-mobile';await mkdir(out,{recursive:true});const summaries=[];
-for(const sample of [1,2])for(const [route,name] of [['/','home'],['/shop/','shop']])for(const [environment,url] of [['production',production],['candidate',candidate]]){
+for(const sample of [1,2])for(const [route,name] of [['/','home'],['/shop/','shop'],['/product/39/','product-39']])for(const [environment,url] of [['production',production],['candidate',candidate]]){
  const file=out+'/'+environment+'-'+name+'-'+sample+'.json';
  execFileSync(process.execPath,['node_modules/lighthouse/cli/index.js',url+route,'--chrome-flags=--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu --no-first-run','--only-categories=performance,accessibility,seo','--output=json','--output-path='+file,'--quiet'],{env:{...process.env,CHROME_PATH:chromium.executablePath()},stdio:'inherit',timeout:150000});
  const r=JSON.parse(await readFile(file,'utf8'));if(r.runtimeError)throw Error(r.runtimeError.message);

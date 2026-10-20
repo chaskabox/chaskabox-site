@@ -142,6 +142,50 @@ async function inspect(page,route,width,role){
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ {
+  const {context,page}=await contextFor(1440,'owner');
+  await context.route('**/api/admin/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({supabase:{status:'error'},turnstile:{status:'configured'},resend:{status:'consumer_configured'},notifications:{status:'degraded'},ai:{status:'unknown'},functions:{status:'ok'}})}));
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await openAdminPanel(page,'health');await page.locator('#healthGrid').getByText('degraded',{exact:true}).waitFor();
+  const statuses=await page.locator('#healthGrid .box-badge').evaluateAll(nodes=>nodes.map(x=>({text:x.textContent.trim(),visible:!!x.getClientRects().length&&getComputedStyle(x).display!=='none'})));
+  results.interactions.push({case:'System Health keeps configured, degraded, error and unknown states visibly distinct',pass:statuses.length===6&&statuses.every(x=>x.visible)&&['error','configured','consumer configured','degraded','unknown','ok'].every(s=>statuses.some(x=>x.text===s))});
+  await context.close();
+ }
+ // Capture the real SSR node before application hydration. Initial product
+ // media must stay connected, while a changed product/photo must replace it.
+ for(const width of [390,1440])for(const route of ['/shop/','/product/39/']){
+  const {context,page}=await contextFor(width,'guest');
+  const selector=route==='/shop/'?'#shopGrid article.card a.pimg > img':'#pdetail .pd-img > img';
+  await page.addInitScript(selector=>{
+   const capture=new MutationObserver(()=>{const img=document.querySelector(selector);if(img){window.qaInitialProductImage=img;capture.disconnect();}});
+   capture.observe(document,{childList:true,subtree:true});
+  },selector);
+  await page.goto(base+route);
+  await page.locator(route==='/shop/'?'#shopGrid .addcart':'#pdqty').first().waitFor();
+  results.interactions.push({case:'SSR product image identity retained through hydration '+route+' / '+width,pass:await page.evaluate(s=>window.qaInitialProductImage===document.querySelector(s)&&window.qaInitialProductImage.isConnected,selector),evidence:await page.evaluate(s=>{const old=window.qaInitialProductImage,current=document.querySelector(s),info=n=>n?{src:n.getAttribute('src'),srcset:n.getAttribute('srcset'),sizes:n.getAttribute('sizes'),alt:n.alt,parents:[n.parentElement?.tagName,n.parentElement?.parentElement?.tagName,n.parentElement?.parentElement?.parentElement?.tagName]}:null;return {initial:info(old),current:info(current),productId:document.getElementById('pdetail')?.dataset.productId};},selector)});
+  if(route==='/shop/'){
+   const expected=await page.locator('#shopGrid a.pimg').evaluateAll(a=>a.map(x=>x.getAttribute('href')).join(','));
+   await page.getByRole('combobox',{name:'Sort products',exact:true}).selectOption('az');
+   const actual=await page.locator('#shopGrid a.pimg').evaluateAll(a=>a.map(x=>x.getAttribute('href')).join(','));
+   results.interactions.push({case:'retained-image catalogue still reorders product identities / '+width,pass:actual!==expected});
+  }else{
+   await page.getByRole('button',{name:'Enlarge product photo',exact:true}).click();
+   await page.getByRole('dialog',{name:'Product image enlarged'}).waitFor();
+   await page.getByRole('button',{name:'Close enlarged photo',exact:true}).click();
+   results.interactions.push({case:'retained product image keeps zoom and keyboard focus / '+width,pass:await page.getByRole('button',{name:'Enlarge product photo',exact:true}).evaluate(el=>el===document.activeElement)});
+  }
+  await context.close();
+ }
+ {
+  const {context,page}=await contextFor(390,'guest');
+  await page.addInitScript(()=>{
+   const capture=new MutationObserver(()=>{const img=document.querySelector('#shopGrid article.card a.pimg > img');if(img){window.qaInitialProductImage=img;img.src='/images/p39.webp';img.removeAttribute('srcset');capture.disconnect();}});
+   capture.observe(document,{childList:true,subtree:true});
+  });
+  await page.goto(base+'/shop/');await page.locator('#shopGrid .addcart').first().waitFor();
+  results.interactions.push({case:'mismatched SSR photo is replaced instead of preserving obsolete artwork',pass:await page.evaluate(()=>window.qaInitialProductImage!==document.querySelector('#shopGrid article.card a.pimg > img')&&!window.qaInitialProductImage.isConnected)});
+  await context.close();
+ }
  // A generic responsive-media rule must not collapse the preview iframe to
  // the browser's 150px default. Exercise real layout and inner-page scrolling.
  for(const hostWidth of [1440,390]){

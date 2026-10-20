@@ -1,0 +1,43 @@
+name: First-paint retention storefront and mobile evidence
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  closeout-preview:
+    if: github.head_ref == 'fix/retain-first-paint-20261020'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 22
+    env:
+      HERO_PREVIEW_URL: https://fix-retain-first-paint-20261.chaskabox-site.pages.dev
+      ALIGNMENT_PREVIEW_URL: https://fix-retain-first-paint-20261.chaskabox-site.pages.dev
+      CLOSEOUT_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - run: node tools/video-phase6-preview.mjs
+      - run: node tools/navigation-phase2-preview.mjs
+      - run: node tools/hero-phase1-preview.mjs
+      - run: node tools/header-alignment-preview-smoke.mjs
+      - run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund lighthouse@12.8.2
+      - run: node tools/closeout-mobile-lab.mjs
+      - name: Save exact-source layout and repeated mobile evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: final-closeout-evidence
+          path: |
+            test-results/video-phase6/
+            test-results/navigation-phase2/
+            test-results/hero-phase1/
+            test-results/header-alignment/
+            test-results/closeout-mobile/
+          retention-days: 7

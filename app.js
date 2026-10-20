@@ -46,6 +46,52 @@ function deliveryRange(){
 
 function productHref(id){return '/product/'+encodeURIComponent(id)+'/';}
 
+// Keep the image already painted by SSR connected while adding interactive
+// controls. A different product/photo/layout always takes the normal render path.
+function compatibleMediaBranch(previous,next,selector){
+  const a=previous?.querySelector(selector),b=next?.querySelector(selector);
+  const source=img=>{try{return new URL(img.getAttribute('src'),document.baseURI).href;}catch{return '';}};
+  if(!a||!b||!source(a)||source(a)!==source(b)||a.srcset!==b.srcset||a.sizes!==b.sizes||a.alt!==b.alt)return null;
+  const branch=(root,image)=>{const out=[image];while(out[0]!==root){const parent=out[0].parentElement;if(!parent)return [];out.unshift(parent);}return out;};
+  const oldPath=branch(previous,a),newPath=branch(next,b);
+  if(!oldPath.length||oldPath.length!==newPath.length||oldPath.some((node,i)=>node.tagName!==newPath[i].tagName))return null;
+  return {oldPath,newPath};
+}
+function patchMediaBranch({oldPath,newPath}){
+  for(let i=0;i<oldPath.length-1;i++){
+    const current=oldPath[i],desired=newPath[i],keep=oldPath[i+1],replacement=newPath[i+1];
+    for(const a of [...current.attributes])if(!desired.hasAttribute(a.name))current.removeAttribute(a.name);
+    for(const a of [...desired.attributes])if(current.getAttribute(a.name)!==a.value)current.setAttribute(a.name,a.value);
+    for(const child of [...current.childNodes])if(child!==keep)child.remove();
+    let after=false;
+    for(const child of [...desired.childNodes]){
+      if(child===replacement){after=true;continue;}
+      if(after)current.append(child);else current.insertBefore(child,keep);
+    }
+  }
+}
+function renderShopCards(grid,list){
+  const template=document.createElement('template');
+  template.innerHTML=list.map((p,i)=>cardHTML(p,i===0?'high':i===1?'eager':undefined)).join('');
+  const existing=[...grid.children],desired=[...template.content.children];
+  const sameOrder=existing.length===desired.length&&existing.every((card,i)=>card.querySelector('a.pimg')?.getAttribute('href')===productHref(list[i].id));
+  if(sameOrder)existing.forEach((card,i)=>{
+    const branch=compatibleMediaBranch(card,desired[i],'a.pimg > img');
+    if(branch)patchMediaBranch(branch);else card.replaceWith(desired[i]);
+  });else grid.replaceChildren(template.content);
+}
+function renderProductMarkup(mount,markup,id){
+  const template=document.createElement('template');template.innerHTML=markup;
+  const previous=mount.firstElementChild,next=template.content.firstElementChild;
+  const branch=mount.dataset.productId===String(id)?compatibleMediaBranch(previous,next,'.pd-img > img'):null;
+  if(branch){
+    patchMediaBranch(branch);
+    for(const child of [...mount.childNodes])if(child!==previous)child.remove();
+    for(const child of [...template.content.childNodes])if(child!==next)mount.append(child);
+  }else mount.replaceChildren(template.content);
+  mount.dataset.productId=String(id);
+}
+
 /* ---------- cards ---------- */
 function cardHTML(p,priority){
   const src=hasPhoto(p)?assetUrl(p.img):'';
@@ -459,7 +505,7 @@ function renderShopResults(){
   $('#catCount').textContent=list.length+' '+(list.length===1?'product':'products');
   const cnt=document.getElementById('shopResultCount');if(cnt)cnt.textContent=list.length+' '+(list.length===1?'product':'products');
   const canSmart=!list.length&&String(shopState.q||'').trim().length>=2&&!shopState.cat&&!shopState.brands.length&&!shopState.maxPrice&&!shopState.pack&&!shopState.badge;
-  if(list.length){clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML=list.map((p,i)=>cardHTML(p,i===0?'high':i===1?'eager':undefined)).join('');}
+  if(list.length){clearTimeout(smartSearchTimer);smartSearchSeq++;renderShopCards($('#shopGrid'),list);}
   else if(canSmart){const seq=++smartSearchSeq;clearTimeout(smartSearchTimer);$('#shopGrid').innerHTML='<div class="empty">✦ Looking for smart matches…</div>';smartSearchTimer=setTimeout(()=>renderSmartSearchResults(shopState.q,seq),420);}
   else {clearTimeout(smartSearchTimer);smartSearchSeq++;$('#shopGrid').innerHTML='<div class="empty shop-no-results"><strong>No matching snacks yet</strong><p>Try a different brand, category or price range.</p><button type="button" class="shop-empty-reset" onclick="clearAllFilters()">Clear filters &amp; search</button><a href="/shop/">Browse all snacks</a></div>';}
   renderFilterChips();updateApplyBtn();
@@ -516,7 +562,7 @@ function renderProductDetail(id){
   // Related products: same category, exclude current
   const related=activeProducts().filter(x=>x.id!==p.id&&x.category===p.category).slice(0,4);
   const relatedHTML=related.length?`<section class="pd-related"><h2>You may also like</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${related.map(cardHTML).join('')}</div></section>`:'';
-  $('#pdetail').innerHTML=`<div class="pdetail">
+  renderProductMarkup($('#pdetail'),`<div class="pdetail">
     <div class="pd-grid">
       <div class="pd-imgwrap">${badge}<button type="button" class="pd-img pd-image-button" ${hasPhoto(p)?`data-zoom-src="${esc(assetUrl(p.img))}" data-zoom-alt="${esc(p.name)}"`:'disabled'} aria-label="Enlarge product photo">${img}</button></div>
       <div class="pd-info">
@@ -540,8 +586,9 @@ function renderProductDetail(id){
         <nav class="pd-policy-links" aria-label="Product and order help"><a href="/shipping-policy/">Delivery and charges</a><a href="/refund-policy/">Refund and resolution</a><a href="/track-order.html">Track your order</a></nav>
       </div>
     </div>
-  </div>${relatedHTML}<div id="reviewsMount"></div>`;
-  $('#pdetail').querySelector('[data-zoom-src]')?.addEventListener('click',event=>{const el=event.currentTarget;openImageLightbox(el.dataset.zoomSrc,el.dataset.zoomAlt);});
+  </div>${relatedHTML}<div id="reviewsMount"></div>`,p.id);
+  const zoom=$('#pdetail').querySelector('[data-zoom-src]');
+  if(zoom)zoom.onclick=event=>{const el=event.currentTarget;openImageLightbox(el.dataset.zoomSrc,el.dataset.zoomAlt);};
   showView('product');
   window.scrollTo(0,0);
   if(typeof window.chaskaTrack==='function') window.chaskaTrack('product_view',{id:p.id,name:p.name,price:p.price,category:p.category});

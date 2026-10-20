@@ -13,7 +13,7 @@ permissions:
   contents: read
 jobs:
   restore:
-    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'improve/final-closeout-20261014' || github.head_ref == 'improve/product-evidence-20261014' || github.head_ref == 'fix/phase12-owner-operations-backend-20261015' || github.head_ref == 'fix/production-acceptance-20261020'))
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.head.repo.full_name == github.repository && (github.head_ref == 'improve/final-closeout-20261014' || github.head_ref == 'improve/product-evidence-20261014' || github.head_ref == 'fix/phase12-owner-operations-backend-20261015' || github.head_ref == 'fix/production-acceptance-20261020' || github.head_ref == 'fix/retain-first-paint-20261020'))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -37,7 +37,7 @@ jobs:
       - name: Install PostgreSQL 17 client
         run: bash tools/install-pg17-client.sh
       - name: Create and read back a fresh database and media backup
-        if: (github.event_name == 'workflow_dispatch' && inputs.fresh_backup) || (github.event_name == 'pull_request' && github.head_ref == 'fix/production-acceptance-20261020')
+        if: (github.event_name == 'workflow_dispatch' && inputs.fresh_backup) || (github.event_name == 'pull_request' && (github.head_ref == 'fix/production-acceptance-20261020' || github.head_ref == 'fix/retain-first-paint-20261020'))
         run: |
           node tools/database-backup.mjs dump
           node tools/database-backup.mjs upload

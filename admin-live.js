@@ -1812,14 +1812,14 @@
         ['🗄️ Supabase',h.supabase?.status],
         ['🛡️ Turnstile',h.turnstile?.status],
         ['📧 Resend',h.resend?.status],
+        ['🔔 Notification consumer',h.notifications?.status],
         ['✦ AI',h.ai?.status],
         ['⚡ Functions',h.functions?.status],
       ];
       if(grid) grid.innerHTML=services.map(([name,st])=>{
         const ok=st==='connected'||st==='configured'||st==='ok';
-        const warn=st==='not_configured'||st==='missing';
         return `<div class="existing-box-card"><h4>${name}</h4>
-          <span class="box-badge ${ok?'visible':warn?'':'hidden'}">${esc(st||'unknown')}</span></div>`;
+          <span class="box-badge ${ok?'visible':''}">${esc(String(st||'unknown').replace(/_/g,' '))}</span></div>`;
       }).join('');
       const di=$('#deployInfo');
       if(di) di.innerHTML=`<div style="font-size:12px;display:grid;gap:6px">
