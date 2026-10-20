@@ -12,7 +12,7 @@ export async function onRequest(context){
  let response=await context.next();
  if(copy)response=applyPublishedCopy(context,response,copy);
  const headers=new Headers(response.headers);for(const [k,v]of Object.entries(HEADERS))headers.set(k,v);
- if(url.pathname==='/'&&context.request.method==='GET'&&response.status===200)headers.append('Link','</storefront-bundle.css?v=20261019-ui38>; rel=preload; as=style, </images/chaskabox-approved-hero-01-20261018.avif>; rel=preload; as=image; fetchpriority=high');
+ if(url.pathname==='/'&&context.request.method==='GET'&&response.status===200)headers.append('Link','</storefront-bundle.css?v=20261020-close1>; rel=preload; as=style, </images/chaskabox-approved-hero-01-20261018.avif>; rel=preload; as=image; fetchpriority=high');
  if(url.pathname.startsWith('/api/admin/')){headers.set('Cache-Control','no-store');headers.set('X-Robots-Tag','noindex, nofollow');}
  if(context.env.RUNTIME_ENV==='staging'||url.hostname.endsWith('.pages.dev'))headers.set('X-Robots-Tag','noindex, nofollow');
  return new Response(response.body,{status:response.status,statusText:response.statusText,headers});

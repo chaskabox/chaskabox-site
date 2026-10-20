@@ -9,7 +9,7 @@ const pages=['index.html','shop/index.html','bundles/index.html','brands/index.h
 test('all 14 public HTML entries use the same sticky header stylesheet',()=>{
  for(const path of pages){
   const html=read(path);
-  assert.match(html,/sticky-motion-polish\.css\?v=20261019-sticky4/,path);
+  assert.match(html,html.includes('storefront-bundle.css')?/storefront-bundle\.css\?v=20261020-close1/:/sticky-motion-polish\.css\?v=20261019-sticky4/,path);
   assert.match(html,/<header(?:\s|>)/,path);
  }
 });
@@ -27,7 +27,8 @@ test('sticky header remains below modal overlay and motion effects respect prefe
 test('desktop navigation uses shared 1380px storefront gutters, one row, and equal-size account actions',()=>{
  const css=read('header-one-line.css');
  for(const path of pages){
-   assert.match(read(path),/header-one-line\.css\?v=20261019-line8/,path);
+   const html=read(path);
+   assert.match(html,html.includes('storefront-bundle.css')?/storefront-bundle\.css\?v=20261020-close1/:/header-one-line\.css\?v=20261019-line8/,path);
  }
  assert.match(css,/width: calc\(100% - 24px\) !important/);
  assert.match(css,/max-width: var\(--cb-width, 1380px\) !important/);

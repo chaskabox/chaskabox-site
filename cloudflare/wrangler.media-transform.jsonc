@@ -6,7 +6,7 @@
   "workers_dev": false,
   "preview_urls": false,
   "images": {"binding": "IMAGES"},
-  "vars": {"MEDIA_TRANSFORM_ENABLED": "false"}
+  "vars": {"MEDIA_TRANSFORM_ENABLED": "true"}
   // Private Pages service binding: MEDIA_TRANSFORM -> this Worker.
   // Both server switches and the DB switch must be enabled deliberately at release.
 }

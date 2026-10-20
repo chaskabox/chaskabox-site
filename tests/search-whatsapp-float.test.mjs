@@ -8,7 +8,7 @@ const routes=['index.html','shop/index.html','bundles/index.html','brands/index.
 test('existing WhatsApp link is reused and search enhancements load on all storefronts',()=>{
  for(const path of routes){
   const s=read(path);
-  assert.match(s,/search-whatsapp-float\.css\?v=20261019-wa2/,path);
+  assert.match(s,s.includes('storefront-bundle.css')?/storefront-bundle\.css\?v=20261020-close1/:/search-whatsapp-float\.css\?v=20261019-wa2/,path);
   assert.match(s,/search-whatsapp-float\.js\?v=20261019-wa1/,path);
   assert.match(s,/class="cb-contact" href="https:\/\/wa\.me\/923320005381"/,path);
  }

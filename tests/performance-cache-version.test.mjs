@@ -6,8 +6,10 @@ for(const slug of ['betel-nuts-and-pan-masala','biscuits-and-wafers','bunties-an
 test('all storefront entry routes load the same versioned UX application and carousel',()=>{
   for(const path of pages){
     const html=readFileSync(new URL(path,root),'utf8');
-    assert.match(html,/\/storefront-bundle\.css\?v=20261019-ui38/,path);
-    assert.match(html,/\/app\.js\?v=20261019-ui38/,path);
+    assert.match(html,/\/storefront-bundle\.css\?v=20261020-close1/,path);
+    assert.match(html,/\/app\.js\?v=20261020-close1/,path);
+    assert.equal((html.match(/<link[^>]*rel="stylesheet"/g)||[]).length,1,path+' should have one blocking stylesheet');
+    assert.doesNotMatch(html,/<link[^>]+href="\/(?:header-discovery-preview|sticky-motion-polish|header-one-line|search-whatsapp-float|brands-header-dropdown)\.css/,path);
     assert.match(html,/\/home-hero-carousel\.js\?v=20261019-hero2/,path);
     assert.doesNotMatch(html,/\/(?:styles\.css|app\.js)\?v=20261012-release\?v=/,path);
   }
