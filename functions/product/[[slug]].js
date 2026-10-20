@@ -16,7 +16,7 @@ export async function onRequestGet(context){
  try{
   // Independent reads share the same request lifetime; never cache product data.
   const [rows,assets]=await Promise.all([
-   sbRequest(context.env,'/products',{query:`?select=*&id=eq.${id}&visibility=eq.visible&limit=1`}),
+   sbRequest(context.env,'/products',{query:`?select=id,name,brand,price,old_price,category,pack,description,badge,image_url,is_bundle,stock_state,seo_title,seo_description,og_image,visibility&id=eq.${id}&visibility=eq.visible&limit=1`}),
    context.env.ASSETS.fetch(new Request(new URL('/',context.request.url)))
   ]);
   const p=rows?.[0];if(!p||p.visibility!=='visible')return unavailable(404,'This snack is not available right now.');
