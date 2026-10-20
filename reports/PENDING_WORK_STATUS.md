@@ -15,7 +15,7 @@ The 7 October staging report is historical, not the production release status. I
 - Run exact-source staging checks and repeated, same-run production/candidate mobile measurements. Results and deployment SHA belong in the release PR; code preparation is not proof of production performance.
 
 ## External acceptance still required
-- A fresh browser visit on 20 October reached the real Staff sign in screen (Authentication required). This session cannot certify protected owner/staff readback until the owner signs in; no credentials were requested in chat.
+- Owner completed secure email/password plus authenticator sign-in on 20 October. All 28 admin panels loaded in a read-only pass with no observed access/load failure. This verifies owner authentication and panel loading, not every save/publish action or other staff roles. No credentials were exposed in chat. Current release results: [PR #129](https://github.com/chaskabox/chaskabox-site/pull/129).
 - PR #56 is an operational WhatsApp/Oracle recovery HOLD, not an unshipped storefront patch. No authenticated SSH path or verified session backup was supplied to this closeout; do not apply recovery scripts blindly.
 - All business views are not certified by synthetic browser tests. Actual bank/advance receipts, courier acceptance and consented delivery need a real approved scenario and receipts.
 - The 18 October Pages/AI release record contains verified owner About draft/publish/restore, provider self-test and AI settings readback; it does not certify every staff workflow or autonomous agent operation.
