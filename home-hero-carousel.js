@@ -58,7 +58,28 @@
   // Five-second rotation within the owner's requested 4–6 second window.
   // Respect reduced motion, hidden tabs, hover and keyboard focus.
   const AUTO_ADVANCE_MS=5000;
+  const artworks=[
+    ['/images/chaskabox-approved-hero-01-20261018.avif',1600,550,'ChaskaBox nostalgic snack-box banner (illustrative artwork)'],
+    ['/images/chaskabox-approved-hero-02-20261018.avif',1600,550,'ChaskaBox gifting banner (illustrative artwork)'],
+    ['/images/chaskabox-approved-hero-03-20261018.avif',1411,554,'ChaskaBox favourite snacks banner, original approved crop']
+  ];
+  const warmedArt=new Map();
   let current=0,timer=null,userPaused=false;
+  // Fetch only the next approved scene after the visible scene has loaded.
+  // Low priority leaves the first banner and product photos ahead of it.
+  function warmNextArtwork(art){
+    if(typeof Image!=='function')return;
+    const warm=()=>{
+      if(media.matches||document.hidden||root.hidden||!root.getClientRects().length)return;
+      const src=artworks[(current+1)%artworks.length][0];
+      if(warmedArt.has(src))return;
+      const next=new Image();next.decoding='async';next.fetchPriority='low';
+      warmedArt.set(src,next);next.src=src;
+    };
+    const idle=()=>typeof window.requestIdleCallback==='function'?window.requestIdleCallback(warm,{timeout:1500}):window.setTimeout(warm,0);
+    if(art.complete&&art.naturalWidth>0)idle();
+    else art.addEventListener('load',idle,{once:true});
+  }
   const stop=()=>{if(timer!==null){clearInterval(timer);timer=null;}};
   function updatePlayback(){
     if(!autoplay)return;
@@ -86,16 +107,12 @@
     secondary.textContent=s.secondary;secondary.href=s.secondHref;
     // These three artworks are the owner's approved reference banners, not
     // interchangeable backgrounds. Keep original framing; CSS adapts mobile crop.
-    const artworks=[
-      ['/images/chaskabox-approved-hero-01-20261018.avif',1600,550,'ChaskaBox nostalgic snack-box banner (illustrative artwork)'],
-      ['/images/chaskabox-approved-hero-02-20261018.avif',1600,550,'ChaskaBox gifting banner (illustrative artwork)'],
-      ['/images/chaskabox-approved-hero-03-20261018.avif',1411,554,'ChaskaBox favourite snacks banner, original approved crop']
-    ];
     const art=root.querySelector('.hero-scene');
     const selected=artworks[current];
     if(art&&selected){
       if(art.getAttribute('src')!==selected[0])art.setAttribute('src',selected[0]);
       art.width=selected[1];art.height=selected[2];art.alt=selected[3];
+      warmNextArtwork(art);
     }
     const collage=root.querySelector('#heroCollage');
     const authenticImages=window.CHASKABOX_HERO_MARKUP?.[current];
