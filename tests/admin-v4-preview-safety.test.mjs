@@ -16,7 +16,7 @@ test('Admin V4 preview never accepts real staff credentials without staging',()=
  assert.match(live,/Preview without signing in/);
  assert.match(live,/staff passwords and MFA are not accepted here/);
  const html=read('admin.html');
- assert.match(html,/admin-live\.js\?v=20261017-approvedbrand/);
+ assert.match(html,/admin-live\.js\?v=20261020-visible-health1/);
  assert.match(html,/noindex,nofollow/);
 });
 
