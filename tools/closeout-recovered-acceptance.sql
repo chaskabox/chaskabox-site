@@ -13,8 +13,8 @@ SELECT set_config('chaskabox.qa_owner',gen_random_uuid()::text,true),
  set_config('chaskabox.qa_inactive',gen_random_uuid()::text,true),
  set_config('chaskabox.qa_page','closeout_'||replace(gen_random_uuid()::text,'-',''),true);
 CREATE TEMP TABLE closeout_counts AS SELECT
- (SELECT count(*) FROM public.products) products,
- (SELECT count(*) FROM public.orders) orders,
+ (SELECT count(*) FROM publibaseline.products) products,
+ (SELECT count(*) FROM publibaseline.orders) orders,
  (SELECT count(*) FROM public.admin_roles) roles,
  (SELECT count(*) FROM auth.users) users,
  (SELECT count(*) FROM chaskabox_content.pages) pages,
@@ -66,14 +66,14 @@ BEGIN
 END $acceptance$;
 RESET ROLE;
 DO $verification$
-DECLARE c closeout_counts; n integer;
+DECLARE baseline closeout_counts; n integer;
 BEGIN
- SELECT * INTO c FROM closeout_counts;
- IF c.products<>(SELECT count(*) FROM public.products) OR c.orders<>(SELECT count(*) FROM public.orders) OR
- c.jobs<>(SELECT count(*) FROM chaskabox_agents.agent_jobs) OR c.events<>(SELECT count(*) FROM chaskabox_agents.agent_events) OR
- c.alerts<>(SELECT count(*) FROM chaskabox_agents.agent_alerts) THEN RAISE EXCEPTION 'Read-only business/agent counts changed'; END IF;
- IF c.audits+3<>(SELECT count(*) FROM public.audit_log) OR c.pages+1<>(SELECT count(*) FROM chaskabox_content.pages) OR
- c.versions+2<>(SELECT count(*) FROM chaskabox_content.page_versions) THEN RAISE EXCEPTION 'CMS version/audit contract failed'; END IF;
+ SELECT * INTO baseline FROM closeout_counts;
+ IF baseline.products<>(SELECT count(*) FROM publibaseline.products) OR baseline.orders<>(SELECT count(*) FROM publibaseline.orders) OR
+ baseline.jobs<>(SELECT count(*) FROM chaskabox_agents.agent_jobs) OR baseline.events<>(SELECT count(*) FROM chaskabox_agents.agent_events) OR
+ baseline.alerts<>(SELECT count(*) FROM chaskabox_agents.agent_alerts) THEN RAISE EXCEPTION 'Read-only business/agent counts changed'; END IF;
+ IF baseline.audits+3<>(SELECT count(*) FROM public.audit_log) OR baseline.pages+1<>(SELECT count(*) FROM chaskabox_content.pages) OR
+ baseline.versions+2<>(SELECT count(*) FROM chaskabox_content.page_versions) THEN RAISE EXCEPTION 'CMS version/audit contract failed'; END IF;
  SELECT count(*) INTO n FROM pg_class c JOIN pg_namespace s ON s.oid=c.relnamespace
  WHERE s.nspname IN('chaskabox_content','chaskabox_agents') AND c.relkind='r';
  IF n<9 OR EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace s ON s.oid=c.relnamespace
