@@ -1,0 +1,36 @@
+name: Full closeout production trace evidence
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  lcp-diagnostics:
+    if: github.head_ref == 'fix/full-closeout-20261020'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
+        with:
+          node-version: '24'
+      - name: Read the deployed baseline's public mobile artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module <<'NODE'
+          import {writeFile} from 'node:fs/promises';
+          const base='https://api.github.com/repos/chaskabox/chaskabox-site';
+          const headers={Accept:'application/vnd.github+json',Authorization:'Bearer '+process.env.GH_TOKEN};
+          const r=await fetch(base+'/actions/runs/39455756786/artifacts',{headers});
+          if(!r.ok)throw Error('Public baseline artifact listing failed');
+          const a=(await r.json()).artifacts.find(a=>a.name==='live-mobile-audit'&&!a.expired);
+          if(!a)throw Error('Public baseline artifact missing');
+          const z=await fetch(base+'/actions/artifacts/'+a.id+'/zip',{headers});
+          if(!z.ok)throw Error('Public baseline archive unavailable');
+          await writeFile(process.env.RUNNER_TEMP+'/lcp-baseline.zip',Buffer.from(await z.arrayBuffer()));
+          NODE
+          unzip -q "$RUNNER_TEMP/lcp-baseline.zip" -d "$RUNNER_TEMP/lcp-baseline"
+      - name: Show exact LCP resource and rendering causes
+        run: node tools/lcp-closeout-diagnostics.mjs "$RUNNER_TEMP/lcp-baseline/home.json" "$RUNNER_TEMP/lcp-baseline/shop.json" "$RUNNER_TEMP/lcp-baseline/product-39.json"
