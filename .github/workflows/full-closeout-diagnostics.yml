@@ -15,6 +15,10 @@ jobs:
       - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444
         with:
           node-version: '24'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - name: Trace deployed SSR image identity without submitting requests
+        run: node tools/deployed-media-diagnostics.mjs
       - name: Read the deployed baseline's public mobile artifact
         env:
           GH_TOKEN: ${{ github.token }}
