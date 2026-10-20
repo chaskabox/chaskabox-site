@@ -38,7 +38,7 @@ DECLARE k text:=current_setting('chaskabox.qa_page'); p jsonb; published jsonb; 
 BEGIN
  p:=public.admin_page_copy_mutate(current_setting('chaskabox.qa_content')::uuid,k,'draft',0,
  '{"fields":{"t_deadbeef":"Offline recovered-schema acceptance"}}'::jsonb,NULL);
- IF (p->>'revision')::int<>1 OR p->'published'<>'{"fields":{}}'::jsonb OR p->'draft'->'fields'->>'t_deadbeef'<>'Offline recovered-schema acceptance' THEN RAISE EXCEPTION 'Draft readback failed'; END IF;
+ IF (p->>'revision')::int IS DISTINCT FROM 1 OR p->'published' IS DISTINCT FROM '{"fields":{}}'::jsonb OR p->'draft'->'fields'->>'t_deadbeef' IS DISTINCT FROM 'Offline recovered-schema acceptance' THEN RAISE EXCEPTION 'Draft readback failed'; END IF;
  BEGIN
   PERFORM public.admin_page_copy_mutate(current_setting('chaskabox.qa_content')::uuid,k,'publish',1,NULL,NULL);
   RAISE EXCEPTION 'Content publication unexpectedly permitted';
@@ -52,17 +52,17 @@ BEGIN
   RAISE EXCEPTION 'Inactive staff unexpectedly permitted';
  EXCEPTION WHEN insufficient_privilege THEN NULL; END;
  published:=public.admin_page_copy_mutate(current_setting('chaskabox.qa_manager')::uuid,k,'publish',1,NULL,NULL);
- IF (published->>'revision')::int<>2 OR published->'draft'<>'null'::jsonb OR jsonb_array_length(published->'versions')<>1 OR public.page_copy_read(ARRAY[k])->k->'fields'->>'t_deadbeef'<>'Offline recovered-schema acceptance' THEN RAISE EXCEPTION 'Published readback failed'; END IF;
+ IF (published->>'revision')::int IS DISTINCT FROM 2 OR published->'draft' IS DISTINCT FROM 'null'::jsonb OR jsonb_array_length(published->'versions') IS DISTINCT FROM 1 OR public.page_copy_read(ARRAY[k])->k->'fields'->>'t_deadbeef' IS DISTINCT FROM 'Offline recovered-schema acceptance' THEN RAISE EXCEPTION 'Published readback failed'; END IF;
  BEGIN
   PERFORM public.admin_page_copy_mutate(current_setting('chaskabox.qa_owner')::uuid,k,'draft',1,'{"fields":{}}'::jsonb,NULL);
   RAISE EXCEPTION 'Stale revision unexpectedly accepted';
  EXCEPTION WHEN raise_exception THEN IF SQLERRM<>'STALE_PAGE' THEN RAISE; END IF; END;
  p:=public.admin_page_copy_mutate(current_setting('chaskabox.qa_owner')::uuid,k,'rollback',2,NULL,(published->'versions'->0->>'id')::bigint);
- IF (p->>'revision')::int<>3 OR p->'published'<>'{"fields":{}}'::jsonb OR jsonb_array_length(p->'versions')<>2 THEN RAISE EXCEPTION 'Versioned rollback failed'; END IF;
+ IF (p->>'revision')::int IS DISTINCT FROM 3 OR p->'published' IS DISTINCT FROM '{"fields":{}}'::jsonb OR jsonb_array_length(p->'versions') IS DISTINCT FROM 2 THEN RAISE EXCEPTION 'Versioned rollback failed'; END IF;
  state:=public.agent_phase12_state(); scan:=public.agent_phase12_scan();
- IF state->>'mode'<>'observe_only' OR jsonb_array_length(state->'activation')<>8 OR
- EXISTS(SELECT 1 FROM jsonb_array_elements(state->'activation') a WHERE a->>'mode'<>'observe') OR
- scan->>'mode'<>'read_only_no_receipt' THEN RAISE EXCEPTION 'Recovered agent RPC contract failed'; END IF;
+ IF state->>'mode' IS DISTINCT FROM 'observe_only' OR jsonb_array_length(state->'activation') IS DISTINCT FROM 8 OR
+ EXISTS(SELECT 1 FROM jsonb_array_elements(state->'activation') a WHERE a->>'mode' IS DISTINCT FROM 'observe') OR
+ scan->>'mode' IS DISTINCT FROM 'read_only_no_receipt' THEN RAISE EXCEPTION 'Recovered agent RPC contract failed'; END IF;
 END $acceptance$;
 RESET ROLE;
 DO $verification$

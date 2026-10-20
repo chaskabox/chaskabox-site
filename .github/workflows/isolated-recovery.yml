@@ -23,7 +23,7 @@ jobs:
       R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
       R2_BUCKET: ${{ secrets.R2_BUCKET }}
       CLOUDFLARE_BACKUP_READ_TOKEN: ${{ secrets.CLOUDFLARE_BACKUP_READ_TOKEN }}
-      CURRENT_CLOSEOUT_ACCEPTANCE: ${{ github.head_ref == 'fix/full-closeout-20261020' && 'true' || 'false' }}
+      CURRENT_CLOSEOUT_ACCEPTANCE: ${{ (github.event_name == 'workflow_dispatch' || github.head_ref == 'fix/full-closeout-20261020') && 'true' || 'false' }}
       AGENT_MIGRATION_PREFLIGHT: ${{ github.head_ref == 'improve/product-evidence-20261014' && 'true' || 'false' }}
       PHASE12_MIGRATION_PREFLIGHT: ${{ github.head_ref == 'fix/phase12-owner-operations-backend-20261015' && 'true' || 'false' }}
     steps:
