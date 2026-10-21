@@ -4,11 +4,11 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
 <title>Admin Console V4 | Safe Design Demo | ChaskaBox</title>
-<link rel="stylesheet" href="/admin.css?v=20261016-admin-v4-shell1">
+<link rel="stylesheet" href="/admin.css?v=20261021-simplified-sidebar1">
 <link rel="stylesheet" href="/admin-v4-demo.css?v=1">
 <script src="/admin-v4-demo.js?v=1" defer></script>
 <script src="/admin-v4-tools.js?v=20261016-v4-actions1" defer></script>
-<script src="/admin-v4-sidebar.js?v=20261017-nav2" defer></script>
+<script src="/admin-v4-sidebar.js?v=20261021-simplified-sidebar1" defer></script>
 <script src="/admin-storefront-controls.js?v=20261017-controls1" defer></script>
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png?v=20261020-brand">
 </head>
@@ -19,13 +19,15 @@
       <a class="admin-brand" href="https://chaskabox.online/" target="_blank" rel="noopener"><img src="/images/logo-approved-20261017.png" alt="ChaskaBox"><span>Admin V4 Demo</span></a>
       <button type="button" id="adminSidebarCollapse" class="admin-sidebar-collapse" aria-label="Hide sidebar to focus on content" title="Hide sidebar (desktop) or close menu (mobile)">«</button>
     </div>
-    <div class="admin-nav-search"><label for="adminNavSearch">Find a panel</label><div class="admin-nav-search-field"><span aria-hidden="true"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></span><input type="search" id="adminNavSearch" placeholder="Search 25 panels…" autocomplete="off" aria-controls="adminNavGroups"></div></div>
-    <div class="admin-sidebar-controls" role="group" aria-label="Navigation groups">
-      <button type="button" id="adminExpandGroups" title="Show every section">Expand all</button>
-      <button type="button" id="adminCollapseGroups" title="Hide every section">Collapse all</button>
-    </div>
+    <div class="admin-nav-search"><div class="admin-nav-search-head"><label for="adminNavSearch">Navigation</label><details class="admin-nav-preferences"><summary aria-label="Navigation options">⚙ Options</summary>
+        <div class="admin-sidebar-controls" role="group" aria-label="Navigation groups">
+          <button type="button" id="adminExpandGroups" title="Open every section">Expand sections</button>
+          <button type="button" id="adminCollapseGroups" title="Close every section">Collapse sections</button>
+          <button type="button" id="adminPinFromSidebar" aria-pressed="false" title="Pin or unpin the open panel">＋ Pin</button>
+        </div>
+      </details></div><div class="admin-nav-search-field"><span aria-hidden="true"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></span><input type="search" id="adminNavSearch" placeholder="Search 25 panels…" autocomplete="off" aria-controls="adminNavGroups"></div></div>
     <section class="admin-pinned" aria-labelledby="adminPinnedTitle">
-      <div class="admin-pinned-head"><strong id="adminPinnedTitle">★ Pinned panels</strong><span id="adminPinnedCount">0 / 6</span><button type="button" id="adminPinFromSidebar" aria-pressed="false" title="Pin or unpin the open panel">＋ Pin</button></div>
+      <div class="admin-pinned-head"><strong id="adminPinnedTitle">★ Quick access</strong><span id="adminPinnedCount" aria-live="polite">0 / 6</span></div>
       <div id="adminPinnedLinks" class="admin-pinned-links"><p class="admin-pinned-empty">Pin frequently used panels from the page header.</p></div>
     </section>
     <nav class="admin-nav" id="adminNavGroups" aria-label="Admin sections">
@@ -35,7 +37,7 @@
           <button class="admin-nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button>
         </div>
       </details>
-      <details class="admin-nav-group" data-group="commerce" open>
+      <details class="admin-nav-group" data-group="commerce">
         <summary><span>Orders & customers</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
         <div class="admin-nav-group-links">
           <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
@@ -46,7 +48,7 @@
           <button class="admin-nav-btn" data-view="reviews"><span>★</span> Reviews</button>
         </div>
       </details>
-      <details class="admin-nav-group" data-group="catalogue" open>
+      <details class="admin-nav-group" data-group="catalogue">
         <summary><span>Catalogue & products</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
         <div class="admin-nav-group-links">
           <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
