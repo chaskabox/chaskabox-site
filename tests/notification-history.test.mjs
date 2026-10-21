@@ -62,7 +62,7 @@ test('notification interface is wired to the ledger and does not expose a bulk r
   assert.match(html,/id="notifHistoryTarget"/);
   assert.match(html,/id="notifHistoryView"/);
   assert.match(html,/id="notifHistoryRows"/);
-  assert.match(html,/admin-live\.js\?v=20261020-visible-health1/);
+  assert.match(html,/<script src="\/admin-live\.js\?v=20\d{6}-[a-z0-9-]+" defer><\/script>/);
   assert.match(client,/async function loadNotificationHistory/);
   assert.match(client,/\/api\/admin\/notifications\/history\?/);
   assert.match(html,/No automatic replay/);
