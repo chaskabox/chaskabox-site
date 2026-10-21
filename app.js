@@ -562,6 +562,9 @@ function renderProductDetail(id){
   // Related products: same category, exclude current
   const related=activeProducts().filter(x=>x.id!==p.id&&x.category===p.category).slice(0,4);
   const relatedHTML=related.length?`<section class="pd-related"><h2>You may also like</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${related.map(cardHTML).join('')}</div></section>`:'';
+  const copy=window.ChaskaProductCopy;
+  const summary=copy?copy.summary(p.desc):String(p.desc||'').slice(0,235);
+  const deeper=copy?copy.content(p):'';
   renderProductMarkup($('#pdetail'),`<div class="pdetail">
     <div class="pd-grid">
       <div class="pd-imgwrap">${badge}<button type="button" class="pd-img pd-image-button" ${hasPhoto(p)?`data-zoom-src="${esc(assetUrl(p.img))}" data-zoom-alt="${esc(p.name)}"`:'disabled'} aria-label="Enlarge product photo">${img}</button></div>
@@ -572,7 +575,7 @@ function renderProductDetail(id){
         <div class="pd-price"><span class="price" style="font-size:26px">${fmt(p.price)}</span>${old}${save}</div>
         <div class="ppack" style="margin-bottom:10px">${esc(p.pack||'')}</div>
 
-        <p class="pd-desc">${esc(p.desc||'Product details are being updated. Contact ChaskaBox if you need ingredient or allergen information before ordering.')}</p>
+        <p class="pd-desc">${esc(summary)}</p>
         <div class="pd-buyrow">
           <div class="qty"><button onclick="pdQty(-1)" aria-label="Decrease quantity">−</button><b id="pdqty">1</b><button onclick="pdQty(1)" aria-label="Increase quantity">+</button></div>
           <button class="pdbtn" ${p.stockState==='unavailable'?'disabled':''} onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">${p.stockState==='unavailable'?'Currently unavailable':'Add to Bag'}</button>
@@ -586,6 +589,7 @@ function renderProductDetail(id){
         <nav class="pd-policy-links" aria-label="Product and order help"><a href="/shipping-policy/">Delivery and charges</a><a href="/refund-policy/">Refund and resolution</a><a href="/track-order.html">Track your order</a></nav>
       </div>
     </div>
+    ${deeper}
   </div>${relatedHTML}<div id="reviewsMount"></div>`,p.id);
   const zoom=$('#pdetail').querySelector('[data-zoom-src]');
   if(zoom)zoom.onclick=event=>{const el=event.currentTarget;openImageLightbox(el.dataset.zoomSrc,el.dataset.zoomAlt);};
