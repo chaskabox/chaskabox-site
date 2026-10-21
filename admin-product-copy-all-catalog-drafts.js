@@ -96,21 +96,26 @@
       'The product name identifies the '+variety+' variety.':
       'The listed name identifies this specific '+style.category+' within the catalogue.';
     const branded=brand?brand+' '+label:label;
-    const intro=branded+' is '+style.lead+' available in the listed '+pack+' format. '+variantSentence;
+    const intro=pack==='Contents under review' ? branded+' is a ChaskaBox bundle listing with contents still under review. The exact selection must be confirmed before this product can be made visible.' : branded+' is '+style.lead+' available in the listed '+pack+' format. '+variantSentence;
 
     const features=[
       'Named product: '+label,
       variety?'Variety shown in title: '+cap(variety):'Product type: '+style.category,
-      'ChaskaBox listing format: '+pack
+      pack==='Contents under review'?'Bundle selection: not confirmed':'ChaskaBox listing format: '+pack
     ];
     const description=intro+'\n\nHighlights:\n'+features.map(f=>'- '+f).join('\n')+
       '\n\nServing ideas:\n'+style.serve;
     // Admin and publication limits are stricter than search engine field maxima.
     const suffix=' | '+(pack==='Contents under review'?'':pack+' | ')+'ChaskaBox';
-    const seoName=shorten(branded.replace(/\s+-\s+Pack\s+Of\s+\d+$/i,''),60-suffix.length);
+    const available=60-suffix.length;
+    let seoName=shorten(branded.replace(/\s+-\s+Pack\s+Of\s+\d+$/i,''),available);
+    if(variety && !seoName.toLowerCase().includes(variety.split(' ')[0].toLowerCase())){
+      seoName=shorten(branded,Math.max(9,available-variety.length-1))+' '+cap(variety);
+      seoName=shorten(seoName,available);
+    }
     const seo_title=seoName+suffix;
     const seoLead=shorten(branded,72);
-    const seo_description=shorten('Shop '+seoLead+', '+(pack==='Contents under review'?'details to be confirmed':pack)+', at ChaskaBox Pakistan. See this product listing for current details.',155).replace(/[ ,]+$/,'')+'.';
+    const seo_description=shorten('Shop '+seoLead+', '+(pack==='Contents under review'?'details to be confirmed':pack)+', at ChaskaBox Pakistan. See the listed product details.',154).replace(/[.,;\s]+$/,'')+'.';
     return {name,brand,category,pack,description,seo_title,seo_description,
       review:pack==='Contents under review'?'block-unverified-bundle':'manual-label-check-required',source_kind:'chaskabox_catalogue',
       source_note:'Draft based only on authenticated ChaskaBox product name, brand, category and pack. Not manufacturer- or original-wrapper-verified. Review the exact SKU, flavour and label before saving.',
