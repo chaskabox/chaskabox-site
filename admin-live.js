@@ -941,7 +941,7 @@
       if(!descField)return;
       const existing=descField.value.trim();
       const headings=['Highlights:','Taste & texture:','Serving ideas:','Ingredients:','Allergens:','Storage:','Best before:'];
-      const missing=headings.filter(h=>!new RegExp('(?:^|\\n)\\s*'+h.replace(/[.*+?^${}()|[\]\\]/g,'\\    // Inline AI: improve description'),'i').test(existing));
+      const missing=headings.filter(h=>!existing.split('\n').some(line=>line.trim().toLowerCase().startsWith(h.toLowerCase())));
       if(!missing.length){toast('Detail sections already present');return;}
       descField.value=(existing?existing+'\n\n':'')+missing.join('\n\n')+'\n';
       descField.focus();descField.dispatchEvent(new Event('input',{bubbles:true}));
