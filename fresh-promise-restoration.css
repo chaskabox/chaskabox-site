@@ -64,7 +64,7 @@
 #view-home #market-fresh .picktag {display:block;}
 #view-home #market-fresh .pickinfo b {font-size:14px; line-height:1.4;}
 #view-home #market-fresh .pickprice {font-size:17px;}
-#view-home #market-fresh .pickinfo .alink {font-size:13px; color:#ff7a18;}
+#view-home #market-fresh .pickinfo .alink {font-size:13px; color:#963610;}
 @media (hover:hover) and (pointer:fine) {
   #view-home #market-fresh .freshlist li:hover {
     transform:translateY(-4px); box-shadow:0 8px 24px rgba(255,122,24,.16);

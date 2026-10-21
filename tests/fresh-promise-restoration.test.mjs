@@ -19,7 +19,7 @@ const routes=[
 test('Original sourced-after-order panel theme loads on all SPA storefront entry pages',()=>{
   for(const path of routes){
     const html=read(path);
-    assert.match(html, /\/fresh-promise-restoration\.css\?v=20261021-restore1/, path);
+    assert.ok(html.includes('<style id="cb-fresh-restore">\n'+read("fresh-promise-restoration.css")+'</style>'), path);
     assert.match(html, /storefront-bundle\.css/, path);
   }
 });
@@ -31,6 +31,7 @@ test('Theme restores premium layout and accessible nonessential animation',()=>{
   assert.match(css,/grid-template-columns:minmax\(0,1\.05fr\) minmax\(0,\.95fr\)/);
   assert.match(css,/animation-timeline:view\(\)/);
   assert.match(css,/prefers-reduced-motion:reduce/);
+  assert.match(css,/\.pickinfo \.alink \{font-size:13px; color:#963610;\}/);
   assert.match(css,/@media \(max-width:768px\)/);
   const html=read('index.html');
   assert.match(html,/id="market-fresh"/);
