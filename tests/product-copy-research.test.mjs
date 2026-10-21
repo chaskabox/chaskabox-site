@@ -12,12 +12,16 @@ function drafts(js){
 }
 
 test('source-backed editorial copy drafts are valid, distinct and never auto-published',async()=>{
- const js=await read('admin-source-backed-product-copy.js');
- const items=Object.entries(drafts(js));
- assert.equal(items.length,10);
+ const first=await read('admin-source-backed-product-copy.js');
+ const second=await read('admin-source-backed-product-copy-batch2.js');
+ const items=Object.entries(drafts(first+'\n'+second));
+ assert.equal(items.length,29);
  assert.equal(new Set(items.map(([id])=>id)).size,items.length);
+ assert.equal(Object.keys(drafts(second)).length,19);
+ assert.equal(new Set(items.map(([,d])=>d.name.toLowerCase())).size,29);
  assert.ok(items.every(([id,d])=>String(Number(id))===id && d.source.startsWith('https://')));
  assert.ok(items.every(([,d])=>d.review==='manual-label-check-required'));
+ assert.ok(items.every(([,d])=>!d.source_note||!d.description.includes(d.source_note)));
  for(const [id,d] of items){
   assert.ok(d.name && d.brand && d.pack,id+' metadata');
   assert.ok(d.description.length>=240 && d.description.length<=2000,id+' description');
@@ -35,7 +39,10 @@ test('source-backed editorial copy drafts are valid, distinct and never auto-pub
  assert.match(controls,/editSeoTitle/);
  assert.match(controls,/editSeoDesc/);
  const admin=await read('admin.html');
- assert.ok(admin.indexOf('admin-source-backed-product-copy.js')<admin.indexOf('admin-source-copy-controls.js'));
+ assert.ok(admin.indexOf('admin-source-backed-product-copy.js')<admin.indexOf('admin-source-backed-product-copy-batch2.js'));
+ assert.ok(admin.indexOf('admin-source-backed-product-copy-batch2.js')<admin.indexOf('admin-source-copy-controls.js'));
+ assert.match(controls,/sourceCopyReviewNote/);
+ assert.match(admin,/sourceCopyReviewNote/);
 });
 
 test('Product structured data description is readable without editorial section tokens',()=>{
