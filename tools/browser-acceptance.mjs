@@ -22,7 +22,7 @@ const manifest={settings,theme:{},navigation:[{location:'header',label:'Shop Sna
 function fakeSdk(){
  window.supabase={createClient(){
   const role=(document.cookie.match(/qa_role=([^;]+)/)||[])[1],user={id:'00000000-0000-4000-8000-000000000001',email:'synthetic@example.invalid'},session=role?{user,access_token:'synthetic-fixture-token'}:null;
-  const chain=()=>{const q={};for(const name of ['select','eq','order','limit','upsert','insert','update','delete','maybeSingle'])q[name]=()=>q;q.then=(a,b)=>Promise.resolve({data:[],error:null}).then(a,b);return q;};
+  const chain=()=>{const q={};for(const name of ['select','eq','order','limit','upsert','insert','update','delete','maybeSingle','range','in','not'])q[name]=()=>q;q.then=(a,b)=>Promise.resolve({data:[],error:null}).then(a,b);return q;};
   return {auth:{getSession:async()=>({data:{session}}),refreshSession:async()=>({data:{session}}),onAuthStateChange(fn){window.qaAuthEvent=fn;return {data:{subscription:{unsubscribe(){}}}};},signOut:async()=>({error:null}),resetPasswordForEmail:async()=>({error:window.qaResetFailure?{message:'Synthetic reset outage'}:null}),updateUser:async()=>{window.qaPasswordUpdates=(window.qaPasswordUpdates||0)+1;return {error:window.qaPasswordFailure?{message:'Synthetic password outage'}:null};},mfa:{listFactors:async()=>({data:{all:[],totp:[]}}),getAuthenticatorAssuranceLevel:async()=>({data:{currentLevel:'aal2',nextLevel:'aal2'}})}},from:chain,rpc:async()=>({data:0,error:null})};
  }};
 }

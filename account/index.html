@@ -8,24 +8,28 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="canonical" href="https://chaskabox.online/account/">
 <link rel="stylesheet" href="/styles.css?v=20261017-approvedbrand">
-<link rel="stylesheet" href="/account.css">
+<link rel="stylesheet" href="/account.css?v=20261021-portal1">
 <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20261021-tabfix1">
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png?v=20261021-tabfix1">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4"></script>
 <script src="/page-copy-runtime.js?v=20261018-cms1" defer></script>
 </head>
-<body>
+<body class="account-page">
+<a href="#main" class="skip-link">Skip to account</a>
 <header class="site-header">
-  <a href="/" class="logo">🍬 ChaskaBox</a>
-  <nav><a href="/">Shop</a> <a href="/account/" class="active">Account</a></nav>
+ <div class="account-header">
+  <a href="/" class="logo"><img src="/images/logo-header-polish-20261017-420.webp" width="210" height="100" alt="ChaskaBox"></a>
+  <nav aria-label="Main navigation"><a href="/shop/">Shop snacks</a><a href="/account/" class="active" aria-current="page">My account</a><a href="/cart/">Cart</a></nav>
+ </div>
 </header>
-<main class="account-main">
-  <h1 id="acctName">My Account</h1>
+<main class="account-main" id="main">
+  <div class="account-title"><div><span class="account-eyebrow">MY CHASKABOX</span><h1 id="acctName">My account</h1><p id="acctIntro">Your next snack moment starts here.</p></div><a class="account-button secondary" href="/shop/">Continue shopping →</a></div>
   <div id="acctbody"><div class="empty-mini"><cb-copy data-cb-copy="t_3d1ee11e" style="display:contents">Loading account…</cb-copy></div></div>
 </main>
+<footer class="account-footer"><span>ChaskaBox · Made for your snack moments</span><a href="/privacy-policy/">Privacy policy</a><a href="/refund-policy/">Returns &amp; refunds</a><a href="/contact/">Contact us</a></footer>
 <div id="acctmodal" class="modal" aria-hidden="true"><div class="modal-box"><button type="button" class="lightbox-close" aria-label="Close account dialog" onclick="closeAuthModal()">×</button><div id="abody"></div></div></div>
 <script src="/supabase-config.js?v=4"></script>
-<script src="/account.js?v=20261012-release"></script>
+<script src="/account.js?v=20261021-portal1"></script>
 <script>document.addEventListener('DOMContentLoaded',()=>{initAccount().then(()=>renderAccountView()).catch(()=>{document.getElementById('acctbody').innerHTML='<p role="alert">Account could not be loaded. Please refresh and try again.</p>';});});</script>
 </body>
 </html>
