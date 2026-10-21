@@ -21,7 +21,7 @@ export async function onRequestGet(context){
    context.env.ASSETS.fetch(new Request(new URL('/',context.request.url)))
   ]);
   const p=rows?.[0];if(!p||p.visibility!=='visible')return unavailable(404,'This snack is not available right now.');
-  const canonical=`https://chaskabox.online/product/${id}/`,title=productPageTitle(p),description=p.seo_description||p.description||`Buy ${p.name} from ChaskaBox Pakistan.`,photo=image(cataloguePhoto(p)),ogPhoto=image(photoUnderReview(p)&&p.og_image===p.image_url?'':p.og_image)||photo||'https://chaskabox.online/images/logo-approved-20261017.png';
+  const canonical=`https://chaskabox.online/product/${id}/`,title=productPageTitle(p),description=p.seo_description||descriptionSummary(p.description)||`Buy ${p.name} from ChaskaBox Pakistan.`,photo=image(cataloguePhoto(p)),ogPhoto=image(photoUnderReview(p)&&p.og_image===p.image_url?'':p.og_image)||photo||'https://chaskabox.online/images/logo-approved-20261017.png';
   const seed={id,name:p.name,brand:p.brand||'',price:Number(p.price),oldPrice:p.old_price,category:p.category,pack:p.pack,desc:p.description||'',badge:p.badge||'',img:cataloguePhoto(p)||null,photoNote:photoUnderReview(p)?'Photo under review':'',stockState:p.stock_state||'sourced_after_order',bundle:!!p.is_bundle,seoTitle:p.seo_title||'',seoDescription:p.seo_description||''};
   const schema=productSchema(p,canonical,photo);
   const crumbs=breadcrumbSchema(p,canonical);
