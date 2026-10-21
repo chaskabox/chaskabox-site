@@ -94,16 +94,15 @@
     // In savoury products such as Cherry Balls, the final seasoning is more specific than a brand-family word.
     const savourySeasoning=type==='savoury snack'&&cleaned.match(/\b(chicken|ketchup|bbq|pizza|cheese|garlic mayo|salsa)\b/i);
     const variety=savourySeasoning?savourySeasoning[1].toLowerCase():inferredVariant(cleaned);
-    const variantSentence=variety?
-      'The product name identifies the '+variety+' variety.':
-      'The listed name identifies this specific '+style.category+' within the catalogue.';
     const branded=brand?brand+' '+label:label;
-    const intro=pack==='Contents under review' ? branded+' is a ChaskaBox bundle listing with contents still under review. The exact selection must be confirmed before this product can be made visible.' : branded+' is '+style.lead+' available in the listed '+pack+' format. '+variantSentence;
-
+    const intro=pack==='Contents under review'
+      ? branded+' is a ChaskaBox bundle whose exact contents are still under review. This listing must remain hidden until the selection and quantities are confirmed.'
+      : branded+' is '+(variety?'the '+variety+' variety of ':'a ')+style.category+
+        ' in the ChaskaBox catalogue. The '+pack+' listing helps you choose the correct format for your snack shelf or sharing occasion.';
     const features=[
-      'Named product: '+label,
-      variety?'Variety shown in title: '+cap(variety):'Product type: '+style.category,
-      pack==='Contents under review'?'Bundle selection: not confirmed':'ChaskaBox listing format: '+pack
+      (brand?'Brand and product: '+brand+' '+label:'Product selection: '+label),
+      variety?'Named variety: '+cap(variety):'Snack format: '+cap(style.category),
+      pack==='Contents under review'?'Bundle composition: pending verification':'Listed pack: '+pack
     ];
     const description=intro+'\n\nHighlights:\n'+features.map(f=>'- '+f).join('\n')+
       '\n\nServing ideas:\n'+style.serve;
