@@ -91,7 +91,9 @@
     const cleaned=tidy(name.replace(/^(?:[^|]{1,35}\s*\|\s*)/,'')).replace(/\s*[\(\[]Rs\.?\s*\d+[\)\]]/gi,'').replace(/\s+[—-]\s+Pack\s+Of\s+\d+$/i,'').trim();
     const label=cleaned||name;
     const type=productType(name,category),style=categories[type];
-    const variety=inferredVariant(cleaned);
+    // In savoury products such as Cherry Balls, the final seasoning is more specific than a brand-family word.
+    const savourySeasoning=type==='savoury snack'&&cleaned.match(/\b(chicken|ketchup|bbq|pizza|cheese|garlic mayo|salsa)\b/i);
+    const variety=savourySeasoning?savourySeasoning[1].toLowerCase():inferredVariant(cleaned);
     const variantSentence=variety?
       'The product name identifies the '+variety+' variety.':
       'The listed name identifies this specific '+style.category+' within the catalogue.';
