@@ -30,7 +30,7 @@ const TASK_PROMPTS = {
   brand_faq: 'Return ONLY JSON with faqs: up to 3 objects with q and a, based only on supplied confirmed public facts. State when an ingredient, allergen or sourcing fact is unconfirmed.',
   analytics_insight: 'Explain the complete supplied SQL aggregate metrics for the selected Pakistan calendar date range. Do not invent causes.',
   general_draft: 'Help with a safe ChaskaBox admin drafting task. Produce text/advice only; never claim that you changed the store.',
-  product_description: 'Draft a concise, appetizing product description (40-70 words, Roman Urdu-friendly tone) for a Pakistani snack-store product.',
+  product_description: 'Draft 80-130 words in clear, natural English for this exact snack: a useful factual overview, then Highlights: with 2-3 genuinely supported bullets and optional Serving ideas: if appropriate. Use the authenticated product name, brand, category, pack and any verified source facts. Do not invent flavour, ingredients, allergens, nutrition, shelf life, certifications, texture or pack-unit meaning. Omit headings whose contents are unconfirmed. No DRAFT TEXT label, hashtags, inflated adjectives or generic keyword stuffing.',
   seo_meta: 'Return ONLY JSON with seo_title (max 60 chars) and seo_description (max 155 chars) for the product page.',
   category_tags: 'Return ONLY JSON with tags: an array of up to 8 useful public category/flavour/search strings (max 60 chars each).',
   box_ideas: 'Suggest 3 Chaska Box themes (name + 1-line concept each) using only the supplied products.',
