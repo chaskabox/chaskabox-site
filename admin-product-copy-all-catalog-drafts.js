@@ -8,7 +8,7 @@
   const tidy=s=>String(s||'').replace(/\s+/g,' ').trim();
   const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
   const flavorSignals=[
-    [/\bdouble chocolate\b/i,'double chocolate'],[/\bchocolate\b|\bchoco\b/i,'chocolate'],
+    [/\bdouble chocolate\b/i,'double chocolate'],
     [/\bstrawberry\b/i,'strawberry'],[/\bblue ?berry\b/i,'blueberry'],[/\bblack ?currant\b/i,'blackcurrant'],
     [/\bras(p)?berry\b/i,'raspberry'],[/\blychee\b/i,'lychee'],[/\bpeach\b/i,'peach'],
     [/\bmango\b|\baamrus\b/i,'mango'],[/\bgreen mango\b|\bkacha mango\b|\bkairi\b/i,'green mango'],
@@ -24,12 +24,14 @@
     [/\bketchup\b/i,'ketchup'],[/\bsalsa\b/i,'salsa'],[/\bgarlic mayo\b/i,'garlic mayo'],
     [/\bspicy\b|\bhot\b/i,'spicy'],[/\bsour\b|\bkhatta\b/i,'sour'],
     [/\bimli\b|\btamarind\b/i,'tamarind'],[/\bchilli\b|\bchili\b/i,'chilli'],
-    [/\bmint\b/i,'mint'],[/\bfruit\b|\bfruity\b/i,'fruit']
+    [/\bmint\b/i,'mint'],[/\bchocolate\b|\bchoco\b/i,'chocolate'],[/\bfruit\b|\bfruity\b/i,'fruit']
   ];
   function inferredVariant(name){
     const exact=tidy(name);
     // Longer specific forms before broad chocolate/mango identifiers.
     const special=[[/\bgreen mango\b|\bkacha mango\b|\bkairi\b/i,'green mango'],[/\bdouble chocolate\b/i,'double chocolate'],[/\bgarlic mayo\b/i,'garlic mayo'],[/\bblack ?currant\b/i,'blackcurrant']];
+    if(/\bmango\b/i.test(exact)&&/\bchocolate\b/i.test(exact))return 'mango and chocolate';
+    if(/\bpeanut\b/i.test(exact)&&/\bcaramel\b/i.test(exact))return 'peanut and caramel';
     for(const [re,v] of special)if(re.test(exact))return v;
     for(const [re,v] of flavorSignals)if(re.test(exact))return v;
     return '';
@@ -83,7 +85,8 @@
   }
   function make(input){
     if(!input||typeof input!=='object')return null;
-    const name=tidy(input.name),pack=tidy(input.pack),brand=tidy(input.brand),category=tidy(input.category);
+    const name=tidy(input.name),packRaw=tidy(input.pack),brand=tidy(input.brand),category=tidy(input.category);
+    const pack=tidy(packRaw.replace(/\s*\(\s*Rs\.?\s*[\d,.]+\s*\)/gi,''));
     if(name.length<3||name.length>180||!pack)return null;
     const cleaned=tidy(name.replace(/^(?:[^|]{1,35}\s*\|\s*)/,'')).replace(/\s*[\(\[]Rs\.?\s*\d+[\)\]]/gi,'').replace(/\s+[—-]\s+Pack\s+Of\s+\d+$/i,'').trim();
     const label=cleaned||name;
@@ -94,23 +97,22 @@
       'The listed name identifies this specific '+style.category+' within the catalogue.';
     const branded=brand?brand+' '+label:label;
     const intro=branded+' is '+style.lead+' available in the listed '+pack+' format. '+variantSentence;
-    const notes=type==='assortment'?'Exact items and quantities in the assortment must be confirmed against the current bundle listing.':
-      'The original wrapper remains the source for exact ingredients, allergens, net weight and storage advice.';
+
     const features=[
       'Named product: '+label,
       variety?'Variety shown in title: '+cap(variety):'Product type: '+style.category,
       'ChaskaBox listing format: '+pack
     ];
     const description=intro+'\n\nHighlights:\n'+features.map(f=>'- '+f).join('\n')+
-      '\n\nServing ideas:\n'+style.serve+
-      '\n\nProduct details:\n'+style.why+' '+notes;
+      '\n\nServing ideas:\n'+style.serve;
     // Admin and publication limits are stricter than search engine field maxima.
-    const seoName=shorten(branded.replace(/\s+-\s+Pack\s+Of\s+\d+$/i,''),42);
-    const seo_title=shorten(seoName+' | '+pack+' | ChaskaBox',60);
-    const seoLead=shorten(branded,67);
-    const seo_description=shorten('Explore '+seoLead+', '+pack+', at ChaskaBox Pakistan. View the specific variant and current product information before ordering.',155);
+    const suffix=' | '+(pack==='Contents under review'?'':pack+' | ')+'ChaskaBox';
+    const seoName=shorten(branded.replace(/\s+-\s+Pack\s+Of\s+\d+$/i,''),60-suffix.length);
+    const seo_title=seoName+suffix;
+    const seoLead=shorten(branded,72);
+    const seo_description=shorten('Shop '+seoLead+', '+(pack==='Contents under review'?'details to be confirmed':pack)+', at ChaskaBox Pakistan. See this product listing for current details.',155).replace(/[ ,]+$/,'')+'.';
     return {name,brand,category,pack,description,seo_title,seo_description,
-      review:'manual-label-check-required',source_kind:'chaskabox_catalogue',
+      review:pack==='Contents under review'?'block-unverified-bundle':'manual-label-check-required',source_kind:'chaskabox_catalogue',
       source_note:'Draft based only on authenticated ChaskaBox product name, brand, category and pack. Not manufacturer- or original-wrapper-verified. Review the exact SKU, flavour and label before saving.',
       source:''};
   }
