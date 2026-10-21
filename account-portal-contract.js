@@ -20,10 +20,10 @@ export function portalConfig(input={},strict=false){
   }
   return out;
 }
-export function profileInput(value){
+export function profileInput(value,{requirePhone=false}={}){
   const name=String(value.name??'').trim(),phone=String(value.phone??'').trim();
   if(name.length<2||name.length>100)throw Error('Enter a name between 2 and 100 characters.');
-  if(phone&&!/^[+0-9 ()-]{7,25}$/.test(phone))throw Error('Enter a valid phone number, or leave it blank.');
+  if((requirePhone&&!/[0-9]/.test(phone))||(phone&&!/^[+0-9 ()-]{7,25}$/.test(phone)))throw Error(requirePhone?'Enter a valid phone number.':'Enter a valid phone number, or leave it blank.');
   return {name,phone};
 }
 export function addressInput(value){

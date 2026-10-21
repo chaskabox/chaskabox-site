@@ -19,6 +19,9 @@ test('portal inputs and re-order respect limits, availability and existing cart 
  assert.deepEqual(profileInput({name:' Test Customer ',phone:'+92 300 1234567'}),{name:'Test Customer',phone:'+92 300 1234567'});
  for(const name of ['', 'x','x'.repeat(101)])assert.throws(()=>profileInput({name,phone:''}));
  assert.throws(()=>profileInput({name:'Customer',phone:'not-a-number'}));
+ assert.deepEqual(profileInput({name:'Customer',phone:''}),{name:'Customer',phone:''},'existing profiles may still have no phone');
+ for(const phone of ['', '       ','-------','invalid'])assert.throws(()=>profileInput({name:'Customer',phone},{requirePhone:true}),/valid phone/);
+ assert.deepEqual(profileInput({name:' Customer ',phone:' 03001234567 '},{requirePhone:true}),{name:'Customer',phone:'03001234567'});
  assert.throws(()=>addressInput({city:'K',address:'short'}));
  assert.throws(()=>addressInput({label:'Home',city:'Karachi',address:'x'.repeat(441)}));
  const next=reorderCart({'5':98,'8':'2',evil:9},[{product_id:5,quantity:5},{product_id:8,quantity:3},{product_id:9,quantity:1},{product_id:10,quantity:1}],[
