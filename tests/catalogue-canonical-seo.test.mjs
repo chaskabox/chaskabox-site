@@ -30,7 +30,7 @@ test('canonical stays on same site in server head and browser, while public API 
  const products=read('functions/api/products.js');
  const cataloguePage=read('functions/api/_lib/catalogue-page.js');
  assert.match(ssr,/canonical_url,og_image/);
- assert.match(ssr,/chaskabox\\\.online/);
+ assert.ok(ssr.includes('https://chaskabox.online'));
  assert.match(ssr,/seoTitle:p\.seo_title/);
  assert.match(ssr,/canonicalUrl:canonical/);
  assert.match(app,/canonicalUrl:p\.canonical_url/);
