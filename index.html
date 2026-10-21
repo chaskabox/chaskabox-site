@@ -5,6 +5,109 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preload" as="font" href="/fonts/kalam-latin-700.woff2" type="font/woff2" crossorigin data-home-preload>
 <link rel="stylesheet" href="/storefront-bundle.css?v=20261020-close1">
+<style id="cb-fresh-restore">
+/* Restore the original premium Sourced After Order panel without changing
+   product data, navigation, hero banners, checkout, or the shared CSS bundle. */
+#view-home > #market-fresh {
+  margin-top:34px;
+  padding:48px 20px;
+  background:linear-gradient(180deg,#fffdf7 0%,#fff9ef 100%);
+}
+#view-home #market-fresh .freshwrap { display:block; max-width:1100px; margin-inline:auto; }
+#view-home #market-fresh .freshhead { text-align:center; margin:0 0 36px; }
+#view-home #market-fresh .freshpill {
+  display:inline-block; padding:9px 22px; margin-bottom:18px; border-radius:999px;
+  background:linear-gradient(135deg,#ff9a3c,#ff7a18); color:#fff;
+  font-size:12px; font-weight:800; letter-spacing:2px;
+  box-shadow:0 4px 14px rgba(255,122,24,.35);
+}
+#view-home #market-fresh .freshhead h2 {
+  font-size:clamp(26px,4.5vw,40px); line-height:1.25; margin-bottom:14px;
+}
+#view-home #market-fresh .freshhead h2 em {
+  background:linear-gradient(135deg,#ff9a3c,#ff5e3a);
+  -webkit-background-clip:text; background-clip:text;
+  -webkit-text-fill-color:transparent; color:#be430e;
+}
+#view-home #market-fresh .freshdesc {
+  font-size:15px; line-height:1.7; max-width:660px; margin-inline:auto;
+}
+#view-home #market-fresh .freshcols {
+  display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
+  gap:28px; align-items:start;
+}
+#view-home #market-fresh .freshlist {
+  display:grid; grid-template-columns:minmax(0,1fr); grid-column:auto;
+  grid-row:auto; list-style:none; gap:14px; margin:0; padding:0;
+}
+#view-home #market-fresh .freshlist li {
+  min-width:0; padding:18px 20px; gap:16px; border-radius:18px;
+  background:#fff; border:1px solid #f0e6d2;
+  box-shadow:0 2px 12px rgba(0,0,0,.04);
+  transform:none; transition:transform .24s ease, box-shadow .24s ease;
+}
+#view-home #market-fresh .freshlist .ficon {
+  flex:0 0 44px; width:44px; height:44px; border-radius:14px;
+  font-size:19px; color:#fff; background:linear-gradient(135deg,#ff9a3c,#ff7a18);
+  box-shadow:0 4px 12px rgba(255,122,24,.3);
+  transition:transform .24s ease;
+}
+#view-home #market-fresh .freshlist .ftxt {gap:5px; min-width:0;}
+#view-home #market-fresh .freshlist .ftxt b {font-size:14.5px; line-height:1.4;}
+#view-home #market-fresh .freshlist .ftxt span {font-size:13px; line-height:1.55;}
+#view-home #market-fresh .freshpick {
+  grid-column:auto; grid-row:auto; position:sticky; top:90px;
+  padding:26px; border-radius:22px; background:#fff; border:1px solid #f0e6d2;
+  box-shadow:0 8px 30px rgba(0,0,0,.06);
+}
+#view-home #market-fresh .pickbadge {
+  display:inline-block; padding:7px 18px; margin-bottom:18px;
+  border-radius:999px; background:linear-gradient(135deg,#ff9a3c,#ff7a18);
+  color:#fff; font-size:12px; font-weight:800; letter-spacing:1px;
+  box-shadow:0 4px 12px rgba(255,122,24,.3);
+}
+#view-home #market-fresh .pickcard {gap:16px; align-items:flex-start;}
+#view-home #market-fresh .pickimg {width:110px; height:110px; flex:0 0 110px;}
+#view-home #market-fresh .pickinfo {gap:6px;}
+#view-home #market-fresh .picktag {display:block;}
+#view-home #market-fresh .pickinfo b {font-size:14px; line-height:1.4;}
+#view-home #market-fresh .pickprice {font-size:17px;}
+#view-home #market-fresh .pickinfo .alink {font-size:13px; color:#963610;}
+@media (hover:hover) and (pointer:fine) {
+  #view-home #market-fresh .freshlist li:hover {
+    transform:translateY(-4px); box-shadow:0 8px 24px rgba(255,122,24,.16);
+  }
+  #view-home #market-fresh .freshlist li:hover .ficon {transform:scale(1.07) rotate(-3deg);}
+}
+/* Progressive scroll entrance for numbered icons, leaving actual text visible.
+   Browsers without scroll-driven animation still retain the hover motion. */
+@keyframes cbFreshIconAppear {
+  from {opacity:.55; transform:translateY(12px) scale(.9);}
+  to {opacity:1; transform:translateY(0) scale(1);}
+}
+@media (prefers-reduced-motion:no-preference) {
+  @supports (animation-timeline:view()) {
+    #view-home #market-fresh .freshlist .ficon {
+      animation:cbFreshIconAppear linear both;
+      animation-timeline:view();
+      animation-range:entry 0% entry 100%;
+    }
+  }
+}
+@media (max-width:768px) {
+  #view-home > #market-fresh {padding:36px 16px;}
+  #view-home #market-fresh .freshcols {grid-template-columns:minmax(0,1fr);}
+  #view-home #market-fresh .freshpick {position:static;}
+  #view-home #market-fresh .pickimg {width:90px; height:90px; flex-basis:90px;}
+  #view-home #market-fresh .freshhead h2 {font-size:clamp(24px,6vw,34px);}
+}
+@media (prefers-reduced-motion:reduce) {
+  #view-home #market-fresh .freshlist li,
+  #view-home #market-fresh .freshlist .ficon {
+    animation:none!important; transform:none!important; transition:none!important;
+  }
+}
+</style>
 <!-- Exact approved HQ category CSS inlined to avoid a secondary blocking request. -->
 <style id="cb-category-art-critical">
 /* High-resolution approved category photography, 9 × 192px frames, scoped to homepage only. */
