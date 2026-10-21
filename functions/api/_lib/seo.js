@@ -59,7 +59,7 @@ export function productSchema(p, canonical, photo) {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: String(p.name || ''),
-    description: String(descriptionSummary(p.description) || p.seo_description || ('Buy ' + p.name + ' online from ChaskaBox Pakistan.')),
+    description: String(p.description ? descriptionSummary(p.description) : (p.seo_description || ('Buy ' + p.name + ' online from ChaskaBox Pakistan.'))),
     sku: String(p.id),
     url: canonical,
     ...(brand ? { brand: { '@type': 'Brand', name: brand } } : {}),
