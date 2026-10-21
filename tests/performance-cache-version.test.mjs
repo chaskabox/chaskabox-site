@@ -7,7 +7,7 @@ test('all storefront entry routes load the same versioned UX application and car
   for(const path of pages){
     const html=readFileSync(new URL(path,root),'utf8');
     assert.match(html,/\/storefront-bundle\.css\?v=20261020-close1/,path);
-    assert.match(html,/\/app\.js\?v=20261021-pdp1/,path);
+    assert.match(html,/\/app\.js\?v=20261021-canonical1/,path);
     assert.match(html,/\/product-description-ui\.js\?v=20261021-pdp1/,path);
     assert.equal((html.match(/<link[^>]*rel="stylesheet"/g)||[]).length,1,path+' should have one blocking stylesheet');
     assert.doesNotMatch(html,/<link[^>]+href="\/(?:header-discovery-preview|sticky-motion-polish|header-one-line|search-whatsapp-float|brands-header-dropdown)\.css/,path);
