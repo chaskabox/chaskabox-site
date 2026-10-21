@@ -20,6 +20,8 @@
     function sync(){
       const match=currentDraft();
       apply.hidden=!match;
+      apply.disabled=Boolean(match&&match.review==='block-unverified-bundle');
+      if(apply.disabled)apply.textContent='Bundle content verification required';
       const preview=$('sourceCopyPreview');
       if(preview)preview.hidden=!match;
       if(!match)return;
@@ -35,7 +37,7 @@
     }
     apply.addEventListener('click',()=>{
       const draft=currentDraft();
-      if(!draft)return;
+      if(!draft||draft.review==='block-unverified-bundle')return;
       const message='Insert this UNSAVED product DESCRIPTION and SEO draft? Existing unsaved description and SEO fields will be replaced. Confirm the actual product packaging and its details first. Nothing is published until you explicitly press Save product.';
       if(!window.confirm(message))return;
       $('editDescription').value=draft.description;
