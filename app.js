@@ -552,6 +552,7 @@ function closeModal(){$('#pmodal').classList.remove('open');$('#pmodal').setAttr
 
 /* ---------- product detail page ---------- */
 function renderProductDetail(id){
+  if(!document.querySelector('link[data-pdp-refresh]')){const css=document.createElement('link');css.rel='stylesheet';css.href='/product-details-refresh.css?v=20261021-pdp1';css.dataset.pdpRefresh='1';document.head.append(css);}
   const p=PRODUCTS.find(x=>x.id===id); if(!p){render404(location.pathname);return;}
   setProductMeta(p);
   const img=hasPhoto(p)?`<img ${photoAttributes(p.img,"(max-width:700px) calc(100vw - 32px), 520px")} alt="${esc(p.name)}" fetchpriority="high" width="600" height="600" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
@@ -565,6 +566,9 @@ function renderProductDetail(id){
   // Related products: same category, exclude current
   const related=activeProducts().filter(x=>x.id!==p.id&&x.category===p.category).slice(0,4);
   const relatedHTML=related.length?`<section class="pd-related"><h2>You may also like</h2><div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">${related.map(cardHTML).join('')}</div></section>`:'';
+  const copy=window.ChaskaProductCopy;
+  const summary=copy?copy.summary(p.desc):String(p.desc||'').slice(0,235);
+  const deeper=copy?copy.content(p):'';
   renderProductMarkup($('#pdetail'),`<div class="pdetail">
     <div class="pd-grid">
       <div class="pd-imgwrap">${badge}<button type="button" class="pd-img pd-image-button" ${hasPhoto(p)?`data-zoom-src="${esc(assetUrl(p.img))}" data-zoom-alt="${esc(p.name)}"`:'disabled'} aria-label="Enlarge product photo">${img}</button></div>
@@ -575,7 +579,7 @@ function renderProductDetail(id){
         <div class="pd-price"><span class="price" style="font-size:26px">${fmt(p.price)}</span>${old}${save}</div>
         <div class="ppack" style="margin-bottom:10px">${esc(p.pack||'')}</div>
 
-        <p class="pd-desc">${esc(p.desc||'Product details are being updated. Contact ChaskaBox if you need ingredient or allergen information before ordering.')}</p>
+        <p class="pd-desc">${esc(summary)}</p>
         <div class="pd-buyrow">
           <div class="qty"><button onclick="pdQty(-1)" aria-label="Decrease quantity">−</button><b id="pdqty">1</b><button onclick="pdQty(1)" aria-label="Increase quantity">+</button></div>
           <button class="pdbtn" ${p.stockState==='unavailable'?'disabled':''} onclick="addToCart(${p.id},+document.getElementById('pdqty').textContent,this)">${p.stockState==='unavailable'?'Currently unavailable':'Add to Bag'}</button>
@@ -589,6 +593,7 @@ function renderProductDetail(id){
         <nav class="pd-policy-links" aria-label="Product and order help"><a href="/shipping-policy/">Delivery and charges</a><a href="/refund-policy/">Refund and resolution</a><a href="/track-order.html">Track your order</a></nav>
       </div>
     </div>
+    ${deeper}
   </div>${relatedHTML}<div id="reviewsMount"></div>`,p.id);
   const zoom=$('#pdetail').querySelector('[data-zoom-src]');
   if(zoom)zoom.onclick=event=>{const el=event.currentTarget;openImageLightbox(el.dataset.zoomSrc,el.dataset.zoomAlt);};
@@ -629,7 +634,7 @@ function productPageTitle(p){
 }
 function setProductMeta(p){
  const title=productPageTitle(p);
- const description=p.seoDescription||p.desc||'Compare the listed pack and order details at ChaskaBox Pakistan.';
+ const description=p.seoDescription||(window.ChaskaProductCopy?window.ChaskaProductCopy.summary(p.desc):p.desc)||'Compare the listed pack and order details at ChaskaBox Pakistan.';
  setPageMeta(title,productHref(p.id),false,description);setMetaTag('property','og:type','product');
  const photo=hasPhoto(p)?new URL(assetUrl(p.img),'https://chaskabox.online').href:'https://chaskabox.online/images/logo-approved-20261017.png';
  setMetaTag('property','og:image',photo);setMetaTag('name','twitter:image',photo);

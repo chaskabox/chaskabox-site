@@ -108,6 +108,7 @@
   }
 }
 </style>
+<script>/* Load the PDP stylesheet only on direct product entries; keep homepage critical CSS unchanged. */if(/^\/product\/\d+\/?$/.test(location.pathname)){var pdStyle=document.createElement("link");pdStyle.rel="stylesheet";pdStyle.href="/product-details-refresh.css?v=20261021-pdp1";pdStyle.dataset.pdpRefresh="1";document.head.append(pdStyle);}</script>
 <!-- Exact approved HQ category CSS inlined to avoid a secondary blocking request. -->
 <style id="cb-category-art-critical">
 /* High-resolution approved category photography, 9 × 192px frames, scoped to homepage only. */
@@ -590,7 +591,8 @@
 </script>
 <script defer src="/supabase-config.js?v=20261012-perf3"></script>
 <script defer src="/photo-manifest.js?v=20261020-current-photos2"></script>
-<script defer src="/app.js?v=20261021-category-art1"></script>
+<script defer src="/product-description-ui.js?v=20261021-pdp1"></script>
+<script defer src="/app.js?v=20261021-pdp1"></script>
 <script defer src="/home-hero-carousel.js?v=20261020-warm1"></script>
 <script defer src="/reviews-widget.js?v=20261014-final-readiness"></script>
 <script defer src="/account.js?v=20261021-auth2"></script>

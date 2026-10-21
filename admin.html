@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/admin-seo-center.css?v=20261021-seo-ai-1">
 <style>.agent-m05-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:12px;margin:14px 0}.agent-m05-grid .panel h3{margin:0 0 8px;color:var(--navy);font-size:15px}.agent-m05-grid .panel p{overflow-wrap:anywhere;font-size:12px}.agent-m05-grid .panel button{margin:6px}</style>
 <link rel="icon" type="image/png" sizes="48x48" href="/favicon.png?v=20261020-brand">
-<link rel="stylesheet" href="/admin-account-portal.css?v=20261021-portal1">
+<link rel="stylesheet" href="/admin-account-portal.css?v=20261021-portal1"><style>#loadSourceCopyBtn[hidden],#sourceCopyPreview[hidden]{display:none!important}.admin-copy-assist{border:1px solid #dce7ef;border-radius:12px;background:#f7fafc;padding:12px;margin:4px 0 16px}.admin-copy-assist-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.admin-copy-assist-head strong{font-size:14px}.admin-copy-assist p{font-size:12px;line-height:1.6;margin:8px 0 0}.admin-copy-preview{font:inherit;font-size:12px;white-space:pre-wrap;max-height:260px;overflow:auto;padding:12px;border:1px solid #dde7ef;border-radius:10px;background:#fff;margin:12px 0;overflow-wrap:anywhere}.admin-copy-assist a{color:#145c90;font-size:13px;display:inline-block;margin:6px 0}.admin-copy-assist [data-copy-status="good"]{color:#106746}.admin-copy-assist [data-copy-status="warn"]{color:#915c1e}@media(max-width:650px){.admin-copy-assist-head button{width:100%}}</style>
 </head>
 <body>
 <!-- Auth bootstrap gate: visible until admin-live.js verifies the staff session.
@@ -395,7 +395,7 @@ setTimeout(function(){
           <select id="productCategory"><option value="">All categories</option></select>
           <select id="productVisibility"><option value="">All products</option><option value="visible">Visible</option><option value="hidden">Hidden</option><option value="bundle">Chaska Boxes</option><option value="archived">Archived</option></select>
           <label class="admin-filter-control">Quality
-            <select id="productQuality" aria-label="Filter products by catalogue completeness"><option value="">Any quality</option><option value="missing_image">Missing image</option><option value="missing_seo">Missing SEO metadata</option></select>
+            <select id="productQuality" aria-label="Filter products by catalogue completeness"><option value="">Any quality</option><option value="missing_image">Missing image</option><option value="missing_seo">Missing SEO metadata</option><option value="description_review">Description needs review</option></select>
           </label>
           <label class="admin-filter-control">Sort current page
             <select id="productSort" aria-label="Sort loaded products"><option value="recent">Recently updated</option><option value="name_asc">Name A–Z</option><option value="name_desc">Name Z–A</option><option value="price_asc">Price low to high</option><option value="price_desc">Price high to low</option></select>
@@ -403,6 +403,7 @@ setTimeout(function(){
           <button class="btn" id="resetFiltersBtn" title="Clear search and catalogue filters">Reset</button>
           <button class="btn primary" id="addProductBtn">+ Add product</button>
         </div>
+        <p id="productCopyCoverage" role="status" aria-live="polite" style="margin:10px 0;font-size:13px;color:var(--muted)">Description & SEO quality will appear after the product catalogue loads.</p>
         <div class="bulkbar hidden" id="bulkBar"><b id="bulkCount">0 selected</b><button class="btn secondary" data-bulk="show">Show</button><button class="btn secondary" data-bulk="hide">Hide</button><button class="btn danger" data-bulk="archive">Archive</button><button class="btn secondary" data-bulk="restore">Restore archived</button><button class="text-btn" data-bulk="clear">Clear</button></div><p id="bulkFeedback" class="admin-action-feedback" role="status" aria-live="polite"></p>
         <div class="product-admin-grid" id="productAdminGrid"></div>
         <div class="pagination-row"><span id="productResultCount" role="status" aria-live="polite"></span><button class="btn secondary" id="loadMoreProducts">Load more</button></div>
@@ -763,7 +764,7 @@ setTimeout(function(){
         <div class="form-two"><label>Price (Rs.)<input id="editPrice" type="number" min="0" required></label><label>Old price (Rs.)<input id="editOldPrice" type="number" min="0"></label></div>
         <div class="form-two"><label>Category<select id="editCategory"></select></label><label>Pack / size<input id="editPack"></label></div>
         <div class="form-two"><label>Badge<select id="editBadge"><option value="">None</option><option>Sale</option><option>New</option><option>Chaska Pick</option><option>Limited</option></select></label><label>Visibility<select id="editVisibility"><option value="visible">Visible</option><option value="hidden">Hidden</option></select></label></div>
-        <div class="form-two"><label>Brand<input id="editBrand" maxlength="80"></label><label>Stock status<select id="editStock"><option value="sourced_after_order">Sourced after order</option><option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option></select></label></div><label>Tags (comma separated, max 20)<input id="editTags" maxlength="800"></label><label>Description<textarea id="editDescription" rows="5"></textarea></label>
+        <div class="form-two"><label>Brand<input id="editBrand" maxlength="80"></label><label>Stock status<select id="editStock"><option value="sourced_after_order">Sourced after order</option><option value="available">Available</option><option value="limited">Limited</option><option value="unavailable">Unavailable</option></select></label></div><label>Tags (comma separated, max 20)<input id="editTags" maxlength="800"></label><label>Product overview<textarea id="editDescription" rows="6" maxlength="2000" placeholder="Describe this exact product: what it is, its named flavour or type, and what the listed pack contains. Avoid guessed ingredients or claims."></textarea></label><div class="admin-copy-assist"><div class="admin-copy-assist-head"><strong>Detailed product description</strong><button type="button" class="btn secondary" id="productStructureTemplate">+ Add detail sections</button><button type="button" class="btn secondary" id="loadSourceCopyBtn" hidden>✦ Review researched draft</button></div><p class="muted">Every product uses the same store layout. Add only details confirmed by the pack or supplier. Sections: Highlights, Taste &amp; texture, Serving ideas, Ingredients, Allergens, Storage, Best before.</p><p id="productCopyQuality" role="status" aria-live="polite">Check the overview and add verified details before publishing.</p><div id="sourceCopyPreview" hidden><p><strong>Research-supported product draft</strong> — verify with the exact package before saving.</p><pre id="sourceCopyText" class="admin-copy-preview"></pre><p id="sourceCopyReviewNote" hidden></p><a id="sourceCopyLink" target="_blank" rel="noopener noreferrer">View research source ↗</a></div></div>
         <details class="seo-details" style="margin:12px 0;border:1px solid var(--border);border-radius:10px;padding:10px">
           <summary style="cursor:pointer;font-weight:700">🔍 SEO Settings</summary>
           <div style="margin-top:10px;display:grid;gap:10px">
@@ -832,6 +833,11 @@ setTimeout(function(){
 <script src="/admin-operations-forms.js?v=20261017-shipping-ops-v1" defer></script>
 <script type="module" src="/admin-account-portal.js?v=20261021-portal1"></script>
 <script src="/admin-live.js?v=20261021-seo-ai-1" defer></script>
+<script src="/admin-source-backed-product-copy.js?v=20261021-copy1" defer></script>
+<script src="/admin-source-backed-product-copy-batch2.js?v=20261021-copy2" defer></script>
+<script src="/admin-source-backed-product-copy-batch3.js?v=20261021-copy3" defer></script>
+<script src="/admin-product-copy-all-catalog-drafts.js?v=20261021-catalog1" defer></script>
+<script src="/admin-source-copy-controls.js?v=20261021-copy1" defer></script>
 <script src="/admin-agent-evidence.js?v=20261020-receipts1" defer></script>
 <script src="/admin-agents.js?v=20261020-receipts1" defer></script>
  <script src="/admin-agent-workbench.js?v=20261020-receipts1" defer></script>

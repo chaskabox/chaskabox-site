@@ -794,6 +794,27 @@
     return {q, cat, vis, quality, sort};
   }
   function renderFilteredProducts(){
+    const contentAudit=products.reduce((a,p)=>{
+      const copy=String(p.description||p.desc||'').trim();
+      const words=copy?copy.split(/\s+/).length:0;
+      const structured=/(?:^|\n)\s*(?:Highlights|Taste\s*&\s*texture|Serving ideas|Ingredients|Allergens|Storage|Best before)\s*:/im.test(copy);
+      if(words<55||!structured||/DRAFT TEXT:|\[add .*?\]|placeholder/i.test(copy))a.review++;
+      if(!String(p.seo_title||'').trim()||!String(p.seo_description||'').trim())a.seo++;
+      if(p.visibility==='visible')a.visible++;
+      return a;
+    },{review:0,seo:0,visible:0});
+    const coverage=$('#productCopyCoverage');
+    if(coverage){
+      const sourced=window.ChaskaSourceBackedCopy||{};
+      const draftGenerator=window.ChaskaDraftFromCatalog;
+      const prepared=products.reduce((result,p)=>{
+        const verified=sourced[p.id]&&String(sourced[p.id].name||'').trim()===String(p.name||'').trim();
+        if(verified){result.ready++;result.researched++;}
+        else if(typeof draftGenerator==='function'&&draftGenerator(p)){result.ready++;result.catalogOnly++;}
+        return result;
+      },{ready:0,researched:0,catalogOnly:0});
+      coverage.textContent=products.length+' loaded products · '+contentAudit.visible+' visible · '+contentAudit.review+' live descriptions need review · '+contentAudit.seo+' live SEO metadata missing. Prepared unpublished drafts: '+prepared.ready+'/'+products.length+' ('+prepared.researched+' source-linked, '+prepared.catalogOnly+' catalogue-based). Product copy requires verification and explicit release; nothing is bulk-published.';
+    }
     const {q, cat, vis, quality, sort}=getProductFilters();
     const normCat=s=>(s||'').trim();
     const filtered=products.filter(p=>{
@@ -807,6 +828,12 @@
       if(vis==='bundle' && !p.is_bundle) return false;
       if(quality==='missing_image' && String(p.image_url||'').trim())return false;
       if(quality==='missing_seo' && String(p.seo_title||'').trim() && String(p.seo_description||'').trim())return false;
+      if(quality==='description_review'){
+        const description=String(p.description||p.desc||'');
+        const detailed=/(?:^|\n)\s*(?:Highlights|Taste\s*&\s*texture|Ingredients|Allergens|Storage|Best before)\s*:/im.test(description);
+        const words=description.trim().split(/\s+/).filter(Boolean).length;
+        if(words>=55 && detailed && !/DRAFT TEXT:|delicious,?\s+flavou?rful,?\s+and/i.test(description))return false;
+      }
       return true;
     });
     // The protected API returns at most 1000 rows per page. Sorting here is
@@ -841,7 +868,7 @@
     const selector=$('#editCategory');
     const categories=[...new Set(products.map(p=>String(p.category||'').trim()).filter(Boolean))];
     for(const category of categories) if(selector && ![...selector.options].some(o=>o.value===category)) selector.add(new Option(category,category));
-    const p=products.find(x=>String(x.id)===String(id)); if(!p)return; $('#editProductId').value=p.id;$('#editName').value=p.name||'';$('#editPrice').value=p.price||'';$('#editOldPrice').value=p.old_price||'';$('#editCategory').value=p.category||'';$('#editPack').value=p.pack||'';$('#editBadge').value=p.badge||'';$('#editVisibility').value=p.visibility==='visible'?'visible':'hidden';$('#editDescription').value=p.description||'';$('#editImage').value=p.image_url||'';$('#editBundle').checked=!!p.is_bundle;
+    const p=products.find(x=>String(x.id)===String(id)); if(!p)return; $('#editProductId').value=p.id;$('#editName').value=p.name||'';$('#editPrice').value=p.price||'';$('#editOldPrice').value=p.old_price||'';$('#editCategory').value=p.category||'';$('#editPack').value=p.pack||'';$('#editBadge').value=p.badge||'';$('#editVisibility').value=p.visibility==='visible'?'visible':'hidden';$('#editDescription').value=p.description||'';$('#editDescription').dispatchEvent(new Event('input',{bubbles:true}));$('#editImage').value=p.image_url||'';$('#editBundle').checked=!!p.is_bundle;
     $('#editBrand').value=p.brand||'';$('#editStock').value=p.stock_state||'sourced_after_order';$('#editTags').value=(p.tags||[]).join(', ');
     $('#editSeoTitle').value=p.seo_title||'';$('#editSeoDesc').value=p.seo_description||'';$('#editOgImage').value=p.og_image||'';$('#editCanonical').value=p.canonical_url||'';
     $('#productEditorTitle').textContent='Edit '+p.name;$('#productEditor').classList.add('open');$('#productEditor').setAttribute('aria-hidden','false');
@@ -912,17 +939,45 @@
 
   function wireLiveProductEditor(){
     const form=$('#productForm'); if(!form)return; form.addEventListener('submit',async e=>{if(!me||!roleAllows('owner','manager','content'))return;e.preventDefault();e.stopImmediatePropagation();const id=$('#editProductId').value;const body={name:$('#editName').value.trim(),price:Number($('#editPrice').value||0),old_price:$('#editOldPrice').value?Number($('#editOldPrice').value):null,category:$('#editCategory').value,pack:$('#editPack').value.trim(),badge:$('#editBadge').value,description:$('#editDescription').value.trim(),image_url:$('#editImage').value.trim(),visibility:$('#editVisibility').value,brand:$('#editBrand').value.trim(),stock_state:$('#editStock').value,tags:$('#editTags').value.split(',').map(t=>t.trim()).filter(Boolean),seo_title:$('#editSeoTitle').value.trim()||null,seo_description:$('#editSeoDesc').value.trim()||null,og_image:$('#editOgImage').value.trim()||null,canonical_url:$('#editCanonical').value.trim()||null};try{const saved=id?await api(`/api/admin/products/${id}`,{method:'PATCH',body}):await api('/api/admin/products',{method:'POST',body});const savedId=saved?.product?.id||id;toast('Product saved');$('#productEditor').classList.remove('open');await loadProducts();}catch(x){toast(x.message)}},true);
+    // Guided content editor: old descriptions stay intact until a staff member saves.
+    const descField=$('#editDescription'),qualityField=$('#productCopyQuality');
+    const assessDescription=()=>{
+      if(!descField||!qualityField)return;
+      const text=descField.value.trim();const words=text?text.split(/\s+/).length:0;
+      const sections=(text.match(/(?:^|\n)\s*(?:Highlights|Taste\s*&\s*texture|Serving ideas|Ingredients|Allergens|Storage|Best before)\s*:/gim)||[]).length;
+      const draft=/DRAFT TEXT:|\[add .*?\]|placeholder/i.test(text);
+      const enough=words>=55 && !draft;
+      qualityField.dataset.copyStatus=enough?'good':'warn';
+      qualityField.textContent=words+' words · '+sections+' optional detail sections · '+(draft?'Remove draft/placeholder text before publishing.':!text?'Add a factual product overview.':words<55?'Add product-specific details from the pack or supplier.':'Overview ready for review. Verify every claim before saving.');
+    };
+    descField?.addEventListener('input',assessDescription);
+    $('#productStructureTemplate')?.addEventListener('click',()=>{
+      if(!descField)return;
+      const existing=descField.value.trim();
+      const headings=['Highlights:','Taste & texture:','Serving ideas:','Ingredients:','Allergens:','Storage:','Best before:'];
+      const missing=headings.filter(h=>!existing.split('\n').some(line=>line.trim().toLowerCase().startsWith(h.toLowerCase())));
+      if(!missing.length){toast('Detail sections already present');return;}
+      descField.value=(existing?existing+'\n\n':'')+missing.join('\n\n')+'\n';
+      descField.focus();descField.dispatchEvent(new Event('input',{bubbles:true}));
+      toast('Section headings added. Only verified details will appear on the store.');
+    });
+    assessDescription();
     // Inline AI: improve description
     $('#aiImproveProduct')?.addEventListener('click',async()=>{
       const name=$('#editName').value.trim();
       if(!name){toast('Enter product name first');return;}
       const btn=$('#aiImproveProduct'); const old=btn.textContent; btn.disabled=true; btn.textContent='✦ Thinking…';
       try{
-        const data=await api('/api/admin/ai',{method:'POST',body:{task:'product_description',context:{instructions:`Write a concise appetizing description (40-70 words) for: ${name}, ${$('#editCategory').value}, ${$('#editPack').value}. Roman Urdu-friendly tone.`}}});
-        const draft=data.draft||'';
-        if(confirm(`AI suggestion:\n\n${draft.slice(0,400)}\n\nUse this description? (You can edit it after)`)){
+        const currentId=Number($('#editProductId').value||0);
+        const context={name,brand:$('#editBrand').value.trim(),category:$('#editCategory').value,pack:$('#editPack').value.trim(),description:$('#editDescription').value.trim().slice(0,1000),instructions:'Draft 80-130 words: factual overview, verified Highlights and optional Serving ideas. Do not invent ingredients, allergens, nutrition or sensory claims. Avoid repeating pack wording. Return description only.'};
+        if(Number.isSafeInteger(currentId)&&currentId>0)context.product_id=currentId;
+        const data=await api('/api/admin/ai',{method:'POST',body:{task:'product_description',context}});
+        const draft=String(data.draft||'').replace(/^\s*DRAFT(?: TEXT)?\s*:\s*/i,'').trim();
+        if(!draft||draft.length>2000){toast('AI draft needs review or exceeds the 2000-character product limit');return;}
+        if(confirm(`Review AI description (not published):\n\n${draft.slice(0,1300)}\n\nInsert draft into editor? Verify factual claims before saving.`)){
           $('#editDescription').value=draft;
-          toast('Description updated — review and Save');
+          $('#editDescription').dispatchEvent(new Event('input',{bubbles:true}));
+          toast('AI draft inserted only — verify facts and SEO, then Save');
         }
       }catch(e){toast(e.message||'AI unavailable');}
       finally{btn.disabled=false;btn.textContent=old;}
