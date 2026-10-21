@@ -59,7 +59,7 @@ test('flavour stays in SEO title for long named variants',()=>{
 
 test('all-source preview loads researched then safe catalog-based fallbacks without auto-saving',()=>{
  const html=read('admin.html');
- const paths=['admin-source-backed-product-copy.js','admin-source-backed-product-copy-batch2.js','admin-product-copy-all-catalog-drafts.js','admin-source-copy-controls.js'];
+ const paths=['admin-source-backed-product-copy.js','admin-source-backed-product-copy-batch2.js','admin-source-backed-product-copy-batch3.js','admin-product-copy-all-catalog-drafts.js','admin-source-copy-controls.js'];
  let prev=0;for(const path of paths){const offset=html.indexOf('src="/'+path);assert.ok(offset>prev, 'ordered script '+path);prev=offset;}
  const controls=read('admin-source-copy-controls.js');
  assert.match(controls,/ChaskaDraftFromCatalog/);
