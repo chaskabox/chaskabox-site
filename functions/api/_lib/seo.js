@@ -1,4 +1,5 @@
 // Shared, conservative SEO helpers for server-rendered product pages.
+import {descriptionSummary} from './product-description.js';
 // Only declare inventory when the stock state explicitly supports it.
 export const CATEGORY_PATHS = Object.freeze({
   'Biscuits & Wafers': '/category/biscuits-and-wafers/',
@@ -58,7 +59,7 @@ export function productSchema(p, canonical, photo) {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: String(p.name || ''),
-    description: String(p.description || p.seo_description || ('Buy ' + p.name + ' online from ChaskaBox Pakistan.')),
+    description: String(descriptionSummary(p.description) || p.seo_description || ('Buy ' + p.name + ' online from ChaskaBox Pakistan.')),
     sku: String(p.id),
     url: canonical,
     ...(brand ? { brand: { '@type': 'Brand', name: brand } } : {}),
