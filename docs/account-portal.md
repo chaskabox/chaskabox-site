@@ -21,3 +21,7 @@ Apply only the additive `account_portal_admin_controls` migration before releasi
 - The complete-schema database tests exercise RLS, owner/MFA enforcement, foreign-address rejection, stale edits, unique defaults and transaction rollback when audit insertion fails.
 
 No live customer accounts are changed for acceptance testing. Auth delivery and customer sign-in still depend on the configured Supabase service and email provider.
+
+Signup requires name, phone, email and a password of at least eight characters. Confirmation feedback is informational and does not disclose whether an email already has an account. Existing customers can continue to password sign-in or reset their password with their email prefilled. Unconfirmed customers can explicitly request another confirmation link, with a 60-second cooldown. Signup and resend links return to `/account/`; no automatic email retries or account verification bypasses are introduced.
+
+- [Supabase: Signup](https://supabase.com/docs/reference/javascript/auth-signup) and [resend confirmation](https://supabase.com/docs/reference/javascript/auth-resend): preserve generic duplicate-signup responses and use the official confirmation flow.

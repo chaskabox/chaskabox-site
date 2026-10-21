@@ -32,23 +32,24 @@ async function toggleAccount(){
   if(ACCOUNT_SESSION){ location.href='/account/'; return; }
   openAuthModal('signin');
 }
-function openAuthModal(mode='signin'){
+function openAuthModal(mode='signin',email=''){
   const m=document.getElementById('acctmodal'), b=document.getElementById('abody'); if(!m||!b)return;
   // Choosing normal sign-in cancels a previous recovery flow, including expired links.
   ACCOUNT_RECOVERY=false;try{sessionStorage.removeItem('cb_password_recovery');if(new URLSearchParams(location.hash.slice(1)).get('type')==='recovery')history.replaceState(null,'',location.pathname+location.search);}catch{}
   const signup=mode==='signup';
   b.innerHTML=`<div class="auth-card"><span class="eyebrow">${signup?'CREATE ACCOUNT':'WELCOME BACK'}</span><h2>${signup?'Create your ChaskaBox account':'Sign in'}</h2><p class="amut">Track orders and save your details securely.</p>
-  <form id="authForm">${signup?'<label>Full name<input id="authName" autocomplete="name" required minlength="2" maxlength="100"></label><label>Phone (optional)<input id="authPhone" inputmode="tel" autocomplete="tel" maxlength="25"></label>':''}
-  <label>Email<input id="authEmail" type="email" autocomplete="email" required maxlength="254"></label><label>Password<input id="authPass" type="password" autocomplete="${signup?'new-password':'current-password'}" required ${signup?'minlength="8"':''}></label>
+  <form id="authForm">${signup?'<p class="account-note">All four fields are required.</p><label>Full name<input id="authName" autocomplete="name" required minlength="2" maxlength="100"></label><label>Phone number<input id="authPhone" type="tel" inputmode="tel" autocomplete="tel" required minlength="7" maxlength="25"></label>':''}
+  <label>Email<input id="authEmail" type="email" autocomplete="email" required maxlength="254" value="${aesc(typeof email==='string'?email:'')}"></label><label>Password<input id="authPass" type="password" autocomplete="${signup?'new-password':'current-password'}" required ${signup?'minlength="8"':''}></label>
   <div id="authErr" class="order-error" role="alert" hidden></div><button type="submit" class="cta" id="authSubmit">${signup?'Create account':'Sign in'}</button></form>
   <button type="button" class="text-btn" id="authSwitch">${signup?'Already have an account? Sign in':'New here? Create account'}</button></div>`;
   prepareAccountModal(m);
   // Move keyboard focus into the modal for accessibility
   setTimeout(()=>{ const f=b.querySelector('input'); if(f) f.focus(); },50);
-  if(!signup){const reset=document.createElement('button');reset.className='text-btn';reset.type='button';reset.textContent='Forgot password?';reset.onclick=openResetRequest;b.querySelector('.auth-card').append(reset);}
-  document.getElementById('authSwitch').onclick=()=>openAuthModal(signup?'signin':'signup');
+  if(!signup){const reset=document.createElement('button');reset.className='text-btn';reset.type='button';reset.textContent='Forgot password?';reset.onclick=()=>openResetRequest(document.getElementById('authEmail').value.trim());b.querySelector('.auth-card').append(reset);}
+  document.getElementById('authSwitch').onclick=()=>openAuthModal(signup?'signin':'signup',document.getElementById('authEmail').value.trim());
   document.getElementById('authForm').onsubmit=async event=>{
     event.preventDefault();
+    if(!event.currentTarget.reportValidity())return;
     const email=document.getElementById('authEmail').value.trim(), password=document.getElementById('authPass').value;
     const err=document.getElementById('authErr'),submit=document.getElementById('authSubmit');if(submit.disabled)return;submit.disabled=true;err.hidden=true;
     try{
@@ -56,17 +57,37 @@ function openAuthModal(mode='signin'){
       let res;
       if(signup){
         const name=document.getElementById('authName').value.trim(), phone=document.getElementById('authPhone').value.trim();
-        const {profileInput}=await import('/account-portal-contract.js?v=20261021-portal1');profileInput({name,phone});
-        res=await SB.auth.signUp({email,password,options:{data:{name,phone}}});
+        const {profileInput}=await import('/account-portal-contract.js?v=20261021-auth2');profileInput({name,phone},{requirePhone:true});
+        if(!password.trim())throw new Error('Enter a password with at least 8 characters.');
+        res=await SB.auth.signUp({email,password,options:{data:{name,phone},emailRedirectTo:location.origin+'/account/'}});
         if(res.error) throw res.error;
         if(res.data?.session&&res.data.user){const saved=await SB.from('profiles').upsert({id:res.data.user.id,name,phone,updated_at:new Date().toISOString()});if(saved.error)throw new Error('Account created, but profile save failed. Sign in and save your profile again.');}
-        if(!res.data?.session){err.textContent='If confirmation is required, check your email before signing in.';err.hidden=false;return;}
+        if(!res.data?.session){openAuthConfirmation(email,60);return;}
       }else{
         res=await SB.auth.signInWithPassword({email,password}); if(res.error) throw res.error;
       }
       closeAuthModal(); const {data}=await SB.auth.getSession(); ACCOUNT_SESSION=data?.session||null;if(document.getElementById('acctbody'))renderAccountView();else location.href='/account/';
-    }catch(e){err.textContent=e.message||'Could not continue.';err.hidden=false;}finally{submit.disabled=false;}
+    }catch(e){if(!signup&&e.code==='email_not_confirmed'){openAuthConfirmation(email);return;}err.textContent=e.code==='invalid_credentials'?'Email or password is incorrect. Use your existing account password, or choose Forgot password.':e.message||'Could not continue.';err.hidden=false;}finally{submit.disabled=false;}
   };
+}
+function openAuthConfirmation(email,waitSeconds=0){
+ const m=document.getElementById('acctmodal'),b=document.getElementById('abody');if(!m||!b)return;
+ b.innerHTML='<div class="auth-card"><span class="eyebrow">ACCOUNT ACCESS</span><h2>Check your email or sign in</h2><div class="account-notice" role="status">If this is a new account, open the confirmation link in your email. Already verified? Sign in with your existing password; a new confirmation email is not needed.</div><button type="button" class="cta" id="authContinueSignIn">Sign in</button><button type="button" class="text-btn" id="authResend">Resend confirmation email</button><div id="authConfirmationStatus" class="account-feedback" role="status" aria-live="polite">No email? Check spam and confirm you entered the right address.</div><button type="button" class="text-btn" id="authResetPassword">Forgot password?</button></div>';
+ prepareAccountModal(m);
+ document.getElementById('authContinueSignIn').onclick=()=>openAuthModal('signin',email);
+ document.getElementById('authResetPassword').onclick=()=>openResetRequest(email);
+ const resend=document.getElementById('authResend'),status=document.getElementById('authConfirmationStatus');
+ const cooldown=seconds=>{resend.disabled=true;resend.textContent='Resend available after '+seconds+' seconds';setTimeout(()=>{if(resend.isConnected){resend.disabled=false;resend.textContent='Resend confirmation email';}},seconds*1000);};
+ if(waitSeconds)cooldown(waitSeconds);
+ resend.onclick=async()=>{
+  if(resend.disabled)return;cooldown(60);status.dataset.error='false';status.textContent='Requesting confirmation…';
+  try{
+   if(!(await initSupabase())||!SB)throw new Error('Account service unavailable.');
+   const {error}=await SB.auth.resend({type:'signup',email,options:{emailRedirectTo:location.origin+'/account/'}});if(error)throw error;
+   status.textContent='If this address has an unconfirmed account, a confirmation link will arrive. Already verified? Sign in or reset your password.';
+  }catch(e){status.dataset.error='true';status.textContent=e.message||'Confirmation request failed. Please try again after a minute.';}
+ };
+ document.getElementById('authContinueSignIn').focus();
 }
 async function renderAccountView(){
  if(!document.getElementById('acctbody'))return;
