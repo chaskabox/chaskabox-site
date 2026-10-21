@@ -30,7 +30,7 @@
       if(/^https:\/\//.test(match.source)){
         link.hidden=false;
         link.href=match.source;
-        link.textContent=match.source.includes('hilalfoods.com.pk')||match.source.includes('mayfair')?"View manufacturer product information ↗":"View retailer product information ↗";
+        link.textContent=/^https:\/\/(?:www\.)?(?:hilalfoods\.com\.pk|mayfairfood\.com|mayfair\.com\.pk|winnerfoods\.com\.pk|shahi\.pk)\//.test(match.source)?"View manufacturer product information ↗":"View retailer product information ↗";
       }else{link.hidden=true;link.removeAttribute('href');link.textContent='Based on internal catalogue fields';}
     }
     apply.addEventListener('click',()=>{
