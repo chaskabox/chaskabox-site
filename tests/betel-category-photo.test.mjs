@@ -20,7 +20,7 @@ test('Homepage entry routes use fresh version of common category renderer',()=>{
   const pages=["index.html","shop/index.html","brands/index.html","bundles/index.html","category/betel-nuts-and-pan-masala/index.html","category/biscuits-and-wafers/index.html","category/bunties-and-cakes/index.html","category/chews-and-gums/index.html","category/chocolates-and-candies/index.html","category/imli-and-ice-lollies/index.html","category/jellies-and-marshmallow/index.html","category/snacks-and-nimco/index.html"];
   for(const page of pages){
     const html=file(page).toString('utf8');
-    assert.match(html,/\/app\.js\?v=20261021-pdp1/,page);
+    assert.match(html,/\/app\.js\?v=20261021-canonical1/,page);
     assert.equal((html.match(/<link[^>]*rel="stylesheet"/g)||[]).length,1,page+' must retain one blocking stylesheet');
   }
 });

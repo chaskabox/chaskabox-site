@@ -9,13 +9,16 @@ export async function onRequestGet({ env }) {
   try {
     const rows=[];
     for(let page=0;page<100;page++){
-      const chunk=await sbRequest(env,'/public_products',{query:'?select=id,brand,pack,updated_at,image_url&order=id.asc&limit=500&offset='+page*500});
+      const chunk=await sbRequest(env,'/public_products',{query:'?select=id,brand,pack,updated_at,image_url,canonical_url&order=id.asc&limit=500&offset='+page*500});
       if(!Array.isArray(chunk))throw Error('Invalid public catalogue');
       rows.push(...chunk);
       if(chunk.length<500)break;
       if(page===99)throw Error('Public catalogue exceeds sitemap pagination limit');
     }
-    const urls = (rows || []).map(p => {
+    const urls = (rows || []).filter(p=>{
+      const external=String(p.canonical_url||'').trim();
+      return !/^https:\/\/chaskabox\.online\/product\/[1-9]\d*\/$/.test(external)||external===`https://chaskabox.online/product/${p.id}/`;
+    }).map(p => {
       const date = validLastmod(p.updated_at);
       const lastmod = date ? `<lastmod>${date}</lastmod>` : '';
       const validImage = productImage(cataloguePhoto(p), LOCAL_PHOTOS);

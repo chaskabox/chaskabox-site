@@ -489,7 +489,7 @@ function shopSearchKey(event){
   else if(event.key==='Escape'&&box){box.hidden=true;shopSuggestIndex=-1;}
 }
 let smartSearchSeq=0, smartSearchTimer;
-function serverProductToLocal(p){return {id:Number(p.id),name:p.name||'',category:p.category||'',brand:p.brand||'',pack:p.pack||'',price:Number(p.price||0),oldPrice:(p.old_price??p.oldPrice)==null?null:Number(p.old_price??p.oldPrice),desc:p.description??p.desc??'',badge:p.badge||'',img:p.image_url??p.img??'',photoNote:p.image_warning??p.photoNote??'',stockState:p.stock_state??p.stockState??'sourced_after_order',bundle:!!(p.is_bundle??p.bundle),seoTitle:p.seo_title??p.seoTitle??'',seoDescription:p.seo_description??p.seoDescription??'',bundleContents:p.bundle_contents??p.bundleContents??[],retailValue:p.bundle_retail_value??p.retailValue??null,bundleSavings:p.bundle_savings??p.bundleSavings??null,bundleNote:p.bundle_warning??p.bundleNote??''};}
+function serverProductToLocal(p){return {id:Number(p.id),name:p.name||'',category:p.category||'',brand:p.brand||'',pack:p.pack||'',price:Number(p.price||0),oldPrice:(p.old_price??p.oldPrice)==null?null:Number(p.old_price??p.oldPrice),desc:p.description??p.desc??'',badge:p.badge||'',img:p.image_url??p.img??'',photoNote:p.image_warning??p.photoNote??'',stockState:p.stock_state??p.stockState??'sourced_after_order',bundle:!!(p.is_bundle??p.bundle),seoTitle:p.seo_title??p.seoTitle??'',seoDescription:p.seo_description??p.seoDescription??'',canonicalUrl:p.canonical_url??p.canonicalUrl??'',bundleContents:p.bundle_contents??p.bundleContents??[],retailValue:p.bundle_retail_value??p.retailValue??null,bundleSavings:p.bundle_savings??p.bundleSavings??null,bundleNote:p.bundle_warning??p.bundleNote??''};}
 async function renderSmartSearchResults(query,seq){
   try{
     try{ sessionStorage.setItem('cb_last_search',query); }catch(e){}
@@ -635,10 +635,12 @@ function productPageTitle(p){
 function setProductMeta(p){
  const title=productPageTitle(p);
  const description=p.seoDescription||(window.ChaskaProductCopy?window.ChaskaProductCopy.summary(p.desc):p.desc)||'Compare the listed pack and order details at ChaskaBox Pakistan.';
- setPageMeta(title,productHref(p.id),false,description);setMetaTag('property','og:type','product');
+ const reviewedCanonical=String(p.canonicalUrl||'').trim();
+ const canonical=/^https:\/\/chaskabox\.online\/product\/[1-9]\d*\/$/.test(reviewedCanonical)?reviewedCanonical:'https://chaskabox.online'+productHref(p.id);
+ setPageMeta(title,new URL(canonical).pathname,false,description);setMetaTag('property','og:type','product');
  const photo=hasPhoto(p)?new URL(assetUrl(p.img),'https://chaskabox.online').href:'https://chaskabox.online/images/logo-approved-20261017.png';
  setMetaTag('property','og:image',photo);setMetaTag('name','twitter:image',photo);
- const canonical='https://chaskabox.online'+productHref(p.id),offer={'@type':'Offer',url:canonical,priceCurrency:'PKR',price:String(p.price),seller:{'@type':'Organization',name:'ChaskaBox'}};
+ const offer={'@type':'Offer',url:canonical,priceCurrency:'PKR',price:String(p.price),seller:{'@type':'Organization',name:'ChaskaBox'}};
  const availability={available:'InStock',limited:'LimitedAvailability',unavailable:'OutOfStock'}[p.stockState];if(availability)offer.availability='https://schema.org/'+availability;
  const schema={'@context':'https://schema.org','@type':'Product',name:p.name,description,sku:String(p.id),url:canonical,...(String(p.brand||'').trim()?{brand:{'@type':'Brand',name:String(p.brand).trim()}}:{}),...(hasPhoto(p)?{image:[photo]}:{}),...(Number.isFinite(Number(p.price))&&Number(p.price)>=0?{offers:offer}:{})};
  for(const [id,data] of [['product-schema',schema],['breadcrumb-schema',{'@context':'https://schema.org','@type':'BreadcrumbList',itemListElement:[{'@type':'ListItem',position:1,name:'Home',item:'https://chaskabox.online/'},{'@type':'ListItem',position:2,name:p.category||'Shop',item:'https://chaskabox.online'+categoryPath(p.category)},{'@type':'ListItem',position:3,name:p.name,item:canonical}]}]]){
