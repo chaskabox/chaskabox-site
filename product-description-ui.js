@@ -19,7 +19,7 @@
   }
   function summary(raw){
     var s=(parse(raw).overview||'').trim();
-    if(!s)return 'See pack details below. Contact ChaskaBox for product-label information before ordering.';
+    if(!s)return 'See pack details below. Contact ChaskaBox if you need product-label information before ordering.';
     var match=s.match(/^.{1,235}?(?:[.!?](?=\s|$)|$)/s);
     return match?match[0].trim():s.slice(0,220).trim();
   }
