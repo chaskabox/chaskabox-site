@@ -801,6 +801,17 @@
     return {q, cat, vis, quality, sort};
   }
   function renderFilteredProducts(){
+    const contentAudit=products.reduce((a,p)=>{
+      const copy=String(p.description||p.desc||'').trim();
+      const words=copy?copy.split(/\s+/).length:0;
+      const structured=/(?:^|\n)\s*(?:Highlights|Taste\s*&\s*texture|Serving ideas|Ingredients|Allergens|Storage|Best before)\s*:/im.test(copy);
+      if(words<55||!structured||/DRAFT TEXT:|\[add .*?\]|placeholder/i.test(copy))a.review++;
+      if(!String(p.seo_title||'').trim()||!String(p.seo_description||'').trim())a.seo++;
+      if(p.visibility==='visible')a.visible++;
+      return a;
+    },{review:0,seo:0,visible:0});
+    const coverage=$('#productCopyCoverage');
+    if(coverage){coverage.textContent=products.length+' loaded products · '+contentAudit.visible+' visible · '+contentAudit.review+' descriptions need review · '+contentAudit.seo+' missing SEO metadata. Results reflect loaded catalogue only; product changes require explicit Save.';}
     const {q, cat, vis, quality, sort}=getProductFilters();
     const normCat=s=>(s||'').trim();
     const filtered=products.filter(p=>{
