@@ -8,10 +8,11 @@ test('Redesigned sidebar exposes desktop focus mode, navigation group controls a
   const s=read(path);
   for(const id of ['adminSidebarCollapse','adminSidebarRestore','adminExpandGroups','adminCollapseGroups','adminPinnedLinks','adminPinnedCount','adminPinCurrent','adminPinFromSidebar','adminNavSearch','sidebarToggle','sidebarBackdrop'])
    assert.ok(s.includes('id="'+id+'"'),path+' missing '+id);
-  assert.match(s,/admin-v4-sidebar\.js\?v=20261017-nav2/);
+  assert.match(s,/admin-v4-sidebar\.js\?v=20261021-simplified-sidebar1/);
   assert.equal((s.match(/<details class="admin-nav-group"/g)||[]).length,6);
   assert.equal((s.match(/class="admin-nav-btn/g)||[]).length,path==='admin.html'?28:25);
   assert.match(s,/id="adminNavGroups" aria-label="Admin sections"/);
+  assert.match(s,/<details class="admin-nav-preferences">/);
  }
 });
 test('Pinned shortcuts are local-only and constrained to authenticated, visible panels',()=>{

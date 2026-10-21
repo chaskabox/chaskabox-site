@@ -570,3 +570,40 @@ html,body{overflow-x:clip}
 #themePreviewStatus{color:#3d587d;font-size:12px}
 @media(max-width:850px){.storefront-control-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:500px){.storefront-control-actions{grid-template-columns:1fr}.admin-theme-preview-actions select{width:100%}.admin-theme-frame{padding:5px}}
+
+
+/* Admin sidebar simplification (2026-10-21): quick access instead of a nested
+   scrolling pin manager; advanced controls stay available in a disclosure. */
+.admin-shell .admin-sidebar{background:#fbfcff}
+.admin-shell .admin-nav-search{position:relative;z-index:6;padding:2px 7px 11px}
+.admin-nav-search-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 2px 7px}
+.admin-nav-search-head>label{margin:0;color:#576d8d}
+.admin-nav-preferences{position:relative;flex:0 0 auto}
+.admin-nav-preferences>summary{display:flex;align-items:center;gap:4px;list-style:none;border-radius:8px;color:#355780;background:transparent;padding:5px 7px;font-size:11px;font-weight:750;cursor:pointer}
+.admin-nav-preferences>summary::-webkit-details-marker{display:none}
+.admin-nav-preferences>summary:hover,.admin-nav-preferences[open]>summary{background:#eaf0f9}
+.admin-nav-preferences>summary:focus-visible{outline:3px solid #4779cc;outline-offset:2px}
+.admin-nav-preferences .admin-sidebar-controls{position:absolute;top:calc(100% + 7px);right:0;display:grid;grid-template-columns:1fr;gap:5px;width:205px;margin:0;padding:9px;background:#fff;border:1px solid #d7e1ef;border-radius:12px;box-shadow:0 14px 30px rgba(21,43,80,.16);z-index:10}
+.admin-nav-preferences .admin-sidebar-controls button{display:block;width:100%;min-height:41px;flex:none;text-align:left;background:#fff;border:0;padding:9px 11px;color:#29466d;font-size:12px;border-radius:8px}
+.admin-nav-preferences .admin-sidebar-controls button:hover{background:#edf3fc}
+.admin-nav-preferences .admin-sidebar-controls #adminPinFromSidebar[aria-pressed="true"]{background:#fff4db;color:#74510b}
+.admin-shell .admin-nav-search-field{min-height:42px;background:#fff;border-radius:11px}
+.admin-shell .admin-pinned{margin:0 7px 11px;padding:2px 2px 9px;border:0;border-bottom:1px solid #e4ebf4;border-radius:0;background:transparent;max-height:none;min-height:0;overflow:visible}
+.admin-pinned-head{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:8px;padding:0 3px 8px;font-size:11px;color:#3c5171}
+.admin-pinned-head strong{font-size:11px;letter-spacing:.015em}
+.admin-pinned-head #adminPinnedCount{flex:0 0 auto;border:1px solid #e0e8f3;border-radius:999px;padding:3px 7px;background:#f3f6fb;font-size:10px;color:#556783}
+.admin-pinned-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.admin-pinned-jump{display:block;min-width:0;width:100%;min-height:41px;max-height:41px;border:1px solid #dfe6f0;border-radius:9px;background:#fff;color:#294569;font-size:11px;font-weight:750;line-height:1.25;text-align:left;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;padding:8px 9px}
+.admin-pinned-jump:hover{background:#eef4ff;border-color:#b9cde9}
+.admin-pinned-jump[aria-current="page"]{background:#e8f0ff;border-color:#96b4e3;color:#163f80;box-shadow:inset 3px 0 0 #315caf}
+.admin-pinned-empty{grid-column:1/-1;padding:4px 3px;color:#596a82}
+.admin-shell .admin-nav{overflow-y:auto;overflow-x:hidden;scrollbar-gutter:auto;overscroll-behavior:contain;padding:0 4px 12px}
+.admin-shell .admin-nav-group{padding:3px 0;margin:0;border-color:#edf1f7}
+.admin-shell .admin-nav-group>summary{min-height:40px;padding:8px 10px;font-size:11px;letter-spacing:.04em;border-radius:9px}
+.admin-shell .admin-nav-group[open]>summary{background:#ecf2fa;color:#1b3f76}
+.admin-shell .admin-nav-group-links{padding:2px 0 7px;gap:2px}
+.admin-shell .admin-nav-btn{min-height:41px;padding:8px 10px;border-radius:9px}
+.admin-shell .admin-nav-btn.active,.admin-shell .admin-nav-btn[aria-current="page"]{background:#e4edfd;box-shadow:inset 3px 0 0 #315caf}
+.admin-shell .admin-sidebar-foot{background:#fbfcff;padding:10px 5px 4px}
+@media(max-width:900px){.admin-shell .admin-pinned{max-height:none;overflow:visible}.admin-nav-preferences .admin-sidebar-controls button{min-height:44px}}
+@media(prefers-reduced-motion:reduce){.admin-nav-preferences>summary,.admin-pinned-jump{transition:none}}

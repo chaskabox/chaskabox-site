@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex,nofollow">
 <meta name="referrer" content="no-referrer">
 <title>ChaskaBox Admin Console</title>
-<link rel="stylesheet" href="/admin.css?v=20261016-admin-v4-shell1">
+<link rel="stylesheet" href="/admin.css?v=20261021-simplified-sidebar1">
  <link rel="stylesheet" href="/admin-agent-workbench.css?v=20261015-agent-workbench1">
 <link rel="stylesheet" href="/admin-seo-center.css?v=20261019-phase5">
 <style>.agent-m05-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(265px,1fr));gap:12px;margin:14px 0}.agent-m05-grid .panel h3{margin:0 0 8px;color:var(--navy);font-size:15px}.agent-m05-grid .panel p{overflow-wrap:anywhere;font-size:12px}.agent-m05-grid .panel button{margin:6px}</style>
@@ -45,15 +45,17 @@ setTimeout(function(){
       <button type="button" id="adminSidebarCollapse" class="admin-sidebar-collapse" aria-label="Hide sidebar to focus on content" title="Hide sidebar (desktop) or close menu (mobile)">«</button>
     </div>
     <div class="admin-nav-search">
-      <label for="adminNavSearch">Find a panel</label>
+      <div class="admin-nav-search-head"><label for="adminNavSearch">Navigation</label><details class="admin-nav-preferences"><summary aria-label="Navigation options">⚙ Options</summary>
+        <div class="admin-sidebar-controls" role="group" aria-label="Navigation groups">
+          <button type="button" id="adminExpandGroups" title="Open every section">Expand sections</button>
+          <button type="button" id="adminCollapseGroups" title="Close every section">Collapse sections</button>
+          <button type="button" id="adminPinFromSidebar" aria-pressed="false" title="Pin or unpin the open panel">＋ Pin</button>
+        </div>
+      </details></div>
       <div class="admin-nav-search-field"><span aria-hidden="true"><svg class="cb-icon" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg></span><input type="search" id="adminNavSearch" placeholder="Search panels…" autocomplete="off" aria-controls="adminNavGroups"></div>
     </div>
-    <div class="admin-sidebar-controls" role="group" aria-label="Navigation groups">
-      <button type="button" id="adminExpandGroups" title="Show every section">Expand all</button>
-      <button type="button" id="adminCollapseGroups" title="Hide every section">Collapse all</button>
-    </div>
     <section class="admin-pinned" aria-labelledby="adminPinnedTitle">
-      <div class="admin-pinned-head"><strong id="adminPinnedTitle">★ Pinned panels</strong><span id="adminPinnedCount">0 / 6</span><button type="button" id="adminPinFromSidebar" aria-pressed="false" title="Pin or unpin the open panel">＋ Pin</button></div>
+      <div class="admin-pinned-head"><strong id="adminPinnedTitle">★ Quick access</strong><span id="adminPinnedCount" aria-live="polite">0 / 6</span></div>
       <div id="adminPinnedLinks" class="admin-pinned-links"><p class="admin-pinned-empty">Pin frequently used panels from the page header.</p></div>
     </section>
     <nav class="admin-nav" id="adminNavGroups" aria-label="Admin sections">
@@ -63,7 +65,7 @@ setTimeout(function(){
           <button class="admin-nav-btn active" data-view="dashboard"><span>▦</span> Dashboard</button>
         </div>
       </details>
-      <details class="admin-nav-group" data-group="commerce" open>
+      <details class="admin-nav-group" data-group="commerce">
         <summary><span>Orders & customers</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
         <div class="admin-nav-group-links">
           <button class="admin-nav-btn" data-view="orders"><span>▤</span> Orders <b class="nav-count" id="orderNavCount">—</b></button>
@@ -75,7 +77,7 @@ setTimeout(function(){
           <button class="admin-nav-btn" data-view="reviews"><span>★</span> Reviews</button>
         </div>
       </details>
-      <details class="admin-nav-group" data-group="catalogue" open>
+      <details class="admin-nav-group" data-group="catalogue">
         <summary><span>Catalogue & products</span><span class="admin-group-chevron" aria-hidden="true">⌄</span></summary>
         <div class="admin-nav-group-links">
           <button class="admin-nav-btn" data-view="products"><span>◫</span> Products <b class="nav-count" id="productNavCount">—</b></button>
@@ -824,7 +826,7 @@ setTimeout(function(){
 <script src="/supabase-config.js?v=4"></script>
 <script src="/admin.js?v=20261016-admin-v4-shell1" defer></script>
 <script src="/admin-v4-tools.js?v=20261016-v4-actions1" defer></script>
-<script src="/admin-v4-sidebar.js?v=20261017-nav2" defer></script>
+<script src="/admin-v4-sidebar.js?v=20261021-simplified-sidebar1" defer></script>
 <script src="/admin-storefront-controls.js?v=20261017-controls1" defer></script>
 <script src="/admin-login-mfa.js?v=20261017-approvedbrand" defer></script>
 <script src="/admin-operations-forms.js?v=20261017-shipping-ops-v1" defer></script>

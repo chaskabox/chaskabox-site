@@ -40,7 +40,7 @@ test('V4 search and navigation never unhide forbidden role items',()=>{
 test('V4 typography, responsive controls and owner auth remain intact',()=>{
  const html=load('admin.html'),css=load('admin.css');
  assert.match(html,/name="robots" content="noindex,nofollow"/);
- assert.match(html,/admin\.css\?v=20261016-admin-v4-shell1/);
+ assert.match(html,/admin\.css\?v=20261021-simplified-sidebar1/);
  assert.match(html,/admin\.js\?v=20261016-admin-v4-shell1/);
  assert.match(html,/id="adminSidebarSignOut"/);
  assert.match(html,/id="adminSignOut"/);
