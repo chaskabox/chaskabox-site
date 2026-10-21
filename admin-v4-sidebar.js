@@ -29,9 +29,11 @@
     const updatePin=()=>{
       const id=current(),can=verified()&&allowed(select(id));
       const pinned=can&&favoriteIds.includes(id);
+      const maxed=!pinned&&favoriteIds.length>=6;
       const sidebarPin=document.getElementById('adminPinFromSidebar');
       for(const button of [pin,sidebarPin].filter(Boolean)){
-        button.disabled=!can;
+        button.disabled=!can||maxed;
+        button.title=maxed?'Quick access is full. Unpin one of your six shortcuts first.':'Pin or unpin this panel';
         button.setAttribute('aria-pressed',String(Boolean(pinned)));
         button.setAttribute('aria-label',pinned?'Unpin current panel':'Pin current panel to quick access');
       }
@@ -46,15 +48,13 @@
         const b=select(id);
         if(!allowed(b))return;
         const label=buttonName(b);
-        const row=document.createElement('div');row.className='admin-pinned-item';
         const jump=document.createElement('button');jump.type='button';jump.className='admin-pinned-jump';
         jump.textContent=label;jump.title='Open '+label;
         if(b.classList.contains('active'))jump.setAttribute('aria-current','page');
         jump.addEventListener('click',()=>{if(verified()&&allowed(b)){b.closest('details').open=true;b.click();}});
-        const remove=document.createElement('button');remove.type='button';remove.className='admin-pinned-remove';
-        remove.textContent='×';remove.setAttribute('aria-label','Unpin '+label);
-        remove.addEventListener('click',()=>{favoriteIds=favoriteIds.filter(x=>x!==id);persist(pinsKey,favoriteIds);renderPins();updatePin();});
-        row.append(jump,remove);pins.append(row);rendered++;
+        jump.setAttribute('aria-label','Open '+label);
+        jump.title='Open '+label+' (to unpin, use Options > Pin current panel)';
+        pins.append(jump);rendered++;
       });
       if(!rendered){
         const empty=document.createElement('p');empty.className='admin-pinned-empty';
@@ -67,11 +67,21 @@
       const id=current();if(!verified()||!allowed(select(id)))return;
       if(favoriteIds.includes(id))favoriteIds=favoriteIds.filter(x=>x!==id);
       else if(favoriteIds.length<6)favoriteIds.push(id);
-      else {count.textContent='Limit: 6 pinned panels';return;}
+      else {count.textContent='6 / 6';count.title='Maximum six quick-access panels';return;}
       persist(pinsKey,favoriteIds);renderPins();
     };
     pin.addEventListener('click',onTogglePin);
     document.getElementById('adminPinFromSidebar')?.addEventListener('click',onTogglePin);
+    const preferences=sidebar.querySelector('.admin-nav-preferences');
+    preferences?.addEventListener('click',event=>{
+      if(event.target.closest('.admin-sidebar-controls button'))preferences.open=false;
+    });
+    document.addEventListener('pointerdown',event=>{
+      if(preferences?.open&&!preferences.contains(event.target))preferences.open=false;
+    });
+    document.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&preferences?.open){preferences.open=false;preferences.querySelector('summary')?.focus();}
+    });
     const groups=[...nav.querySelectorAll('details.admin-nav-group')];
     document.getElementById('adminExpandGroups')?.addEventListener('click',()=>groups.forEach(g=>g.open=true));
     document.getElementById('adminCollapseGroups')?.addEventListener('click',()=>groups.forEach(g=>g.open=false));
