@@ -25,7 +25,7 @@
       const link=$('sourceCopyLink');
       if(/^https:\/\//.test(match.source)){
         link.href=match.source;
-        link.textContent=match.source.includes('hilalfoods.com.pk')||match.source.includes('mayfair')?'View manufacturer's product information ↗':'View retailer's product information ↗';
+        link.textContent=match.source.includes('hilalfoods.com.pk')||match.source.includes('mayfair')?"View manufacturer product information ↗":"View retailer product information ↗";
       }else{link.removeAttribute('href');link.textContent='Source not available';}
     }
     apply.addEventListener('click',()=>{
