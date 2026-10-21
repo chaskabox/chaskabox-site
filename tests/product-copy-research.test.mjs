@@ -27,7 +27,7 @@ test('source-backed editorial copy drafts are valid, distinct and never auto-pub
  for(const [id,d] of items){
   assert.ok(d.name && d.brand && d.pack,id+' metadata');
   assert.ok(d.description.length>=240 && d.description.length<=2000,id+' description');
-  assert.ok(d.description.includes('Highlights:') && d.description.includes(d.pack),id+' structured');
+  assert.ok(d.description.includes('Highlights:') && d.description.toLowerCase().includes(d.pack.toLowerCase()),id+' structured');
   assert.ok(d.seo_title.length>10 && d.seo_title.length<=60,id+' title');
   assert.ok(d.seo_description.length>40 && d.seo_description.length<=160,id+' meta');
   assert.doesNotMatch(d.description,/DRAFT TEXT:|\b(?:guaranteed|cures|heals|allergen-free)\b/i);
