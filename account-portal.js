@@ -54,6 +54,7 @@ export async function renderAccountPortal(){
  const seq=++generation,body=$('acctbody');if(!body)return;
  state=null;body.innerHTML='<div class="account-card" role="status">Loading your account…</div>';
  if(!(await initSupabase())||!SB){retry(body,'The account service is unavailable. Your cart is still available.',()=>renderAccountView());return;}
+ if(!ACCOUNT_AUTH_SUBSCRIBED){try{await initAccount();}catch{retry(body,'Your session could not be checked. Please try again.',()=>renderAccountView());return;}}
  const {data,error}=await SB.auth.getSession();if(seq!==generation)return;
  if(error){retry(body,'Your session could not be checked. Please try again.',()=>renderAccountView());return;}
  ACCOUNT_SESSION=data?.session||null;

@@ -7,6 +7,8 @@
 .account-header nav a{padding:10px 0}
 .account-header nav .active{color:#1a2b5c;border-bottom:2px solid #c58b00}
 .account-main{max-width:1200px;margin:auto;padding:36px 28px 64px}
+.account-page :is(h1,h2,h3){overflow-wrap:anywhere}
+.account-form label,.account-form input,.account-form textarea{min-width:0}
 .account-title{display:flex;align-items:end;justify-content:space-between;gap:20px;margin-bottom:26px}
 .account-title h1{font-size:clamp(28px,3vw,36px);line-height:1.2;letter-spacing:-.7px;color:#1a2b5c;margin:5px 0 8px}
 .account-title p,.account-page .amut{color:var(--account-muted);font-size:14px}
@@ -99,7 +101,7 @@
 .account-benefits{background:#faf7f0;border-radius:16px;padding:24px;font-size:13px;list-style:none;display:grid;gap:20px}
 .account-benefits li{display:flex;align-items:start;gap:10px}
 .account-benefits svg{width:20px;height:20px;flex-shrink:0;color:#1a2b5c}
-.account-footer{border-top:1px solid var(--account-line);padding:24px;display:flex;gap:18px;justify-content:center;font-size:12px;color:#566175;flex-wrap:wrap}
+.account-footer{border-top:1px solid var(--account-line);padding:24px;display:flex;gap:18px;justify-content:center;font-size:12px;color:#566175;background:#fff;flex-wrap:wrap}
 #acctmodal{z-index:1001;background:rgba(13,23,46,.55);padding:20px;align-items:center;justify-content:center}
 #acctmodal.open{display:flex}
 #acctmodal .modal-box{position:relative;width:100%;max-width:430px;max-height:calc(100dvh - 40px);overflow:auto;border-radius:18px;background:#fff;padding:30px}

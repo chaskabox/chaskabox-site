@@ -30,6 +30,6 @@
 <div id="acctmodal" class="modal" aria-hidden="true"><div class="modal-box"><button type="button" class="lightbox-close" aria-label="Close account dialog" onclick="closeAuthModal()">×</button><div id="abody"></div></div></div>
 <script src="/supabase-config.js?v=4"></script>
 <script src="/account.js?v=20261021-portal1"></script>
-<script>document.addEventListener('DOMContentLoaded',()=>{initAccount().then(()=>renderAccountView()).catch(()=>{document.getElementById('acctbody').innerHTML='<p role="alert">Account could not be loaded. Please refresh and try again.</p>';});});</script>
+<script>document.addEventListener('DOMContentLoaded',()=>{initAccount().then(()=>renderAccountView()).catch(()=>renderAccountView());});</script>
 </body>
 </html>

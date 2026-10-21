@@ -47,6 +47,7 @@ jobs:
       - name: Actual source browser and accessibility acceptance with synthetic data
         run: npm run test:browser
       - name: Customer account and admin portal workflows with disposable data
+        if: always()
         run: node tools/account-portal-browser.mjs
       - name: Save synthetic browser acceptance evidence
         if: always()

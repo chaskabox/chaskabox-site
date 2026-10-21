@@ -101,6 +101,8 @@ async function mock(run,{role='owner',conflict=false}={}){
   if(u.pathname.endsWith('/admin_session_check'))return Response.json(true);
   if(u.pathname.endsWith('/take_rate_limit_token'))return Response.json([{allowed:true}]);
   if(u.pathname.endsWith('/admin_account_mutate')||u.pathname.endsWith('/admin_account_portal_settings'))return conflict?Response.json({message:'STALE_ACCOUNT'},{status:400}):Response.json({saved:true,record:{id:customer}});
+  if(u.pathname.endsWith('/admin_account_directory'))return Response.json({accounts:[{id:customer,name:'Synthetic Customer',email:'customer@example.invalid'}],total:1});
+  if(['/rest/v1/addresses','/rest/v1/orders','/rest/v1/wishlists','/rest/v1/reviews'].includes(u.pathname))return Response.json([],{headers:{'Content-Range':'0-0/0'}});
   if(u.pathname==='/rest/v1/site_settings')return Response.json([{key:'account_portal',value:{...PORTAL_DEFAULTS,show_wishlist:false}},{key:'support_email',value:'support@example.invalid'}]);
   throw Error('Unexpected request '+u.pathname);
  };
@@ -115,4 +117,9 @@ test('account APIs enforce owner/MFA, validate fields, return conflicts and expo
  await mock(async()=>assert.equal((await editAccount(context(body))).status,409),{conflict:true});
  await mock(async calls=>{const r=await publicPortal({env:context(body).env});assert.equal(r.status,200);const data=await r.json();assert.deepEqual(Object.keys(data).sort(),['portal','support_email']);assert.equal(data.portal.show_wishlist,false);assert.equal(calls[0].url.searchParams.get('key'),'in.(account_portal,support_email)');});
  await mock(async calls=>{assert.equal((await editPortal(context({portal:{...PORTAL_DEFAULTS,show_reorder:'false'},expected_updated_at:null}))).status,422);assert.equal(calls.some(c=>c.path.endsWith('/admin_account_portal_settings')),false);});
+});
+test('registered-account detail filters every private dataset by the selected account and rejects unauthorized staff',async()=>{
+ const make=()=>{const c=context({});c.request=new Request(c.request.url,{headers:c.request.headers});return c;};
+ await mock(async calls=>{const r=await readAccount(make());assert.equal(r.status,200);const d=await r.json();assert.equal(d.account.id,customer);for(const table of ['addresses','orders','wishlists','reviews']){const call=calls.find(c=>c.path==='/rest/v1/'+table);assert.equal(call.url.searchParams.get('user_id'),'eq.'+customer);}assert.equal(calls.find(c=>c.path.endsWith('/admin_account_directory')).body.p_id,customer);},{role:'manager'});
+ for(const role of ['content','fulfilment',null])await mock(async calls=>{assert.ok((await readAccount(make())).status>=400);assert.equal(calls.some(c=>c.path.endsWith('/addresses')),false);},{role});
 });
