@@ -36,7 +36,7 @@
 .pd-label-guide{border-bottom:1px solid #e5eaf1;padding:13px 0}
 .pd-label-guide summary{cursor:pointer;font-size:13px;color:#15385c;font-weight:700;min-height:26px}
 .pd-label-guide p{font-size:13px;line-height:1.65;color:#53647a;margin:8px 0}
-.pd-detail-note{font-size:12px;color:#68798e;line-height:1.6;margin:14px 0 0}
+.pd-detail-note{font-size:12px;color:#53647a;line-height:1.6;margin:14px 0 0}
 .dynamic-pd .pd-deep-dive{margin-top:26px}
 @media(max-width:800px){.pd-grid{grid-template-columns:minmax(0,1fr);gap:24px}.pd-imgwrap{max-width:530px;width:100%;margin:0 auto}.pd-deep-dive{grid-template-columns:minmax(0,1fr);gap:22px}.pd-info .pd-desc{max-width:none}}
 @media(max-width:500px){.pdetail{padding:12px 12px 48px}.pd-img{border-radius:14px}.pd-info h1{font-size:27px}.pd-info .pd-buyrow{gap:7px}.pd-info .pdbtn{padding:10px 15px}.pd-deep-dive{padding-top:22px}.pd-deep-aside{padding:18px 16px}}
