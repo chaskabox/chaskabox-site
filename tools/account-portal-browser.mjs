@@ -108,7 +108,9 @@ try{
   const {context:c,page}=await context(width);await page.goto(base+'/account/');await ready(page);await page.locator('#accountLatest h2').waitFor();
   for(const name of ['Overview','My orders','Profile & security','Addresses','Wishlist','My reviews']){
    await section(page,name);if(name==='My orders')await page.locator('.account-order').first().waitFor();if(name==='Addresses')await page.locator('.account-address').first().waitFor();if(name==='Wishlist')await page.locator('.account-wish').first().waitFor();if(name==='My reviews')await page.locator('.account-review').first().waitFor();
-   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false,width+' '+name+' overflow');
+   const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+   if(overflow)console.log('PORTAL_OVERFLOW',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>getComputedStyle(e).display!=='none'&&e.getBoundingClientRect().right>innerWidth+1).slice(0,15).map(e=>({tag:e.tagName,cls:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right,text:e.textContent.slice(0,80)})))));
+   assert.equal(overflow,false,width+' '+name+' overflow');
   }
   await section(page,'Overview');const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();assert.deepEqual(axe.violations.filter(v=>['serious','critical'].includes(v.impact)).map(v=>v.id),[]);
   await page.screenshot({path:path.join(output,'overview-'+width+'.png'),fullPage:true});

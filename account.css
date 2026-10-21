@@ -14,7 +14,7 @@
 .account-title p,.account-page .amut{color:var(--account-muted);font-size:14px}
 .account-eyebrow{font-size:11px;font-weight:800;letter-spacing:1.8px;text-transform:uppercase;color:#766023}
 .account-layout{display:grid;grid-template-columns:224px minmax(0,1fr);gap:26px;align-items:start}
-.account-sidebar{position:sticky;top:108px;border:1px solid var(--account-line);background:#fff;border-radius:18px;padding:18px 12px}
+.account-sidebar{position:sticky;top:108px;border:1px solid var(--account-line);background:#fff;border-radius:18px;padding:18px 12px;min-width:0}
 .account-identity{padding:4px 10px 19px;border-bottom:1px solid var(--account-line);margin-bottom:10px}
 .account-avatar{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:14px;background:#fdf0cb;color:#1a2b5c;font-size:18px;font-weight:800;margin-bottom:10px}
 .account-identity strong,.account-identity small{display:block;overflow-wrap:anywhere}
