@@ -12,3 +12,39 @@
 #seoCenterHost .seo-preview span{color:#516176;font-size:.85rem}
 #seoCenterHost .seo-actions{display:flex;flex-wrap:wrap;gap:8px}
 #seoCenterHost .seo-note{max-width:950px;line-height:1.6}
+
+/* Dedicated SEO editor: focus-first modal, not the general product editor. */
+.chaska-seo-dialog{box-sizing:border-box;border:1px solid #c8d4e5;border-radius:17px;background:#fff;color:#172448;padding:0;width:min(1050px,calc(100vw - 30px));max-width:1050px;max-height:calc(100dvh - 28px);overflow:auto;box-shadow:0 24px 85px rgba(13,30,67,.35)}
+.chaska-seo-dialog::backdrop{background:rgba(12,24,48,.65)}
+.chaska-seo-dialog form{padding:22px}
+.chaska-seo-dialog .seo-editor-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-bottom:18px;padding-bottom:12px;border-bottom:1px solid #dce2ec}
+.chaska-seo-dialog .seo-editor-header small{color:#55698c;letter-spacing:.07em;font-size:11px;font-weight:700}
+.chaska-seo-dialog .seo-editor-header h2{font-size:20px;line-height:1.35;margin:5px 0 6px}
+.chaska-seo-dialog .seo-editor-header p{font-size:12px;line-height:1.5;margin:0;color:#64748b}
+.chaska-seo-dialog .seo-editor-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(250px,1fr);gap:20px}
+.chaska-seo-dialog .seo-editor-fields,.chaska-seo-dialog .seo-editor-preview{min-width:0}
+.chaska-seo-dialog label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:700;margin-bottom:14px}
+.chaska-seo-dialog label small{font-size:11px;color:#6b7b92;font-weight:500}
+.chaska-seo-dialog input,.chaska-seo-dialog textarea{box-sizing:border-box;width:100%;max-width:100%;padding:10px 12px;background:#fff;color:#1f2937;border:1px solid #bdc9dc;border-radius:9px;font:inherit;font-weight:400}
+.chaska-seo-dialog textarea{min-height:94px;resize:vertical}
+.chaska-seo-dialog input:focus-visible,.chaska-seo-dialog textarea:focus-visible,.chaska-seo-dialog button:focus-visible{outline:3px solid #3b82f6;outline-offset:2px}
+.chaska-seo-dialog details{margin:15px 0;padding:10px 12px;border:1px solid #d8e0ea;border-radius:10px}
+.chaska-seo-dialog details summary{cursor:pointer;font-weight:700;font-size:13px;margin-bottom:8px}
+.chaska-seo-dialog .seo-editor-preview{border:1px solid #dce4ee;background:#f8fafc;border-radius:12px;padding:17px;align-self:start}
+.chaska-seo-dialog .seo-editor-preview h3{font-size:15px;margin:0 0 14px}
+.chaska-seo-dialog .seo-editor-preview .seo-preview{background:white;overflow-wrap:anywhere}
+.chaska-seo-dialog .seo-editor-preview .seo-preview strong{color:#1a0dab;font-size:18px;font-weight:500;line-height:1.3;margin-top:6px}
+.chaska-seo-dialog .seo-editor-preview .seo-preview p{font-size:13px;line-height:1.55;margin:7px 0 0}
+.chaska-seo-dialog .seo-editor-preview small{color:#64748b}
+.chaska-seo-dialog .seo-current-data{margin-top:18px;color:#54647c;font-size:12px;line-height:1.7}
+.chaska-seo-dialog .seo-editor-warning{font-size:12px;color:#9a4b00;font-weight:600}
+.chaska-seo-dialog .seo-ai-tools{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin-top:16px;padding:13px;background:#f0f6ff;border:1px solid #d4e4ff;border-radius:10px}
+.chaska-seo-dialog .seo-ai-tools>div{width:100%}
+.chaska-seo-dialog .seo-ai-tools b{font-size:13px}
+.chaska-seo-dialog .seo-ai-tools p{margin:3px 0;font-size:12px;line-height:1.5}
+.chaska-seo-dialog .seo-ai-tools [data-seo-ai-status]{width:100%;color:#344563}
+.chaska-seo-dialog .seo-ai-tools button:disabled{opacity:.56;cursor:not-allowed}
+.chaska-seo-dialog .seo-editor-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:18px}
+.chaska-seo-dialog [data-seo-save-status]{color:#334155;font-size:12px;font-weight:600}
+@media(max-width:760px){.chaska-seo-dialog{width:calc(100vw - 14px);max-height:calc(100dvh - 14px)}.chaska-seo-dialog form{padding:14px}.chaska-seo-dialog .seo-editor-grid{grid-template-columns:1fr}.chaska-seo-dialog .seo-editor-header h2{font-size:17px}.chaska-seo-dialog .seo-editor-actions button{flex:1;min-height:44px}}
+@media(prefers-reduced-motion:reduce){.chaska-seo-dialog,.chaska-seo-dialog *{scroll-behavior:auto!important}}
