@@ -549,6 +549,7 @@ function closeModal(){$('#pmodal').classList.remove('open');$('#pmodal').setAttr
 
 /* ---------- product detail page ---------- */
 function renderProductDetail(id){
+  if(!document.querySelector('link[data-pdp-refresh]')){const css=document.createElement('link');css.rel='stylesheet';css.href='/product-details-refresh.css?v=20261021-pdp1';css.dataset.pdpRefresh='1';document.head.append(css);}
   const p=PRODUCTS.find(x=>x.id===id); if(!p){render404(location.pathname);return;}
   setProductMeta(p);
   const img=hasPhoto(p)?`<img ${photoAttributes(p.img,"(max-width:700px) calc(100vw - 32px), 520px")} alt="${esc(p.name)}" fetchpriority="high" width="600" height="600" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
@@ -630,7 +631,7 @@ function productPageTitle(p){
 }
 function setProductMeta(p){
  const title=productPageTitle(p);
- const description=p.seoDescription||p.desc||'Compare the listed pack and order details at ChaskaBox Pakistan.';
+ const description=p.seoDescription||(window.ChaskaProductCopy?window.ChaskaProductCopy.summary(p.desc):p.desc)||'Compare the listed pack and order details at ChaskaBox Pakistan.';
  setPageMeta(title,productHref(p.id),false,description);setMetaTag('property','og:type','product');
  const photo=hasPhoto(p)?new URL(assetUrl(p.img),'https://chaskabox.online').href:'https://chaskabox.online/images/logo-approved-20261017.png';
  setMetaTag('property','og:image',photo);setMetaTag('name','twitter:image',photo);
