@@ -45,7 +45,7 @@ test('all catalogue families receive safe review-only structured draft and SEO w
  }
  const blocked=draft(fixtures[10]);
  assert.equal(blocked.review,'block-unverified-bundle');
- assert.match(blocked.description,/exact selection must be confirmed/);
+ assert.match(blocked.description,/exact contents are still under review/);
  assert.doesNotMatch(draft(fixtures[11]).description,/Rs\.\s*75/,'embedded historic pack price must not be copied');
 });
 
