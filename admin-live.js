@@ -965,11 +965,16 @@
       if(!name){toast('Enter product name first');return;}
       const btn=$('#aiImproveProduct'); const old=btn.textContent; btn.disabled=true; btn.textContent='✦ Thinking…';
       try{
-        const data=await api('/api/admin/ai',{method:'POST',body:{task:'product_description',context:{instructions:`Write a concise appetizing description (40-70 words) for: ${name}, ${$('#editCategory').value}, ${$('#editPack').value}. Roman Urdu-friendly tone.`}}});
-        const draft=data.draft||'';
-        if(confirm(`AI suggestion:\n\n${draft.slice(0,400)}\n\nUse this description? (You can edit it after)`)){
+        const currentId=Number($('#editProductId').value||0);
+        const context={name,brand:$('#editBrand').value.trim(),category:$('#editCategory').value,pack:$('#editPack').value.trim(),description:$('#editDescription').value.trim().slice(0,1000),instructions:'Draft 80-130 words: factual overview, verified Highlights and optional Serving ideas. Do not invent ingredients, allergens, nutrition or sensory claims. Avoid repeating pack wording. Return description only.'};
+        if(Number.isSafeInteger(currentId)&&currentId>0)context.product_id=currentId;
+        const data=await api('/api/admin/ai',{method:'POST',body:{task:'product_description',context}});
+        const draft=String(data.draft||'').replace(/^\s*DRAFT(?: TEXT)?\s*:\s*/i,'').trim();
+        if(!draft||draft.length>2000){toast('AI draft needs review or exceeds the 2000-character product limit');return;}
+        if(confirm(`Review AI description (not published):\n\n${draft.slice(0,1300)}\n\nInsert draft into editor? Verify factual claims before saving.`)){
           $('#editDescription').value=draft;
-          toast('Description updated — review and Save');
+          $('#editDescription').dispatchEvent(new Event('input',{bubbles:true}));
+          toast('AI draft inserted only — verify facts and SEO, then Save');
         }
       }catch(e){toast(e.message||'AI unavailable');}
       finally{btn.disabled=false;btn.textContent=old;}
