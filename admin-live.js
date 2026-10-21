@@ -804,7 +804,17 @@
       return a;
     },{review:0,seo:0,visible:0});
     const coverage=$('#productCopyCoverage');
-    if(coverage){coverage.textContent=products.length+' loaded products · '+contentAudit.visible+' visible · '+contentAudit.review+' descriptions need review · '+contentAudit.seo+' missing SEO metadata. Results reflect loaded catalogue only; product changes require explicit Save.';}
+    if(coverage){
+      const sourced=window.ChaskaSourceBackedCopy||{};
+      const draftGenerator=window.ChaskaDraftFromCatalog;
+      const prepared=products.reduce((result,p)=>{
+        const verified=sourced[p.id]&&String(sourced[p.id].name||'').trim()===String(p.name||'').trim();
+        if(verified){result.ready++;result.researched++;}
+        else if(typeof draftGenerator==='function'&&draftGenerator(p)){result.ready++;result.catalogOnly++;}
+        return result;
+      },{ready:0,researched:0,catalogOnly:0});
+      coverage.textContent=products.length+' loaded products · '+contentAudit.visible+' visible · '+contentAudit.review+' live descriptions need review · '+contentAudit.seo+' live SEO metadata missing. Prepared unpublished drafts: '+prepared.ready+'/'+products.length+' ('+prepared.researched+' source-linked, '+prepared.catalogOnly+' catalogue-based). Product copy requires verification and explicit release; nothing is bulk-published.';
+    }
     const {q, cat, vis, quality, sort}=getProductFilters();
     const normCat=s=>(s||'').trim();
     const filtered=products.filter(p=>{
