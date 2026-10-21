@@ -12,10 +12,17 @@ test('Export escapes spreadsheet formulas',()=>{
  const csv=seoCsv([{id:1,name:'=CMD',title:'+SUM(1,2)',description:'Safe',category:'Biscuits',flags:[],updated:'today'}]);
  assert.match(csv,/"'=CMD"/);assert.match(csv,/"'\+SUM/);assert.match(csv,/\r\n/);
 });
-test('SEO Center uses role gated existing authenticated editors not a new mutation endpoint',()=>{
+test('SEO Center opens dedicated metadata editor and keeps all saving behind authenticated APIs',()=>{
  const admin=read('admin.html'),live=read('admin-live.js'),center=read('admin-seo-center.js');
  assert.match(admin,/data-view="seo"/);assert.match(admin,/id="view-seo"/);
  assert.match(live,/seo:\['owner','manager','content'\]/);assert.match(live,/if\(name==='seo'\)/);
- assert.match(live,/openLiveProduct\(id\)/);assert.match(center,/\/api\/admin\/products\?per_page=1000&page=/);
- assert.doesNotMatch(center,/method:\s*['"](?:POST|PUT|PATCH|DELETE)/);
+ const mountRoute=live.slice(live.indexOf("if(name==='seo')"),live.indexOf("if(name==='homepage'"));
+ assert.doesNotMatch(mountRoute,/openLiveProduct\(id\)/);
+ assert.match(mountRoute,/mountSeoCenter/);
+ assert.match(center,/\/api\/admin\/products\?per_page=1000&page=/);
+ assert.match(center,/chaskaSeoEditor/);
+ assert.match(center,/task:'seo_meta'/);
+ assert.match(center,/\/api\/admin\/ai-status/);
+ assert.match(center,/\/api\/admin\/products\/'\+encodeURIComponent\(id\)/);
+ assert.match(center,/method:'PATCH',body:patch/);
 });
