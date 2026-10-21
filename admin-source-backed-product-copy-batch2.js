@@ -15,9 +15,10 @@ window.ChaskaSourceBackedCopy = Object.assign(window.ChaskaSourceBackedCopy || {
     "brand": "Mayfair",
     "pack": "Pack of 12",
     "source": "https://mayfairfood.com/pk/brand/biscuits/",
-    "description": "Mayfair Special Choco Delight Biscuit is listed as a chocolate-themed biscuit in the Special range. Mayfair identifies Special as a biscuit family and lists a chocolate variety; the exact Choco Delight packaging details should be checked against the product label. ChaskaBox lists this item as Pack of 12.\n\nHighlights:\n- Mayfair Special-series biscuit listing\n- Choco Delight variant shown in the catalogue\n- Listed format: Pack of 12\n\nServing ideas:\nInclude in an assorted biscuit tray for tea-time. Confirm exact ingredients using the wrapper.",
+    "description": "Mayfair Special Choco Delight Biscuit is listed as a chocolate-themed biscuit in the Special range. Mayfair identifies Special as a biscuit family and lists a chocolate variety; ChaskaBox lists this item as Pack of 12. The Special family and chocolate variant are shown in Mayfair's biscuit range.\n\nHighlights:\n- Mayfair Special-series biscuit listing\n- Choco Delight variant shown in the catalogue\n- Listed format: Pack of 12\n\nServing ideas:\nInclude in an assorted biscuit tray for tea-time. Confirm exact ingredients using the wrapper.",
     "seo_title": "Mayfair Special Choco Delight Biscuit 12 | ChaskaBox",
     "seo_description": "Shop Mayfair Special Choco Delight Biscuit, Pack of 12, at ChaskaBox Pakistan. See product format and current delivery details.",
+    "source_note": "Manufacturer confirms Special biscuits and chocolate variety, but exact Choco Delight subvariant needs wrapper verification.",
     "review": "manual-label-check-required"
   },
   "30": {
@@ -85,9 +86,10 @@ window.ChaskaSourceBackedCopy = Object.assign(window.ChaskaSourceBackedCopy || {
     "brand": "Hilal",
     "pack": "Pack of 50",
     "source": "https://hilalfoods.com.pk/products/dingdong",
-    "description": "Hilal Ding Dong Crystal Bubble Gum belongs to Hilal's Ding Dong chewing-gum family. Hilal describes the broader Ding Dong line with colourful packs and playful fruity flavours. This listing is specifically named Crystal and is sold in a Pack of 50; the exact Crystal formula or flavour is not confirmed on the manufacturer page.\n\nHighlights:\n- Ding Dong gum family by Hilal\n- Crystal variety named in the ChaskaBox listing\n- Listed format: Pack of 50\n\nServing ideas:\nPlace with other sealed gum packs for a party snack table. Check the original wrapper for flavour and ingredients.",
+    "description": "Hilal Ding Dong Crystal Bubble Gum belongs to Hilal's Ding Dong chewing-gum family. Hilal describes the broader Ding Dong line with colourful packs and playful fruity flavours. This listing is specifically named Crystal and is sold in a Pack of 50; the precise Crystal variety and pack information are taken from the ChaskaBox listing.\n\nHighlights:\n- Ding Dong gum family by Hilal\n- Crystal variety named in the ChaskaBox listing\n- Listed format: Pack of 50\n\nServing ideas:\nPlace with other sealed gum packs for a party snack table. Check the original wrapper for flavour and ingredients.",
     "seo_title": "Hilal Ding Dong Crystal Gum Pack of 50 | ChaskaBox",
     "seo_description": "Shop Hilal Ding Dong Crystal Bubble Gum, Pack of 50, at ChaskaBox Pakistan. Review the listed variant, pack size and delivery options.",
+    "source_note": "Manufacturer Ding Dong page confirms the gum family but does not separately verify the Crystal variant or flavour. Confirm from exact package.",
     "review": "manual-label-check-required"
   },
   "43": {
@@ -175,9 +177,10 @@ window.ChaskaSourceBackedCopy = Object.assign(window.ChaskaSourceBackedCopy || {
     "brand": "Mayfair",
     "pack": "Pack of 50",
     "source": "https://mayfairfood.com/pk/brand/confectionery/",
-    "description": "Mayfair Frooto Orange XL Candy is listed as the orange-flavoured XL candy in the Frooto product family. Mayfair's public Frooto range currently highlights other fruit flavours, so the Orange XL variant should be checked against the exact packaging before saving this draft. ChaskaBox lists Pack of 50.\n\nHighlights:\n- Orange flavour identified in ChaskaBox product name\n- Frooto XL candy family\n- Listed format: Pack of 50\n\nServing ideas:\nOffer with other individually wrapped fruit candies or add to a mixed snack box.",
+    "description": "Mayfair Frooto Orange XL Candy is listed as the orange-flavoured XL candy in the Frooto product family. ChaskaBox lists this Orange XL variant in a Pack of 50. Mayfair's wider Frooto collection also includes several other fruit flavours.\n\nHighlights:\n- Orange flavour identified in ChaskaBox product name\n- Frooto XL candy family\n- Listed format: Pack of 50\n\nServing ideas:\nOffer with other individually wrapped fruit candies or add to a mixed snack box.",
     "seo_title": "Mayfair Frooto Orange XL Candy 50 | ChaskaBox",
     "seo_description": "Buy Mayfair Frooto Orange XL Candy, Pack of 50, at ChaskaBox Pakistan. Confirm the wrapper and review order details before purchase.",
+    "source_note": "Manufacturer page does not list Orange in the displayed Frooto flavours. Confirm the Orange XL variant using product packaging.",
     "review": "manual-label-check-required"
   },
   "77": {
