@@ -34,7 +34,7 @@ window.ChaskaSourceBackedCopy={
     "name": "Mayfair | Hearts Puff Pastry",
     "brand": "Mayfair",
     "pack": "Pack of 24",
-    "source": "https://mayfair.com.pk/wp-content/uploads/2023/10/Mayfair-Product-Catalog-2023.pdf",
+    "source": "https://mayfairfood.com/pk/brand/baked/",
     "description": "Mayfair Hearts Puff Pastry is a sweet, crunchy puff-pastry-style snack, recognizable by its Hearts branding. This ChaskaBox listing is for the Pack of 24, with the precise format shown before checkout.\n\nHighlights:\n- Mayfair Hearts puff-pastry snack\n- Sweet-and-crunchy style identified on the product pack\n- Listed format: Pack of 24\n\nServing ideas:\nServe alongside tea or include the listed format in a shared biscuit-and-pastry selection.",
     "seo_title": "Mayfair Hearts Puff Pastry Pack of 24 | ChaskaBox",
     "seo_description": "Explore Mayfair Hearts Puff Pastry, a sweet, crunchy snack, in a Pack of 24 at ChaskaBox Pakistan. Compare the pack before ordering.",
@@ -65,9 +65,10 @@ window.ChaskaSourceBackedCopy={
     "brand": "Ap",
     "pack": "Pack of 24",
     "source": "https://www.cheezwala.com/products/ap-love-letter-pillow-chocolate-pack-of-24",
-    "description": "AP Love Letter Pillow Wafer Chocolate offers bite-sized, pillow-shaped wafers in a chocolate-flavoured variety. A different format from flat wafer sheets or rolled sticks, these light wafer pillows make an easy addition to a sweet snack selection. The listed ChaskaBox format is Pack of 24.\n\nHighlights:\n- Chocolate-flavoured pillow wafer variety\n- Distinctive bite-sized pillow format\n- Listed format: Pack of 24\n\nTaste & texture:\nA light, crisp wafer shell with a chocolate-style centre is described in retailer listings.\n\nServing ideas:\nArrange in a small sharing bowl alongside other biscuits and wafers.",
+    "description": "AP Love Letter Pillow Wafer Chocolate offers bite-sized, pillow-shaped wafers in a chocolate-flavoured variety. A different format from flat wafer sheets or rolled sticks, these light wafer pillows make an easy addition to a sweet snack selection. The listed ChaskaBox format is Pack of 24.\n\nHighlights:\n- Chocolate-flavoured pillow wafer variety\n- Distinctive pillow-style wafer format\n- Listed format: Pack of 24\n\nTaste & texture:\nRetail listings confirm the chocolate flavour and crisp, light wafer format; the exact filling details need verification from the original wrapper.\n\nServing ideas:\nArrange in a small sharing bowl alongside other biscuits and wafers.",
     "seo_title": "AP Love Letter Chocolate Pillow Wafer 24 | ChaskaBox",
     "seo_description": "Buy AP Love Letter Pillow Wafer Chocolate, Pack of 24, from ChaskaBox Pakistan. Discover chocolate-flavoured wafer pillows and delivery details.",
+    "source_note": "Retailer copy confirms flavour and wafer texture but does not verify a chocolate-filled centre. Check wrapper before saving. The retailer is not the manufacturer.",
     "review": "manual-label-check-required"
   },
   "27": {
