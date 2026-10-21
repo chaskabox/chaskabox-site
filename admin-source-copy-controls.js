@@ -11,9 +11,11 @@
     const normalize=s=>String(s||'').trim().toLowerCase().replace(/\s+/g,' ');
     function currentDraft(){
       const id=String(Number($('editProductId')?.value||0));
-      const draft=catalog[id];
-      if(!draft || normalize(draft.name)!==normalize($('editName')?.value))return null;
-      return draft;
+      const researched=catalog[id];
+      if(researched && normalize(researched.name)===normalize($('editName')?.value))return researched;
+      return typeof window.ChaskaDraftFromCatalog==='function' ? window.ChaskaDraftFromCatalog({
+        id:Number(id),name:$('editName')?.value,brand:$('editBrand')?.value,pack:$('editPack')?.value,category:$('editCategory')?.value
+      }) : null;
     }
     function sync(){
       const match=currentDraft();
@@ -26,14 +28,15 @@
       if(reviewNote){reviewNote.hidden=!match.source_note;reviewNote.textContent=match.source_note?'Source check: '+match.source_note:'';}
       const link=$('sourceCopyLink');
       if(/^https:\/\//.test(match.source)){
+        link.hidden=false;
         link.href=match.source;
         link.textContent=match.source.includes('hilalfoods.com.pk')||match.source.includes('mayfair')?"View manufacturer product information ↗":"View retailer product information ↗";
-      }else{link.removeAttribute('href');link.textContent='Source not available';}
+      }else{link.hidden=true;link.removeAttribute('href');link.textContent='Based on internal catalogue fields';}
     }
     apply.addEventListener('click',()=>{
       const draft=currentDraft();
       if(!draft)return;
-      const message='Apply this researched DESCRIPTION and SEO draft to the editor? This replaces unsaved description and SEO fields. Review against the exact product pack before saving. Nothing is published until you press Save product.';
+      const message='Insert this UNSAVED product DESCRIPTION and SEO draft? Existing unsaved description and SEO fields will be replaced. Confirm the actual product packaging and its details first. Nothing is published until you explicitly press Save product.';
       if(!window.confirm(message))return;
       $('editDescription').value=draft.description;
       $('editSeoTitle').value=draft.seo_title;
@@ -48,7 +51,7 @@
       if(editor.classList.contains('open')){apply.textContent='✦ Review researched draft';sync();}
     });
     obs.observe(editor,{attributes:true,attributeFilter:['class']});
-    $('editName')?.addEventListener('input',sync);
+    for(const field of ['editName','editBrand','editPack','editCategory'])$(field)?.addEventListener('input',sync);
     sync();
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});
