@@ -7,8 +7,8 @@ Status: **STAGING / NOT PUBLISHED**. Release owner approval and original-product
 
 - User explicitly requires all catalogue descriptions and metadata to be reviewed together and deployed **once**, not in incremental live edits.
 - At latest read-only Supabase audit: **262 catalog rows (118 visible, 144 hidden)**. Live counts may change; recount before release and include new SKUs.
-- Research-backed drafts: **29 visible product listings**, with per-SKU source URLs and caveats in [PRODUCT_COPY_REFERENCES_20261021.md](PRODUCT_COPY_REFERENCES_20261021.md).
-- Other **233 listings**: authenticated admin-only draft generator based on catalogue-confirmed names, brands, categories and packs. These are **not** manufacturer-verified, not a substitute for source verification, and not finalized just because text renders.
+- Research-backed drafts: **52 visible product listings**, with per-SKU source URLs and caveats in [PRODUCT_COPY_REFERENCES_20261021.md](PRODUCT_COPY_REFERENCES_20261021.md).
+- Other **210 listings**: authenticated admin-only draft generator based on catalogue-confirmed names, brands, categories and packs. These are **not** manufacturer-verified, not a substitute for source verification, and not finalized just because text renders.
 - Public GitHub repository must **never serialize full hidden catalogue names/details** into manifest files. Generator loads hidden items only through the authenticated admin UI.
 - The common PDP layout applies to old and new products, but the rollout of DB content must wait for the coordinated release.
 
