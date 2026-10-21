@@ -25,6 +25,9 @@ test('portal inputs and re-order respect limits, availability and existing cart 
   {id:5,visibility:'visible',stock_state:'sourced_after_order'},{id:8,visibility:'visible',stock_state:'unavailable'},{id:9,visibility:'hidden',stock_state:'sourced_after_order'},
  ]);
  assert.deepEqual(next,{cart:{5:99},added:1,skipped:3});
+ const full=Object.fromEntries(Array.from({length:50},(_,i)=>[String(i+1),1]));
+ assert.deepEqual(reorderCart(full,[{product_id:51,quantity:1}],[{id:51,visibility:'visible',stock_state:'sourced_after_order'}]),{cart:full,added:0,skipped:1});
+ assert.equal(reorderCart(full,[{product_id:5,quantity:1}],[{id:5,visibility:'visible',stock_state:'sourced_after_order'}]).cart[5],2);
 });
 async function fixture(){
  const db=new PGlite({extensions:{vector,pgcrypto}});

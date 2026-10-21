@@ -48,6 +48,7 @@ export function reorderCart(existing,items,products){
   for(const item of items){
     const id=Number(item.product_id),qty=Number(item.quantity);
     if(!Number.isSafeInteger(id)||id<1||!Number.isSafeInteger(qty)||qty<1||!available.has(id)){skipped++;continue;}
+    if(!Object.hasOwn(cart,String(id))&&Object.keys(cart).length>=50){skipped++;continue;}
     const before=cart[id]||0,after=Math.min(99,before+qty);
     cart[id]=after;added+=after-before;
   }

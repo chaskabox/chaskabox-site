@@ -142,9 +142,9 @@ async function reorder(btn){
   if(!current(uid,el))return;
   let cart={};try{cart=JSON.parse(localStorage.getItem('chaskabox-cart')||'{}');}catch{}
   const next=reorderCart(cart,result.data,products.data||[]);
-  if(!next.added)throw Error('No items added. Products may be unavailable, or your cart has reached the limit of 99 per product.');
+  if(!next.added)throw Error('No items added. Products may be unavailable, or your cart has reached 50 different snacks or 99 packs per product.');
   localStorage.setItem('chaskabox-cart',JSON.stringify(next.cart));localStorage.setItem('chaskabox-cart-ts',String(Date.now()));
-  feedback(el.id,next.added+' pack(s) added to your cart.'+(next.skipped?' '+next.skipped+' unavailable item(s) skipped.':'')+' Current prices apply at checkout.');
+  feedback(el.id,next.added+' pack(s) added to your cart.'+(next.skipped?' '+next.skipped+' unavailable or over-limit item(s) skipped.':'')+' Current prices apply at checkout.');
   const link=document.createElement('a');link.className='account-button secondary';link.href='/cart/';link.textContent='Review cart →';el.append(' ',link);
  }catch(e){if(current(uid,el))feedback(el.id,e.message||'Items were not added. Please try again.',true);}
  finally{if(current(uid,el))btn.disabled=false;}

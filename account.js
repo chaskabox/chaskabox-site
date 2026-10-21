@@ -34,6 +34,8 @@ async function toggleAccount(){
 }
 function openAuthModal(mode='signin'){
   const m=document.getElementById('acctmodal'), b=document.getElementById('abody'); if(!m||!b)return;
+  // Choosing normal sign-in cancels a previous recovery flow, including expired links.
+  ACCOUNT_RECOVERY=false;try{sessionStorage.removeItem('cb_password_recovery');if(new URLSearchParams(location.hash.slice(1)).get('type')==='recovery')history.replaceState(null,'',location.pathname+location.search);}catch{}
   const signup=mode==='signup';
   b.innerHTML=`<div class="auth-card"><span class="eyebrow">${signup?'CREATE ACCOUNT':'WELCOME BACK'}</span><h2>${signup?'Create your ChaskaBox account':'Sign in'}</h2><p class="amut">Track orders and save your details securely.</p>
   <form id="authForm">${signup?'<label>Full name<input id="authName" autocomplete="name" required minlength="2" maxlength="100"></label><label>Phone (optional)<input id="authPhone" inputmode="tel" autocomplete="tel" maxlength="25"></label>':''}
