@@ -22,6 +22,8 @@
       if(preview)preview.hidden=!match;
       if(!match)return;
       $('sourceCopyText').textContent=match.description;
+      const reviewNote=$('sourceCopyReviewNote');
+      if(reviewNote){reviewNote.hidden=!match.source_note;reviewNote.textContent=match.source_note?'Source check: '+match.source_note:'';}
       const link=$('sourceCopyLink');
       if(/^https:\/\//.test(match.source)){
         link.href=match.source;
