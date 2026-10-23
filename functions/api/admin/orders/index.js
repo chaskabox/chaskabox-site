@@ -10,13 +10,13 @@
  *   date_from, date_to — YYYY-MM-DD (created_at range)
  *   page, per_page
  */
-import { withAdmin, sb, json, pagination, sanitizeSearch } from '../_lib/auth.js';
+import { withAdmin, sb, json, httpError, pagination, sanitizeSearch } from '../_lib/auth.js';
 
 const LIST_COLS = [
   'id', 'order_number', 'idempotency_key', 'user_id', 'customer_name', 'customer_phone',
   'customer_address', 'customer_city', 'payment_method', 'payment_status', 'fulfilment_status',
   'subtotal', 'delivery_fee', 'total', 'transaction_reference',
-  'created_at', 'updated_at',
+  'created_at', 'updated_at', 'is_test', 'test_reason', 'owner_reviewed_at',
 ].join(',');
 
 export const onRequestGet = withAdmin(['owner', 'manager', 'fulfilment'], async (context) => {
@@ -25,6 +25,10 @@ export const onRequestGet = withAdmin(['owner', 'manager', 'fulfilment'], async 
   const { page, per, rangeHeader } = pagination(url, 25, 100);
 
   const filters = [];
+  // Default business queue excludes test orders. Explicit filters preserve testing history.
+  const orderType = sp.get('order_type') || 'real';
+  if (!['real','test','all'].includes(orderType)) httpError('Invalid order type',400,'invalid_order_type');
+  if(orderType !== 'all') filters.push('is_test=eq.' + (orderType === 'test'));
   const q = sanitizeSearch(sp.get('q'));
   if (q) {
     const esc = q.replace(/[%_]/g, '');

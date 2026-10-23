@@ -227,10 +227,12 @@ setTimeout(function(){
         </div>
         <div class="admin-quick-views" id="orderQuickViews" role="group" aria-label="Quick order filter views">
           <span class="admin-quick-views-label">Quick views</span>
-          <button type="button" data-order-view="all" aria-pressed="true" disabled>All orders</button>
+          <button type="button" data-order-view="all" aria-pressed="true" disabled>Real orders</button>
           <button type="button" data-order-view="new" aria-pressed="false" disabled>New orders</button>
           <button type="button" data-order-view="payment_submitted" aria-pressed="false" disabled>Payment review</button>
           <button type="button" data-order-view="dispatched" aria-pressed="false" disabled>Dispatched</button>
+           <button type="button" data-order-view="test" aria-pressed="false" disabled>Test orders</button>
+           <button type="button" data-order-view="all_including_test" aria-pressed="false" disabled>All incl. tests</button>
           <p id="orderActiveView" role="status" aria-live="polite">Load orders to use quick views.</p>
         </div>
         <div class="panel empty-backend">

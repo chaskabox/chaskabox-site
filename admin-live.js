@@ -266,6 +266,7 @@
     });
   }
 
+  let currentOrderType='real';
   function collectOrderFilters(){
     const q=$('#orderSearch')?.value?.trim()||'';
     const status=$('#orderStatusFilter')?.value||'';
@@ -275,6 +276,7 @@
     const to=$('#orderDateTo')?.value||'';
     if(from&&to&&from>to)throw new Error('From date must be on or before To date.');
     const sp=new URLSearchParams();
+    sp.set('order_type',currentOrderType);
     if(q)sp.set('q',q);
     if(status)sp.set('fulfilment_status',status);
     if(payment)sp.set('payment_status',payment);
@@ -291,7 +293,7 @@
     const dates=Boolean($('#orderDateFrom')?.value||$('#orderDateTo')?.value);
     let view='custom';
     if(!method&&!q&&!dates){
-      if(!status&&!payment)view='all';
+      if(!status&&!payment)view=currentOrderType==='test'?'test':currentOrderType==='all'?'all_including_test':'all';
       else if(status==='new'&&!payment)view='new';
       else if(!status&&payment==='payment_submitted')view='payment_submitted';
       else if(status==='dispatched'&&!payment)view='dispatched';
@@ -302,7 +304,7 @@
     });
     const note=$('#orderActiveView');
     if(note)note.textContent=view==='custom'?'Custom order filters active.':{
-      all:'Showing all orders',new:'Filtering to new orders',
+      all:'Showing real customer orders',test:'Showing internal test orders',all_including_test:'Showing real and test orders',new:'Filtering to new orders',
       payment_submitted:'Filtering to submitted payments',dispatched:'Filtering to dispatched orders'
     }[view]+'.';
   }
@@ -314,6 +316,7 @@
       if(el){el.disabled=false;el.addEventListener('change',()=>{syncOrderQuickViews();loadOrders(1);});}
     }
     $('#orderResetFilters')?.addEventListener('click',()=>{
+      currentOrderType='real';
       for(const id of ['orderSearch','orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
         const el=$('#'+id);if(el)el.value='';
       }
@@ -324,6 +327,7 @@
     $$('[data-order-view]').forEach(button=>{
       button.disabled=false;
       button.addEventListener('click',()=>{
+        currentOrderType=button.dataset.orderView==='test'?'test':button.dataset.orderView==='all_including_test'?'all':'real';
         for(const id of ['orderSearch','orderStatusFilter','orderPaymentFilter','orderMethodFilter','orderDateFrom','orderDateTo']){
           const el=$('#'+id);if(el)el.value='';
         }
@@ -375,7 +379,7 @@
     orders=data.orders||[];
     const target=$('#view-orders .empty-backend')||$('#view-orders .live-table-wrap')?.parentElement||$('#orderListWrap');
     if(!target) return;
-    target.classList.remove('empty-backend'); target.innerHTML=orders.length?`<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Order</th><th>Customer</th><th>Payment</th><th>Fulfilment</th><th>Total</th><th></th></tr></thead><tbody>${orders.map(o=>`<tr><td><b>${esc(o.order_number)}</b><small>${fmtDate(o.created_at)}</small></td><td>${esc(o.customer_name)}<small>${esc(o.customer_phone)}</small></td><td><span class="status-pill">${esc(o.payment_status)}</span><small>${esc(o.payment_method)}</small></td><td><span class="status-pill ${esc(o.fulfilment_status)}">${esc(o.fulfilment_status)}</span></td><td><b>${money(o.total)}</b></td><td><button class="btn secondary compact" data-order="${esc(o.id)}">Manage</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-mini">No matching orders.</div>';
+    target.classList.remove('empty-backend'); target.innerHTML=orders.length?`<div class="live-table-wrap"><table class="live-table"><thead><tr><th>Order</th><th>Customer</th><th>Payment</th><th>Fulfilment</th><th>Total</th><th></th></tr></thead><tbody>${orders.map(o=>`<tr><td><b>${esc(o.order_number)}</b>${o.is_test?'<small>TEST ORDER</small>':!o.owner_reviewed_at?'<small>Needs owner review</small>':''}<small>${fmtDate(o.created_at)}</small></td><td>${esc(o.customer_name)}<small>${esc(o.customer_phone)}</small></td><td><span class="status-pill">${esc(o.payment_status)}</span><small>${esc(o.payment_method)}</small></td><td><span class="status-pill ${esc(o.fulfilment_status)}">${esc(o.fulfilment_status)}</span></td><td><b>${money(o.total)}</b></td><td><button class="btn secondary compact" data-order="${esc(o.id)}">Manage</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty-mini">No matching orders.</div>';
     wirePager(target,data,loadOrders);
     $$('[data-order]',target).forEach(b=>b.onclick=()=>openOrder(b.dataset.order));
   }
@@ -404,11 +408,27 @@
     const data=await api(`/api/admin/orders/${encodeURIComponent(id)}`),o=data.order, items=data.items||[],shipment=data.courier_shipment,advance=data.cod_advance||{required_pkr:0,received_pkr:0,remaining_pkr:0,courier_cod_pkr:Number(o.total||0),receipts:[]};
     let modal=$('#liveOrderModal'); if(!modal){modal=document.createElement('div');modal.id='liveOrderModal';modal.className='admin-modal';document.body.appendChild(modal);} modal.classList.add('open');
     const flow=['new','sourcing','packed','dispatched','delivered']; const idx=flow.indexOf(o.fulfilment_status); const next=idx>=0&&idx<flow.length-1?flow[idx+1]:null;
-    modal.innerHTML=`<div class="modal-backdrop" data-close-order></div><section class="admin-modal-card live-order-card"><div class="modal-head"><div><small>ORDER</small><h2>${esc(o.order_number)}</h2></div><button class="icon-btn" data-close-order>×</button></div><div class="order-detail-grid"><section><h3>Customer</h3><p><b>${esc(o.customer_name)}</b><br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</p><h3>Items</h3><div class="order-items">${items.map(i=>`<div><span>${esc(i.product_name)} · ${esc(i.pack)} × ${i.quantity}</span><b>${money(i.line_total)}</b></div>`).join('')}</div></section><section><h3>Payment</h3><p>${esc(o.payment_method)} · <b>${esc(o.payment_status)}</b>${o.transaction_reference?`<br>Ref: ${esc(o.transaction_reference)}`:''}</p><h3>Total</h3><p>Subtotal ${money(o.subtotal)}<br>Delivery ${money(o.delivery_fee)}<br><b>${money(o.total)}</b></p><h3>COD advance</h3><p>${o.payment_method==='cod'?(Number(advance.required_pkr)>0?'Required: '+money(advance.required_pkr)+' · Verified: '+money(advance.received_pkr)+' · Remaining advance: '+money(advance.remaining_pkr)+' · Courier COD: '+money(advance.courier_cod_pkr):'No advance required on this order'):'Not applicable to fully prepaid orders'}</p>
+    modal.innerHTML=`<div class="modal-backdrop" data-close-order></div><section class="admin-modal-card live-order-card"><div class="modal-head"><div><small>${o.is_test?'TEST ORDER':'REAL ORDER'}</small><h2>${esc(o.order_number)}</h2></div><button class="icon-btn" data-close-order>×</button></div><div class="order-detail-grid"><section><h3>Customer</h3><p><b>${esc(o.customer_name)}</b><br>${esc(o.customer_phone)}<br>${esc(o.customer_address)}, ${esc(o.customer_city)}</p><h3>Items</h3><div class="order-items">${items.map(i=>`<div><span>${esc(i.product_name)} · ${esc(i.pack)} × ${i.quantity}</span><b>${money(i.line_total)}</b></div>`).join('')}</div></section><section><h3>Payment</h3><p>${esc(o.payment_method)} · <b>${esc(o.payment_status)}</b>${o.transaction_reference?`<br>Ref: ${esc(o.transaction_reference)}`:''}</p><h3>Total</h3><p>Subtotal ${money(o.subtotal)}<br>Delivery ${money(o.delivery_fee)}<br><b>${money(o.total)}</b></p><h3>COD advance</h3><p>${o.payment_method==='cod'?(Number(advance.required_pkr)>0?'Required: '+money(advance.required_pkr)+' · Verified: '+money(advance.received_pkr)+' · Remaining advance: '+money(advance.remaining_pkr)+' · Courier COD: '+money(advance.courier_cod_pkr):'No advance required on this order'):'Not applicable to fully prepaid orders'}</p>
         ${Number(advance.required_pkr)>0?'<p class="safe-note">Verify the actual JazzCash/bank statement before recording advance. Packing and dispatch are blocked until full advance is verified.</p>':''}
         ${(advance.receipts||[]).map(r=>'<small>'+esc(r.channel)+' · '+money(r.amount_pkr)+' · Ref: '+esc(r.reference)+' · '+esc(r.received_on)+'</small>').join('<br>')}
         ${Number(advance.remaining_pkr)>0&&roleAllows('owner','manager')?'<p><button class="btn secondary" id="recordCodAdvanceBtn" type="button">Record verified COD advance</button></p>':''}
-        <h3>Courier dispatch</h3><p>${shipment?esc(shipment.courier_name_snapshot)+(shipment.tracking_number?' · Tracking: '+esc(shipment.tracking_number):'')+' · Settlement: '+shipment.settlement_days_snapshot+' days after delivery':'Not assigned yet'}</p><h3>Actions</h3><div class="order-actions">${next?`<button class="btn primary" data-status="${next}">Move to ${esc(next)}</button>`:''}${!['delivered','cancelled'].includes(o.fulfilment_status)?'<button class="btn danger" data-status="cancelled">Cancel</button>':''}${['payment_submitted','awaiting_payment'].includes(o.payment_status)?'<button class="btn secondary" data-pay="verified">Verify payment</button><button class="btn secondary" data-pay="rejected">Reject payment</button>':''}<button class="btn secondary" data-retry>Retry notification</button></div><h3>Status history</h3><div class="history-list">${(data.history||[]).map(h=>`<div><b>${esc(h.action)}</b><small>${fmtDate(h.created_at)} · ${esc(h.actor_role)}</small></div>`).join('')||'<small>No audit events yet.</small>'}</div></section></div></section>`;
+        <h3>Courier dispatch</h3><p>${shipment?esc(shipment.courier_name_snapshot)+(shipment.tracking_number?' · Tracking: '+esc(shipment.tracking_number):'')+' · Settlement: '+shipment.settlement_days_snapshot+' days after delivery':'Not assigned yet'}</p><h3>Actions</h3><div class="order-actions">${next?`<button class="btn primary" data-status="${next}">Move to ${esc(next)}</button>`:''}${!['delivered','cancelled'].includes(o.fulfilment_status)?'<button class="btn danger" data-status="cancelled">Cancel</button>':''}${['payment_submitted','awaiting_payment'].includes(o.payment_status)?'<button class="btn secondary" data-pay="verified">Verify payment</button><button class="btn secondary" data-pay="rejected">Reject payment</button>':''}${!o.is_test?'<button class="btn secondary" data-retry>Retry notification</button>':''}${!o.is_test&&!o.owner_reviewed_at&&roleAllows('owner','manager')?'<button class="btn secondary" data-review-order>Mark reviewed</button>':''}${roleAllows('owner')?`<button class="btn secondary" data-classify-order>${o.is_test?'Move to real':'Mark test'}</button>`:''} </div><h3>Status history</h3><div class="history-list">${(data.history||[]).map(h=>`<div><b>${esc(h.action)}</b><small>${fmtDate(h.created_at)} · ${esc(h.actor_role)}</small></div>`).join('')||'<small>No audit events yet.</small>'}</div></section></div></section>`;
+    const reviewButton=modal.querySelector('[data-review-order]');
+    if(reviewButton)reviewButton.onclick=async()=>{
+      if(!confirm('Confirm you personally reviewed '+o.order_number+'? This does not verify payment or delivery.'))return;
+      reviewButton.disabled=true;
+      try{await api('/api/admin/orders/'+encodeURIComponent(id)+'/review',{method:'POST',body:{}});toast('Order review recorded');await Promise.allSettled([openOrder(id),loadOrders(),loadDashboard()]);}
+      catch(e){reviewButton.disabled=false;toast('Review failed: '+e.message);}
+    };
+    const classificationButton=modal.querySelector('[data-classify-order]');
+    if(classificationButton)classificationButton.onclick=async()=>{
+      const intended=!o.is_test;
+      const reason=await askForOrderDecision((intended?'Mark TEST: ':'Mark REAL: ')+o.order_number,'Classification affects reporting and default order filters only. It does not send notifications, alter payment or change fulfilment.');
+      if(!reason)return;
+      classificationButton.disabled=true;
+      try{await api('/api/admin/orders/'+encodeURIComponent(id)+'/classification',{method:'PATCH',body:{is_test:intended,reason}});toast(intended?'Moved to Test orders':'Moved to Real orders');await Promise.allSettled([openOrder(id),loadOrders(),loadDashboard()]);}
+      catch(e){classificationButton.disabled=false;toast('Classification failed: '+e.message);}
+    };
     const advanceButton=$('#recordCodAdvanceBtn');
     if(advanceButton)advanceButton.onclick=async()=>{
       const max=Number(advance.remaining_pkr);
