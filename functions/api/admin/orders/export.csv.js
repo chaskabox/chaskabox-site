@@ -11,13 +11,16 @@ import { csvCell } from '../_lib/csv.js';
 const COLS = [
   'order_number', 'created_at', 'customer_name', 'customer_phone',
   'customer_address', 'customer_city', 'payment_method', 'payment_status', 'fulfilment_status',
-  'subtotal', 'delivery_fee', 'total', 'transaction_reference',
+  'subtotal', 'delivery_fee', 'total', 'transaction_reference', 'is_test', 'owner_reviewed_at',
 ];
 
 export const onRequestGet = withAdmin(['owner', 'manager'], async (context, { user, role }) => {
   const url = new URL(context.request.url);
   const sp = url.searchParams;
   const filters = [];
+  const orderType = sp.get('order_type') || 'real';
+  if (!['real','test','all'].includes(orderType)) httpError('Invalid order type',400,'invalid_order_type');
+  if(orderType !== 'all') filters.push('is_test=eq.' + (orderType === 'test'));
   const q = sanitizeSearch(sp.get('q'));
   if (q) filters.push(`or=(order_number.ilike.*${q}*,customer_name.ilike.*${q}*,customer_phone.ilike.*${q}*)`);
   for (const [param, col] of [['payment_status', 'payment_status'], ['fulfilment_status', 'fulfilment_status'], ['method', 'payment_method']]) {
