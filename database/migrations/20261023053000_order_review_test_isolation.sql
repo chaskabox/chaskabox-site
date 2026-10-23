@@ -233,4 +233,26 @@ begin
 end;
 $function$
 ;
+
+CREATE OR REPLACE FUNCTION public.notification_summary()
+ RETURNS jsonb
+ LANGUAGE sql
+ SET search_path TO ''
+AS $function$
+  select jsonb_build_object(
+    'dispatch',(select to_jsonb(s) from public.notification_dispatch_state s where id),
+    'owner_outbox',(select coalesce(jsonb_object_agg(status,n),'{}') from (select status,count(*) n from public.notification_deliveries d JOIN public.orders o ON o.id=d.order_id where NOT o.is_test AND d.target like 'owner_%' group by status) q),
+    'customer_outbox',(select coalesce(jsonb_object_agg(status,n),'{}') from (select status,count(*) n from public.notification_deliveries d JOIN public.orders o ON o.id=d.order_id where NOT o.is_test AND d.target='customer_whatsapp' group by status) q),
+    'provider_results',(select jsonb_build_object('accepted',count(*) filter(where status='accepted'),'delivered',count(*) filter(where delivered_at is not null),'delivery_failed',count(*) filter(where delivery_failed_at is not null),'complaints',count(*) filter(where complained_at is not null),'unconfirmed',count(*) filter(where status='accepted' and delivered_at is null and delivery_failed_at is null and complained_at is null)) from public.notification_deliveries d WHERE EXISTS(SELECT 1 FROM public.orders o WHERE o.id=d.order_id AND NOT o.is_test)),
+    'eligible_due',(select count(*) from public.notification_deliveries d,public.notification_dispatch_state s where s.id and s.enabled and d.status in ('pending','retry') and d.created_at>=s.activated_after and EXISTS(SELECT 1 FROM public.orders o WHERE o.id=d.order_id AND NOT o.is_test) and d.target=any(s.configured_targets) and d.next_attempt_at<=now()),
+    'review_required',(select count(*) from public.notification_deliveries d JOIN public.orders o ON o.id=d.order_id WHERE NOT o.is_test AND (d.status in ('blocked','uncertain','dead') or d.delivery_status in ('failed','complained'))),
+    'overdue',(select count(*) from public.notification_deliveries d,public.notification_dispatch_state s where s.id and s.enabled and d.status in ('pending','retry','processing') and d.created_at>=s.activated_after and EXISTS(SELECT 1 FROM public.orders o WHERE o.id=d.order_id AND NOT o.is_test) and d.target=any(s.configured_targets) and d.next_attempt_at<now()-interval '5 minutes'),
+    'excluded_before_cutoff',(select count(*) from public.notification_deliveries d,public.notification_dispatch_state s where s.id and (s.activated_after is null or d.created_at<s.activated_after) and d.status in ('pending','retry') AND EXISTS(SELECT 1 FROM public.orders o WHERE o.id=d.order_id AND NOT o.is_test)),
+    'inactive_channel_pending',(select count(*) from public.notification_deliveries d,public.notification_dispatch_state s where s.id and d.status in ('pending','retry') AND EXISTS(SELECT 1 FROM public.orders o WHERE o.id=d.order_id AND NOT o.is_test) and not d.target=any(s.configured_targets)),
+    'legacy_owner',(select coalesce(jsonb_object_agg(status,n),'{}') from (select status,count(*) n from public.notification_outbox group by status) q),
+    'legacy_customer',(select coalesce(jsonb_object_agg(status,n),'{}') from (select status,count(*) n from public.customer_notification_outbox group by status) q),
+    'note','Accepted means provider acknowledgement. Delivery and complaint counters require verified receipts and can overlap. Legacy queues are retained for review and never consumed.'
+  );
+$function$
+;
 COMMIT;
