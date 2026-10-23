@@ -198,4 +198,39 @@ BEGIN
 END;
 $function$
 ;
+CREATE OR REPLACE FUNCTION public.notification_claim(p_after timestamp with time zone, p_targets text[])
+ RETURNS SETOF notification_deliveries
+ LANGUAGE plpgsql
+ SET search_path TO ''
+AS $function$
+declare v_id bigint;
+begin
+  if not exists(select 1 from public.notification_dispatch_state where id and enabled and activated_after=p_after) then return; end if;
+  -- A crash after beginning a WAHA request is ambiguous. Never auto-send it again.
+  update public.notification_deliveries set
+    status=case when sending_started_at is null then 'retry'
+      when target='owner_email' and first_attempt_at>now()-interval '23 hours' and attempts<6 then 'retry'
+      else 'uncertain' end,
+    last_error=case when sending_started_at is null then 'lease_expired_before_send' else 'lease_expired_after_send' end,
+    lease_token=null,lease_expires_at=null,next_attempt_at=now(),updated_at=now()
+  where status='processing' and lease_expires_at<now();
+  update public.notification_deliveries set status='blocked',last_error='event_expired_review_required',updated_at=now()
+  where status in ('pending','retry') and created_at>=p_after and created_at<now()-interval '24 hours';
+  select d.id into v_id from public.notification_deliveries d
+  where d.status in ('pending','retry') and d.created_at>=p_after and d.created_at>=now()-interval '24 hours'
+    and d.next_attempt_at<=now() and d.target=any(p_targets) and d.attempts<6
+    and exists(select 1 from public.orders o where o.id=d.order_id and not o.is_test)
+    and (d.target<>'customer_whatsapp' or not exists(select 1 from public.notification_deliveries previous
+      where previous.order_id=d.order_id and previous.target='customer_whatsapp'
+      and (previous.created_at,previous.id)<(d.created_at,d.id)
+      and previous.created_at>=p_after
+      and previous.status in ('pending','retry','processing','blocked','uncertain')))
+  order by d.created_at,d.id for update of d skip locked limit 1;
+  if v_id is null then return; end if;
+  return query update public.notification_deliveries set status='processing',lease_token=gen_random_uuid(),
+    lease_expires_at=now()+interval '2 minutes',sending_started_at=null,updated_at=now()
+  where id=v_id returning *;
+end;
+$function$
+;
 COMMIT;
