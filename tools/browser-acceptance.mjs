@@ -71,6 +71,7 @@ const server=createServer(async(req,res)=>{try{
   if(p.startsWith('/api/admin/analytics/'))return attentionError&&p.endsWith('/attention')?json(res,{error:{message:'Synthetic attention outage'}},503):json(res,{ok:true,data:p.endsWith('/attention')?{items:[]}:p.endsWith('/overview')?{cards:{}}:{}});
   if(p==='/api/admin/settings')return json(res,{settings:Object.entries(settings).map(([key,value])=>({key,value}))});
   if(p==='/api/admin/theme')return json(res,{theme:{}});
+  if(p==='/api/admin/shop-hero'&&req.method==='GET')return json(res,{section:{section_key:'shop_hero',config:{},draft_config:{},updated_at:'2026-10-25T00:00:00Z'}});
   if(p==='/api/admin/navigation')return json(res,{menus:[]});
   if(p==='/api/admin/brands')return json(res,{brands});
   if(p==='/api/admin/ai-status')return json(res,{enabled:false,reasons:['Synthetic paused state'],models:{text:'synthetic'},budget:{accounted_neuron_estimate:0,effective_budget:4000,features:{text:false,image:false,embedding:false}},index:{current:0,visible:products.length,remaining:products.length},checked_at:new Date().toISOString()});
@@ -746,7 +747,7 @@ try{
    // One synthetic navigation pass over every owner-facing panel; source wiring
    // only. This does not replace authenticated persistence/provider acceptance.
    const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
-   if(panelKeys.length!==28)throw Error('Expected Dashboard plus 27 owner panel targets, got '+panelKeys.length);
+   if(panelKeys.length!==29)throw Error('Expected Dashboard plus 28 owner panel targets, got '+panelKeys.length);
    for(const key of panelKeys){
     await openAdminPanel(page,key);
     const target=page.locator('#view-'+key);
