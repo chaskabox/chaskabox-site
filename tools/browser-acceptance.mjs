@@ -145,13 +145,13 @@ async function inspect(page,route,width,role){
 try{
  for(const width of [390,1440]){
   const {context,page}=await contextFor(width,null);
-  if(width===1440){await page.goto(base+'/');await page.locator('.hnav a[href="/shop/"]').first().waitFor({state:'visible'});}
+  if(width===1440){await page.goto(base+'/');await page.getByRole('link',{name:'Shop Snacks',exact:true}).waitFor({state:'visible'});}
   let documents=0;const blocked=[];
   page.on('request',request=>{if(request.isNavigationRequest()&&request.frame()===page.mainFrame()&&new URL(request.url()).pathname==='/shop/')documents++;});
   await context.route('**/shop-reference-hero-20261025.js*',route=>{blocked.push('runtime');return route.abort();});
   await context.route('**/shop-reference-hero-20261025.css*',route=>{blocked.push('stylesheet');return route.abort();});
   await context.route('**/shop-hero-assets/**',route=>{blocked.push(new URL(route.request().url()).pathname);return route.abort();});
-  if(width===1440)await Promise.all([page.waitForURL(base+'/shop/'),page.locator('.hnav a[href="/shop/"]').first().click()]);
+  if(width===1440)await Promise.all([page.waitForURL(base+'/shop/'),page.getByRole('link',{name:'Shop Snacks',exact:true}).click()]);
   else await page.goto(base+'/shop/',{waitUntil:'domcontentloaded'});
   await page.locator('#cb-shop-hero h2').waitFor({state:'visible'});
   await page.evaluate(()=>document.fonts.ready);
