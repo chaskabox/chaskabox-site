@@ -755,6 +755,7 @@ function showView(v){
     }
   });
   if(typeof closeFilters==='function') closeFilters();
+  window.ChaskaShopHero?.setActive();
   closeMnav();
 }
 
@@ -818,6 +819,8 @@ function renderHomeRoute(){
   // fetch and a destructive re-render of images/shelves in the first viewport.
 }
 function renderShopRoute(){
+  // Load the approved Shop artwork only when this route is requested.
+  import('/shop-reference-hero-20261025.js').then(module=>module.mountShopHero()).catch(()=>{});
   const saleRoute=new URLSearchParams(location.search).get('badge')==='Sale';
   setPageMeta(saleRoute?'Snack Deals | ChaskaBox Pakistan':SEO_CATEGORY_DATA.shop.title,'/shop/',false,saleRoute?'Browse current snack deals and compare listed prices at ChaskaBox Pakistan.':SEO_CATEGORY_DATA.shop.description);
   setCategorySeoCopy(SEO_CATEGORY_DATA.shop);
