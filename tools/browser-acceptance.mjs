@@ -143,6 +143,28 @@ async function inspect(page,route,width,role){
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ for(const width of [390,1440]){
+  const {context,page}=await contextFor(width,null);
+  if(width===1440){await page.goto(base+'/');await page.locator('.hnav a[href="/shop/"]').first().waitFor({state:'visible'});}
+  let documents=0;const blocked=[];
+  page.on('request',request=>{if(request.isNavigationRequest()&&request.frame()===page.mainFrame()&&new URL(request.url()).pathname==='/shop/')documents++;});
+  await context.route('**/shop-reference-hero-20261025.js*',route=>{blocked.push('runtime');return route.abort();});
+  await context.route('**/shop-reference-hero-20261025.css*',route=>{blocked.push('stylesheet');return route.abort();});
+  await context.route('**/shop-hero-assets/**',route=>{blocked.push(new URL(route.request().url()).pathname);return route.abort();});
+  if(width===1440)await Promise.all([page.waitForURL(base+'/shop/'),page.locator('.hnav a[href="/shop/"]').first().click()]);
+  else await page.goto(base+'/shop/',{waitUntil:'domcontentloaded'});
+  await page.locator('#cb-shop-hero h2').waitFor({state:'visible'});
+  await page.evaluate(()=>document.fonts.ready);
+  const painted=await page.evaluate(()=>{
+   const hero=document.getElementById('cb-shop-hero'),home=document.getElementById('view-home');
+   const node=innerWidth<785?hero.querySelector('.cb-mobile-packet'):hero.querySelector('.cb-art');
+   const background=getComputedStyle(node,innerWidth<785?'::before':null).backgroundImage;
+   return {height:hero.getBoundingClientRect().height,homeHidden:getComputedStyle(home).display==='none',referenceFonts:document.fonts.check('100px CBShopHeading')&&document.fonts.check('70px CBShopBrush'),poster:background.includes('data:image/webp'),overflow:document.documentElement.scrollWidth>innerWidth+1};
+  });
+  results.interactions.push({case:'Shop first paint at '+width+'px with hero JS/CSS/fonts/full artwork unavailable',pass:documents===1&&painted.height>100&&painted.homeHidden&&painted.referenceFonts&&painted.poster&&!painted.overflow,painted,blocked});
+  await page.screenshot({path:path.join(output,'shop-first-paint-'+width+'.png'),fullPage:false});
+  await context.close();
+ }
  {
   // Stateful synthetic CMS: verifies UI draft/preview/publish without touching live data.
   const {context,page}=await contextFor(1440,'owner');

@@ -31,7 +31,7 @@ test('public collection HTML, aliases, missing brand, outage and incomplete occa
  };
  try{
   let r=await renderCataloguePage(context,'shop'),html=await r.text();assert.equal(r.status,200);assert.match(html,/Fixture &lt;sweet&gt;/);assert.match(html,/2 products/);assert.match(html,/"id":69/);assert.equal((html.match(/rel="canonical"/g)||[]).length,1);assert.doesNotMatch(html,/>249 products</);assert.match(html,/id="current-storefront-config"/);assert.match(html,/loading="eager" fetchpriority="high"/);assert.equal(r.headers.get('Cache-Control'),'no-store');
-  assert.match(html,/id="cb-shop-hero"/);assert.match(html,/shop-reference-hero-20261025\.css/);assert.ok(html.indexOf('id="cb-shop-hero"')<html.indexOf('id="shopGrid"'));
+  assert.match(html,/id="cb-shop-hero"/);assert.match(html,/<style id="cb-shop-hero-style">/);assert.ok(html.indexOf('id="cb-shop-hero"')<html.indexOf('id="shopGrid"'));
   const category=await renderCataloguePage(context,'category','chews-and-gums');assert.doesNotMatch(await category.text(),/id="cb-shop-hero"/);
   const boxes=await renderCataloguePage(context,'bundles');assert.doesNotMatch(await boxes.text(),/id="cb-shop-hero"/);
   r=await renderCataloguePage(context,'category','chews-gums');assert.equal(r.status,301);assert.equal(r.headers.get('location'),'https://chaskabox.online/category/chews-and-gums/');

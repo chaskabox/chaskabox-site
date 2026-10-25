@@ -820,7 +820,7 @@ function renderHomeRoute(){
 }
 function renderShopRoute(){
   // Load the approved Shop artwork only when this route is requested.
-  import('/shop-reference-hero-20261025.js?v=20261025-editor1').then(module=>module.mountShopHero()).catch(()=>{});
+  import('/shop-reference-hero-20261025.js?v=20261025-firstpaint1').then(module=>module.mountShopHero()).catch(()=>{});
   const saleRoute=new URLSearchParams(location.search).get('badge')==='Sale';
   setPageMeta(saleRoute?'Snack Deals | ChaskaBox Pakistan':SEO_CATEGORY_DATA.shop.title,'/shop/',false,saleRoute?'Browse current snack deals and compare listed prices at ChaskaBox Pakistan.':SEO_CATEGORY_DATA.shop.description);
   setCategorySeoCopy(SEO_CATEGORY_DATA.shop);
@@ -1084,6 +1084,11 @@ function normalizePath(p){
 function navigate(path){
   const url=new URL(path,location.origin);
   path = normalizePath(url.pathname)+url.search+url.hash;
+  // A first visit to Shop uses its complete server-rendered hero. Mounting it
+  // after an SPA grid paint showed the old layout while JS/fonts downloaded.
+  if(normalizePath(url.pathname)==='/shop/'&&normalizePath(location.pathname)!=='/shop/'&&!document.getElementById('cb-shop-hero')){
+    location.assign(path);return;
+  }
   if(location.pathname+location.search+location.hash === path){
     route(); // same path, re-render
     return;
