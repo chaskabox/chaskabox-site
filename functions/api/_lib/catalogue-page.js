@@ -7,6 +7,7 @@ import {LOCAL_PHOTOS} from './local-photos.js';
 import {SEO_CATEGORIES} from './catalogue-content.js';
 import {catalogueDiscoveryNav} from './catalogue-discovery.js';
 import {SITE,esc,safeJson,replaceMount,routeShell,withSeo,organizationSchema,catalogueUnavailable} from './storefront-html.js';
+import {SHOP_HERO_HTML,SHOP_HERO_HEAD} from '../../../shop-reference-hero-markup-20261025.js';
 export function browserProduct(p){return {id:Number(p.id),slug:p.slug||'',name:p.name,brand:p.brand||'',price:Number(p.price),oldPrice:p.old_price==null?null:Number(p.old_price),category:p.category||'',pack:p.pack||'',desc:p.description||'',badge:p.badge||'',img:p.image_url||null,photoNote:p.image_warning||'',bundle:!!p.is_bundle,stockState:p.stock_state||'sourced_after_order',seoTitle:p.seo_title||'',seoDescription:p.seo_description||'',canonicalUrl:p.canonical_url||'',bundleContents:p.bundle_contents||[],retailValue:p.bundle_retail_value??null,bundleSavings:p.bundle_savings??null,bundleNote:p.bundle_warning||''};}
 const moneyFormatter=new Intl.NumberFormat('en-PK',{maximumFractionDigits:2});
 export function catalogueCard(p){const photo=productImage(p.image_url,LOCAL_PHOTOS),href='/product/'+Number(p.id)+'/';const original=Number(p.old_price),sale=Number.isFinite(original)&&original>Number(p.price);const saleLabel=sale?'<span class="oldprice">Rs. '+moneyFormatter.format(original)+'</span><span class="savepill">Save '+Math.round((1-Number(p.price)/original)*100)+'%</span>':'';return '<article class="card"><a class="pimg" href="'+href+'">'+(photo?'<img '+imageAttributes(photo)+' alt="'+esc(p.name)+'" width="300" height="300" loading="lazy" decoding="async">':'<div class="noimg">'+esc(p.image_warning||'Photo coming soon')+'</div>')+'</a><div class="pbody"><div class="pcat">'+esc(p.category)+'</div><a class="pname" href="'+href+'">'+esc(p.name)+'</a><div class="packmeta"><div class="ppack">'+esc(p.pack)+'</div></div><div class="pricewrap"><span class="price">Rs. '+moneyFormatter.format(Number(p.price))+'</span>'+saleLabel+'</div><small>'+(p.stock_state==='unavailable'?'Currently unavailable':p.stock_state==='sourced_after_order'?'Sourced after order':'See current product details')+'</small></div></article>';}
@@ -38,11 +39,14 @@ export async function renderCataloguePage(context,kind,slug=''){
    rows=cms?all.filter(p=>(cms.product_ids||[]).map(Number).includes(Number(p.id))):all.filter(p=>p.category===known.name);
   }
   let html=routeShell(staticShell,'shop');
-  // The first grid card is visible and eagerly loaded. Announce its exact
-  // responsive source early; filters/sorts resolve before selecting the image.
-  // Never preload a generic hero, another product, or a missing original photo.
+  if(kind==='shop'){
+   html=html.replace(/(<div\b[^>]*\bid="view-shop"[^>]*>)/i,'$1'+SHOP_HERO_HTML)
+    .replace('</head>',SHOP_HERO_HEAD+'</head>');
+  }
+  // Shop prioritizes its approved hero above the grid. Collections without
+  // that hero continue to preload their exact first responsive product photo.
   const firstPhoto=rows[0]?productImage(rows[0].image_url,LOCAL_PHOTOS):'';
-  if(firstPhoto)html=html.replace('</head>',`<link rel="preload" as="image" ${imagePreloadAttributes(firstPhoto)} fetchpriority="high">\n</head>`);
+  if(kind!=='shop'&&firstPhoto)html=html.replace('</head>',`<link rel="preload" as="image" ${imagePreloadAttributes(firstPhoto)} fetchpriority="high">\n</head>`);
   html=replaceMount(html,'shopGrid',rows.map((p,i)=>catalogueCard(p).replace('loading="lazy"',i===0?'loading="eager" fetchpriority="high"':i===1?'loading="eager"':'loading="lazy"')).join('')||'<p>No public products in this collection yet. <a href="/shop/">Browse all snacks</a>.</p>');
   html=html.replace(/(<h1\b[^>]*id="catTitle"[^>]*>)[\s\S]*?<\/h1>/i,'$1'+esc(copy.name)+'</h1>').replace(/(<[^>]+id="catCount"[^>]*>)[\s\S]*?<\//i,'$1'+rows.length+' '+(rows.length===1?'product':'products')+'</');
   html=html.replace(/(<[^>]+id="categorySeoIntro"[^>]*>)[\s\S]*?<\//i,'$1'+esc(copy.intro)+'</');
