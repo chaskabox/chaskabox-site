@@ -1,5 +1,6 @@
 import {SHOP_HERO_HTML} from './shop-reference-hero-markup-20261025.js';
 import {defaultShopHero,resolveShopHero} from './shop-hero-config.js';
+import {SHOP_HERO_CRITICAL_CSS} from './shop-hero-critical.js';
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const json=s=>JSON.stringify(s).replace(/</g,'\\u003c');
 const fonts={reference:'CBShopHeading',rounded:'CBShopRounded',brush:'CBShopScript',body:'CBShopBody'};
@@ -18,7 +19,7 @@ export function renderShopHero(input){
  const headingFont=c.type.headingFont==='reference'&&(c.heading!==d.heading||c.type.headingShape!=='reference')?'CBShopRounded':fonts[c.type.headingFont];
  const phraseFont=c.type.phraseFont==='reference'?'CBShopBrush':fonts[c.type.phraseFont];
  let html=SHOP_HERO_HTML;
- html=html.replace('<div id="cb-shop-hero"','<div id="cb-shop-hero" class="'+(layers?'cb-layer-mode ':'')+(c.type.headingShape==='arc'?'cb-arc-heading ':'')+'"');
+ html=html.replace('<div id="cb-shop-hero"','<div id="cb-shop-hero" class="'+(layers?'cb-layer-mode ':'')+(c.type.headingShape==='arc'?'cb-arc-heading ':'')+(c.artwork.desktopUrl===desktopOriginal?'cb-original-desktop ':'')+(c.artwork.mobileUrl===mobileOriginal?'cb-original-mobile':'')+'"');
  html=html.replace(/<picture>[\s\S]*?<\/picture>/,picture(c));
  for(const [cls,text]of [['cb-eyebrow',c.eyebrow],['cb-hero-description',c.description],['cb-tagline',c.tagline]])html=html.replace(new RegExp('(<p class="'+cls+'"[^>]*>)[\\s\\S]*?</p>'),(_,start)=>start+esc(text).replace(/\n/g,'<br>')+'</p>');
  const title=c.type.headingShape==='arc'?'<svg viewBox="0 0 700 160" role="img" aria-label="'+esc(c.heading)+'"><defs><path id="cb-shop-arc" d="M 15 120 Q 350 '+(120-c.type.curve*2)+' 685 120"/></defs><text><textPath href="#cb-shop-arc" startOffset="50%" text-anchor="middle">'+esc(c.heading)+'</textPath></text></svg>':esc(c.heading);
@@ -88,10 +89,8 @@ export function renderShopHeroHead(input){
  const c=resolveShopHero(input);if(!c.enabled)return '';
  const art=c.artwork.desktopUrl===desktopOriginal?'/shop-hero-assets/reference-clean-1800-v27.avif':c.artwork.desktopUrl;
  const mobile=c.artwork.mobileUrl===mobileOriginal?'/shop-hero-assets/mobile-products-v27.avif':c.artwork.mobileUrl;
- return '<link id="cb-shop-hero-style" rel="stylesheet" href="/shop-reference-hero-20261025.css?v=20261025-editor1">'+
- (c.type.headingFont==='reference'&&c.heading===defaultShopHero().heading?'<link rel="preload" href="/shop-hero-assets/reference-heading-v26.woff" as="font" type="font/woff" crossorigin>':'')+
- '<link rel="preload" href="/shop-hero-assets/reference-brush-v25.woff" as="font" type="font/woff" crossorigin>'+
- (!heroUsesLayers(c)?'<link rel="preload" as="image" href="'+esc(art)+'"'+(c.artwork.desktopUrl===desktopOriginal?' imagesrcset="/shop-hero-assets/reference-clean-900-v27.avif 900w, /shop-hero-assets/reference-clean-1800-v27.avif 1800w" imagesizes="(max-width:1404px) calc(100vw - 24px), 1380px"':'')+' media="(min-width:785px)" fetchpriority="high">':'')+
+ return (!heroUsesLayers(c)?'<link rel="preload" as="image" href="'+esc(art)+'"'+(c.artwork.desktopUrl===desktopOriginal?' imagesrcset="/shop-hero-assets/reference-clean-900-v27.avif 900w, /shop-hero-assets/reference-clean-1800-v27.avif 1800w" imagesizes="(max-width:1404px) calc(100vw - 24px), 1380px"':'')+' media="(min-width:785px)" fetchpriority="high">':'')+
  '<link rel="preload" as="image" href="'+esc(mobile)+'" media="(max-width:784px)" fetchpriority="high">'+
- '<script type="module" src="/shop-reference-hero-20261025.js?v=20261025-editor1"></script>';
+ '<style id="cb-shop-hero-style">'+SHOP_HERO_CRITICAL_CSS+'</style>'+
+ '<script type="module" src="/shop-reference-hero-20261025.js?v=20261025-firstpaint1"></script>';
 }

@@ -24,7 +24,7 @@ export async function mountShopHero(input){
   if(!document.getElementById('cb-shop-hero-style')){
     const style=document.createElement('link');
     style.id='cb-shop-hero-style';style.rel='stylesheet';
-    style.href='/shop-reference-hero-20261025.css?v=20261025-editor1';document.head.append(style);
+    style.href='/shop-reference-hero-20261025.css?v=20261025-firstpaint1';document.head.append(style);
   }
   if(controller){controller.setActive();return;}
   const words=config.phrases;

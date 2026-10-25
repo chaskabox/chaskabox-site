@@ -49,5 +49,5 @@ test('secure public-products migration never un-hides products or changes permis
 
 test('all 12 storefront routes invalidate cached SPA bundle after canonical release',()=>{
  const files=['index.html','shop/index.html','brands/index.html','bundles/index.html',...['betel-nuts-and-pan-masala','biscuits-and-wafers','bunties-and-cakes','chews-and-gums','chocolates-and-candies','imli-and-ice-lollies','jellies-and-marshmallow','snacks-and-nimco'].map(s=>'category/'+s+'/index.html')];
- for(const f of files)assert.match(read(f),/\/app\.js\?v=20261025-shophero4/,f);
+ for(const f of files)assert.match(read(f),/\/app\.js\?v=20261025-shophero5/,f);
 });
