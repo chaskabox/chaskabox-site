@@ -31,7 +31,7 @@ export function mountShopHero(){
     clearInterval(timer);
     const stopped=paused||reduce.matches||document.hidden||!visible()||!inViewport;
     root.classList.toggle('cb-paused',stopped);
-    if(!stopped)timer=setInterval(()=>select(current+1),5000);
+    if(!stopped)timer=setInterval(()=>select(current+1),3000);
   }
   function select(index,animate=true){
     current=(index+words.length)%words.length;root.dataset.slide=String(current);
