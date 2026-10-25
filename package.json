@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test --test-reporter=spec tests/*.test.mjs",
-    "check": "node tools/check-syntax.mjs && node tools/build-photo-manifest.mjs --check && node tools/build-storefront-css.mjs --check",
+    "check": "node tools/check-syntax.mjs && node tools/build-photo-manifest.mjs --check && node tools/build-storefront-css.mjs --check && node tools/build-shop-hero.mjs --check",
     "build:functions": "wrangler pages functions build functions --outdir .wrangler/build --compatibility-date 2026-10-04",
     "build:notifications": "wrangler deploy --dry-run --config cloudflare/wrangler.notification-outbox.jsonc --outdir .wrangler/notification-build",
     "build:media": "wrangler deploy --dry-run --config cloudflare/wrangler.media-transform.jsonc --outdir .wrangler/media-build",

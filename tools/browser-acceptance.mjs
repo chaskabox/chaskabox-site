@@ -71,6 +71,7 @@ const server=createServer(async(req,res)=>{try{
   if(p.startsWith('/api/admin/analytics/'))return attentionError&&p.endsWith('/attention')?json(res,{error:{message:'Synthetic attention outage'}},503):json(res,{ok:true,data:p.endsWith('/attention')?{items:[]}:p.endsWith('/overview')?{cards:{}}:{}});
   if(p==='/api/admin/settings')return json(res,{settings:Object.entries(settings).map(([key,value])=>({key,value}))});
   if(p==='/api/admin/theme')return json(res,{theme:{}});
+  if(p==='/api/admin/shop-hero'&&req.method==='GET')return json(res,{section:{section_key:'shop_hero',config:{},draft_config:{},updated_at:'2026-10-25T00:00:00Z'}});
   if(p==='/api/admin/navigation')return json(res,{menus:[]});
   if(p==='/api/admin/brands')return json(res,{brands});
   if(p==='/api/admin/ai-status')return json(res,{enabled:false,reasons:['Synthetic paused state'],models:{text:'synthetic'},budget:{accounted_neuron_estimate:0,effective_budget:4000,features:{text:false,image:false,embedding:false}},index:{current:0,visible:products.length,remaining:products.length},checked_at:new Date().toISOString()});
@@ -93,9 +94,9 @@ const server=createServer(async(req,res)=>{try{
  if(/\.\.|(^|\/)\./.test(p)){res.writeHead(403);return res.end('Forbidden');}
  const assetPath=p==='/cart/'?'/index.html':p==='/admin/'?'/admin.html':/^\/brand\/[^/]+\/$/.test(p)?'/brand/index.html':p;
  let file=path.join(root,decodeURIComponent(assetPath));if((await stat(file).catch(()=>null))?.isDirectory())file=path.join(file,'index.html');
- if(!/\.(html|css|js|json|png|webp|avif|svg|mp4|woff2)$/.test(file)){res.writeHead(404);return res.end('Not found');}
+ if(!/\.(html|css|js|json|png|webp|avif|svg|mp4|woff|woff2)$/.test(file)){res.writeHead(404);return res.end('Not found');}
  let data=await readFile(file);if(file.endsWith('.html'))data=Buffer.from(data.toString().replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
- const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'application/json','.png':'image/png','.webp':'image/webp','.avif':'image/avif','.svg':'image/svg+xml','.woff2':'font/woff2'};
+ const mime={'.html':'text/html','.css':'text/css','.js':'text/javascript','.json':'application/json','.png':'image/png','.webp':'image/webp','.avif':'image/avif','.svg':'image/svg+xml','.woff':'font/woff','.woff2':'font/woff2'};
  res.writeHead(200,{'Content-Type':mime[path.extname(file)]||'application/octet-stream'});res.end(data);
 }catch{res.writeHead(404);res.end('Not found');}});
 await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));const base='http://127.0.0.1:'+server.address().port;
@@ -142,6 +143,33 @@ async function inspect(page,route,width,role){
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ {
+  // Stateful synthetic CMS: verifies UI draft/preview/publish without touching live data.
+  const {context,page}=await contextFor(1440,'owner');
+  let serial=0,hero={section_key:'shop_hero',config:{},draft_config:{},updated_at:'2026-10-25T00:00:00Z'};
+  await context.route('**/api/admin/shop-hero',async route=>{
+   const request=route.request();
+   if(request.method()==='PATCH'){const body=request.postDataJSON();hero={...hero,draft_config:body.config,updated_at:'revision-'+(++serial)};}
+   if(request.method()==='POST')hero={...hero,config:hero.draft_config,updated_at:'revision-'+(++serial)};
+   await route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({section:hero})});
+  });
+  await page.goto(base+'/admin/');await page.waitForFunction(()=>document.getElementById('adminBoot')?.style.display==='none');
+  await openAdminPanel(page,'shophero');await page.locator('#shForm').waitFor();
+  await page.getByLabel('Main heading',{exact:true}).fill('Sweet childhood memories');
+  const frame=page.frameLocator('#shPreview');
+  await frame.getByRole('heading',{name:'Sweet childhood memories',exact:true}).waitFor();
+  await page.locator('#shSave').click();await page.locator('#shStatus').getByText('Draft saved. Publish hero to make it live.',{exact:true}).waitFor();
+  const draftIsolated=hero.config.heading===undefined&&hero.draft_config.heading==='Sweet childhood memories';
+  await page.locator('#shPublish').click();await page.locator('#shStatus').getByText('Hero published. New Shop visits use these settings.',{exact:true}).waitFor();
+  await page.locator('#shViewport').selectOption('1340');
+  await frame.getByRole('heading',{name:'Sweet childhood memories',exact:true}).waitFor();
+  await page.screenshot({path:path.join(output,'shop-hero-editor-desktop.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:900});await page.locator('#shViewport').selectOption('390');
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);
+  await page.screenshot({path:path.join(output,'shop-hero-editor-mobile.png'),fullPage:true});
+  results.interactions.push({case:'Shop Hero drafts stay private, iframe previews edits, publish saves independently, and editor fits mobile',pass:draftIsolated&&hero.config.heading==='Sweet childhood memories'&&!overflow});
+  await context.close();
+ }
  {
   const {context,page}=await contextFor(1440,'owner');
   await context.route('**/api/admin/health',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({supabase:{status:'error'},turnstile:{status:'configured'},resend:{status:'consumer_configured'},notifications:{status:'degraded'},ai:{status:'unknown'},functions:{status:'ok'}})}));
@@ -719,7 +747,7 @@ try{
    // One synthetic navigation pass over every owner-facing panel; source wiring
    // only. This does not replace authenticated persistence/provider acceptance.
    const panelKeys=await page.locator('.admin-nav-btn[data-view]').evaluateAll(els=>els.map(e=>e.dataset.view));
-   if(panelKeys.length!==28)throw Error('Expected Dashboard plus 27 owner panel targets, got '+panelKeys.length);
+   if(panelKeys.length!==29)throw Error('Expected Dashboard plus 28 owner panel targets, got '+panelKeys.length);
    for(const key of panelKeys){
     await openAdminPanel(page,key);
     const target=page.locator('#view-'+key);

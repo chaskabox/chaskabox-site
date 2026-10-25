@@ -10,7 +10,7 @@ test('Redesigned sidebar exposes desktop focus mode, navigation group controls a
    assert.ok(s.includes('id="'+id+'"'),path+' missing '+id);
   assert.match(s,/admin-v4-sidebar\.js\?v=20261021-simplified-sidebar1/);
   assert.equal((s.match(/<details class="admin-nav-group"/g)||[]).length,6);
-  assert.equal((s.match(/class="admin-nav-btn/g)||[]).length,path==='admin.html'?28:25);
+  assert.equal((s.match(/class="admin-nav-btn/g)||[]).length,path==='admin.html'?29:25);
   assert.match(s,/id="adminNavGroups" aria-label="Admin sections"/);
   assert.match(s,/<details class="admin-nav-preferences">/);
  }
