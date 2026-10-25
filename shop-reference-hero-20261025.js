@@ -17,7 +17,7 @@ export function mountShopHero(){
   if(!document.getElementById('cb-shop-hero-style')){
     const style=document.createElement('link');
     style.id='cb-shop-hero-style';style.rel='stylesheet';
-    style.href='/shop-reference-hero-20261025.css';document.head.append(style);
+    style.href='/shop-reference-hero-20261025.css?v=20261025-speed1';document.head.append(style);
   }
   if(controller){controller.setActive();return;}
   const words=['Meetha bhi.','Chatpata bhi.','Crunchy bhi.'];
@@ -31,7 +31,7 @@ export function mountShopHero(){
     clearInterval(timer);
     const stopped=paused||reduce.matches||document.hidden||!visible()||!inViewport;
     root.classList.toggle('cb-paused',stopped);
-    if(!stopped)timer=setInterval(()=>select(current+1),6500);
+    if(!stopped)timer=setInterval(()=>select(current+1),5000);
   }
   function select(index,animate=true){
     current=(index+words.length)%words.length;root.dataset.slide=String(current);
