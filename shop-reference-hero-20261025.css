@@ -20,7 +20,7 @@
 #cb-shop-hero .cb-hero-description{font-size:1.37cqw;line-height:1.35;margin:.4cqw 0 1.45cqw;font-weight:600}
 #cb-shop-hero .cb-hero-actions{display:flex;align-items:center;justify-content:center;gap:1.15cqw}
 #cb-shop-hero .cb-hero-actions a{display:inline-flex;align-items:center;justify-content:center;min-height:3.4cqw;border-radius:999px;padding:.75cqw 2cqw;text-decoration:none;font-size:1.1cqw;line-height:1.2;white-space:nowrap;transition:transform .2s,box-shadow .2s}
-#cb-shop-hero .cb-primary-action{background:var(--orange);color:#fff;gap:1.4cqw;border:1.5px solid var(--orange)}
+#cb-shop-hero .cb-primary-action{background:var(--orange);color:var(--blue);gap:1.4cqw;border:1.5px solid var(--orange)}
 #cb-shop-hero .cb-primary-action span{font-size:1.6cqw;line-height:1}
 #cb-shop-hero .cb-bundle-action{border:1.5px solid var(--blue);background:#fff7ec77;min-width:13.7cqw}
 #cb-shop-hero .cb-hero-actions a:hover{transform:translateY(-2px);box-shadow:0 5px 14px #10294d15}

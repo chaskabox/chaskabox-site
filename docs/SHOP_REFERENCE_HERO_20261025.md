@@ -13,3 +13,5 @@ Local validation: 462 native tests, 459 passed, 3 environment-dependent skips, z
 Adobe was selected during this work. Its installed status was verified and its Fonts skill read, but Adobe font-search/editing tools were not exposed in the session. No Adobe font search, identification or edit is claimed.
 
 Production remains subject to the existing owner approval in `MUSE_FINAL_DEPLOYMENT_TASKS.md`. This branch is prepared for staging review first.
+
+Staging CI identified insufficient contrast in the reference's white CTA text (2.72:1). The bright orange button is retained and its label uses the existing navy palette, with a computed contrast of 5.57:1. Other reference colours and composition remain unchanged.
