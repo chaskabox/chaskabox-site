@@ -820,7 +820,7 @@ function renderHomeRoute(){
 }
 function renderShopRoute(){
   // Load the approved Shop artwork only when this route is requested.
-  import('/shop-reference-hero-20261025.js?v=20261025-3seconds').then(module=>module.mountShopHero()).catch(()=>{});
+  import('/shop-reference-hero-20261025.js?v=20261025-editor1').then(module=>module.mountShopHero()).catch(()=>{});
   const saleRoute=new URLSearchParams(location.search).get('badge')==='Sale';
   setPageMeta(saleRoute?'Snack Deals | ChaskaBox Pakistan':SEO_CATEGORY_DATA.shop.title,'/shop/',false,saleRoute?'Browse current snack deals and compare listed prices at ChaskaBox Pakistan.':SEO_CATEGORY_DATA.shop.description);
   setCategorySeoCopy(SEO_CATEGORY_DATA.shop);

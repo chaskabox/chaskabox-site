@@ -7,7 +7,9 @@ import {LOCAL_PHOTOS} from './local-photos.js';
 import {SEO_CATEGORIES} from './catalogue-content.js';
 import {catalogueDiscoveryNav} from './catalogue-discovery.js';
 import {SITE,esc,safeJson,replaceMount,routeShell,withSeo,organizationSchema,catalogueUnavailable} from './storefront-html.js';
-import {SHOP_HERO_HTML,SHOP_HERO_HEAD} from '../../../shop-reference-hero-markup-20261025.js';
+import {renderShopHero,renderShopHeroHead} from '../../../shop-hero-render.js';
+import {shopHeroFromManifest} from '../../../shop-hero-config.js';
+import {shopSnapshot} from './shop-snapshot.js';
 export function browserProduct(p){return {id:Number(p.id),slug:p.slug||'',name:p.name,brand:p.brand||'',price:Number(p.price),oldPrice:p.old_price==null?null:Number(p.old_price),category:p.category||'',pack:p.pack||'',desc:p.description||'',badge:p.badge||'',img:p.image_url||null,photoNote:p.image_warning||'',bundle:!!p.is_bundle,stockState:p.stock_state||'sourced_after_order',seoTitle:p.seo_title||'',seoDescription:p.seo_description||'',canonicalUrl:p.canonical_url||'',bundleContents:p.bundle_contents||[],retailValue:p.bundle_retail_value??null,bundleSavings:p.bundle_savings??null,bundleNote:p.bundle_warning||''};}
 const moneyFormatter=new Intl.NumberFormat('en-PK',{maximumFractionDigits:2});
 export function catalogueCard(p){const photo=productImage(p.image_url,LOCAL_PHOTOS),href='/product/'+Number(p.id)+'/';const original=Number(p.old_price),sale=Number.isFinite(original)&&original>Number(p.price);const saleLabel=sale?'<span class="oldprice">Rs. '+moneyFormatter.format(original)+'</span><span class="savepill">Save '+Math.round((1-Number(p.price)/original)*100)+'%</span>':'';return '<article class="card"><a class="pimg" href="'+href+'">'+(photo?'<img '+imageAttributes(photo)+' alt="'+esc(p.name)+'" width="300" height="300" loading="lazy" decoding="async">':'<div class="noimg">'+esc(p.image_warning||'Photo coming soon')+'</div>')+'</a><div class="pbody"><div class="pcat">'+esc(p.category)+'</div><a class="pname" href="'+href+'">'+esc(p.name)+'</a><div class="packmeta"><div class="ppack">'+esc(p.pack)+'</div></div><div class="pricewrap"><span class="price">Rs. '+moneyFormatter.format(Number(p.price))+'</span>'+saleLabel+'</div><small>'+(p.stock_state==='unavailable'?'Currently unavailable':p.stock_state==='sourced_after_order'?'Sourced after order':'See current product details')+'</small></div></article>';}
@@ -23,10 +25,11 @@ export function filterCatalogueRows(rows,params,manifest={}){
  if(params.get('sort')==='new')out=[...out].sort((a,b)=>Number(b.id)-Number(a.id));
  return out;
 }
-async function shell(context){const request=new Request(new URL('/',context.request.url));const r=context.next?await context.next(request):await context.env.ASSETS.fetch(request);if(!r.ok)throw Error('Store shell unavailable');return r.text();}
+async function shell(context){const request=new Request(new URL('/',context.request.url));const r=context.env.ASSETS?.fetch?await context.env.ASSETS.fetch(request):await context.next(request);if(!r.ok)throw Error('Store shell unavailable');return r.text();}
 export async function renderCataloguePage(context,kind,slug=''){
  try{
-  const [all,manifest,staticShell]=await Promise.all([publicCatalogue(context.env),storefrontConfig(context.env).catch(error=>{if(kind==='category')throw error;return null;}),shell(context)]);
+  const data=kind==='shop'?shopSnapshot(context.env):Promise.all([publicCatalogue(context.env),storefrontConfig(context.env).catch(error=>{if(kind==='category')throw error;return null;})]);
+  const [[all,manifest],staticShell]=await Promise.all([data,shell(context)]);
   let rows=all,path=kind==='category'?'/category/'+slug+'/':kind==='bundles'?'/bundles/':'/shop/',copy=SEO_CATEGORIES[kind]||SEO_CATEGORIES.shop;
   if(kind==='bundles')rows=all.filter(p=>p.is_bundle);
   if(kind==='shop'){const params=new URL(context.request.url).searchParams;rows=filterCatalogueRows(all,params,manifest);if(params.get('badge')==='Sale')copy={...copy,name:'Snack Deals',title:'Snack Deals | ChaskaBox Pakistan',description:'Browse current snack deals and compare listed prices at ChaskaBox Pakistan.'};}
@@ -40,8 +43,9 @@ export async function renderCataloguePage(context,kind,slug=''){
   }
   let html=routeShell(staticShell,'shop');
   if(kind==='shop'){
-   html=html.replace(/(<div\b[^>]*\bid="view-shop"[^>]*>)/i,'$1'+SHOP_HERO_HTML)
-    .replace('</head>',SHOP_HERO_HEAD+'</head>');
+   const hero=shopHeroFromManifest(manifest);
+   html=html.replace(/(<div\b[^>]*\bid="view-shop"[^>]*>)/i,(_,start)=>start+renderShopHero(hero))
+    .replace(/(<meta\b[^>]*charset[^>]*>)/i,(_,start)=>start+renderShopHeroHead(hero));
   }
   // Shop prioritizes its approved hero above the grid. Collections without
   // that hero continue to preload their exact first responsive product photo.

@@ -65,3 +65,19 @@
 # Font bytes remain the same across store visits; avoid revalidation on every page.
 /fonts/*
   Cache-Control: public, max-age=2592000
+
+# Immutable hero artwork and fonts: replace the versioned filename when edited.
+/shop-hero-assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/shop-hero-config.js
+  Cache-Control: no-cache
+/shop-hero-render.js
+  Cache-Control: no-cache
+/admin-shop-hero.js
+  Cache-Control: no-store
+/admin-shop-hero.css
+  Cache-Control: no-cache
+/shop-hero-preview.html
+  Cache-Control: no-store
+  X-Robots-Tag: noindex, nofollow

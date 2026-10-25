@@ -1,5 +1,6 @@
 // Shared validation for the protected homepage editor and its public renderer.
-export const HOMEPAGE_KEYS = new Set(['hero','categories','chaska_picks','deals','boxes','chatpata_picks','new_items','how_it_works','faq','announcement_bar','trust_bar','why_chaskabox','promotions','box_spotlight']);
+import {validateShopHero} from './shop-hero-config.js';
+export const HOMEPAGE_KEYS = new Set(['hero','shop_hero','categories','chaska_picks','deals','boxes','chatpata_picks','new_items','how_it_works','faq','announcement_bar','trust_bar','why_chaskabox','promotions','box_spotlight']);
 export const PRODUCT_SECTIONS = new Set(['hero','chaska_picks','deals','boxes','chatpata_picks','new_items']);
 export function safeHomepageLink(value) {
   if(typeof value!=='string'||!value||value.length>500||/[\s\\"'<>\u0000-\u001f\u007f]/.test(value))return false;
@@ -7,6 +8,7 @@ export function safeHomepageLink(value) {
   try{const u=new URL(value);return u.protocol==='https:'&&!!u.hostname&&!u.username&&!u.password;}catch{return false;}
 }
 export function validateHomepageConfig(key,config) {
+  if(key==='shop_hero')return validateShopHero(config);
   if(!HOMEPAGE_KEYS.has(key)||!config||typeof config!=='object'||Array.isArray(config)||JSON.stringify(config).length>20000)throw Error('Invalid homepage configuration');
   if(Object.hasOwn(config,'product_ids')){
     const ids=config.product_ids;
