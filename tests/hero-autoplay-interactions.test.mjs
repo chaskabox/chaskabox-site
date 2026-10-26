@@ -8,6 +8,7 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
   const events={}; const rootEvents={}; const docEvents={}; const windowEvents={};
   const media={matches:false,addEventListener(_name,fn){this.onChange=fn;}};
   let hover=false,scheduled=null,sequence=0;
+  const flush=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
   const title={replaceChildren(){},append(){}};
   const dots=Array.from({length:3},()=>({setAttribute(){}}));
   const label={textContent:''},icon={textContent:''};
@@ -71,9 +72,9 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
   assert.equal(imageRequests[0].priority,'low');
   assert.equal(scheduled?.delay,5000);
   assert.equal(label.textContent,'Pause');
-  scheduled.fn();await Promise.resolve();await Promise.resolve();assert.equal(root.dataset.heroSlide,'2');
-  scheduled.fn();await Promise.resolve();await Promise.resolve();assert.equal(root.dataset.heroSlide,'3');
-  scheduled.fn();await Promise.resolve();await Promise.resolve();assert.equal(root.dataset.heroSlide,'1');
+  scheduled.fn();await flush();assert.equal(root.dataset.heroSlide,'2');
+  scheduled.fn();await flush();assert.equal(root.dataset.heroSlide,'3');
+  scheduled.fn();await flush();assert.equal(root.dataset.heroSlide,'1');
   hover=true;rootEvents.mouseenter();assert.equal(scheduled,null,'hover pauses');
   hover=false;rootEvents.mouseleave();assert.equal(scheduled?.delay,5000,'mouseleave resumes');
   doc.activeElement={isHeroChild:true};rootEvents.focusin();assert.equal(scheduled,null,'focus pauses');
@@ -84,7 +85,7 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
   doc.hidden=false;docEvents.visibilitychange();assert.equal(scheduled?.delay,5000,'visible tab resumes');
   hover=true;rootEvents.mouseenter();
   events.click({target:{closest(){return {dataset:{heroDirection:'next'}};}}});
-  await Promise.resolve();await Promise.resolve();
+  await flush();
   assert.equal(root.dataset.heroSlide,'2','manual next works while paused');
   assert.equal(scheduled,null,'manual navigation while hovered remains paused');
   assert.equal(label.textContent,'Play','manual selection offers explicit resumption');
