@@ -407,7 +407,7 @@ function closeFilters(){
 function clearAllFilters(){
   shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';shopState.badge='';shopState.sort='feat';
   syncShopSearchUrl(true);
-  const url=new URL(location.href);url.searchParams.delete('badge');url.searchParams.delete('sort');
+  const url=new URL(location.pathname+location.search+location.hash,location.origin);url.searchParams.delete('badge');url.searchParams.delete('sort');
   history.replaceState(null,'',url.pathname+url.search+url.hash);
   renderShopContent();
 }
