@@ -133,6 +133,7 @@ async function inspect(page,route,width,role){
   })),errors:results.errors.slice(-6)}));throw error;}
  }
  else if(route==='/account/')await page.waitForFunction(()=>!document.getElementById('acctbody')?.textContent.includes('Loading'));
+ else if(route==='/checkout.html')await page.getByRole('heading',{name:'Your snack bag is empty',exact:true}).waitFor({state:'visible'});
  else if(route!=='/track-order.html')await page.waitForFunction(()=>typeof PRODUCTS==='undefined'||PRODUCTS.length>0);
  await page.waitForTimeout(180);
  const layout=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,duplicatePromo:['.promo-desktop','.promo-mobile'].every(s=>{const e=document.querySelector(s);return !!e&&getComputedStyle(e).display!=='none';})}));
