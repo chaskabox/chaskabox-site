@@ -25,13 +25,13 @@ test('public collection HTML, aliases, missing brand, outage and incomplete occa
   const u=new URL(typeof value==='string'?value:value.url);
   if(u.pathname.endsWith('/public_products'))return Response.json(rows);
   if(u.pathname.endsWith('/rpc/storefront_manifest'))return Response.json({categories:[{name:'Chews & Gums',slug:'chews-gums',product_ids:[69,76]}]});
-  if(u.pathname.endsWith('/brands'))return Response.json(u.searchParams.get('slug')==='eq.fixture'?[{name:'Fixture',slug:'fixture'}]:[]);
+  if(u.pathname.endsWith('/brands'))return Response.json(!u.searchParams.has('slug')||u.searchParams.get('slug')==='eq.fixture'?[{name:'Fixture',slug:'fixture'}]:[]);
   if(u.pathname.endsWith('/bundle_items'))return Response.json([]);
   throw Error('Unexpected fixture request');
  };
  try{
   let r=await renderCataloguePage(context,'shop'),html=await r.text();assert.equal(r.status,200);assert.match(html,/Fixture &lt;sweet&gt;/);assert.match(html,/2 products/);assert.match(html,/"id":69/);assert.equal((html.match(/rel="canonical"/g)||[]).length,1);assert.doesNotMatch(html,/>249 products</);assert.match(html,/id="current-storefront-config"/);assert.match(html,/loading="eager" fetchpriority="high"/);assert.equal(r.headers.get('Cache-Control'),'no-store');
-  assert.match(html,/id="cb-shop-hero"/);assert.match(html,/<style id="cb-shop-hero-style">/);assert.ok(html.indexOf('id="cb-shop-hero"')<html.indexOf('id="shopGrid"'));
+  assert.match(html,/id="cb-shop-hero"/);assert.match(html,/<style id="cb-shop-hero-style">/);assert.ok(html.indexOf('id="cb-shop-hero"')<html.indexOf('id="shopGrid"'));assert.ok(html.indexOf('name="viewport"')<html.indexOf('as="image"'),'Set the mobile viewport before responsive hero preloads');
   const category=await renderCataloguePage(context,'category','chews-and-gums');assert.doesNotMatch(await category.text(),/id="cb-shop-hero"/);
   const boxes=await renderCataloguePage(context,'bundles');assert.doesNotMatch(await boxes.text(),/id="cb-shop-hero"/);
   r=await renderCataloguePage(context,'category','chews-gums');assert.equal(r.status,301);assert.equal(r.headers.get('location'),'https://chaskabox.online/category/chews-and-gums/');

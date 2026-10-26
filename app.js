@@ -849,47 +849,48 @@ function renderBundlesRoute(){
 }
 
 /* ---------- Phase 2A: Brand directory + brand detail ---------- */
-let _brandsCache=null;
+let _brandsCache=null,_brandsRead=null,brandDirectoryLetter='',brandDirectoryVersion=0;
 async function fetchBrands(){
-  if(_brandsCache) return _brandsCache;
-  try{
-    const r=await fetch('/api/brands',{headers:{'Accept':'application/json'}});
-    const d=await r.json();
-    _brandsCache=(d&&d.brands)||[];
-  }catch(e){ _brandsCache=[]; }
-  return _brandsCache;
+  if(_brandsCache)return _brandsCache;
+  if(_brandsRead)return _brandsRead;
+  _brandsRead=(async()=>{
+    let initial;try{initial=JSON.parse(document.getElementById('current-brands')?.textContent||'null');}catch{}
+    if(Array.isArray(initial)){_brandsCache=initial;return initial;}
+    const response=await fetch('/api/brands',{headers:{Accept:'application/json'}});
+    if(!response.ok)throw Error('Brand directory unavailable');
+    const data=await response.json();if(!Array.isArray(data?.brands))throw Error('Invalid brand directory');
+    _brandsCache=data.brands;return _brandsCache;
+  })().finally(()=>{_brandsRead=null;});
+  return _brandsRead;
 }
 function renderBrandsRoute(){
   setPageMeta('Pakistani Snack Brands | ChaskaBox','/brands/',false,'Browse snack brands with public products at ChaskaBox, including Hilal, Mayfair, Candyland and Giggly. Compare listed packs and current prices.');
-  showView('brands');
-  renderBrandsDirectory();
+  showView('brands');renderBrandsDirectory();
 }
-async function renderBrandsDirectory(){
-  const grid=document.getElementById('brandGrid');
-  const countEl=document.getElementById('brandCount');
-  const azEl=document.getElementById('brandAZ');
-  if(!grid) return;
-  grid.innerHTML='<p class="muted" style="grid-column:1/-1">Loading brands...</p>';
-  const brands=(await fetchBrands()).filter(b=>Number(b.productCount)>0);
-  // Empty brands stay in the admin catalogue; only customer-facing discovery is filtered.
-  if(countEl) countEl.textContent=brands.length+' '+(brands.length===1?'brand':'brands');
-  const q=(document.getElementById('brandSearch')?.value||'').toLowerCase();
-  const list=brands.filter(b=>!q||b.name.toLowerCase().includes(q));
-  // A-Z filter chips
-  if(azEl){
-    const letters=[...new Set(brands.map(b=>(b.name[0]||'#').toUpperCase()))].sort();
-    azEl.innerHTML='<button class="fchip" data-az="">All</button>'+letters.map(l=>`<button class="fchip" data-az="${l}">${l}</button>`).join('');
-    azEl.querySelectorAll('[data-az]').forEach(btn=>{btn.onclick=()=>{renderBrandsDirectory(btn.dataset.az);};});
+async function renderBrandsDirectory(letter){
+  if(typeof letter==='string')brandDirectoryLetter=letter.toUpperCase();
+  const grid=document.getElementById('brandGrid'),countEl=document.getElementById('brandCount'),azEl=document.getElementById('brandAZ');
+  if(!grid)return;
+  const version=++brandDirectoryVersion;
+  if(!grid.children.length)grid.innerHTML='<p class="route-loading" role="status">Loading brands…</p>';
+  let brands;try{brands=(await fetchBrands()).filter(b=>Number(b.productCount)>0);}catch{
+    if(version===brandDirectoryVersion)grid.innerHTML='<div class="directory-empty" role="status"><p>Brands could not load. Please try again.</p><button class="cta" type="button" onclick="renderBrandsDirectory()">Retry brands</button></div>';
+    return;
   }
-  const az=(arguments[0]||'').toUpperCase();
-  const shown=list.filter(b=>!az||(b.name[0]||'').toUpperCase()===az);
+  if(version!==brandDirectoryVersion)return;
+  const q=(document.getElementById('brandSearch')?.value||'').trim().toLowerCase();
+  const letters=[...new Set(brands.map(b=>(b.name[0]||'#').toUpperCase()))].sort();
+  if(azEl){
+    azEl.innerHTML=['',...letters].map(l=>'<button type="button" class="fchip" data-az="'+esc(l)+'" aria-pressed="'+String(brandDirectoryLetter===l)+'">'+(l||'All')+'</button>').join('');
+    azEl.querySelectorAll('[data-az]').forEach(btn=>btn.onclick=()=>renderBrandsDirectory(btn.dataset.az));
+  }
+  const shown=brands.filter(b=>(!q||b.name.toLowerCase().includes(q))&&(!brandDirectoryLetter||(b.name[0]||'').toUpperCase()===brandDirectoryLetter));
+  if(countEl)countEl.textContent=shown.length+(q||brandDirectoryLetter?' of '+brands.length:'')+' '+(brands.length===1?'brand':'brands');
   grid.innerHTML=shown.length?shown.map(b=>{
-    const logo=b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name)} logo" loading="lazy" style="max-height:56px;max-width:100%;object-fit:contain">`:`<span style="font-size:34px">🏷️</span>`;
-    return `<a class="card" href="/brand/${esc(b.slug)}/" style="text-decoration:none;text-align:center;padding:18px 12px;display:block">
-      <div style="height:64px;display:flex;align-items:center;justify-content:center">${logo}</div>
-      <div class="pname" style="margin-top:8px">${esc(b.name)}</div>
-      <div class="pcat">${b.productCount} ${Number(b.productCount)===1?'product':'products'}</div></a>`;
-  }).join(''):'<p class="muted" style="grid-column:1/-1">No brands found.</p>';
+    const initials=b.name.split(/\s+/).map(s=>s[0]).join('').slice(0,2).toUpperCase();
+    const logo=b.logo?'<img src="'+esc(b.logo)+'" alt="" loading="lazy" decoding="async" width="160" height="72">':'';
+    return '<a class="card brand-directory-card" href="/brand/'+esc(b.slug)+'/"><span class="brand-directory-mark"><span class="brand-directory-initials" aria-hidden="true">'+esc(initials)+'</span>'+logo+'</span><span class="brand-directory-name">'+esc(b.name)+'</span><span class="brand-directory-count">'+b.productCount+' '+(Number(b.productCount)===1?'product':'products')+'</span><span class="brand-directory-arrow" aria-hidden="true">↗</span></a>';
+  }).join(''):'<div class="directory-empty"><p>No brands match these filters.</p><button type="button" class="cta" onclick="document.getElementById(\'brandSearch\').value=\'\';renderBrandsDirectory(\'\')">Clear filters</button></div>';
 }
 async function renderBrandRoute(slug){
   if(!slug){ render404('/brand/'); return; }
@@ -898,10 +899,13 @@ async function renderBrandRoute(slug){
   for(const id of ['brandHero','brandIntro','brandFAQ']){const el=document.getElementById(id);if(el)el.replaceChildren();}
   showView('brand');
   const titleEl=document.getElementById('brandTitle');
-  if(titleEl) titleEl.textContent='Loading...';
+  let seeded;try{seeded=JSON.parse(document.getElementById('current-brand')?.textContent||'null');}catch{}
+  if(seeded?.slug!==slug)seeded=null;
+  if(!seeded&&titleEl)titleEl.textContent='Loading brand…';
+  const productRead=seeded?Promise.resolve({products:PRODUCTS.filter(p=>seeded.productIds.includes(Number(p.id)))}):fetch('/api/brand-products?slug='+encodeURIComponent(slug),{headers:{Accept:'application/json'}}).then(r=>{if(!r.ok)throw Error('Brand products unavailable');return r.json();});
+  productRead.catch(()=>{});
   try{
-    const r=await fetch('/api/brands?slug='+encodeURIComponent(slug),{headers:{'Accept':'application/json'}});
-    const d=await r.json();
+    const d=seeded?{brand:seeded}:await fetch('/api/brands?slug='+encodeURIComponent(slug),{headers:{Accept:'application/json'}}).then(r=>{if(!r.ok)throw Error('Brand unavailable');return r.json();});
     const brand=d&&d.brand;
     if(!brand){ render404('/brand/'+slug+'/'); return; }
     const seoTitle=brand.seoTitle||`${brand.name} Snacks Online in Pakistan | ChaskaBox`;
@@ -920,8 +924,7 @@ async function renderBrandRoute(slug){
     // Breadcrumb schema
     setBrandBreadcrumbSchema(brand);
     // Products
-    const pr=await fetch('/api/brand-products?slug='+encodeURIComponent(slug),{headers:{'Accept':'application/json'}});
-    const pd=await pr.json();
+    const pd=await productRead;
     const products=(pd&&pd.products)||[];
     const grid=document.getElementById('brandProductGrid');
     if(grid) grid.innerHTML=products.length?products.map(cardHTML).join(''):'<p class="muted" style="grid-column:1/-1">No products yet for this brand.</p>';
@@ -941,9 +944,7 @@ async function renderBrandRoute(slug){
     if(featured.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">✨ Featured</h2><div class="grid">${featured.map(cardHTML).join('')}</div></section>`;
     // Related brands (other visible brands)
     try{
-      const br=await fetch('/api/brands',{headers:{'Accept':'application/json'}});
-      const bd=await br.json();
-      const others=((bd&&bd.brands)||[]).filter(b=>b.slug!==slug&&Number(b.productCount)>0).slice(0,6);
+      const others=(await fetchBrands()).filter(b=>b.slug!==slug&&Number(b.productCount)>0).slice(0,6);
       if(others.length) extraHTML+=`<section style="margin-top:28px"><h2 style="font-size:20px;margin-bottom:12px">🔗 Related Brands</h2><div style="display:flex;gap:12px;flex-wrap:wrap">${others.map(b=>`<a href="/brand/${esc(b.slug)}/" style="padding:10px 16px;border:1px solid var(--line);border-radius:10px;text-decoration:none;color:inherit">${b.logo?`<img src="${esc(b.logo)}" alt="${esc(b.name)}" style="height:24px;vertical-align:middle;margin-right:8px">`:''}<b>${esc(b.name)}</b></a>`).join('')}</div></section>`;
     }catch(e){}
     // FAQ section
@@ -1699,6 +1700,9 @@ document.addEventListener('DOMContentLoaded',async()=>{
   fixMobileHeader();
   initPromo(); // Independent of the catalogue/API loading.
   loadCart();
+  // Saved empty states are local facts and must not wait for remote APIs.
+  if(/^\/(?:cart|bag)\/?$/.test(location.pathname)&&!Object.keys(CART).length)renderCartRoute();
+  if(/^\/wishlist\/?$/.test(location.pathname)&&!getWishlist().length)renderWishlistRoute();
   try{
     // Preview and production hydrate the same server seed/public API. loadProducts
     // already falls back to the versioned snapshot if that API is unavailable.

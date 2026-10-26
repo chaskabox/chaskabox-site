@@ -58,5 +58,5 @@ test('SEO edits preserve policy, shopping, brand and product boundary',()=>{
  assert.match(read('robots.txt'),/Sitemap: https:\/\/chaskabox.online\/api\/product-sitemap/);
  const page=read('functions/api/_lib/catalogue-page.js');
  assert.match(page,/noindex:rows.length===0/);
- assert.match(page,/publicCatalogue\(context.env\)/);
+ assert.match(page,/shopSnapshot\(context.env\)/); assert.match(read('functions/api/_lib/shop-snapshot.js'),/publicCatalogue\(env\)/);
 });

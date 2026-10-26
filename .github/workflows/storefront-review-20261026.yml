@@ -1,0 +1,31 @@
+name: Storefront review public routes and mobile lab comparison
+on:
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  public-review:
+    if: github.head_ref == 'codex/storefront-review-20261026'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    env:
+      AUDIT_PREVIEW_BASE: https://codex-storefront-review-2026.chaskabox-site.pages.dev
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node node_modules/playwright-core/cli.js install --with-deps chromium
+      - run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund lighthouse@12.8.2
+      - name: Check all public routes and compare mobile lab results
+        run: node tools/storefront-review-public.mjs
+      - name: Save read-only audit evidence
+        if: always()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: storefront-review-20261026
+          path: test-results/storefront-review/
+          retention-days: 7
