@@ -195,6 +195,19 @@ class RecoveryTests(unittest.TestCase):
         self.assertEqual(self.keyfile.read_text(), "old synthetic credential\n")
         self.assertTrue(state["active"]); self.assertTrue(state["enabled"])
 
+    def test_keyboard_interrupt_during_start_rolls_back_new_connector(self):
+        calls, state, run, get = self.service_fixture()
+        def interrupted(args, **kwargs):
+            result = run(args, **kwargs)
+            if args[1] == "restart":
+                raise KeyboardInterrupt()
+            return result
+        with patch.object(recovery, "check_owned_unit", side_effect=self.fake_unit_check):
+            with self.assertRaisesRegex(recovery.Hold, "previous_state_restored"):
+                recovery.install_connector("/usr/bin/cloudflared", token(), run=interrupted, get=get, wait=lambda _: None)
+        self.assertFalse(self.unit.exists()); self.assertFalse(self.keyfile.exists())
+        self.assertFalse(state["active"]); self.assertFalse(state["enabled"])
+
     def test_destination_symlinks_and_unowned_units_are_rejected(self):
         self.unit.symlink_to(self.source / "fixture-session")
         with self.assertRaisesRegex(recovery.Hold, "not_owned"):

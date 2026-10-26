@@ -373,7 +373,7 @@ def install_connector(binary, token, *, run=command, get=local_get, wait=time.sl
                 return True
             wait(3)
         raise Hold("connector_did_not_become_ready")
-    except (Hold, OSError):
+    except (Hold, OSError, KeyboardInterrupt):
         try:
             run(["systemctl", "stop", UNIT_NAME], check=False)
             if not enabled:
