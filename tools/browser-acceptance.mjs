@@ -9,6 +9,7 @@ import {renderCataloguePage,renderBrandPage,renderBrandsDirectoryPage} from '../
 import {onRequestGet as occasionPage} from '../functions/snack-boxes/[[slug]].js';
 import {onRequestGet as productPage} from '../functions/product/[[slug]].js';
 import {onRequestGet as faqPage} from '../functions/faq/index.js';
+import {utilityPage} from '../functions/api/_lib/utility-page.js';
 import {PAGE_COPY_DEFINITIONS,validatePageCopy} from '../page-copy-contract.js';
 const args=process.argv.slice(2),option=(name,fallback)=>args.includes(name)?args[args.indexOf(name)+1]:fallback;
 const root=path.resolve('.'),output=path.resolve(option('--output','test-results/browser'));await mkdir(output,{recursive:true});
@@ -82,9 +83,9 @@ const server=createServer(async(req,res)=>{try{
   return json(res,{});
  }
  const parts=p.split('/').filter(Boolean);
- if(p==='/brands/'||p==='/faq/'||p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'){
+ if(p==='/cart/'||p==='/wishlist/'||p==='/brands/'||p==='/faq/'||p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'){
   const ctx={params:{slug:parts[0]==='snack-boxes'?parts.slice(1):parts[1]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async request=>{let filename=path.join(root,new URL(request.url).pathname,'index.html');return new Response(await readFile(filename).catch(()=>Buffer.from(shell)));}}}};
-  const response=p==='/brands/'?await renderBrandsDirectoryPage(ctx):p==='/faq/'?await faqPage(ctx):parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
+  const response=p==='/cart/'||p==='/wishlist/'?await utilityPage(ctx,parts[0],p,'Your saved snacks | ChaskaBox','Saved snacks'):p==='/brands/'?await renderBrandsDirectoryPage(ctx):p==='/faq/'?await faqPage(ctx):parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
   res.writeHead(response.status,{'Content-Type':'text/html'});return res.end((await response.text()).replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
  }
  if(/^\/product\/\d+\/$/.test(p)){
@@ -133,7 +134,7 @@ async function inspect(page,route,width,role){
   })),errors:results.errors.slice(-6)}));throw error;}
  }
  else if(route==='/account/')await page.waitForFunction(()=>!document.getElementById('acctbody')?.textContent.includes('Loading'));
- else if(route==='/checkout.html')await page.getByRole('heading',{name:'Your snack bag is empty',exact:true}).waitFor({state:'visible'});
+ else if(route==='/checkout.html')await page.waitForFunction(()=>document.querySelector('.checkout-empty')||(typeof PRODUCTS!=='undefined'&&PRODUCTS.length>0));
  else if(route!=='/track-order.html')await page.waitForFunction(()=>typeof PRODUCTS==='undefined'||PRODUCTS.length>0);
  await page.waitForTimeout(180);
  const layout=await page.evaluate(()=>({overflow:document.documentElement.scrollWidth>innerWidth+1,duplicatePromo:['.promo-desktop','.promo-mobile'].every(s=>{const e=document.querySelector(s);return !!e&&getComputedStyle(e).display!=='none';})}));
@@ -186,7 +187,7 @@ try{
    const background=getComputedStyle(node,innerWidth<785?'::before':null).backgroundImage;
    return {height:hero.getBoundingClientRect().height,homeHidden:getComputedStyle(home).display==='none',referenceFonts:document.fonts.check('100px CBShopHeading')&&document.fonts.check('70px CBShopBrush'),poster:background.includes('data:image/webp'),overflow:document.documentElement.scrollWidth>innerWidth+1};
   });
-  results.interactions.push({case:'Shop first paint at '+width+'px with hero JS/CSS/fonts/full artwork unavailable',pass:documents===1&&painted.height>100&&painted.homeHidden&&painted.referenceFonts&&painted.poster&&!painted.overflow,painted,blocked});
+  results.interactions.push({case:'Shop first paint at '+width+'px with hero JS/CSS/fonts/full artwork unavailable',pass:documents===1&&(width!==390||!blocked.some(url=>url.includes('reference-clean-')))&&painted.height>100&&painted.homeHidden&&painted.referenceFonts&&painted.poster&&!painted.overflow,painted,blocked});
   await page.screenshot({path:path.join(output,'shop-first-paint-'+width+'.png'),fullPage:false});
   await context.close();
  }

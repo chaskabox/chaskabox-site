@@ -67,7 +67,7 @@ export async function renderCataloguePage(context,kind,slug=''){
   if(kind==='shop'){
    const hero=shopHeroFromManifest(manifest);
    html=html.replace(/(<div\b[^>]*\bid="view-shop"[^>]*>)/i,(_,start)=>start+renderShopHero(hero))
-    .replace(/(<meta\b[^>]*charset[^>]*>)/i,(_,start)=>start+renderShopHeroHead(hero));
+    .replace(/(<meta\b[^>]*name="viewport"[^>]*>)/i,(_,start)=>start+renderShopHeroHead(hero));
   }
   // Shop prioritizes its approved hero above the grid. Collections without
   // that hero continue to preload their exact first responsive product photo.
