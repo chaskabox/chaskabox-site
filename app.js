@@ -100,6 +100,8 @@ function cardHTML(p,priority){
   // A price reduction takes precedence over the editorial New badge.
   const displayBadge=p.oldPrice>p.price?'Sale':p.badge;
   const badge=displayBadge?`<span class="badge ${displayBadge==='Bestseller'?'bestseller':''}">${esc(displayBadge==='Sale'?'SALE':displayBadge.toUpperCase())}</span>`:'';
+  // Disclose single-item placeholders on bundles before the owner supplies exact composite photography.
+  const representativeBundlePhoto=Boolean(p.bundle)&&!String(p.img||'').toLowerCase().includes('p'+Number(p.id)+'.');
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="savepill">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
   const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BOX':''}</div>`:'';
@@ -110,7 +112,7 @@ function cardHTML(p,priority){
     <div class="pbody">
       ${catlabel}
       <a class="pname" href="${href}" title="${esc(p.name)}">${esc(p.name)}</a>
-      <div class="packmeta"><div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">View pack details</small>':''}</div>
+      <div class="packmeta"><div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">'+(representativeBundlePhoto?'Representative item pictured · See bundle contents':'View pack details')+'</small>':''}</div>
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
       <button class="addcart" ${unavailable?'disabled':''} aria-label="${unavailable?'Currently unavailable':'Add to Bag '+fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">${unavailable?'Currently unavailable':'Add to Bag'}</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
