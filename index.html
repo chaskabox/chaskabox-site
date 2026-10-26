@@ -5,7 +5,7 @@
 <script id="cb-shop-entry">(()=>{if(!/^#\/shop\/?(?:[?#]|$)/i.test(location.hash))return;const target=new URL(location.hash.slice(1),location.origin);if(target.origin!==location.origin)return;target.search=target.search||location.search;document.documentElement.style.visibility='hidden';location.replace('/shop/'+target.search+target.hash);})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preload" as="font" href="/fonts/kalam-latin-700.woff2" type="font/woff2" crossorigin data-home-preload>
-<link rel="stylesheet" href="/storefront-bundle.css?v=20261020-close1">
+<link rel="stylesheet" href="/storefront-bundle.css?v=20261026-review1">
 <style id="cb-fresh-restore">
 /* Restore the original premium Sourced After Order panel without changing
    product data, navigation, hero banners, checkout, or the shared CSS bundle. */
@@ -173,15 +173,8 @@
 <nav class="cb-subnav" aria-label="Quick shopping navigation">
   <div class="cb-subnav-inner">
     <div class="cb-subnav-links">
-      <a class="cb-discover" href="/shop/">☰ &nbsp; Shop by Category</a>
-      <a href="/">Home</a>
-      <span class="cb-managed-nav"><a href="/shop/">All Products</a>
-      <a href="/bundles/">Chaska Boxes</a>
-      <a href="/brands/">Brands</a></span>
-      <a href="/shop/?badge=Sale" onclick="goBadge('Sale');return false">Deals</a>
-      <a href="/shop/?sort=new">New Arrivals</a>
-      <a href="/about/">About Us</a>
-      <a href="/contact/">Contact</a>
+      <a class="cb-discover" href="/shop/">☰ Shop by Category</a>
+      <span class="cb-managed-nav"><a href="/">Home</a><a href="/shop/">Shop</a><a href="/brands/">Brands</a><a href="/bundles/">Chaska Boxes</a><a href="/shop/?badge=Sale">Deals</a><a href="/shop/?sort=new">New Arrivals</a></span>
     </div>
     <a class="cb-contact" href="https://wa.me/923320005381">WhatsApp Order ↗</a>
   </div>
@@ -593,14 +586,14 @@
 <script defer src="/supabase-config.js?v=20261012-perf3"></script>
 <script defer src="/photo-manifest.js?v=20261020-current-photos2"></script>
 <script defer src="/product-description-ui.js?v=20261021-pdp1"></script>
-<script defer src="/app.js?v=20261025-shophero5"></script>
+<script defer src="/app.js?v=20261026-review1"></script>
 <script defer src="/home-hero-carousel.js?v=20261020-warm1"></script>
 <script defer src="/reviews-widget.js?v=20261014-final-readiness"></script>
 <script defer src="/account.js?v=20261021-auth2"></script>
 <script defer src="/analytics.js?v=1"></script>
 <script defer src="/retention.js?v=5"></script>
 <!-- Removed global DOM MutationObserver/setInterval badge scrubber: no Netlify badge exists on Cloudflare Pages. -->
-<script src="/site-runtime.js?v=20261018-audit1" defer></script><script src="/reference-ui.js?v=20261017-polish" defer></script>
+<script src="/site-runtime.js?v=20261026-review1" defer></script><script src="/reference-ui.js?v=20261017-polish" defer></script>
 <script src="/header-discovery-preview.js?v=20261019-header7" defer></script>
 <script src="/search-whatsapp-float.js?v=20261019-wa1" defer></script>
 <script src="/brands-header-dropdown.js?v=20261019-brand7" defer></script>

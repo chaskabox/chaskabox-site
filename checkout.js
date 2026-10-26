@@ -76,6 +76,15 @@ function renderCheckoutBotCheck(){
 function checkoutTurnstileReady(){if(checkoutStep===3)renderCheckoutBotCheck();}
 
 async function init() {
+  // An empty bag needs no catalogue, settings or checkout form. Show its real
+  // state immediately rather than inviting input into a zero-total form.
+  try { CART = JSON.parse(localStorage.getItem('chaskabox-cart') || '{}'); } catch { CART = {}; }
+  if(!CART || typeof CART!=='object' || Array.isArray(CART))CART={};
+  if(!Object.keys(CART).length){
+    $('#coMain').innerHTML='<section class="co-card checkout-empty"><h1>Your snack bag is empty</h1><p>Choose your favourite snacks before continuing to delivery.</p><a class="cta" href="/shop/">Browse all snacks →</a></section>';
+    const step=document.getElementById('checkoutHeaderStep');if(step)step.textContent='Your snack bag';
+    return;
+  }
   try {
     trackCheckoutEvent('checkout_start',{});
     const cfg = await fetch('/api/storefront-config', {cache:'no-cache'}).then(r=>r.ok?r.json():null);

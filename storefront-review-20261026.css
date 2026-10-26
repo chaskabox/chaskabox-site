@@ -1,0 +1,48 @@
+/* Shared storefront corrections; the approved Shop hero has its own frame. */
+.reference-storefront :is(#view-shop,#view-brands,#view-brand) > :is(.crumbs,.catbanner,.shopl,.section,#brandHero,#brandIntro,#brandFAQ,#brandFilterBar){width:calc(100% - 24px);max-width:1380px;margin-inline:auto}
+.reference-storefront :is(#view-shop,#view-brands,#view-brand)>.catbanner{padding:20px 24px;min-height:76px}
+.reference-storefront :is(#view-shop,#view-brands,#view-brand)>.shopl{padding-inline:0}
+.reference-storefront #view-brands>.section{padding:22px 0 36px}
+.catcount:empty{display:none}
+.route-loading{min-height:280px;display:flex;flex-direction:column;justify-content:center;gap:12px;max-width:1380px}
+.route-loading h1{font-size:clamp(26px,4vw,36px);color:var(--navy)}
+.route-loading a{font-weight:700;text-decoration:underline;text-underline-offset:4px}
+#brandAZ{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 20px;max-width:100%}
+#brandAZ .fchip{min-width:40px;min-height:40px;justify-content:center;font:inherit;font-size:13px;color:var(--navy);border:1px solid var(--border);background:#fff}
+#brandAZ .fchip[aria-pressed=true]{background:var(--navy);border-color:var(--navy);color:#fff}
+#brandGrid{grid-template-columns:repeat(auto-fill,minmax(180px,1fr))!important;gap:16px}
+#brandGrid .brand-directory-card{position:relative;display:flex;flex-direction:column;align-items:center;padding:22px 16px 18px;text-align:center;gap:6px;border:1px solid var(--border);border-radius:16px;min-width:0;box-shadow:0 3px 12px #0d264708;transition:border-color 160ms,box-shadow 160ms}
+#brandGrid .brand-directory-card:hover,#brandGrid .brand-directory-card:focus-visible{border-color:#e47832;box-shadow:0 6px 20px #0d264712}
+.brand-directory-mark{position:relative;display:grid;place-items:center;width:100%;height:88px;margin-bottom:8px;overflow:hidden;border-radius:12px;background:#fff7ee}
+.brand-directory-initials{display:grid;place-items:center;width:58px;height:58px;border-radius:50%;font-size:23px;font-weight:800;color:#0d2647;background:#ffead3;letter-spacing:-.5px}
+.brand-directory-mark img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;padding:10px;background:#fff}
+.brand-directory-name{font-size:17px;font-weight:800;color:var(--navy);overflow-wrap:anywhere}
+.brand-directory-count{font-size:12px;color:var(--muted)}
+.brand-directory-arrow{position:absolute;right:14px;bottom:14px;color:#bd4c0b;font-size:18px}
+.directory-empty{grid-column:1/-1;padding:30px 16px;display:grid;justify-items:start;gap:14px;border:1px solid var(--border);border-radius:14px}
+#view-brands .toolbar{max-width:520px}
+#brandSearch{width:100%;min-width:0!important;min-height:46px;font:inherit;background:#fff}
+#view-brand .shopl{display:block}
+#brandSidebar:empty{display:none}
+#brandFilterBar .mfbtn{display:none}
+#view-brand #brandFilterBar{display:flex;justify-content:flex-end;background:none;padding:0;margin-block:16px}
+#brandSort{max-width:240px;min-height:44px;border:1px solid var(--border);border-radius:10px;background:#fff;padding:8px 12px;color:var(--ink);font:inherit}
+.checkout-empty{max-width:720px;margin:44px auto;min-height:300px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:18px}
+.checkout-empty h1{font-size:clamp(28px,5vw,40px);line-height:1.15}
+.checkout-empty .cta{display:inline-flex;min-height:46px;align-items:center}
+@media(max-width:760px){
+ .reference-storefront :is(#view-shop,#view-brands,#view-brand) > :is(.crumbs,.catbanner,.shopl,.section,#brandHero,#brandIntro,#brandFAQ,#brandFilterBar){width:calc(100% - 24px)}
+ .reference-storefront :is(#view-shop,#view-brands,#view-brand)>.catbanner{padding:16px;min-height:70px;gap:8px;flex-wrap:nowrap}
+ .reference-storefront :is(#view-shop,#view-brands,#view-brand)>.catbanner h1{font-size:clamp(19px,5vw,24px);line-height:1.25;letter-spacing:0}
+ #brandGrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px}
+ #brandGrid .brand-directory-card{padding:14px 12px 20px;min-height:178px}
+ .brand-directory-mark{height:76px;margin-bottom:4px}
+ .brand-directory-name{font-size:15px}
+ #brandAZ{flex-wrap:nowrap;overflow:auto;padding-bottom:5px;scrollbar-width:thin}
+ #brandAZ .fchip{flex:none}
+ #view-brand .shopl{margin-top:12px}
+ #brandSort{max-width:100%;width:100%}
+ .route-loading{min-height:250px;padding-block:30px}
+ .checkout-empty{margin:20px auto;padding:24px}
+}
+@media(prefers-reduced-motion:reduce){#brandGrid .brand-directory-card{transition:none}}

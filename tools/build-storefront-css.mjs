@@ -2,7 +2,7 @@ import {readFile,writeFile} from 'node:fs/promises';
 import {createHash} from 'node:crypto';
 import {transform} from 'esbuild';
 // Preserve the former HTML cascade order while avoiding five extra blocking requests.
-const sources=['styles.css','storefront-ux-refresh.css','home-hero-carousel.css','final-homepage.css','hero-editorial-20261018.css','hero-three-approved-20261018.css','hero-polish-20261018.css','hero-stable-controls-20261019.css','approved-category-art.css','storefront-video-finish-20261019.css','header-discovery-preview.css','sticky-motion-polish.css','header-one-line.css','search-whatsapp-float.css','brands-header-dropdown.css'];
+const sources=['styles.css','storefront-ux-refresh.css','home-hero-carousel.css','final-homepage.css','hero-editorial-20261018.css','hero-three-approved-20261018.css','hero-polish-20261018.css','hero-stable-controls-20261019.css','approved-category-art.css','storefront-video-finish-20261019.css','header-discovery-preview.css','sticky-motion-polish.css','header-one-line.css','search-whatsapp-float.css','brands-header-dropdown.css','storefront-review-20261026.css'];
 const parts=await Promise.all(sources.map(p=>readFile(new URL('../'+p,import.meta.url),'utf8')));
 const hash=createHash('sha256').update(parts.join('\n')).digest('hex');
 const result=await transform(parts.join('\n'),{loader:'css',minify:true,target:['chrome110','firefox115','safari16.4'],legalComments:'none'});

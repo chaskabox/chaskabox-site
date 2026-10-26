@@ -25,6 +25,7 @@
     return manifestRead;
   };
   const logoSelector='.logo img,.logo-img', defaultLogo='/images/logo-approved-20261017.png';
+  const appliedNavigation=new WeakMap();
   // Preserve the responsive child spans: replacing .promo textContent destroys them.
   function applyPromoCopy(raw){
     const text=String(raw||'').trim();
@@ -42,19 +43,23 @@
     if(src==='/images/logo-navy.png')src=defaultLogo;
     if(src===defaultLogo){img.srcset='/images/logo-header-polish-20261017-420.webp 420w, /images/logo-header-polish-20261017-840.webp 840w';img.sizes='210px';}
     else{img.removeAttribute('srcset');img.removeAttribute('sizes');}
-    img.src=src;
+    if(img.getAttribute('src')!==src)img.src=src;
   }
   window.applyStorefrontManifest=function(d){
     if(Array.isArray(d.navigation)){
       for(const [location,selector] of [['header','.hnav'],['header','.cb-subnav-links'],['mobile','#mnavList'],['footer','footer .fwrap > div:nth-child(2) > p']]){
         document.querySelectorAll(selector).forEach(el=>{
+          const rows=d.navigation.filter(r=>r.location===location&&r.is_enabled).sort((a,b)=>a.position-b.position);
+          const signature=JSON.stringify(rows);
+          if(appliedNavigation.get(el)===signature)return;
+          appliedNavigation.set(el,signature);
           el.replaceChildren();
           let destination=el;
           if(selector==='.cb-subnav-links'){
             const category=document.createElement('a');category.className='cb-discover';category.href='/shop/';category.textContent='☰ Shop by Category';el.append(category);
             destination=document.createElement('span');destination.className='cb-managed-nav';el.append(destination);
           }
-          for(const row of d.navigation.filter(r=>r.location===location&&r.is_enabled).sort((a,b)=>a.position-b.position)){
+          for(const row of rows){
             if(!safeUrl(row.url))continue;
             const a=document.createElement('a');a.textContent=row.label;a.href=row.url;
             if(row.is_external){a.target='_blank';a.rel='noopener noreferrer';}

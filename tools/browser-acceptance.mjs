@@ -5,7 +5,7 @@ import path from 'node:path';
 import {chromium} from 'playwright-core';
 import AxeBuilder from '@axe-core/playwright';
 import {cataloguePhoto,photoUnderReview} from '../functions/api/_lib/catalogue-photos.js';
-import {renderCataloguePage,renderBrandPage} from '../functions/api/_lib/catalogue-page.js';
+import {renderCataloguePage,renderBrandPage,renderBrandsDirectoryPage} from '../functions/api/_lib/catalogue-page.js';
 import {onRequestGet as occasionPage} from '../functions/snack-boxes/[[slug]].js';
 import {onRequestGet as productPage} from '../functions/product/[[slug]].js';
 import {onRequestGet as faqPage} from '../functions/faq/index.js';
@@ -34,7 +34,7 @@ globalThis.fetch=async(url,init)=>{
   if(u.pathname.endsWith('/public_products'))return Response.json(dbRows);
   if(u.pathname.endsWith('/bundle_items'))return Response.json([]);
   if(u.pathname.endsWith('/rpc/storefront_manifest'))return Response.json(manifest);
-  if(u.pathname.endsWith('/brands'))return Response.json(brands.filter(b=>'eq.'+b.slug===u.searchParams.get('slug')));
+  if(u.pathname.endsWith('/brands'))return Response.json(brands.filter(b=>!u.searchParams.has('slug')||'eq.'+b.slug===u.searchParams.get('slug')));
   const id=Number(u.searchParams.get('id')?.replace('eq.',''));return Response.json(dbRows.filter(p=>p.id===id));
  }return originalFetch(url,init);
 };
@@ -82,9 +82,9 @@ const server=createServer(async(req,res)=>{try{
   return json(res,{});
  }
  const parts=p.split('/').filter(Boolean);
- if(p==='/faq/'||p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'){
+ if(p==='/brands/'||p==='/faq/'||p==='/shop/'||p==='/bundles/'||parts[0]==='category'||parts[0]==='brand'&&parts.length===2||parts[0]==='snack-boxes'){
   const ctx={params:{slug:parts[0]==='snack-boxes'?parts.slice(1):parts[1]},request:new Request('http://127.0.0.1'+p),env:{SUPABASE_URL:'https://fixture.example.invalid',SUPABASE_SERVICE_ROLE_KEY:'fixture',ASSETS:{fetch:async request=>{let filename=path.join(root,new URL(request.url).pathname,'index.html');return new Response(await readFile(filename).catch(()=>Buffer.from(shell)));}}}};
-  const response=p==='/faq/'?await faqPage(ctx):parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
+  const response=p==='/brands/'?await renderBrandsDirectoryPage(ctx):p==='/faq/'?await faqPage(ctx):parts[0]==='snack-boxes'?await occasionPage(ctx):parts[0]==='brand'?await renderBrandPage(ctx,parts[1]):await renderCataloguePage(ctx,parts[0]==='category'?'category':parts[0],parts[1]);
   res.writeHead(response.status,{'Content-Type':'text/html'});return res.end((await response.text()).replace(/https:\/\/cdn\.jsdelivr\.net\/npm\/@supabase\/supabase-js@[^"]+/g,'/qa-sdk.js'));
  }
  if(/^\/product\/\d+\/$/.test(p)){
@@ -139,10 +139,34 @@ async function inspect(page,route,width,role){
  if(layout.overflow)console.error('OVERFLOW_DETAILS',JSON.stringify(await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>getComputedStyle(e).display!=='none'&&e.getBoundingClientRect().right>innerWidth+1).slice(0,20).map(e=>({tag:e.tagName,id:e.id,cls:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right,text:e.textContent.slice(0,70)})))));
  const axe=await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa','wcag21aa']).analyze();
  const violations=axe.violations.filter(v=>['serious','critical'].includes(v.impact)).map(v=>({id:v.id,nodes:v.nodes.map(n=>({target:n.target,summary:n.failureSummary}))}));
- if([390,1440].includes(width)&&['/','/shop/','/product/39/','/snack-boxes/bachpan/','/guides/choosing-a-snack-box/'].includes(route))await page.screenshot({path:path.join(output,route==='/'?'home-'+width+'.png':route.replace(/\//g,'_')+width+'.png'),fullPage:true});
+ if([390,1440].includes(width)&&['/','/shop/','/brands/','/brand/mayfair/','/product/39/','/cart/','/checkout.html','/about/','/snack-boxes/bachpan/','/guides/choosing-a-snack-box/'].includes(route))await page.screenshot({path:path.join(output,route==='/'?'home-'+width+'.png':route.replace(/\//g,'_')+width+'.png'),fullPage:true});
  results.cases.push({route,width,role,status:response.status(),...layout,violations});console.log(JSON.stringify(results.cases.at(-1)));
 }
 try{
+ {
+  const {context,page}=await contextFor(390);
+  await page.goto(base+'/brands/');
+  await page.locator('#brandGrid .brand-directory-card').first().waitFor({state:'visible'});
+  const letter=page.locator('#brandAZ [data-az="M"]');await letter.click();
+  await page.getByLabel('Search brands',{exact:true}).fill('Mayfair');
+  await page.waitForFunction(()=>document.querySelector('#brandAZ [data-az="M"]')?.getAttribute('aria-pressed')==='true'&&document.querySelectorAll('#brandGrid .brand-directory-card').length===1);
+  results.interactions.push({case:'Brands letter filter survives search and has accessible selected state',pass:await letter.getAttribute('aria-pressed')==='true'});
+  await page.getByLabel('Search brands',{exact:true}).fill('missing brand');
+  await page.getByRole('button',{name:'Clear filters',exact:true}).click();
+  await page.waitForFunction(()=>document.querySelectorAll('#brandGrid .brand-directory-card').length>1);
+  results.interactions.push({case:'Brands no-results state clears both search and alphabet filters',pass:true});
+  await context.close();
+ }
+ {
+  const {context,page}=await contextFor(390);
+  let reads=0;
+  await context.route('**/api/storefront-config',route=>{reads++;return route.abort();});
+  await context.route('**/api/products*',route=>{reads++;return route.abort();});
+  await page.goto(base+'/checkout.html');
+  await page.getByRole('heading',{name:'Your snack bag is empty',exact:true}).waitFor({state:'visible'});
+  results.interactions.push({case:'Empty checkout renders without remote settings or catalogue',pass:reads===0});
+  await context.close();
+ }
  for(const width of [390,1440]){
   const {context,page}=await contextFor(width,null);
   if(width===1440){await page.goto(base+'/');await page.getByRole('link',{name:'Shop Snacks',exact:true}).waitFor({state:'visible'});}
@@ -304,7 +328,7 @@ try{
   }
   await context.close();
  }
- const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/'];
+ const routes=args.includes('--quick')?['/','/shop/','/product/39/','/account/']:['/','/shop/','/bundles/','/brands/','/category/snacks-and-nimco/','/brand/mayfair/','/product/39/','/product/186/','/faq/','/track-order.html','/account/','/snack-boxes/','/snack-boxes/bachpan/','/snack-boxes/movie-night/','/snack-boxes/office/','/guides/choosing-a-snack-box/','/guides/bachpan-snacks-pakistan/','/guides/how-chaskabox-orders-work/','/guides/','/about/','/contact/','/shipping-policy/','/refund-policy/','/privacy-policy/','/terms/','/cart/','/wishlist/','/checkout.html'];
  // Reference design acceptance: actual responsive UI, rather than a rendered mockup.
  for(const width of [320,390,768,1364,1440]){
   const {context,page}=await contextFor(width);

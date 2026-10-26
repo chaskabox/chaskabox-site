@@ -25,7 +25,7 @@ test('public collection HTML, aliases, missing brand, outage and incomplete occa
   const u=new URL(typeof value==='string'?value:value.url);
   if(u.pathname.endsWith('/public_products'))return Response.json(rows);
   if(u.pathname.endsWith('/rpc/storefront_manifest'))return Response.json({categories:[{name:'Chews & Gums',slug:'chews-gums',product_ids:[69,76]}]});
-  if(u.pathname.endsWith('/brands'))return Response.json(u.searchParams.get('slug')==='eq.fixture'?[{name:'Fixture',slug:'fixture'}]:[]);
+  if(u.pathname.endsWith('/brands'))return Response.json(!u.searchParams.has('slug')||u.searchParams.get('slug')==='eq.fixture'?[{name:'Fixture',slug:'fixture'}]:[]);
   if(u.pathname.endsWith('/bundle_items'))return Response.json([]);
   throw Error('Unexpected fixture request');
  };

@@ -12,9 +12,9 @@
 import { sbRequest } from './_lib/db.js';
 import { ok, apiError } from './_lib/respond.js';
 
-const PUBLIC_FIELDS = 'id,name,slug,normalized_name,logo_url,hero_image_url,short_description,long_description,seo_title,seo_description,og_image_url,featured_product_ids,sort_order,is_visible,position';
+export const PUBLIC_FIELDS = 'id,name,slug,normalized_name,logo_url,hero_image_url,short_description,long_description,seo_title,seo_description,og_image_url,featured_product_ids,sort_order,is_visible,position';
 
-function publicShape(b, count) {
+export function publicShape(b, count) {
   return {
     id: Number(b.id),
     name: b.name || '',

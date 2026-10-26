@@ -2,7 +2,7 @@ import{test}from'node:test';import assert from'node:assert/strict';import{readFi
 test('checkout is visibly restructured and uses a checkout-only style layer',async()=>{
  const page=await readFile(new URL('../checkout.html',import.meta.url),'utf8');
  const css=await readFile(new URL('../checkout-ui.css',import.meta.url),'utf8');
- for(const s of ['class="checkout-page"','checkout-intro','checkout-progress','checkout-guest-note','checkout-section-heading','checkout-summary-heading','checkout-coupon-row','checkout-totals','checkout-verification','checkout-ui.css?v=20261017-checkout-compact-v3'])assert.ok(page.includes(s),s);
+ for(const s of ['class="checkout-page"','checkout-intro','checkout-progress','checkout-guest-note','checkout-section-heading','checkout-summary-heading','checkout-coupon-row','checkout-totals','checkout-verification','checkout-ui.css?v=20261026-review1'])assert.ok(page.includes(s),s);
  assert.match(css,/\.checkout-page \.checkout-coupon-row button/);
  assert.match(css,/#coMain\.co-wrap\{max-width:1216px/);
  assert.match(css,/@media\(max-width:400px\)/);
@@ -47,7 +47,7 @@ test('guided checkout has accessible separate delivery, payment and review stage
  assert.doesNotMatch(html,/id="checkoutExtrasStep"/);
  assert.match(html,/id="checkoutReviewStep" hidden/);
  assert.match(html,/id="placeBtn" type="button" hidden disabled/);
- assert.match(html,/checkout\.js\?v=20261018-audit1/);
+ assert.match(html,/checkout\.js\?v=20261026-review1/);
  assert.match(css,/\.checkout-page \[hidden\]\{display:none!important\}/);
  assert.match(js,/function checkForm\(scope = 'all'\)/);
  assert.match(js,/await refreshQuote\(\);\s*showCheckoutStep\(3\)/);
