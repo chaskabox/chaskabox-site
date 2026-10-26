@@ -55,7 +55,7 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
   const sandbox={
     document:doc,
     window:{matchMedia(){return media;},addEventListener(name,fn){windowEvents[name]=fn;},requestIdleCallback(fn){fn();}},
-    Image:class{complete:false;naturalWidth:0;addEventListener(){};decode(){return Promise.resolve();}set src(value){imageRequests.push({src:value,priority:this.fetchPriority});this.complete=true;this.naturalWidth=1600;}},
+    Image:class{complete=false;naturalWidth=0;addEventListener(){};decode(){return Promise.resolve();}set src(value){imageRequests.push({src:value,priority:this.fetchPriority});this.complete=true;this.naturalWidth=1600;}},
     setInterval(fn,delay){scheduled={fn,delay,id:++sequence};return sequence;},
     clearInterval(id){if(scheduled?.id===id)scheduled=null;}
   };
