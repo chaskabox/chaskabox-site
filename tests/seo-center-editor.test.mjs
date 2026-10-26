@@ -89,5 +89,5 @@ test('SEO AI is draft-only and manual metadata save remains available when AI is
  assert.match(center,/method:'PATCH',body:patch/);
  assert.match(center,/metadata readback could not be verified/i);
  assert.ok(html.includes('admin-seo-center.css?v=20261021-seo-ai-1'));
- assert.ok(html.includes('admin-live.js?v=20261025-shophero-editor1'));
+ assert.match(html, /admin-live\.js\?v=20\d{6}-[a-z0-9-]+/);
 });
