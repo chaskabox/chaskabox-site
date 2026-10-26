@@ -55,9 +55,9 @@
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');
   const dots=Array.from(controls.querySelectorAll('[data-hero-dot]'));
   const autoplay=controls.querySelector('[data-hero-autoplay]');
-  // Five-second rotation within the owner's requested 4–6 second window.
-  // Respect reduced motion, hidden tabs, hover and keyboard focus.
-  const AUTO_ADVANCE_MS=5000;
+  // Match the three-second shop slider setting while respecting reduced motion,
+  // hidden tabs, hover and keyboard focus.
+  const AUTO_ADVANCE_MS=3000;
   const artworks=[
     ['/images/chaskabox-approved-hero-01-20261018.avif',1600,550,'ChaskaBox nostalgic snack-box banner (illustrative artwork)'],
     ['/images/chaskabox-approved-hero-02-20261018.avif',1600,550,'ChaskaBox gifting banner (illustrative artwork)'],
@@ -93,38 +93,67 @@
     autoplay.querySelector('[data-hero-autoplay-label]').textContent=reduced?'Paused':paused?'Play':'Pause';
     autoplay.querySelector('[data-hero-autoplay-icon]').textContent=paused?'▶':'Ⅱ';
   }
+  // Decode the requested scene before replacing the visible one.
+  // This prevents a blank product-art panel on slow image connections and
+  // ignores stale loads when visitors click through multiple slides quickly.
+  let showRequest=0;
   function show(index){
-    current=(index+slides.length)%slides.length;
-    const s=slides[current];
-    if(kick)kick.lastChild.textContent=' '+s.kick;
-    eyebrow.textContent=s.eyebrow;
-    title.replaceChildren(document.createTextNode(s.heading));
-    const high=document.createElement('span');high.className='hl';high.textContent=s.highlight;title.append(high);
-    desc.textContent=s.description;
-    if(primary.firstChild?.nodeType===3)primary.firstChild.textContent=s.primary+' ';
-    else primary.textContent=s.primary+' ›';
-    primary.href=s.href;
-    secondary.textContent=s.secondary;secondary.href=s.secondHref;
-    // These three artworks are the owner's approved reference banners, not
-    // interchangeable backgrounds. Keep original framing; CSS adapts mobile crop.
+    const target=(index+slides.length)%slides.length;
+    const chosen=artworks[target];
     const art=root.querySelector('.hero-scene');
-    const selected=artworks[current];
-    if(art&&selected){
-      if(art.getAttribute('src')!==selected[0])art.setAttribute('src',selected[0]);
-      art.width=selected[1];art.height=selected[2];art.alt=selected[3];
-      warmNextArtwork(art);
+    const token=++showRequest;
+    const commit=()=>{
+      if(token!==showRequest)return;
+      current=target;
+      const s=slides[current];
+      if(kick)kick.lastChild.textContent=' '+s.kick;
+      eyebrow.textContent=s.eyebrow;
+      title.replaceChildren(document.createTextNode(s.heading));
+      const high=document.createElement('span');high.className='hl';high.textContent=s.highlight;title.append(high);
+      desc.textContent=s.description;
+      if(primary.firstChild?.nodeType===3)primary.firstChild.textContent=s.primary+' ';
+      else primary.textContent=s.primary+' ›';
+      primary.href=s.href;
+      secondary.textContent=s.secondary;secondary.href=s.secondHref;
+      if(art&&chosen){
+        if(art.getAttribute('src')!==chosen[0])art.setAttribute('src',chosen[0]);
+        art.width=chosen[1];art.height=chosen[2];art.alt=chosen[3];
+        warmNextArtwork(art);
+      }
+      const collage=root.querySelector('#heroCollage');
+      const authenticImages=window.CHASKABOX_HERO_MARKUP?.[current];
+      if(collage&&authenticImages&&collage.dataset.heroMarkupKey!==String(current)){
+        collage.innerHTML=authenticImages;
+        collage.dataset.heroMarkupKey=String(current);
+      }
+      root.dataset.heroSlide=String(current+1);
+      dots.forEach((dot,i)=>{
+        dot.setAttribute('aria-pressed',i===current?'true':'false');
+        dot.setAttribute('aria-label','Show banner '+(i+1)+': '+slides[i].label);
+      });
+    };
+    if(!chosen||!art||(art.getAttribute('src')===chosen[0]&&art.complete&&art.naturalWidth>0)){
+      commit();return;
     }
-    const collage=root.querySelector('#heroCollage');
-    const authenticImages=window.CHASKABOX_HERO_MARKUP?.[current];
-    if(collage&&authenticImages&&collage.dataset.heroMarkupKey!==String(current)){
-      collage.innerHTML=authenticImages;
-      collage.dataset.heroMarkupKey=String(current);
+    let preloaded=warmedArt.get(chosen[0]);
+    if(!preloaded){
+      preloaded=new Image();
+      preloaded.decoding='async';
+      preloaded.fetchPriority='high';
+      warmedArt.set(chosen[0],preloaded);
+      preloaded.src=chosen[0];
     }
-    root.dataset.heroSlide=String(current+1);
-    dots.forEach((dot,i)=>{
-      dot.setAttribute('aria-pressed',i===current?'true':'false');
-      dot.setAttribute('aria-label','Show banner '+(i+1)+': '+slides[i].label);
-    });
+    const ready=()=>{
+      Promise.resolve(typeof preloaded.decode==='function'?preloaded.decode():null)
+        .catch(()=>{}).then(()=>{if(preloaded.naturalWidth>0)commit();});
+    };
+    if(preloaded.complete){
+      if(preloaded.naturalWidth>0)ready();
+      else warmedArt.delete(chosen[0]);
+    }else{
+      preloaded.addEventListener('load',ready,{once:true});
+      preloaded.addEventListener('error',()=>warmedArt.delete(chosen[0]),{once:true});
+    }
   }
   function start(){
     stop();
