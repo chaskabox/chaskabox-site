@@ -66,3 +66,13 @@ test('status loading never includes notification send, replay or channel activat
  assert.match(loader,/if\(seq!==notificationStatusSeq\)return/);
  assert.match(loader,/No message was sent/);
 });
+
+test('connection checks show disconnected and stale states separately from delivery counts',async()=>{
+ const {ctx,els}=fixture(async()=>({dispatch:{configured_targets:['owner_email','owner_whatsapp'],last_completed_at:'2026-10-26T00:00:00Z'},worker_status:'degraded',provider_results:{delivered:1},providers:{checked_at:'2026-10-26T00:00:00Z',stale:false,email:{status:'unknown',http_status:403},whatsapp:{status:'unavailable',session_status:'SCAN_QR_CODE'}}}));
+ await ctx.run();
+ const rendered=els.get('#notifServiceStatus').innerHTML;
+ assert.match(rendered,/Connection needs attention/);
+ assert.match(rendered,/scanning its QR code/);
+ assert.match(rendered,/Sending key cannot verify domain status/);
+ assert.match(els.get('#notifOutboxStats').innerHTML,/1 confirmed delivered/);
+});

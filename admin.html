@@ -696,7 +696,7 @@ setTimeout(function(){
             <div id="notifServiceStatus" aria-live="polite"><p class="muted">Loading…</p></div>
           </section>
           <section class="panel">
-            <div class="panel-head"><div><h2>Outbox Queue</h2><p>Owner + customer notifications</p></div></div>
+            <div class="panel-head"><div><h2>Outbox Queue</h2><p>Real orders · owner alerts + customer updates</p></div></div>
             <div id="notifOutboxStats"><p class="muted">Loading…</p></div>
           </section>
         </div>
@@ -706,6 +706,13 @@ setTimeout(function(){
             <p>Read-only audit ledger. Provider accepted is not the same as delivered. No automatic replay.</p>
           </div><button class="btn secondary compact" type="button" id="refreshNotifHistory">↻ Refresh</button></div>
           <div class="toolbar" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+            <label for="notifHistoryOrderType">Orders
+              <select id="notifHistoryOrderType">
+                <option value="real">Real orders</option>
+                <option value="test">Test orders</option>
+                <option value="all">All orders</option>
+              </select>
+            </label>
             <label for="notifHistoryView">Status
               <select id="notifHistoryView">
                 <option value="all">All events</option>
@@ -733,7 +740,7 @@ setTimeout(function(){
           <p class="safe-note" style="margin-top:12px">Disabled WhatsApp channels remain on hold. Old legacy queues are historical records; sending, enabling channels and bulk retries are not offered here.</p>
         </section>
         <section class="panel" style="margin-top:16px">
-          <div class="panel-head"><div><h2>Items Requiring Review</h2><p>Review errors and blocked events in their original order; retry only when independently safe.</p></div></div>
+          <div class="panel-head"><div><h2>Items Requiring Review</h2><p>Real orders only. Review errors and blocked events in their original order; retry only when independently safe.</p></div></div>
           <div id="notifFailures"><p class="muted">Loading…</p></div>
         </section>
         <section class="panel" style="margin-top:16px">
@@ -836,7 +843,7 @@ setTimeout(function(){
 <script src="/admin-login-mfa.js?v=20261017-approvedbrand" defer></script>
 <script src="/admin-operations-forms.js?v=20261017-shipping-ops-v1" defer></script>
 <script type="module" src="/admin-account-portal.js?v=20261021-portal1"></script>
-<script src="/admin-live.js?v=20261025-shophero-editor1" defer></script>
+<script src="/admin-live.js?v=20261026-notification-health1" defer></script>
 <script src="/admin-source-backed-product-copy.js?v=20261021-copy1" defer></script>
 <script src="/admin-source-backed-product-copy-batch2.js?v=20261021-copy2" defer></script>
 <script src="/admin-source-backed-product-copy-batch3.js?v=20261021-copy3" defer></script>

@@ -7,7 +7,7 @@ import { withAdmin, sb, json, httpError } from '../_lib/auth.js';
 
 const TARGETS = new Set(['all', 'owner_email', 'owner_whatsapp', 'customer_whatsapp']);
 const VIEWS = new Set(['all', 'pending', 'review', 'accepted', 'delivered']);
-const FIELDS = 'id,order_id,target,event_type,status,delivery_status,attempts,created_at,updated_at,next_attempt_at,delivered_at,last_error';
+const FIELDS = 'id,order_id,target,event_type,status,delivery_status,attempts,created_at,updated_at,next_attempt_at,delivered_at,last_error,orders!inner(order_number,is_test)';
 const SAFE_ERROR_CODES = new Set([
   'event_expired_review_required',
   'gateway_ownership_verification_required',
@@ -20,6 +20,8 @@ const SAFE_ERROR_CODES = new Set([
   'provider_session_changed',
   'provider_endpoint_invalid',
   'notification_identity_invalid',
+  'whatsapp_before_activation',
+  'customer_whatsapp_opt_in_missing',
 ]);
 
 export function notificationHistoryQuery(url) {
@@ -27,7 +29,8 @@ export function notificationHistoryQuery(url) {
   const target = params.get('target') || 'all';
   const view = params.get('view') || 'all';
   const pageRaw = params.get('page') || '1';
-  if (!TARGETS.has(target) || !VIEWS.has(view) || !/^[1-9][0-9]{0,2}$/.test(pageRaw)) {
+  const orderType = params.get('order_type') || 'real';
+  if (!TARGETS.has(target) || !VIEWS.has(view) || !['real','test','all'].includes(orderType) || !/^[1-9][0-9]{0,2}$/.test(pageRaw)) {
     httpError('Invalid notification history filter', 400, 'invalid_filter');
   }
   const page = Number(pageRaw);
@@ -39,11 +42,12 @@ export function notificationHistoryQuery(url) {
     offset: String((page - 1) * 20),
   });
   if (target !== 'all') query.set('target', 'eq.' + target);
+  if (orderType !== 'all') query.set('orders.is_test', 'eq.' + (orderType === 'test'));
   if (view === 'pending') query.set('status', 'in.(pending,retry,processing)');
   if (view === 'review') query.set('or', '(status.in.(blocked,uncertain,dead),delivery_status.in.(failed,complained))');
   if (view === 'accepted') query.set('status', 'eq.accepted');
   if (view === 'delivered') query.set('delivery_status', 'eq.delivered');
-  return { query: query.toString(), page, target, view };
+  return { query: query.toString(), page, target, view, orderType };
 }
 
 export function safeDeliveryRow(row) {
@@ -54,6 +58,8 @@ export function safeDeliveryRow(row) {
     status: row.status, delivery_status: row.delivery_status, attempts: row.attempts,
     created_at: row.created_at, updated_at: row.updated_at, next_attempt_at: row.next_attempt_at,
     delivered_at: row.delivered_at, error_code: error,
+    order_number: row.orders?.order_number || null,
+    is_test: row.orders?.is_test === true,
   };
 }
 
@@ -69,6 +75,7 @@ export const onRequestGet = withAdmin(['owner', 'manager'], async context => {
     pages: Math.ceil(total / 20),
     target: filters.target,
     view: filters.view,
+    order_type: filters.orderType,
     read_only: true,
   }, 200, { 'Cache-Control': 'no-store' });
 });

@@ -1,7 +1,8 @@
 import { notificationConfig, notificationHealth, privateRequest, buildNotificationPayload, sendNotification, equalSecret, activationMatches,providerReadiness, wahaAccessHeaders, chatId, wahaEndpoint, limitedText } from '../functions/api/_lib/notification-delivery.js';
 import { handleNotificationReceipt } from '../functions/api/_lib/notification-receipts.js';
+import { checkNotificationProviders } from '../functions/api/_lib/notification-provider-health.js';
 
-export async function runNotifications(env, fetcher = fetch) {
+export async function runNotifications(env, fetcher = fetch, maxJobs = 4) {
   const config = notificationConfig(env), counts = { claimed: 0, accepted: 0, retry: 0, blocked: 0, uncertain: 0, dead: 0 };
   if (!config.enabled) return { paused: true, counts };
   if (config.errors.length) throw new Error('notification_configuration_invalid');
@@ -13,7 +14,7 @@ export async function runNotifications(env, fetcher = fetch) {
     await rpc('notification_reconcile_receipts');
     const started = Date.now();
     // Four jobs bound I/O to fewer than 50 external subrequests per invocation.
-    for (let i = 0; i < 4 && Date.now() - started < 45000; i++) {
+    for (let i = 0; i < Math.min(4, maxJobs) && Date.now() - started < 45000; i++) {
       const job = (await rpc('notification_claim', { p_after: config.after, p_targets: config.targets }))?.[0];
       if (!job) break;
       counts.claimed++;
@@ -247,6 +248,12 @@ export async function verifyWahaWebhookRecovery(env, fetcher = fetch) {
 function json(data, status = 200) { return new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }); }
 export default {
   async scheduled(_controller, env, ctx) {
+    const probeTick = new Date(_controller.scheduledTime).getUTCMinutes() % 5 === 0;
+    if (probeTick) {
+      ctx.waitUntil(checkNotificationProviders(env).then(result => {
+        console.log(JSON.stringify({ event: 'notification_provider_health', ...result }));
+      }).catch(() => console.log(JSON.stringify({ event: 'notification_provider_health', status: 'check_failed' }))));
+    }
     if (env.WAHA_WEBHOOK_VERIFY_ENABLED === 'true') {
       ctx.waitUntil(verifyWahaWebhookRecovery(env).then(result => {
         console.log(JSON.stringify({event:'waha_webhook_verify',...result}));
@@ -265,7 +272,8 @@ export default {
     if(String(env.ANALYTICS_RETENTION_ENABLED)==='true'&&new Date(_controller.scheduledTime).getUTCMinutes()===0){
       ctx.waitUntil(privateRequest(env,'/rest/v1/rpc/analytics_retention_run',{}).then(async result=>{console.log(JSON.stringify({event:'analytics_retention',...result}));const ai=await privateRequest(env,'/rest/v1/rpc/ai_maintenance_run',{});console.log(JSON.stringify({event:'ai_retention',...ai}));}));
     }
-    ctx.waitUntil(runNotifications(env).then(result => { console.log(JSON.stringify({ event: 'notification_run', ...result })); }));
+    // Leave room for the three diagnostic subrequests on probe ticks.
+    ctx.waitUntil(runNotifications(env, fetch, probeTick ? 3 : 4).then(result => { console.log(JSON.stringify({ event: 'notification_run', ...result })); }));
   },
   async fetch(request, env) {
     const path = new URL(request.url).pathname;

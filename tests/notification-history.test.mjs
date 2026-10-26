@@ -10,7 +10,13 @@ test('notification history validates filters and imposes a finite page limit',()
   assert.equal(qs.get('limit'),'20');
   assert.equal(qs.get('offset'),'20');
   assert.equal(qs.get('order'),'created_at.desc,id.desc');
-  for(const query of ['?page=0','?page=101','?page=2a','?target=anything','?view=sent','?target=owner_email,customer_whatsapp']){
+  assert.equal(qs.get('orders.is_test'),'eq.false');
+  assert.match(qs.get('select'),/orders!inner\(order_number,is_test\)/);
+  const tests=new URLSearchParams(notificationHistoryQuery(path+'?order_type=test').query);
+  assert.equal(tests.get('orders.is_test'),'eq.true');
+  const all=new URLSearchParams(notificationHistoryQuery(path+'?order_type=all').query);
+  assert.equal(all.has('orders.is_test'),false);
+  for(const query of ['?page=0','?page=101','?page=2a','?target=anything','?view=sent','?target=owner_email,customer_whatsapp','?order_type=untrusted']){
     assert.throws(()=>notificationHistoryQuery(path+query),(e)=>e instanceof Response&&e.status===400);
   }
 });
@@ -23,6 +29,11 @@ test('history serializer retains delivery metadata and excludes message contents
   assert.equal(Object.hasOwn(item,'request_payload'),false);
   assert.equal(Object.hasOwn(item,'recipient'),false);
   assert.equal(safeDeliveryRow({last_error:'Not safe to show'}).error_code,'review_required');
+  const testOrder=safeDeliveryRow({orders:{order_number:'CB-FIXTURE',is_test:true,customer_email:'private@example.invalid'},last_error:'customer_whatsapp_opt_in_missing'});
+  assert.equal(testOrder.is_test,true);
+  assert.equal(testOrder.order_number,'CB-FIXTURE');
+  assert.equal(testOrder.error_code,'customer_whatsapp_opt_in_missing');
+  assert.equal(JSON.stringify(testOrder).includes('private@example.invalid'),false);
 });
 
 test('history rejects unauthenticated, wrong-role and owner without MFA before reading ledger',async()=>{

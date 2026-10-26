@@ -72,10 +72,27 @@ confirmation. WAHA event bodies lacking an event timestamp use receipt arrival t
 The admin Notifications and system Health views display consumer heartbeat and
 configuration recorded by the Worker. They do not treat Pages credentials or a
 successful database query as provider availability. Failed queue reads are errors,
-not zero counts or a congratulatory healthy state. No provider availability probes
-or real test notifications are performed by these screens.
+not zero counts or a congratulatory healthy state.
 
-Four jobs per tick, a 45-second loop budget, 10-second database timeouts, 15-second
+The scheduled Worker checks provider connections every five minutes using read-only
+Resend domain and WAHA session requests. A private, service-only
+`notification_provider_health` singleton stores typed statuses and HTTP codes, never
+provider responses, addresses, URLs or secrets. The Notification Center reads this
+snapshot without making provider requests or sending test messages. A check older
+than ten minutes is unknown, even if it previously reported ready. A Resend key
+that cannot list domains (403) is unknown rather than proof that sending has failed.
+WAHA is ready only when its session is WORKING and a receipt secret is configured;
+this is connection evidence, not proof of a new message or its delivery. Probe
+failures cannot stop the independent order consumer. Probes continue when dispatch
+is paused, without claiming or replaying jobs.
+
+Queue totals and review items cover real orders. Delivery History defaults to real
+orders and has separate test/all filters, using an inner order relationship so
+pagination and counts refer to the selected order class. Known activation-cutoff
+and missing-consent blocks retain their specific reason. Historical events remain
+read-only; changing a filter never sends or retries them.
+
+Four jobs per tick (three on connection-check ticks), a 45-second loop budget, 10-second database timeouts, 15-second
 provider timeouts and bounded response bodies keep requests finite. Scheduled
 promises use `ctx.waitUntil`. The cron is every minute. Logs contain run counts and
 generic failure codes, not customer contents, phone numbers or credentials.
@@ -101,9 +118,12 @@ email campaigns are not dispatched by this consumer.
 
 ## Configuration and final release order
 
-Config: `cloudflare/wrangler.notification-outbox.jsonc`. Do not deploy this Worker
-or merge the batch to `main` during numbered fixes. Keep all source changes on
-`improve/remaining-batch`, the excluded Pages preview branch.
+Config: `cloudflare/wrangler.notification-outbox.jsonc`. Its disabled settings are
+bootstrap defaults, not the production configuration. For a maintenance release,
+preserve the deployed bindings, channel selection and activation cutoffs. Apply
+`20261026050000_notification_provider_health.sql` before publishing the connection
+monitor. Do not reactivate the old owner canary or webhook setup switches. The
+numbered procedure below records the original coordinated release.
 
 Private Worker secrets:
 

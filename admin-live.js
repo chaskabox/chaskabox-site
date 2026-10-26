@@ -1784,6 +1784,7 @@
     if(!el)return;
     const view=$('#notifHistoryView')?.value||'all';
     const target=$('#notifHistoryTarget')?.value||'all';
+    const orderType=$('#notifHistoryOrderType')?.value||'real';
     const seq=++notificationHistorySeq;
     el.setAttribute('aria-busy','true');
     el.innerHTML='<p class="muted">Loading delivery history…</p>';
@@ -1792,7 +1793,7 @@
     if(prev)prev.disabled=true;
     if(next)next.disabled=true;
     try{
-      const params=new URLSearchParams({view,target,page:String(page)});
+      const params=new URLSearchParams({view,target,order_type:orderType,page:String(page)});
       const d=await api('/api/admin/notifications/history?'+params.toString());
       if(seq!==notificationHistorySeq)return;
       notificationHistoryPage=d.page;
@@ -1809,7 +1810,7 @@
           const error=n.error_code?' · '+esc(n.error_code.replaceAll('_',' ')):'';
           const attempted=Number.isInteger(n.attempts)&&n.attempts>=0?n.attempts:'—';
           return `<tr>
-            <td><small>${esc(n.event_type||'Event')}</small><br><code title="${esc(order)}">${esc(shortId)}</code></td>
+            <td><small>${esc(n.event_type||'Event')}${n.is_test?' · Test order':''}</small><br><code title="${esc(order)}">${esc(n.order_number||shortId)}</code></td>
             <td>${esc(n.target||'unknown')}</td>
             <td><b>${esc(sendState)}</b><br><small>${esc(delivered)}${error}</small></td>
             <td>${esc(attempted)}</td>
@@ -1845,7 +1846,10 @@
       const state=d.dispatch||{};
       notificationEnabledChannels=Array.isArray(state.configured_targets)?state.configured_targets:[];
       notificationChannelsVerified=Array.isArray(state.configured_targets);
-      if(st)st.innerHTML=`<div style="display:grid;gap:8px"><div><b>Queue consumer:</b> ${esc(d.worker_status||'unknown')}</div><div><b>Last completed:</b> ${state.last_completed_at?esc(fmtDate(state.last_completed_at)):'No heartbeat recorded'}</div><div><b>Enabled channels:</b> ${esc((state.configured_targets||[]).join(', ')||'None confirmed')}</div><small class="muted">Channel configuration comes from the consumer heartbeat. Provider availability is not probed here.</small></div>`;
+      const providers=d.providers||{},email=providers.email||{},whatsapp=providers.whatsapp||{};
+      const labels={ready:'Connection ready',unavailable:'Connection needs attention',unknown:'Not verified',disabled:'Channel disabled'};
+      const label=value=>esc(labels[value]||labels.unknown);
+      if(st)st.innerHTML=`<div style="display:grid;gap:8px"><div><b>Queue consumer:</b> ${esc(d.worker_status||'unknown')}</div><div><b>Last completed:</b> ${state.last_completed_at?esc(fmtDate(state.last_completed_at)):'No heartbeat recorded'}</div><div><b>Enabled channels:</b> ${esc((state.configured_targets||[]).join(', ')||'None confirmed')}</div><hr><div><b>Owner email:</b> ${label(email.status)}${email.http_status===403?' · Sending key cannot verify domain status':''}</div><div><b>WhatsApp:</b> ${label(whatsapp.status)}${whatsapp.session_status&&whatsapp.session_status!=='unknown'?' · '+esc(whatsapp.session_status):''}</div>${whatsapp.session_status==='SCAN_QR_CODE'?'<p role="alert">Reconnect the WhatsApp session by scanning its QR code in the gateway.</p>':''}${whatsapp.status==='unavailable'?'<p role="alert">WhatsApp connection needs checking. Provider acceptance and delivery must be checked for each order.</p>':''}<div><b>Connection checked:</b> ${providers.checked_at?esc(fmtDate(providers.checked_at)):'No recent check'}${providers.stale?' · Check is missing or older than 10 minutes':''}</div><small class="muted">Connections are checked automatically every 5 minutes without sending a message. Delivery is confirmed separately from signed provider receipts.</small></div>`;
       const p=d.provider_results||{};
       if(ob){const o=d.owner_outbox||{},c=d.customer_outbox||{};
         const queue=(title,q)=>`<div><b>${title}:</b> ${q.pending||0} pending · ${q.processing||0} processing · ${q.retry||0} retry · ${q.blocked||0} blocked · ${q.uncertain||0} uncertain · ${q.dead||0} dead</div>`;
@@ -1853,7 +1857,7 @@
         ob.innerHTML=`<div style="display:grid;gap:8px;font-size:12px">${queue('Owner alerts',o)}${queue('Customer updates',c)}<div><b>Provider results:</b> ${p.accepted||0} accepted · ${p.delivered||0} confirmed delivered · ${p.delivery_failed||0} delivery failed · ${p.complaints||0} complaints · ${p.unconfirmed||0} awaiting confirmation</div><div><b>Historical review:</b> ${legacy(d.legacy_owner)} old owner jobs · ${legacy(d.legacy_customer)} old customer jobs · ${d.excluded_before_cutoff||0} before activation cutoff</div><div>${d.inactive_channel_pending||0} jobs on inactive channels</div><small class="muted">${esc(d.note||'Provider acceptance does not confirm delivery.')}</small></div>`;
       }
       if(fl){const fails=d.recent_failures||[];
-        fl.innerHTML=fails.length?fails.map(f=>`<div class="box-product-row"><div style="flex:1"><h4>Order ${esc(f.order_id||'—')}</h4><small>${esc(f.target)} · ${esc(f.status)} · ${esc(f.last_error||f.delivery_status)}</small></div></div>`).join(''):'<p class="muted">No recorded issues in the new queue. Check consumer status and historical jobs above.</p>';
+        fl.innerHTML=fails.length?fails.map(f=>`<div class="box-product-row"><div style="flex:1"><h4>Order ${esc(f.order_number||f.order_id||'—')}</h4><small>${esc(f.target)} · ${esc(f.status)} · ${esc(f.last_error||f.delivery_status)}</small></div></div>`).join(''):'<p class="muted">No recorded issues for real orders in the new queue. Check consumer status and historical jobs above.</p>';
       }
     }catch(e){
       if(seq!==notificationStatusSeq)return;
@@ -1869,7 +1873,7 @@
     if($('#refreshNotifStatus'))$('#refreshNotifStatus').onclick=loadNotifications;
     if($('#refreshTemplates'))$('#refreshTemplates').onclick=loadTemplates;
     if($('#refreshNotifHistory'))$('#refreshNotifHistory').onclick=()=>loadNotificationHistory(notificationHistoryPage);
-    for(const id of ['#notifHistoryView','#notifHistoryTarget']){
+    for(const id of ['#notifHistoryView','#notifHistoryTarget','#notifHistoryOrderType']){
       const select=$(id);if(select)select.onchange=()=>loadNotificationHistory(1);
     }
     if($('#notifHistoryPrev'))$('#notifHistoryPrev').onclick=()=>loadNotificationHistory(Math.max(1,notificationHistoryPage-1));
