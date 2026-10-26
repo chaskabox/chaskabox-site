@@ -144,6 +144,18 @@
     const advanceEnabled=s.cod_enabled!==false&&s.cod_advance_enabled!==false;
     document.querySelectorAll('[data-cod-advance-amount]').forEach(el=>el.textContent=safeAmount.toLocaleString('en-PK'));
     document.querySelectorAll('[data-cod-advance-note]').forEach(el=>{el.hidden=!advanceEnabled;});
+    // Keep the saved announcement in sync if advance settings change in admin.
+    const promoPayment=s.cod_enabled===false?'Prepaid payments available':
+      advanceEnabled?'Partial COD (Rs. '+safeAmount.toLocaleString('en-PK')+' advance) + prepaid':'COD + prepaid';
+    document.querySelectorAll('.promo-desktop,.promo-mobile').forEach(el=>{
+      const copy=el.textContent||'';
+      if(/Partial COD \(Rs\. [\\d,]+ advance\) \+ prepaid/i.test(copy)){
+        el.textContent=copy.replace(/Partial COD \(Rs\. [\\d,]+ advance\) \+ prepaid/i,promoPayment);
+      }else if(/\bCOD \+ prepaid\b/i.test(copy)){
+        el.textContent=copy.replace(/\bCOD \+ prepaid\b/i,promoPayment);
+      }
+    });
+
     const free=s.prepaid_free_delivery_enabled!==false;
     const prepaid=free?(threshold<=0?'Enabled prepaid methods: FREE delivery':`Prepaid ${money(threshold)}+: FREE delivery; below: ${money(pre)}`):`Prepaid: ${money(pre)} delivery. Free delivery is currently unavailable.`;
     document.querySelectorAll('[data-prepaid-shipping-copy]').forEach(el=>el.textContent=prepaid);
