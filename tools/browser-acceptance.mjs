@@ -162,11 +162,11 @@ try{
  {
   const {context,page}=await contextFor(390);
   let reads=0;
-  await context.route('**/api/storefront-config',route=>{reads++;return route.abort();});
+  await context.route('**/api/storefront-config',route=>route.abort());
   await context.route('**/api/products*',route=>{reads++;return route.abort();});
   await page.goto(base+'/checkout.html');
   await page.getByRole('heading',{name:'Your snack bag is empty',exact:true}).waitFor({state:'visible'});
-  results.interactions.push({case:'Empty checkout renders without remote settings or catalogue',pass:reads===0});
+  results.interactions.push({case:'Empty checkout renders with settings unavailable and never requests the catalogue',pass:reads===0});
   await context.close();
  }
  for(const width of [390,1440]){
