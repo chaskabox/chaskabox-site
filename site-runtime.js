@@ -149,8 +149,8 @@
       advanceEnabled?'Partial COD (Rs. '+safeAmount.toLocaleString('en-PK')+' advance) + prepaid':'COD + prepaid';
     document.querySelectorAll('.promo-desktop,.promo-mobile').forEach(el=>{
       const copy=el.textContent||'';
-      if(/Partial COD \(Rs\. [\\d,]+ advance\) \+ prepaid/i.test(copy)){
-        el.textContent=copy.replace(/Partial COD \(Rs\. [\\d,]+ advance\) \+ prepaid/i,promoPayment);
+      if(/Partial COD \(Rs\. [0-9,]+ advance\) \+ prepaid/i.test(copy)){
+        el.textContent=copy.replace(/Partial COD \(Rs\. [0-9,]+ advance\) \+ prepaid/i,promoPayment);
       }else if(/\bCOD \+ prepaid\b/i.test(copy)){
         el.textContent=copy.replace(/\bCOD \+ prepaid\b/i,promoPayment);
       }
