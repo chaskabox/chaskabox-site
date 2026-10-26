@@ -55,9 +55,9 @@
   const media=window.matchMedia('(prefers-reduced-motion: reduce)');
   const dots=Array.from(controls.querySelectorAll('[data-hero-dot]'));
   const autoplay=controls.querySelector('[data-hero-autoplay]');
-  // Match the three-second shop slider setting while respecting reduced motion,
-  // hidden tabs, hover and keyboard focus.
-  const AUTO_ADVANCE_MS=3000;
+  // Home carousel remains at its established five-second pace; Shop hero uses 3 seconds.
+  // Respect reduced motion, hidden tabs, hover and keyboard focus.
+  const AUTO_ADVANCE_MS=5000;
   const artworks=[
     ['/images/chaskabox-approved-hero-01-20261018.avif',1600,550,'ChaskaBox nostalgic snack-box banner (illustrative artwork)'],
     ['/images/chaskabox-approved-hero-02-20261018.avif',1600,550,'ChaskaBox gifting banner (illustrative artwork)'],
@@ -132,7 +132,7 @@
         dot.setAttribute('aria-label','Show banner '+(i+1)+': '+slides[i].label);
       });
     };
-    if(!chosen||!art||(art.getAttribute('src')===chosen[0]&&art.complete&&art.naturalWidth>0)){
+    if(!chosen||!art||(art.getAttribute('src')===chosen[0]&&target===current)){
       commit();return;
     }
     let preloaded=warmedArt.get(chosen[0]);
