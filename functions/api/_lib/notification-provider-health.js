@@ -10,7 +10,7 @@ export function providerHealthRecord(readiness, targets) {
   const emailEnabled = targets.includes('owner_email');
   const whatsappEnabled = targets.some(target => target.endsWith('whatsapp'));
   const emailStatus = !emailEnabled ? 'disabled'
-    : email.http_status === 403 ? 'unknown' // A send-only key cannot list domains.
+    : email.domain_check_restricted === true ? 'unknown'
     : email.http_status === 200 && email.sender_domain_verified && email.owner_recipient_configured ? 'ready'
     : 'unavailable';
   const whatsappStatus = !whatsappEnabled ? 'disabled'

@@ -73,6 +73,6 @@ test('connection checks show disconnected and stale states separately from deliv
  const rendered=els.get('#notifServiceStatus').innerHTML;
  assert.match(rendered,/Connection needs attention/);
  assert.match(rendered,/scanning its QR code/);
- assert.match(rendered,/Sending key cannot verify domain status/);
+ assert.match(rendered,/Domain check is restricted/);
  assert.match(els.get('#notifOutboxStats').innerHTML,/1 confirmed delivered/);
 });
