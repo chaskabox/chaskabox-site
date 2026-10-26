@@ -408,9 +408,11 @@ function closeFilters(){
 }
 function clearAllFilters(){
   shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';shopState.badge='';shopState.sort='feat';
-  syncShopSearchUrl(true);
-  const url=new URL(location.pathname+location.search+location.hash,location.origin);url.searchParams.delete('badge');url.searchParams.delete('sort');
+  const url=new URL(location.pathname+location.search+location.hash,location.origin);
+  for(const key of ['q','brand','badge','sort'])url.searchParams.delete(key);
   history.replaceState(null,'',url.pathname+url.search+url.hash);
+  const search=document.getElementById('headerSearch');
+  if(search)search.value='';
   renderShopContent();
 }
 function activeFilterCount(){
