@@ -47,6 +47,13 @@ test('SPA navigation preserves query filters and document/modified clicks stay n
 });
 test('submitted and edited searches survive refresh and clearing removes stale query filters',()=>{
  const b=browser();b.run('route=()=>{};');
+ // Browser History API updates the URL; this VM mock must mirror that behavior.
+ const recordReplaceState=b.ctx.history.replaceState.bind(b.ctx.history);
+ b.ctx.history.replaceState=(state,title,url)=>{
+  recordReplaceState(state,title,url);
+  const next=new URL(url,b.ctx.location.origin);
+  Object.assign(b.ctx.location,{pathname:next.pathname,search:next.search,hash:next.hash});
+ };
  b.node('headerSearch').value='bubble & gum';b.run('submitHeaderSearch();');assert.equal(b.history.at(-1),'/shop/?q=bubble%20%26%20gum');
  b.node('homeSearch').value='imli?';b.run('submitHomeSearch();');assert.equal(b.history.at(-1),'/shop/?q=imli%3F');
  b.ctx.location.search='?brand=Candyland&q=old';b.ctx.location.hash='#results';b.run("queueShopSearch('Bubble');");assert.equal(b.history.at(-1),'/shop/?brand=Candyland&q=Bubble#results');assert.equal(b.node('headerSearch').value,'Bubble');
