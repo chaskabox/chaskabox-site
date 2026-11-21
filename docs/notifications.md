@@ -80,7 +80,9 @@ Resend domain and WAHA session requests. A private, service-only
 provider responses, addresses, URLs or secrets. The Notification Center reads this
 snapshot without making provider requests or sending test messages. A check older
 than ten minutes is unknown, even if it previously reported ready. A Resend key
-that cannot list domains (403) is unknown rather than proof that sending has failed.
+that cannot list domains (`401 restricted_api_key` or `403 invalid_permission`) is
+unknown rather than proof that sending has failed. Invalid/inactive credentials
+remain unavailable; status codes alone do not establish permission scope.
 WAHA is ready only when its session is WORKING and a receipt secret is configured;
 this is connection evidence, not proof of a new message or its delivery. Probe
 failures cannot stop the independent order consumer. Probes continue when dispatch

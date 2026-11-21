@@ -12,7 +12,8 @@ const healthy={email:{http_status:200,sender_domain_verified:true,owner_recipien
 
 test('provider health distinguishes a restricted email key, disconnected WhatsApp and inactive channels',()=>{
   assert.equal(providerHealthRecord(healthy,targets).p_email_status,'ready');
-  assert.equal(providerHealthRecord({email:{http_status:403},whatsapp:{http_status:200,session_status:'SCAN_QR_CODE'}},targets).p_email_status,'unknown');
+  assert.equal(providerHealthRecord({email:{http_status:401,domain_check_restricted:true},whatsapp:{http_status:200,session_status:'SCAN_QR_CODE'}},targets).p_email_status,'unknown');
+  assert.equal(providerHealthRecord({email:{http_status:403}},targets).p_email_status,'unavailable');
   assert.equal(providerHealthRecord({whatsapp:{http_status:200,session_status:'SCAN_QR_CODE'}},targets).p_whatsapp_status,'unavailable');
   assert.equal(providerHealthRecord({email:{http_status:401},whatsapp:{request_failed:true}},targets).p_email_status,'unavailable');
   assert.equal(providerHealthRecord(healthy,[]).p_whatsapp_status,'disabled');
@@ -56,6 +57,19 @@ test('scheduled readiness uses provider GETs and a sanitized database write with
   assert.equal(result.status,'recorded');
   assert.equal(calls.length,3);
   assert.ok(calls.every(c=>!c.url.includes('sendText')&&!c.url.endsWith('/emails')&&!c.url.includes('notification_claim')));
+});
+
+test('a sending-only key is unknown, while an invalid key remains unavailable, using safe provider error codes',async()=>{
+  for(const [name,http,status] of [['restricted_api_key',401,'unknown'],['validation_error',401,'unavailable'],['restricted_api_key',403,'unavailable'],['invalid_permission',403,'unknown']]){
+    let recorded;
+    await checkNotificationProviders(env(new Date().toISOString()),async(url,init={})=>{
+      if(url==='https://api.resend.com/domains')return Response.json({name,message:'Untrusted provider text is never persisted'},{status:http});
+      if(url.includes('/api/sessions/'))return Response.json({status:'WORKING'});
+      recorded=JSON.parse(init.body);return new Response(null,{status:204});
+    });
+    assert.equal(recorded.p_email_status,status);
+    assert.doesNotMatch(JSON.stringify(recorded),/Untrusted|restricted_api_key|validation_error|invalid_permission/);
+  }
 });
 
 test('health snapshot is service-only, typed and independent of orders and notification jobs',async()=>{

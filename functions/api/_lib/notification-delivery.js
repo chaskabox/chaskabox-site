@@ -92,7 +92,14 @@ export function chatId(value) {
 export async function providerReadiness(env,fetcher=fetch){
  async function read(url,headers){const r=await fetcher.call(globalThis,url,{headers,redirect:'manual',signal:AbortSignal.timeout(10000)});const text=await limitedText(r,32768);try{return {http_status:r.status,response_kind:'json',data:JSON.parse(text)};}catch{return {http_status:r.status,response_kind:/^\s*</.test(text)?'html':'text',tunnel_unavailable:/no tunnel|tunnel.*not found|could not find.*tunnel|error\s*(1033|1016)/i.test(text)};}}
  const result={};
- try{const r=await read('https://api.resend.com/domains',{Authorization:'Bearer '+String(env.RESEND_API_KEY||'').trim()});const from=String(env.RESEND_FROM_EMAIL||''),domain=from.match(/@([^>\s]+)/)?.[1]?.toLowerCase(),available=r.http_status===200&&Array.isArray(r.data?.data);result.email={http_status:r.http_status,domain_check_available:available,sender_domain_verified:available?r.data.data.some(d=>d.name===domain&&d.status==='verified'):null,owner_recipient_configured:!!env.OWNER_ORDER_EMAIL};}catch{result.email={request_failed:true};}
+ try{
+  const r=await read('https://api.resend.com/domains',{Authorization:'Bearer '+String(env.RESEND_API_KEY||'').trim()});
+  const from=String(env.RESEND_FROM_EMAIL||''),domain=from.match(/@([^>\s]+)/)?.[1]?.toLowerCase(),available=r.http_status===200&&Array.isArray(r.data?.data);
+  // Resend documents 401 restricted_api_key for sending-only keys. A bare
+  // HTTP status cannot distinguish that from an invalid or suspended key.
+  const restricted=(r.http_status===401&&r.data?.name==='restricted_api_key')||(r.http_status===403&&r.data?.name==='invalid_permission');
+  result.email={http_status:r.http_status,domain_check_available:available,domain_check_restricted:restricted,sender_domain_verified:available?r.data.data.some(d=>d.name===domain&&d.status==='verified'):null,owner_recipient_configured:!!env.OWNER_ORDER_EMAIL};
+ }catch{result.email={request_failed:true};}
  const gateway=String(env.WAHA_API_URL||'');let temporary=false,origin=null;try{const parsed=new URL(gateway);origin=parsed.origin;temporary=parsed.hostname.endsWith('.trycloudflare.com');}catch{temporary=true;}
  if(protectedWahaOrigin(env)&&!Object.keys(wahaAccessHeaders(env)).length){result.whatsapp={check_blocked:true,reason:'waha_access_configuration_missing',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
  else if(!origin||(temporary&&env.WAHA_APPROVED_GATEWAY_ORIGIN!==origin)){result.whatsapp={check_blocked:true,reason:'gateway_ownership_verification_required',signed_receipts_configured:!!env.WAHA_WEBHOOK_SECRET};}
