@@ -1,0 +1,19 @@
+# Safe add-on for Oracle aarch64; use ONLY with Docker Compose >= 2.24.4.
+# Docker Compose !override is essential: without it the original public
+# 0.0.0.0:3000 mapping remains active and would expose WAHA.
+# Existing env_file, environment and session/media mounts are inherited from
+# the original docker-compose.yml; never commit resolved Compose JSON.
+services:
+  waha:
+    image: devlikeapro/waha:arm
+    platform: linux/arm64
+    restart: unless-stopped
+    init: true
+    stop_grace_period: 45s
+    ports: !override
+      - "127.0.0.1:3001:3000"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

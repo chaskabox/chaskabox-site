@@ -1,0 +1,96 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+
+const preflight = readFileSync(new URL('../ops/waha/preflight.sh', import.meta.url), 'utf8');
+const overlay = readFileSync(new URL('../ops/waha/compose.override.example.yml', import.meta.url), 'utf8');
+
+test('WAHA preflight is syntactically valid Bash', () => {
+  const result = spawnSync('bash', ['-n'], { input: preflight, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+});
+
+test('WAHA preflight never changes server state or prints secrets', () => {
+  const commands = preflight.split('\n').filter(s => !s.trimStart().startsWith('#')).join('\n');
+  assert.match(commands, /docker compose -f "\$COMPOSE" config --format json/);
+  assert.doesNotMatch(commands, /\bdocker\s+(?:run|start|restart|stop|rm|rmi|volume\s+rm|system\s+prune)\b/);
+  assert.doesNotMatch(commands, /\bdocker\s+compose\s+(?:up|down|pull|restart|stop)\b/);
+  assert.doesNotMatch(commands, /\bsystemctl\s+(?:start|stop|restart|enable|disable)\b/);
+  assert.doesNotMatch(commands, /print\s*\(\s*env\s*\)/);
+  assert.match(commands, /\/app\/\.sessions/);
+  assert.match(commands, /non-loopback published port detected/);
+});
+
+test('WAHA resilience override targets native ARM and deliberate-stop-safe restart', () => {
+  assert.match(overlay, /image:\s*devlikeapro\/waha:arm/);
+  assert.match(overlay, /platform:\s*linux\/arm64/);
+  assert.match(overlay, /restart:\s*unless-stopped/);
+  assert.match(overlay, /max-size:\s*["']?10m/);
+  assert.match(overlay, /ports:\s*!override\s*\n\s*-\s*["\x27]?127\.0\.0\.1:3001:3000/);
+  assert.doesNotMatch(overlay, /\b(?:volumes|env_file):/);
+});
+
+
+test('One-time WAHA launch script is syntax valid, backs up data, and keeps WAHA localhost only', () => {
+  const launch = readFileSync(new URL('../ops/waha/deploy-local-oci.sh', import.meta.url), 'utf8');
+  const result = spawnSync('bash', ['-n'], { input: launch, encoding: 'utf8' });
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(launch, /waha-private-backups/);
+  // Regression: the backup directory is root-owned mode 700, so a glob
+  // expanded in the unprivileged calling shell will not find its files.
+  assert.match(launch, /sudo find "\$BACKUP" -maxdepth 1 -type f -exec chmod 600/);
+  assert.doesNotMatch(launch, /sudo chmod 600 "\$BACKUP"\/\*/);
+  assert.match(launch, /curl -fsSL/);
+  assert.match(launch, /s\.get\("restart"\)=="unless-stopped"/);
+  assert.match(launch, /127\.0\.0\.1","3001","3000"/);
+  assert.match(launch, /\|\| fail 'Config validation failed; WAHA has NOT been started\.'/);
+  assert.doesNotMatch(launch, /\bdocker\s+(?:system\s+prune|volume\s+rm|rm\s+-f)\b/);
+  assert.doesNotMatch(launch, /\bpm2\s+(?:stop|restart|delete|kill)\b/);
+});
+
+test('read-only preflight recognizes an exact waha Docker container name even when output includes status', () => {
+  const grepPattern=preflight.match(/docker ps -a --format '[^']+' \| grep -Ei '([^']+)' \|\|/);
+  assert.ok(grepPattern, 'WAHA container diagnostic grep rule exists');
+  const sample=['waha Up 2 days','chaskabox-waha-1 Up 7 hours'].join(String.fromCharCode(10));
+  const result=spawnSync('grep',['-Ei',grepPattern[1]],{input:sample,encoding:'utf8'});
+  assert.equal(result.status,0,result.stderr);
+  assert.match(result.stdout,/^waha Up 2 days/m);
+  assert.match(result.stdout,/chaskabox-waha-1 Up 7 hours/);
+});
+
+test('single-run named tunnel connector validates backup and session before service install', () => {
+  const connect = readFileSync(new URL('../ops/waha/connect-named-tunnel.sh', import.meta.url), 'utf8');
+  const parse = spawnSync('bash', ['-n'], {input:connect,encoding:'utf8'});
+  assert.equal(parse.status, 0, parse.stderr);
+  assert.match(connect,/docker inspect -f/);
+  assert.match(connect,/WORKING/);
+  assert.match(connect,/tar -tzf/);
+  assert.match(connect,/--token-file/);
+  assert.match(connect,/Tunnel identity verified/);
+  assert.match(connect,/Type CONNECT/);
+  assert.match(connect,/ProtectSystem=strict/);
+  assert.match(connect,/systemctl enable --now "\$SVC"/);
+  assert.doesNotMatch(connect,/\bdocker\s+(?:rm|restart|stop|compose|pull|run|system\s+prune)\b/);
+  assert.doesNotMatch(connect,/\bpm2\s+(?:stop|restart|delete|kill)\b/);
+  assert.doesNotMatch(connect,/\bcloudflared\s+service\s+install\b/);
+  assert.doesNotMatch(connect,/echo\s+"\$TKN"/);
+});
+
+
+test('no-sudo WAHA PM2 connector is syntactically valid and non-disruptive',()=>{
+  const script=readFileSync(new URL('../ops/waha/connect-named-tunnel-pm2.sh',import.meta.url),'utf8');
+  const parsed=spawnSync('bash',['-n'],{input:script,encoding:'utf8'});
+  assert.equal(parsed.status,0,parsed.stderr);
+  assert.match(script,/--token-file/);
+  assert.match(script,/pm2 start "\$LAUNCH"/);
+  assert.match(script,/pm2 save/);
+  assert.match(script,/WORKING|health response/);
+  assert.match(script,/type CONNECT/);
+  assert.match(script,/chmod 600 "\$TOKENFILE"/);
+  const active=script.split('\n').filter(line=>!line.trimStart().startsWith('#')).join('\n');
+  assert.doesNotMatch(active,/\bsudo\b/);
+  assert.doesNotMatch(script,/\bdocker (?:stop|restart|rm|compose|pull|run)\b/);
+  assert.doesNotMatch(script,/\bpm2 (?:stop|restart|delete|kill)\b/);
+  assert.doesNotMatch(script,/--token "\$TKN"/);
+});
