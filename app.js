@@ -97,7 +97,11 @@ function cardHTML(p,priority){
   const src=hasPhoto(p)?assetUrl(p.img):'';
   const loading=priority==='high'?'loading="eager" fetchpriority="high"':priority==='eager'?'loading="eager"':'loading="lazy"';
   const img=src?`<img ${photoAttributes(p.img)} alt="${esc(p.name)}" ${loading} width="300" height="300" decoding="async">`:`<div class="noimg"><b>CHASKABOX</b><span>${p.photoNote?esc(p.photoNote):'Photo<br>coming soon'}</span><small>${esc(p.category||'')}</small></div>`;
-  const badge=p.badge?`<span class="badge ${p.badge==='Bestseller'?'bestseller':''}">${esc(p.badge==='Sale'?'SALE':p.badge.toUpperCase())}</span>`:'';
+  // A price reduction takes precedence over the editorial New badge.
+  const displayBadge=p.oldPrice>p.price?'Sale':p.badge;
+  const badge=displayBadge?`<span class="badge ${displayBadge==='Bestseller'?'bestseller':''}">${esc(displayBadge==='Sale'?'SALE':displayBadge.toUpperCase())}</span>`:'';
+  // Disclose single-item placeholders on bundles before the owner supplies exact composite photography.
+  const representativeBundlePhoto=Boolean(p.bundle)&&!String(p.img||'').toLowerCase().includes('p'+Number(p.id)+'.');
   const old=p.oldPrice&&p.oldPrice>p.price?`<span class="oldprice">${fmt(p.oldPrice)}</span>`:'';
   const save=p.oldPrice&&p.oldPrice>p.price?`<span class="savepill">Save ${Math.round((1-p.price/p.oldPrice)*100)}%</span>`:'';
   const catlabel=p.category?`<div class="pcat">${esc(p.category)}${p.bundle?' · BOX':''}</div>`:'';
@@ -108,7 +112,7 @@ function cardHTML(p,priority){
     <div class="pbody">
       ${catlabel}
       <a class="pname" href="${href}" title="${esc(p.name)}">${esc(p.name)}</a>
-      <div class="packmeta"><div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">View pack details</small>':''}</div>
+      <div class="packmeta"><div class="ppack">${esc(p.pack||'')}</div>${p.bundle?'<small class="bundle-photo-note">'+(representativeBundlePhoto?'Representative item pictured · See bundle contents':'View pack details')+'</small>':''}</div>
       <div class="prow"><div class="pricewrap"><span class="price">${fmt(p.price)}</span>${old}${save}</div></div>
       <button class="addcart" ${unavailable?'disabled':''} aria-label="${unavailable?'Currently unavailable':'Add to Bag '+fmt(p.price)} — ${esc(p.name)}" onclick="addToCart(${p.id},1,this)"><span class="addcart-label">${unavailable?'Currently unavailable':'Add to Bag'}</span><span class="addcart-price">${fmt(p.price)}</span></button>
     </div></article>`;
@@ -274,7 +278,10 @@ function shelfScroll(id,dir){
 let shopState={q:'',cat:'',sort:'feat',brands:[],maxPrice:0,pack:'',badge:''};
 function shopRouteFilters(cat=''){
   const p=new URLSearchParams(location.search),sort=p.get('sort'),badge=p.get('badge');
-  return {q:p.get('q')||'',cat,sort:['feat','lo','hi','az','new','pop'].includes(sort)?sort:'feat',brands:p.getAll('brand').map(v=>v.trim()).filter(Boolean),maxPrice:0,pack:'',badge:['Sale','Bestseller'].includes(badge)?badge:''};
+  const requestedBadge=['Sale','Bestseller','New'].includes(badge)?badge:'';
+  // Preserve old /shop/?sort=new links as a genuine New Arrivals collection.
+  const collectionBadge=!cat&&!requestedBadge&&sort==='new'?'New':requestedBadge;
+  return {q:p.get('q')||'',cat,sort:['feat','lo','hi','az','new','pop'].includes(sort)?sort:'feat',brands:p.getAll('brand').map(v=>v.trim()).filter(Boolean),maxPrice:0,pack:'',badge:collectionBadge};
 }
 /* navigation is defined in the clean History API router below */
 /* populate desktop header dropdowns (categories + top brands) */
@@ -350,16 +357,31 @@ function renderShopCategoryRail(){
     el.append(link);
   });
 }
+function updateShopLanding(){
+  const view=document.getElementById('view-shop');
+  if(!view)return;
+  const landing=shopState.badge==='Sale'?'deals':shopState.badge==='New'?'new':'';
+  document.body.dataset.shopLanding=landing;
+  let intro=document.getElementById('cb-shop-landing-intro');
+  if(!intro){intro=document.createElement('section');intro.id='cb-shop-landing-intro';intro.setAttribute('aria-label','Shop collection introduction');view.prepend(intro);}
+  intro.hidden=!landing;
+  if(!landing)return;
+  const deal=landing==='deals';
+  intro.innerHTML=deal?
+    '<span class="cb-collection-eyebrow">SPECIAL PRICES</span><h2>Snack Deals</h2><p>Explore products with current price reductions. Savings are shown against listed regular prices.</p><a href="#catTitle">Browse deals ↓</a>':
+    '<span class="cb-collection-eyebrow">FRESHLY LISTED</span><h2>New Arrivals</h2><p>Browse recently added products marked New in our current catalog.</p><a href="#catTitle">Browse new arrivals ↓</a>';
+}
 function renderShopContent(){
   const headerSearch=document.getElementById('headerSearch');
   if(headerSearch&&document.activeElement!==headerSearch)headerSearch.value=shopState.q||'';
   const {cat,badge}=shopState;
   let title=cat||'All Snacks';
-  if(badge) title=badge==='Sale'?'Snack Deals':'Bestsellers';
+  if(badge) title=badge==='Sale'?'Snack Deals':badge==='New'?'New Arrivals':'Bestsellers';
   else if(!cat&&shopState.sort==='new')title='New Arrivals';
   $('#crumbCat').textContent=title;
   $('#catTitle').textContent=title;
   renderShopCategoryRail();
+  updateShopLanding();
   const html=filterPanelHTML();
   $('#shopSidebar').innerHTML=html;
   const sb=$('#filterSheetBody'); if(sb)sb.innerHTML=html;
@@ -385,8 +407,12 @@ function closeFilters(){
   if(filterReturnFocus&&typeof filterReturnFocus.focus==='function'){const f=filterReturnFocus;filterReturnFocus=null;setTimeout(()=>f.focus(),0);}
 }
 function clearAllFilters(){
-  shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';shopState.badge='';
-  syncShopSearchUrl(true);
+  shopState.brands=[];shopState.maxPrice=0;shopState.pack='';shopState.q='';shopState.badge='';shopState.sort='feat';
+  const url=new URL(location.pathname+location.search+location.hash,location.origin);
+  for(const key of ['q','brand','badge','sort'])url.searchParams.delete(key);
+  history.replaceState(null,'',url.pathname+url.search+url.hash);
+  const search=document.getElementById('headerSearch');
+  if(search)search.value='';
   renderShopContent();
 }
 function activeFilterCount(){
@@ -410,7 +436,7 @@ function renderFilterChips(){
   shopState.brands.forEach(b=>{h+='<button class="fchip" data-v="'+esc(b)+'" onclick="removeBrandChip(this)">'+esc(b)+' <span>\u2715</span></button>';});
   if(shopState.maxPrice)h+='<button class="fchip" onclick="shopState.maxPrice=0;renderShopContent()">Under '+fmt(shopState.maxPrice)+' <span>\u2715</span></button>';
   if(shopState.pack)h+='<button class="fchip" onclick="shopState.pack=\'\';renderShopContent()">'+esc(shopState.pack)+' <span>\u2715</span></button>';
-  if(shopState.badge)h+='<button class="fchip" onclick="shopState.badge=\'\';renderShopContent()">'+(shopState.badge==='Sale'?'🔥 On Sale':'⭐ Bestsellers')+' <span>\u2715</span></button>';
+  if(shopState.badge)h+='<button class="fchip" onclick="shopState.badge=\'\';renderShopContent()">'+(shopState.badge==='Sale'?'🔥 On Sale':shopState.badge==='New'?'✨ New arrivals':'⭐ Bestsellers')+' <span>\u2715</span></button>';
   el.innerHTML=h;
 }
 function toggleBrand(el){
@@ -421,7 +447,7 @@ function toggleBrand(el){
 function filteredShop(){
   let list=publicProducts();const{q,cat,sort,brands,maxPrice,pack,badge}=shopState;
   if(cat){const category=(STORE_CONFIG?.categories||[]).find(c=>c.name===cat);list=list.filter(p=>cat==='Bundles'?p.bundle:(category?category.product_ids.includes(Number(p.id)):p.category===cat));}
-  if(badge)list=list.filter(p=>badge==='Sale'?p.oldPrice>p.price:p.badge===badge);
+  if(badge)list=list.filter(p=>badge==='Sale'?p.oldPrice>p.price:badge==='New'?p.badge==='New':p.badge===badge);
   if(q){const n=q.toLowerCase().trim();list=list.filter(p=>[p.name,p.pack,p.category,getBrand(p),p.desc].filter(Boolean).join(' ').toLowerCase().includes(n));}
   if(brands.length)list=list.filter(p=>brands.includes(getBrand(p)));
   if(maxPrice)list=list.filter(p=>p.price<=maxPrice);
@@ -436,8 +462,10 @@ function filteredShop(){
 let shopSearchTimer;
 function renderShopList(){
   const{q,cat,sort}=shopState;
+  const context=shopState.badge==='Sale'?'deals':shopState.badge==='New'?'new arrivals':cat||'all snacks';
+  const mobileSort=document.getElementById('mSort');if(mobileSort)mobileSort.value=sort;
   $('#shopFilters').innerHTML=
-    '<div class="shop-search-wrap"><input type="search" id="fq" autocomplete="off" aria-label="Search products" placeholder="Search in '+esc(cat||'all snacks')+'..." value="'+esc(q)+'" oninput="queueShopSearch(this.value)" onkeydown="shopSearchKey(event)"><div id="shopSearchSuggestions" class="shop-search-suggestions" role="listbox" hidden></div></div>'
+    '<div class="shop-search-wrap"><input type="search" id="fq" autocomplete="off" aria-label="Search products" placeholder="Search in '+esc(context)+'..." value="'+esc(q)+'" oninput="queueShopSearch(this.value)" onkeydown="shopSearchKey(event)"><div id="shopSearchSuggestions" class="shop-search-suggestions" role="listbox" hidden></div></div>'
     +'<select aria-label="Sort products" onchange="shopState.sort=this.value;renderShopResults()">'
     +'<option value="feat" '+(sort==='feat'?'selected':'')+'>Recommended</option>'
     +'<option value="lo" '+(sort==='lo'?'selected':'')+'>Price: Low → High</option>'

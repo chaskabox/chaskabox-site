@@ -11,7 +11,7 @@ test('Storefront shop category rail only uses actual available catalogue categor
  assert.match(source,/totals\.has\(c\)/);
  assert.match(source,/document\.createElement\('a'\)/);
  assert.match(source,/link\.href=categoryPath\(cat\)/);
- assert.match(source,/renderShopCategoryRail\(\);\s*const html=filterPanelHTML\(\)/);
+ assert.match(source,/renderShopCategoryRail\(\);\s*updateShopLanding\(\);\s*const html=filterPanelHTML\(\)/);
  assert.match(css,/\.shop-category-rail a:focus-visible/);
  assert.match(css,/@media\(max-width:680px\)/);
 });

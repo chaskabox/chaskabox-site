@@ -216,7 +216,10 @@
         else open(a);
         return;
       }
-      if(!popup.hidden&&!popup.contains(e.target))close();
+      if(!popup.hidden&&popup.contains(e.target)&&e.target.closest?.('a[href]')){
+        // Let the native/router link navigate; dismiss the overlay immediately.
+        queueMicrotask(()=>close());
+      }else if(!popup.hidden&&!popup.contains(e.target))close();
     },true);
     document.addEventListener('keydown',e=>{
       const brand=brandLink();
@@ -254,7 +257,11 @@
       if(!popup.hidden&&e.target!==trigger&&!popup.contains(e.target))close();
     });
     window.addEventListener('resize',()=>{position();alignWhatsapp();},{passive:true});
-    window.addEventListener('scroll',position,{passive:true});
+    // A route change or page scroll must never leave a menu above the new content.
+    window.addEventListener('popstate',()=>close());
+    window.addEventListener('hashchange',()=>close());
+    window.addEventListener('pagehide',()=>close());
+    window.addEventListener('scroll',()=>close(),{passive:true});
     const nav=document.querySelector('header .cbx-header-links, .cb-subnav-links');
     if(nav)new MutationObserver(decorate).observe(nav,{childList:true,subtree:true});
     alignWhatsapp();

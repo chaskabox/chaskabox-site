@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
-for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation keeps controls, timer and accessibility pauses':'home hero advances every 5 seconds, with controls and accessibility pauses',()=>{
+for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation keeps controls, timer and accessibility pauses':'home hero advances every 5 seconds, with controls and accessibility pauses',async()=>{
   const code=readFileSync(new URL('../home-hero-carousel.js',import.meta.url),'utf8');
   const events={}; const rootEvents={}; const docEvents={}; const windowEvents={};
   const media={matches:false,addEventListener(_name,fn){this.onChange=fn;}};
   let hover=false,scheduled=null,sequence=0;
+  const flush=async()=>{for(let i=0;i<8;i++)await Promise.resolve();};
   const title={replaceChildren(){},append(){}};
   const dots=Array.from({length:3},()=>({setAttribute(){}}));
   const label={textContent:''},icon={textContent:''};
@@ -23,7 +24,7 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
     contains(){return true;}
   };
   const imageRequests=[],artEvents={};
-  const art={src:'',complete:false,naturalWidth:0,getAttribute(){return this.src;},setAttribute(_key,value){this.src=value;},addEventListener(name,fn){artEvents[name]=fn;}};
+  const art={src:'/images/chaskabox-approved-hero-01-20261018.avif',complete:false,naturalWidth:0,getAttribute(){return this.src;},setAttribute(_key,value){this.src=value;},addEventListener(name,fn){artEvents[name]=fn;}};
   const elements={
     '.herotxt h1':title,
     '.herotxt > p':{textContent:''},
@@ -54,7 +55,7 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
   const sandbox={
     document:doc,
     window:{matchMedia(){return media;},addEventListener(name,fn){windowEvents[name]=fn;},requestIdleCallback(fn){fn();}},
-    Image:class{set src(value){imageRequests.push({src:value,priority:this.fetchPriority});}},
+    Image:class{complete=false;naturalWidth=0;addEventListener(){};decode(){return Promise.resolve();}set src(value){imageRequests.push({src:value,priority:this.fetchPriority});this.complete=true;this.naturalWidth=1600;}},
     setInterval(fn,delay){scheduled={fn,delay,id:++sequence};return sequence;},
     clearInterval(id){if(scheduled?.id===id)scheduled=null;}
   };
@@ -71,9 +72,9 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
   assert.equal(imageRequests[0].priority,'low');
   assert.equal(scheduled?.delay,5000);
   assert.equal(label.textContent,'Pause');
-  scheduled.fn();assert.equal(root.dataset.heroSlide,'2');
-  scheduled.fn();assert.equal(root.dataset.heroSlide,'3');
-  scheduled.fn();assert.equal(root.dataset.heroSlide,'1');
+  scheduled.fn();await flush();assert.equal(root.dataset.heroSlide,'2');
+  scheduled.fn();await flush();assert.equal(root.dataset.heroSlide,'3');
+  scheduled.fn();await flush();assert.equal(root.dataset.heroSlide,'1');
   hover=true;rootEvents.mouseenter();assert.equal(scheduled,null,'hover pauses');
   hover=false;rootEvents.mouseleave();assert.equal(scheduled?.delay,5000,'mouseleave resumes');
   doc.activeElement={isHeroChild:true};rootEvents.focusin();assert.equal(scheduled,null,'focus pauses');
@@ -84,6 +85,7 @@ for(const lazy of [false,true])test(lazy?'hero mounted after Brands navigation k
   doc.hidden=false;docEvents.visibilitychange();assert.equal(scheduled?.delay,5000,'visible tab resumes');
   hover=true;rootEvents.mouseenter();
   events.click({target:{closest(){return {dataset:{heroDirection:'next'}};}}});
+  await flush();
   assert.equal(root.dataset.heroSlide,'2','manual next works while paused');
   assert.equal(scheduled,null,'manual navigation while hovered remains paused');
   assert.equal(label.textContent,'Play','manual selection offers explicit resumption');
