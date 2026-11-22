@@ -3,12 +3,13 @@
  */
 import { rpc } from './db.js';
 const encoder = new TextEncoder();
-export const DEFAULT_TEXT_MODEL = '@cf/meta/llama-3.2-3b-instruct';
+export const DEFAULT_TEXT_MODEL = '@cf/google/gemma-4-26b-a4b-it';
 export const DEFAULT_EMBEDDING_MODEL = '@cf/qwen/qwen3-embedding-0.6b';
 export const IMAGE_MODEL = '@cf/black-forest-labs/flux-1-schnell';
+// TEXT_RATES: neurons per 1M tokens [prompt, completion] — Cloudflare Workers AI pricing, Nov 2026.
+// Gemma 4 26B: $0.100/$0.300 per 1M tokens = 9091/27273 neurons. Llama 3.1 8B kept as env-overridable alternate.
 const TEXT_RATES = {
-  [DEFAULT_TEXT_MODEL]: [4625, 30475],
-  '@cf/qwen/qwen3-30b-a3b-fp8': [4625, 30475],
+  [DEFAULT_TEXT_MODEL]: [9091, 27273],
   '@cf/meta/llama-3.1-8b-instruct-fp8-fast': [4119, 34868],
 };
 function failure(code, message, status = 503) { const e = new Error(message); e.code = code; e.status = status; return e; }

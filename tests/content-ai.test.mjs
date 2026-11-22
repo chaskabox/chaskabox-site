@@ -70,7 +70,7 @@ test('AI apply and undo preserve versions and audit atomically; stale or conflic
 });
 test('shared quota keeps unknown charges, rejects a last over-budget request and obeys DB kill switches',async()=>{
  const db=await fixture();try{
-  const reserve=(id,units)=>db.query('SELECT ai_budget_reserve($1,$2,$3,$4,$5,20) r',[id,actor,'text','@cf/meta/llama-3.2-3b-instruct',units]);
+  const reserve=(id,units)=>db.query('SELECT ai_budget_reserve($1,$2,$3,$4,$5,20) r',[id,actor,'text','@cf/google/gemma-4-26b-a4b-it',units]);
   assert.equal((await reserve(crypto.randomUUID(),12)).rows[0].r.reason,'disabled');
   await db.exec("UPDATE site_settings SET value='true' WHERE key='ai_enabled';");
   const id=crypto.randomUUID();assert.equal((await reserve(id,12)).rows[0].r.allowed,true);

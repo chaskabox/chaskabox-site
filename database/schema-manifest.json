@@ -25,7 +25,8 @@
     "database/migrations/20261017210000_bop_card_gateway_readiness.sql",
     "database/migrations/20261017230000_mandatory_cod_advance.sql",
     "database/migrations/20261018100000_page_copy_controls.sql",
-    "database/migrations/20261021044231_account_portal_admin_controls.sql"
+    "database/migrations/20261021044231_account_portal_admin_controls.sql",
+    "database/migrations/20261122095500_ai_text_model_gemma.sql"
   ],
   "managed_history_observed": [
     {
